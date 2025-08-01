@@ -9,7 +9,7 @@ type Props = {
     };
 };
 
-export default async function ClientPage({ params }: Props) {
+export default async function Page({ params }: Props) {
     const supabase = createServerComponentClient({ cookies });
 
     const {
