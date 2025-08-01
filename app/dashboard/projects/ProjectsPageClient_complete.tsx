@@ -6,10 +6,7 @@ import { Input } from '@/components/ui/Input';
 import { createSupabaseClient } from '@/src/lib/supabase';
 import {
     Edit,
-    Eye,
-    Filter,
     Plus,
-    Search,
     Trash2
 } from 'lucide-react';
 import { useRouter } from 'next/navigation';
@@ -44,9 +41,6 @@ export default function ProjectsPageClient({ userEmail }: ProjectsPageClientProp
     // Estados
     const [searchTerm, setSearchTerm] = useState('');
     const [filterStatus, setFilterStatus] = useState('all');
-    const [filterClient, setFilterClient] = useState('all');
-    const [sortBy, setSortBy] = useState('created_at');
-    const [sortOrder, setSortOrder] = useState('desc');
     const [showForm, setShowForm] = useState(false);
     const [editingProject, setEditingProject] = useState<Project | null>(null);
     const [showEditForm, setShowEditForm] = useState(false);
@@ -227,51 +221,7 @@ export default function ProjectsPageClient({ userEmail }: ProjectsPageClientProp
             console.error('Error:', error);
         }
     };
-    const filteredProjects = projects.filter(project => {
-        // Filtro por término de búsqueda
-        const matchesSearch = searchTerm === '' ||
-            project.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-            project.description?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-            project.client?.name.toLowerCase().includes(searchTerm.toLowerCase());
 
-        // Filtro por estado
-        const matchesStatus = filterStatus === 'all' || project.status === filterStatus;
-
-        // Filtro por cliente
-        const matchesClient = filterClient === 'all' || project.client_id === filterClient;
-
-        return matchesSearch && matchesStatus && matchesClient;
-    }).sort((a, b) => {
-        let aValue, bValue;
-
-        switch (sortBy) {
-            case 'name':
-                aValue = a.name.toLowerCase();
-                bValue = b.name.toLowerCase();
-                break;
-            case 'status':
-                aValue = a.status;
-                bValue = b.status;
-                break;
-            case 'budget':
-                aValue = a.budget || 0;
-                bValue = b.budget || 0;
-                break;
-            case 'start_date':
-                aValue = a.start_date || '0000-00-00';
-                bValue = b.start_date || '0000-00-00';
-                break;
-            default: // created_at
-                aValue = a.created_at;
-                bValue = b.created_at;
-        }
-
-        if (sortOrder === 'asc') {
-            return aValue > bValue ? 1 : -1;
-        } else {
-            return aValue < bValue ? 1 : -1;
-        }
-    });
     // useEffect para cargar datos
     useEffect(() => {
         fetchProjects();
@@ -299,81 +249,7 @@ export default function ProjectsPageClient({ userEmail }: ProjectsPageClientProp
                         Nuevo Proyecto
                     </Button>
                 </div>
-                {/* Barra de filtros */}
-                <Card className="mb-6">
-                    <CardContent className="pt-6">
-                        <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-5">
-                            <div>
-                                <label className="text-sm font-medium mb-2 block">
-                                    <Search className="h-4 w-4 inline mr-1" />
-                                    Buscar
-                                </label>
-                                <Input
-                                    placeholder="Buscar proyectos..."
-                                    value={searchTerm}
-                                    onChange={(e) => setSearchTerm(e.target.value)}
-                                />
-                            </div>
-                            <div>
-                                <label className="text-sm font-medium mb-2 block">
-                                    <Filter className="h-4 w-4 inline mr-1" />
-                                    Estado
-                                </label>
-                                <select
-                                    className="w-full p-2 border rounded-md"
-                                    value={filterStatus}
-                                    onChange={(e) => setFilterStatus(e.target.value)}
-                                >
-                                    <option value="all">Todos</option>
-                                    <option value="active">Activo</option>
-                                    <option value="paused">Pausado</option>
-                                    <option value="completed">Completado</option>
-                                    <option value="cancelled">Cancelado</option>
-                                </select>
-                            </div>
-                            <div>
-                                <label className="text-sm font-medium mb-2 block">Cliente</label>
-                                <select
-                                    className="w-full p-2 border rounded-md"
-                                    value={filterClient}
-                                    onChange={(e) => setFilterClient(e.target.value)}
-                                >
-                                    <option value="all">Todos</option>
-                                    {clients.map((client) => (
-                                        <option key={client.id} value={client.id}>
-                                            {client.name}
-                                        </option>
-                                    ))}
-                                </select>
-                            </div>
-                            <div>
-                                <label className="text-sm font-medium mb-2 block">Ordenar por</label>
-                                <select
-                                    className="w-full p-2 border rounded-md"
-                                    value={sortBy}
-                                    onChange={(e) => setSortBy(e.target.value)}
-                                >
-                                    <option value="created_at">Fecha creación</option>
-                                    <option value="name">Nombre</option>
-                                    <option value="status">Estado</option>
-                                    <option value="budget">Presupuesto</option>
-                                    <option value="start_date">Fecha inicio</option>
-                                </select>
-                            </div>
-                            <div>
-                                <label className="text-sm font-medium mb-2 block">Orden</label>
-                                <select
-                                    className="w-full p-2 border rounded-md"
-                                    value={sortOrder}
-                                    onChange={(e) => setSortOrder(e.target.value)}
-                                >
-                                    <option value="desc">Descendente</option>
-                                    <option value="asc">Ascendente</option>
-                                </select>
-                            </div>
-                        </div>
-                    </CardContent>
-                </Card>
+
                 {/* Formulario nuevo proyecto */}
                 {showForm && (
                     <Card className="mb-8">
@@ -583,101 +459,69 @@ export default function ProjectsPageClient({ userEmail }: ProjectsPageClientProp
                                     Crear Proyecto
                                 </Button>
                             </div>
-                        ) : filteredProjects.length === 0 ? (
-                            <div className="col-span-full text-center py-12">
-                                <h3 className="text-lg font-medium text-gray-900 mb-2">
-                                    No se encontraron proyectos
-                                </h3>
-                                <p className="text-gray-600 mb-4">
-                                    Intenta ajustar los filtros de búsqueda
-                                </p>
-                            </div>
                         ) : (
-                            filteredProjects.map((project) => (
-                                <Card 
-                                    key={project.id} 
-                                    className="hover:shadow-lg transition-shadow cursor-pointer"
-                                    onClick={() => router.push(`/dashboard/projects/${project.id}`)}
-                                >
-                            <CardHeader>
-                                <CardTitle className="text-lg">{project.name}</CardTitle>
-                                <CardDescription>
-                                    {project.client?.name || 'Sin cliente asignado'}
-                                </CardDescription>
-                            </CardHeader>
-                            <CardContent>
-                                <div className="space-y-2 text-sm text-gray-600">
-                                    <div className="flex justify-between">
-                                        <span>Estado:</span>
-                                        <span className="capitalize font-medium">{project.status}</span>
-                                    </div>
-                                    {project.budget && (
-                                        <div className="flex justify-between">
-                                            <span>Presupuesto:</span>
-                                            <span>${project.budget}</span>
+                            projects.map((project) => (
+                                <Card key={project.id} className="hover:shadow-lg transition-shadow">
+                                    <CardHeader>
+                                        <CardTitle className="text-lg">{project.name}</CardTitle>
+                                        <CardDescription>
+                                            {project.client?.name || 'Sin cliente asignado'}
+                                        </CardDescription>
+                                    </CardHeader>
+                                    <CardContent>
+                                        <div className="space-y-2 text-sm text-gray-600">
+                                            <div className="flex justify-between">
+                                                <span>Estado:</span>
+                                                <span className="capitalize font-medium">{project.status}</span>
+                                            </div>
+                                            {project.budget && (
+                                                <div className="flex justify-between">
+                                                    <span>Presupuesto:</span>
+                                                    <span>${project.budget}</span>
+                                                </div>
+                                            )}
+                                            {project.start_date && (
+                                                <div className="flex justify-between">
+                                                    <span>Inicio:</span>
+                                                    <span>{new Date(project.start_date).toLocaleDateString('es-ES')}</span>
+                                                </div>
+                                            )}
+                                            {project.end_date && (
+                                                <div className="flex justify-between">
+                                                    <span>Fin:</span>
+                                                    <span>{new Date(project.end_date).toLocaleDateString('es-ES')}</span>
+                                                </div>
+                                            )}
+                                            <div className="flex justify-between">
+                                                <span>Creado:</span>
+                                                <span>{new Date(project.created_at).toLocaleDateString('es-ES')}</span>
+                                            </div>
                                         </div>
-                                    )}
-                                    {project.start_date && (
-                                        <div className="flex justify-between">
-                                            <span>Inicio:</span>
-                                            <span>{new Date(project.start_date).toLocaleDateString('es-ES')}</span>
+                                        <div className="mt-4 flex gap-2">
+                                            <Button
+                                                size="sm"
+                                                variant="outline"
+                                                onClick={() => startEditing(project)}
+                                            >
+                                                <Edit className="h-4 w-4 mr-2" />
+                                                Editar
+                                            </Button>
+                                            <Button
+                                                size="sm"
+                                                variant="outline"
+                                                onClick={() => {
+                                                    if (window.confirm('¿Estás seguro de que quieres eliminar este proyecto?')) {
+                                                        deleteProject(project.id);
+                                                    }
+                                                }}
+                                                className="text-red-600 hover:text-red-700"
+                                            >
+                                                <Trash2 className="h-4 w-4 mr-2" />
+                                                Eliminar
+                                            </Button>
                                         </div>
-                                    )}
-                                    {project.end_date && (
-                                        <div className="flex justify-between">
-                                            <span>Fin:</span>
-                                            <span>{new Date(project.end_date).toLocaleDateString('es-ES')}</span>
-                                        </div>
-                                    )}
-                                    <div className="flex justify-between">
-                                        <span>Creado:</span>
-                                        <span>{new Date(project.created_at).toLocaleDateString('es-ES')}</span>
-                                    </div>
-                                </div>
-                                <div className="mt-4 flex flex-col gap-2">
-                                    <Button
-                                        size="sm"
-                                        variant="outline"
-                                        onClick={(e) => {
-                                            e.stopPropagation();
-                                            router.push(`/dashboard/projects/${project.id}`);
-                                        }}
-                                        className="w-full"
-                                    >
-                                        <Eye className="h-4 w-4 mr-2" />
-                                        Ver Detalles
-                                    </Button>
-                                    <div className="flex gap-2">
-                                        <Button
-                                            size="sm"
-                                            variant="outline"
-                                            onClick={(e) => {
-                                                e.stopPropagation();
-                                                startEditing(project);
-                                            }}
-                                            className="flex-1"
-                                        >
-                                            <Edit className="h-4 w-4 mr-2" />
-                                            Editar
-                                        </Button>
-                                        <Button
-                                            size="sm"
-                                            variant="outline"
-                                            onClick={(e) => {
-                                                e.stopPropagation();
-                                                if (window.confirm('¿Estás seguro de que quieres eliminar este proyecto?')) {
-                                                    deleteProject(project.id);
-                                                }
-                                            }}
-                                            className="flex-1 text-red-600 hover:text-red-700"
-                                        >
-                                            <Trash2 className="h-4 w-4 mr-2" />
-                                            Eliminar
-                                        </Button>
-                                    </div>
-                                </div>
-                            </CardContent>
-                        </Card>
+                                    </CardContent>
+                                </Card>
                             ))
                         )}
                     </div>
