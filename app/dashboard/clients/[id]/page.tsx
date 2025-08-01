@@ -3,13 +3,15 @@ import { cookies } from 'next/headers';
 import { redirect } from 'next/navigation';
 import ClientDetails from './ClientDetails';
 
-type Props = {
+export const dynamic = 'force-dynamic'; // solo si usas SSR
+
+interface PageProps {
     params: {
         id: string;
     };
-};
+}
 
-export default async function Page({ params }: Props) {
+export default async function Page({ params }: PageProps) {
     const supabase = createServerComponentClient({ cookies });
 
     const {
