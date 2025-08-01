@@ -4,9 +4,10 @@ import { Button } from '@/components/ui/Button';
 import { cn } from '@/src/lib/utils';
 import {
   BarChart3,
+  Briefcase,
   Calendar,
+  CheckSquare,
   Clock,
-  DollarSign,
   FileText,
   Home,
   LogOut,
@@ -36,12 +37,12 @@ const navigation = [
   {
     name: 'Proyectos',
     href: '/dashboard/projects',
-    icon: FileText,
+    icon: Briefcase,
   },
   {
-    name: 'Calendario',
-    href: '/dashboard/calendar',
-    icon: Calendar,
+    name: 'Tareas',
+    href: '/dashboard/tasks',
+    icon: CheckSquare,
   },
   {
     name: 'Tiempo',
@@ -49,9 +50,14 @@ const navigation = [
     icon: Clock,
   },
   {
-    name: 'Facturación',
-    href: '/dashboard/invoicing',
-    icon: DollarSign,
+    name: 'Facturas',
+    href: '/dashboard/invoices',
+    icon: FileText,
+  },
+  {
+    name: 'Calendario',
+    href: '/dashboard/calendar',
+    icon: Calendar,
   },
   {
     name: 'Reportes',

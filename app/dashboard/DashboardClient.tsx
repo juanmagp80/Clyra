@@ -85,7 +85,7 @@ export default function DashboardClient({ userEmail }: { userEmail: string }) {
                 .gte('created_at', startOfWeek.toISOString());
 
             const totalMinutesThisWeek = weeklyTimeData?.reduce((sum, entry) => sum + entry.duration_minutes, 0) || 0;
-            const billableMinutesThisWeek = weeklyTimeData?.reduce((sum, entry) => 
+            const billableMinutesThisWeek = weeklyTimeData?.reduce((sum, entry) =>
                 sum + (entry.is_billable ? entry.duration_minutes : 0), 0) || 0;
 
             // Calcular horas de este mes
@@ -238,8 +238,8 @@ export default function DashboardClient({ userEmail }: { userEmail: string }) {
                                         ) : (
                                             <div className="space-y-4">
                                                 {recentActivity.map((activity) => {
-                                                    const IconComponent = activity.icon === 'briefcase' ? Briefcase : 
-                                                                         activity.icon === 'clock' ? Clock : User;
+                                                    const IconComponent = activity.icon === 'briefcase' ? Briefcase :
+                                                        activity.icon === 'clock' ? Clock : User;
                                                     return (
                                                         <div key={`${activity.type}-${activity.id}`} className="flex items-center gap-4 p-3 rounded-lg border hover:bg-gray-50 transition-colors">
                                                             <div className="p-2 rounded-full bg-primary/10">

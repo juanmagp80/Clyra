@@ -6,13 +6,15 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Input } from '@/components/ui/Input';
 import { createSupabaseClient } from '@/src/lib/supabase';
 import {
+    Building,
     Calendar,
     Edit,
     Eye,
     Mail,
     Phone,
     Plus,
-    Search
+    Search,
+    Users
 } from 'lucide-react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
@@ -118,97 +120,117 @@ export default function ClientsPageClient({ userEmail }: ClientsPageClientProps)
     );
 
     return (
-        <div className="flex h-screen bg-background">
+        <div className="flex h-screen bg-gradient-to-br from-slate-50 via-white to-slate-100">
             <Sidebar userEmail={userEmail} onLogout={handleLogout} />
 
             <main className="flex-1 ml-64 overflow-auto">
-                <div className="p-6 space-y-6">
-                    {/* Header */}
-                    <div className="flex items-center justify-between">
-                        <div>
-                            <h1 className="text-3xl font-bold tracking-tight">Clientes</h1>
-                            <p className="text-muted-foreground">
-                                Gestiona tu cartera de clientes
-                            </p>
+                {/* Header con nuevo estilo */}
+                <div className="bg-white/80 backdrop-blur-sm border-b border-slate-200 sticky top-0 z-10">
+                    <div className="p-6">
+                        <div className="flex items-center justify-between">
+                            <div>
+                                <h1 className="text-3xl font-bold bg-gradient-to-r from-slate-900 to-slate-700 bg-clip-text text-transparent">
+                                    Clientes
+                                </h1>
+                                <p className="text-slate-600 mt-1 font-medium">
+                                    Gestiona tu cartera de clientes
+                                </p>
+                            </div>
+                            <Button
+                                onClick={() => setShowForm(!showForm)}
+                                className="px-6 py-2.5 bg-gradient-to-r from-blue-600 to-blue-700 text-white rounded-xl font-semibold hover:from-blue-700 hover:to-blue-800 transition-all duration-200 shadow-lg shadow-blue-600/25"
+                            >
+                                <Plus className="h-4 w-4 mr-2" />
+                                Nuevo Cliente
+                            </Button>
                         </div>
-                        <Button onClick={() => setShowForm(!showForm)}>
-                            <Plus className="h-4 w-4 mr-2" />
-                            Nuevo Cliente
-                        </Button>
                     </div>
+                </div>
 
-                    {/* Search */}
-                    <div className="flex items-center space-x-2">
-                        <div className="relative flex-1 max-w-sm">
-                            <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                <div className="p-6 space-y-6">
+                    {/* Search con nuevo estilo */}
+                    <div className="bg-white rounded-2xl shadow-sm border border-slate-100 p-4">
+                        <div className="relative max-w-md">
+                            <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-slate-400" />
                             <Input
                                 placeholder="Buscar clientes..."
                                 value={searchTerm}
                                 onChange={(e) => setSearchTerm(e.target.value)}
-                                className="pl-10"
+                                className="pl-10 border-slate-200 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                             />
                         </div>
                     </div>
 
-                    {/* Formulario de nuevo cliente */}
+                    {/* Formulario de nuevo cliente con nuevo estilo */}
                     {showForm && (
-                        <Card>
-                            <CardHeader>
-                                <CardTitle>Añadir Nuevo Cliente</CardTitle>
-                                <CardDescription>
+                        <Card className="rounded-2xl shadow-sm border-slate-100">
+                            <CardHeader className="bg-gradient-to-r from-blue-50 to-slate-50 rounded-t-2xl">
+                                <CardTitle className="text-slate-900">Añadir Nuevo Cliente</CardTitle>
+                                <CardDescription className="text-slate-600">
                                     Completa la información del cliente
                                 </CardDescription>
                             </CardHeader>
-                            <CardContent>
+                            <CardContent className="p-6">
                                 <div className="grid gap-4 md:grid-cols-2">
                                     <div>
-                                        <label className="text-sm font-medium">Nombre *</label>
+                                        <label className="text-sm font-semibold text-slate-700 mb-2 block">Nombre *</label>
                                         <Input
                                             placeholder="Nombre completo"
                                             value={formData.name}
                                             onChange={(e) => setFormData({ ...formData, name: e.target.value })}
+                                            className="rounded-xl border-slate-200"
                                         />
                                     </div>
                                     <div>
-                                        <label className="text-sm font-medium">Email</label>
+                                        <label className="text-sm font-semibold text-slate-700 mb-2 block">Email</label>
                                         <Input
                                             type="email"
                                             placeholder="email@ejemplo.com"
                                             value={formData.email}
                                             onChange={(e) => setFormData({ ...formData, email: e.target.value })}
+                                            className="rounded-xl border-slate-200"
                                         />
                                     </div>
                                     <div>
-                                        <label className="text-sm font-medium">Teléfono</label>
+                                        <label className="text-sm font-semibold text-slate-700 mb-2 block">Teléfono</label>
                                         <Input
                                             placeholder="+34 600 000 000"
                                             value={formData.phone}
                                             onChange={(e) => setFormData({ ...formData, phone: e.target.value })}
+                                            className="rounded-xl border-slate-200"
                                         />
                                     </div>
                                     <div>
-                                        <label className="text-sm font-medium">Empresa</label>
+                                        <label className="text-sm font-semibold text-slate-700 mb-2 block">Empresa</label>
                                         <Input
                                             placeholder="Nombre de la empresa"
                                             value={formData.company}
                                             onChange={(e) => setFormData({ ...formData, company: e.target.value })}
+                                            className="rounded-xl border-slate-200"
                                         />
                                     </div>
                                     <div>
-                                        <label className="text-sm font-medium">Etiqueta</label>
+                                        <label className="text-sm font-semibold text-slate-700 mb-2 block">Etiqueta</label>
                                         <Input
                                             placeholder="VIP, Nuevo, etc."
                                             value={formData.tag}
                                             onChange={(e) => setFormData({ ...formData, tag: e.target.value })}
+                                            className="rounded-xl border-slate-200"
                                         />
                                     </div>
-
                                 </div>
-                                <div className="flex gap-2 mt-4">
-                                    <Button onClick={addClient}>
+                                <div className="flex gap-3 mt-6">
+                                    <Button
+                                        onClick={addClient}
+                                        className="px-6 py-2 bg-gradient-to-r from-emerald-600 to-emerald-700 text-white rounded-xl font-semibold hover:from-emerald-700 hover:to-emerald-800 transition-all duration-200"
+                                    >
                                         Añadir Cliente
                                     </Button>
-                                    <Button variant="outline" onClick={() => setShowForm(false)}>
+                                    <Button
+                                        variant="outline"
+                                        onClick={() => setShowForm(false)}
+                                        className="px-6 py-2 border-slate-200 rounded-xl hover:bg-slate-50"
+                                    >
                                         Cancelar
                                     </Button>
                                 </div>
@@ -216,63 +238,87 @@ export default function ClientsPageClient({ userEmail }: ClientsPageClientProps)
                         </Card>
                     )}
 
-                    {/* Lista de clientes */}
-                    <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
+                    {/* Lista de clientes con nuevo estilo */}
+                    <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
                         {loading ? (
-                            <div className="col-span-full text-center py-8">
-                                <p className="text-muted-foreground">Cargando clientes...</p>
+                            <div className="col-span-full text-center py-12">
+                                <div className="w-12 h-12 border-4 border-blue-600 border-t-transparent rounded-full animate-spin mx-auto mb-4"></div>
+                                <p className="text-slate-600 font-medium">Cargando clientes...</p>
                             </div>
                         ) : filteredClients.length === 0 ? (
-                            <div className="col-span-full text-center py-8">
-                                <p className="text-muted-foreground">
+                            <div className="col-span-full text-center py-12">
+                                <Users className="w-16 h-16 text-slate-300 mx-auto mb-4" />
+                                <h3 className="text-lg font-semibold text-slate-900 mb-2">
                                     {searchTerm ? 'No se encontraron clientes' : 'No tienes clientes todavía'}
+                                </h3>
+                                <p className="text-slate-600">
+                                    {searchTerm ? 'Intenta con otros términos de búsqueda' : 'Comienza agregando tu primer cliente'}
                                 </p>
                             </div>
                         ) : (
                             filteredClients.map((client) => (
-                                <Card key={client.id} className="hover:shadow-md transition-shadow">
+                                <Card
+                                    key={client.id}
+                                    className="rounded-2xl shadow-sm border-slate-100 hover:shadow-xl hover:shadow-slate-200/50 transition-all duration-300 hover:-translate-y-1"
+                                >
                                     <CardHeader className="pb-3">
                                         <div className="flex items-start justify-between">
-                                            <div>
-                                                <CardTitle className="text-lg">{client.name}</CardTitle>
-                                                {client.company && (
-                                                    <CardDescription>{client.company}</CardDescription>
-                                                )}
+                                            <div className="flex items-center gap-3">
+                                                <div className="w-12 h-12 bg-gradient-to-br from-blue-500 to-blue-600 rounded-xl flex items-center justify-center text-white font-bold text-lg">
+                                                    {client.name.charAt(0).toUpperCase()}
+                                                </div>
+                                                <div>
+                                                    <CardTitle className="text-lg text-slate-900">{client.name}</CardTitle>
+                                                    {client.company && (
+                                                        <CardDescription className="text-slate-600 flex items-center gap-1">
+                                                            <Building className="w-3 h-3" />
+                                                            {client.company}
+                                                        </CardDescription>
+                                                    )}
+                                                </div>
                                             </div>
                                             {client.tag && (
-                                                <span className="text-xs bg-primary/10 text-primary px-2 py-1 rounded-full">
+                                                <span className="text-xs bg-gradient-to-r from-blue-100 to-blue-200 text-blue-700 px-3 py-1 rounded-full font-semibold border border-blue-200">
                                                     {client.tag}
                                                 </span>
                                             )}
                                         </div>
                                     </CardHeader>
-                                    <CardContent className="space-y-2">
+                                    <CardContent className="space-y-3">
                                         {client.email && (
-                                            <div className="flex items-center text-sm text-muted-foreground">
-                                                <Mail className="h-4 w-4 mr-2" />
+                                            <div className="flex items-center text-sm text-slate-600">
+                                                <Mail className="h-4 w-4 mr-3 text-slate-400" />
                                                 <span className="truncate">{client.email}</span>
                                             </div>
                                         )}
                                         {client.phone && (
-                                            <div className="flex items-center text-sm text-muted-foreground">
-                                                <Phone className="h-4 w-4 mr-2" />
+                                            <div className="flex items-center text-sm text-slate-600">
+                                                <Phone className="h-4 w-4 mr-3 text-slate-400" />
                                                 {client.phone}
                                             </div>
                                         )}
 
-                                        <div className="flex items-center text-sm text-muted-foreground">
-                                            <Calendar className="h-4 w-4 mr-2" />
+                                        <div className="flex items-center text-sm text-slate-600">
+                                            <Calendar className="h-4 w-4 mr-3 text-slate-400" />
                                             {new Date(client.created_at).toLocaleDateString('es-ES')}
                                         </div>
 
-                                        <div className="flex gap-2 pt-2">
-                                            <Link href={`/dashboard/clients/${client.id}`}>
-                                                <Button size="sm" variant="outline">
+                                        <div className="flex gap-2 pt-3 border-t border-slate-100">
+                                            <Link href={`/dashboard/clients/${client.id}`} className="flex-1">
+                                                <Button
+                                                    size="sm"
+                                                    variant="outline"
+                                                    className="w-full border-slate-200 rounded-lg hover:bg-blue-50 hover:border-blue-300 hover:text-blue-600"
+                                                >
                                                     <Eye className="h-4 w-4 mr-1" />
                                                     Ver
                                                 </Button>
                                             </Link>
-                                            <Button size="sm" variant="outline">
+                                            <Button
+                                                size="sm"
+                                                variant="outline"
+                                                className="flex-1 border-slate-200 rounded-lg hover:bg-emerald-50 hover:border-emerald-300 hover:text-emerald-600"
+                                            >
                                                 <Edit className="h-4 w-4 mr-1" />
                                                 Editar
                                             </Button>

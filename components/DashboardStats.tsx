@@ -1,16 +1,14 @@
 'use client';
 
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/Card';
-import { Button } from '@/components/ui/Button';
-import { 
-  Users, 
-  Calendar, 
-  DollarSign, 
-  Clock, 
-  TrendingUp, 
-  FileText,
-  Plus,
-  Settings
+import {
+  ArrowDownRight,
+  ArrowUpRight,
+  Briefcase,
+  Clock,
+  DollarSign,
+  Target,
+  Users,
+  Zap
 } from 'lucide-react';
 
 interface DashboardStatsProps {
@@ -22,184 +20,177 @@ interface DashboardStatsProps {
   billableHoursThisWeek: number;
 }
 
-export default function DashboardStats({ 
-  totalClients, 
-  activeProjects, 
-  monthlyRevenue, 
+const DashboardStats = ({
+  totalClients,
+  activeProjects,
+  monthlyRevenue,
   hoursThisWeek,
   hoursThisMonth,
   billableHoursThisWeek
-}: DashboardStatsProps) {
-  const stats = [
+}: DashboardStatsProps) => {
+
+  const statCards = [
     {
-      title: "Total Clientes",
+      title: 'Clientes Totales',
       value: totalClients,
-      description: "Clientes registrados",
       icon: Users,
-      trend: "+12% este mes"
+      change: '+12%',
+      changeType: 'positive' as const,
+      gradient: 'from-blue-500 to-blue-600'
     },
     {
-      title: "Proyectos Activos",
+      title: 'Proyectos Activos',
       value: activeProjects,
-      description: "En progreso",
-      icon: FileText,
-      trend: "+3 nuevos"
+      icon: Briefcase,
+      change: '+8%',
+      changeType: 'positive' as const,
+      gradient: 'from-emerald-500 to-emerald-600'
     },
     {
-      title: "Ingresos Mensuales",
-      value: `€${monthlyRevenue.toLocaleString()}`,
-      description: "Facturación mes actual",
-      icon: DollarSign,
-      trend: "+8% vs mes anterior"
-    },
-    {
-      title: "Horas Esta Semana",
+      title: 'Horas Esta Semana',
       value: `${hoursThisWeek}h`,
-      description: `${billableHoursThisWeek}h facturables`,
       icon: Clock,
-      trend: `${hoursThisMonth}h este mes`
+      change: '+15%',
+      changeType: 'positive' as const,
+      gradient: 'from-purple-500 to-purple-600'
+    },
+    {
+      title: 'Revenue Mensual',
+      value: `$${monthlyRevenue.toLocaleString()}`,
+      icon: DollarSign,
+      change: '+24%',
+      changeType: 'positive' as const,
+      gradient: 'from-amber-500 to-amber-600'
     }
   ];
 
   return (
-    <div className="space-y-6">
-      {/* Header */}
-      <div className="flex items-center justify-between">
-        <div>
-          <h1 className="text-3xl font-bold tracking-tight">Dashboard</h1>
-          <p className="text-muted-foreground">
-            Resumen de tu actividad freelance
-          </p>
-        </div>
-        <div className="flex gap-2">
-          <Button variant="outline" size="sm">
-            <Settings className="h-4 w-4 mr-2" />
-            Configuración
-          </Button>
-          <Button>
-            <Plus className="h-4 w-4 mr-2" />
-            Nuevo Cliente
-          </Button>
-        </div>
-      </div>
-
+    <>
       {/* Stats Grid */}
-      <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
-        {stats.map((stat, index) => {
-          const IconComponent = stat.icon;
-          return (
-            <Card key={index}>
-              <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                <CardTitle className="text-sm font-medium">
+      <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-4 gap-6 mb-8">
+        {statCards.map((stat, index) => (
+          <div
+            key={index}
+            className="group relative bg-white rounded-2xl p-6 shadow-sm border border-slate-100 hover:shadow-xl hover:shadow-slate-200/50 transition-all duration-300 hover:-translate-y-1"
+          >
+            <div className="flex items-start justify-between">
+              <div>
+                <p className="text-slate-600 text-sm font-semibold uppercase tracking-wide mb-2">
                   {stat.title}
-                </CardTitle>
-                <IconComponent className="h-4 w-4 text-muted-foreground" />
-              </CardHeader>
-              <CardContent>
-                <div className="text-2xl font-bold">{stat.value}</div>
-                <p className="text-xs text-muted-foreground">
-                  {stat.description}
                 </p>
-                <div className="flex items-center text-xs text-green-600 mt-1">
-                  <TrendingUp className="h-3 w-3 mr-1" />
-                  {stat.trend}
+                <p className="text-3xl font-bold text-slate-900 mb-1">
+                  {stat.value}
+                </p>
+                <div className="flex items-center gap-1">
+                  {stat.changeType === 'positive' ? (
+                    <ArrowUpRight className="w-4 h-4 text-emerald-500" />
+                  ) : (
+                    <ArrowDownRight className="w-4 h-4 text-red-500" />
+                  )}
+                  <span className={`text-sm font-semibold ${stat.changeType === 'positive' ? 'text-emerald-600' : 'text-red-600'
+                    }`}>
+                    {stat.change}
+                  </span>
+                  <span className="text-slate-500 text-sm">vs mes anterior</span>
                 </div>
-              </CardContent>
-            </Card>
-          );
-        })}
-      </div>
-
-      {/* Quick Actions */}
-      <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
-        <Card>
-          <CardHeader>
-            <CardTitle className="text-lg">Acciones Rápidas</CardTitle>
-            <CardDescription>
-              Tareas más frecuentes
-            </CardDescription>
-          </CardHeader>
-          <CardContent className="space-y-2">
-            <Button variant="outline" className="w-full justify-start">
-              <Plus className="h-4 w-4 mr-2" />
-              Añadir Cliente
-            </Button>
-            <Button variant="outline" className="w-full justify-start">
-              <FileText className="h-4 w-4 mr-2" />
-              Crear Proyecto
-            </Button>
-            <Button variant="outline" className="w-full justify-start">
-              <DollarSign className="h-4 w-4 mr-2" />
-              Nueva Factura
-            </Button>
-            <Button variant="outline" className="w-full justify-start">
-              <Calendar className="h-4 w-4 mr-2" />
-              Programar Cita
-            </Button>
-          </CardContent>
-        </Card>
-
-        <Card>
-          <CardHeader>
-            <CardTitle className="text-lg">Actividad Reciente</CardTitle>
-            <CardDescription>
-              Últimas acciones
-            </CardDescription>
-          </CardHeader>
-          <CardContent>
-            <div className="space-y-3">
-              <div className="flex items-center space-x-2 text-sm">
-                <div className="w-2 h-2 bg-green-500 rounded-full"></div>
-                <span>Cliente "Tech Solutions" añadido</span>
-                <span className="text-muted-foreground ml-auto">2h</span>
               </div>
-              <div className="flex items-center space-x-2 text-sm">
-                <div className="w-2 h-2 bg-blue-500 rounded-full"></div>
-                <span>Proyecto "Web App" actualizado</span>
-                <span className="text-muted-foreground ml-auto">4h</span>
-              </div>
-              <div className="flex items-center space-x-2 text-sm">
-                <div className="w-2 h-2 bg-yellow-500 rounded-full"></div>
-                <span>Factura #2024-001 enviada</span>
-                <span className="text-muted-foreground ml-auto">1d</span>
+              <div className={`p-3 rounded-xl bg-gradient-to-br ${stat.gradient} shadow-lg`}>
+                <stat.icon className="w-6 h-6 text-white" />
               </div>
             </div>
-          </CardContent>
-        </Card>
+          </div>
+        ))}
+      </div>
 
-        <Card>
-          <CardHeader>
-            <CardTitle className="text-lg">Próximas Citas</CardTitle>
-            <CardDescription>
-              Esta semana
-            </CardDescription>
-          </CardHeader>
-          <CardContent>
-            <div className="space-y-3">
-              <div className="flex items-start space-x-3">
-                <div className="text-center">
-                  <div className="text-lg font-bold">15</div>
-                  <div className="text-xs text-muted-foreground">ENE</div>
-                </div>
-                <div className="flex-1">
-                  <p className="text-sm font-medium">Reunión con cliente</p>
-                  <p className="text-xs text-muted-foreground">10:00 - Tech Solutions</p>
-                </div>
+      {/* Métricas adicionales */}
+      <div className="grid grid-cols-1 xl:grid-cols-2 gap-8 mb-8">
+        <div className="bg-white rounded-2xl shadow-sm border border-slate-100 p-6">
+          <div className="flex items-center justify-between mb-6">
+            <div className="flex items-center gap-3">
+              <div className="p-2 bg-gradient-to-br from-purple-500 to-purple-600 rounded-lg">
+                <Target className="w-5 h-5 text-white" />
               </div>
-              <div className="flex items-start space-x-3">
-                <div className="text-center">
-                  <div className="text-lg font-bold">17</div>
-                  <div className="text-xs text-muted-foreground">ENE</div>
-                </div>
-                <div className="flex-1">
-                  <p className="text-sm font-medium">Entrega de proyecto</p>
-                  <p className="text-xs text-muted-foreground">14:00 - StartupXYZ</p>
-                </div>
+              <div>
+                <h3 className="text-xl font-bold text-slate-900">Tiempo Trabajado</h3>
+                <p className="text-slate-600 text-sm">Resumen de horas</p>
               </div>
             </div>
-          </CardContent>
-        </Card>
+          </div>
+
+          <div className="grid grid-cols-2 gap-6">
+            <div className="text-center p-6 bg-gradient-to-br from-emerald-50 to-emerald-100 rounded-xl border border-emerald-200">
+              <div className="text-3xl font-bold text-emerald-700 mb-2">
+                {hoursThisMonth}h
+              </div>
+              <div className="text-emerald-600 font-semibold">Este Mes</div>
+            </div>
+            <div className="text-center p-6 bg-gradient-to-br from-amber-50 to-amber-100 rounded-xl border border-amber-200">
+              <div className="text-3xl font-bold text-amber-700 mb-2">
+                {billableHoursThisWeek}h
+              </div>
+              <div className="text-amber-600 font-semibold">Facturable (Semana)</div>
+            </div>
+          </div>
+
+          {/* Progress Bar */}
+          <div className="mt-6">
+            <div className="flex justify-between items-center mb-2">
+              <span className="text-sm font-semibold text-slate-700">Progreso Semanal</span>
+              <span className="text-sm text-slate-600">
+                {Math.round((hoursThisWeek / 40) * 100)}%
+              </span>
+            </div>
+            <div className="w-full bg-slate-200 rounded-full h-3">
+              <div
+                className="bg-gradient-to-r from-emerald-500 to-emerald-600 h-3 rounded-full transition-all duration-500"
+                style={{
+                  width: `${Math.min((hoursThisWeek / 40) * 100, 100)}%`
+                }}
+              ></div>
+            </div>
+          </div>
+        </div>
+
+        {/* Acciones Rápidas */}
+        <div className="bg-white rounded-2xl shadow-sm border border-slate-100 p-6">
+          <div className="flex items-center gap-3 mb-6">
+            <div className="p-2 bg-gradient-to-br from-amber-500 to-amber-600 rounded-lg">
+              <Zap className="w-5 h-5 text-white" />
+            </div>
+            <div>
+              <h3 className="text-xl font-bold text-slate-900">Acciones Rápidas</h3>
+              <p className="text-slate-600 text-sm">Operaciones frecuentes</p>
+            </div>
+          </div>
+
+          <div className="grid grid-cols-2 gap-4">
+            {[
+              { title: 'Nuevo Cliente', icon: Users, color: 'blue' },
+              { title: 'Crear Proyecto', icon: Briefcase, color: 'emerald' },
+              { title: 'Registrar Tiempo', icon: Clock, color: 'purple' },
+              { title: 'Generar Factura', icon: DollarSign, color: 'amber' }
+            ].map((action, index) => (
+              <button
+                key={index}
+                className={`p-4 rounded-xl border-2 border-dashed transition-all duration-200 hover:scale-105 ${action.color === 'blue' ? 'border-blue-300 hover:border-blue-400 hover:bg-blue-50' :
+                    action.color === 'emerald' ? 'border-emerald-300 hover:border-emerald-400 hover:bg-emerald-50' :
+                      action.color === 'purple' ? 'border-purple-300 hover:border-purple-400 hover:bg-purple-50' :
+                        'border-amber-300 hover:border-amber-400 hover:bg-amber-50'
+                  }`}
+              >
+                <action.icon className={`w-6 h-6 mx-auto mb-2 ${action.color === 'blue' ? 'text-blue-600' :
+                    action.color === 'emerald' ? 'text-emerald-600' :
+                      action.color === 'purple' ? 'text-purple-600' :
+                        'text-amber-600'
+                  }`} />
+                <p className="text-xs font-semibold text-slate-700">{action.title}</p>
+              </button>
+            ))}
+          </div>
+        </div>
       </div>
-    </div>
+    </>
   );
-}
+};
+
+export default DashboardStats;
