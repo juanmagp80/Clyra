@@ -1,5 +1,4 @@
-'use client';
-
+'use client'
 import { createClientComponentClient } from '@supabase/auth-helpers-nextjs';
 import {
     AlertCircle,
@@ -15,7 +14,12 @@ import {
     Search,
     Send
 } from 'lucide-react';
+import { useRouter } from 'next/navigation';
 import { useEffect, useState } from 'react';
+import SideBar from '../../../components/Sidebar';
+interface ClientsPageClientProps {
+    userEmail: string;
+}
 
 interface Invoice {
     id: string;
@@ -43,11 +47,9 @@ const InvoicesPageClient = () => {
     const [searchTerm, setSearchTerm] = useState('');
     const [statusFilter, setStatusFilter] = useState<string>('all');
     const [showCreateModal, setShowCreateModal] = useState(false);
+    const [userEmail, setUserEmail] = useState<string>('');
     const supabase = createClientComponentClient();
-
-    useEffect(() => {
-        fetchInvoices();
-    }, []);
+    const router = useRouter();
 
     const fetchInvoices = async () => {
         try {
@@ -77,6 +79,97 @@ const InvoicesPageClient = () => {
             console.error('Error fetching invoices:', error);
         } finally {
             setLoading(false);
+        }
+    };
+
+    useEffect(() => {
+        const fetchUserAndInvoices = async () => {
+            const { data: { user } } = await supabase.auth.getUser();
+            if (user && user.email) {
+                setUserEmail(user.email);
+            }
+            await fetchInvoices();
+        };
+        fetchUserAndInvoices();
+    }, []);
+
+    const handleLogout = async () => {
+        await supabase.auth.signOut();
+        router.push('/login');
+    };
+    const deleteInvoice = async (invoiceId: string) => {
+        if (!window.confirm('¿Estás seguro de que quieres eliminar esta factura?')) return;
+
+        try {
+            const { error } = await supabase
+                .from('invoices')
+                .delete()
+                .eq('id', invoiceId);
+
+            if (error) throw error;
+
+            fetchInvoices(); // Recargar lista
+        } catch (error) {
+            console.error('Error deleting invoice:', error);
+            alert('Error al eliminar la factura');
+        }
+    };
+    const updateInvoiceStatus = async (invoiceId: string, newStatus: string) => {
+        try {
+            const updateData: any = { status: newStatus };
+
+            // Si se marca como pagada, agregar fecha de pago
+            if (newStatus === 'paid') {
+                updateData.paid_date = new Date().toISOString();
+            }
+
+            const { error } = await supabase
+                .from('invoices')
+                .update(updateData)
+                .eq('id', invoiceId);
+
+            if (error) throw error;
+
+            fetchInvoices(); // Recargar lista
+        } catch (error) {
+            console.error('Error updating invoice status:', error);
+            alert('Error al actualizar el estado de la factura');
+        }
+    };
+    const duplicateInvoice = async (invoice: Invoice) => {
+        try {
+            const { data: { user } } = await supabase.auth.getUser();
+            if (!user) return;
+
+            // Crear nuevo número de factura
+            const newInvoiceNumber = `INV-${Date.now()}`;
+
+            const { error } = await supabase
+                .from('invoices')
+                .insert([{
+                    user_id: user.id,
+                    client_id: invoice.client_id,
+                    project_id: invoice.project_id,
+                    invoice_number: newInvoiceNumber,
+                    title: `${invoice.title} (Copia)`,
+                    description: invoice.description,
+                    amount: invoice.amount,
+                    tax_rate: invoice.tax_rate,
+                    tax_amount: invoice.tax_amount,
+                    total_amount: invoice.total_amount,
+                    status: 'draft',
+                    issue_date: new Date().toISOString().split('T')[0],
+                    due_date: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString().split('T')[0], // 30 días desde hoy
+                    notes: invoice.notes
+                }]);
+
+            if (error) throw error;
+
+            fetchInvoices(); // Recargar lista
+            alert('Factura duplicada exitosamente');
+        } catch (error) {
+            console.error('Error duplicating invoice:', error);
+            alert('Error al duplicar la factura');
         }
     };
 
@@ -136,6 +229,7 @@ const InvoicesPageClient = () => {
 
     return (
         <div className="min-h-screen bg-gradient-to-br from-slate-50 via-white to-slate-100">
+            <SideBar userEmail={userEmail} onLogout={handleLogout} />
             {/* Header */}
             <div className="bg-white/80 backdrop-blur-sm border-b border-slate-200 sticky top-0 z-10">
                 <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
@@ -153,7 +247,7 @@ const InvoicesPageClient = () => {
                                 Exportar
                             </button>
                             <button
-                                onClick={() => setShowCreateModal(true)}
+                                onClick={() => router.push('/dashboard/invoices/new')}
                                 className="px-6 py-2.5 bg-gradient-to-r from-blue-600 to-blue-700 text-white rounded-xl font-semibold hover:from-blue-700 hover:to-blue-800 transition-all duration-200 shadow-lg shadow-blue-600/25 flex items-center gap-2"
                             >
                                 <Plus className="w-5 h-5" />
@@ -290,18 +384,85 @@ const InvoicesPageClient = () => {
                                         </td>
                                         <td className="px-6 py-4">
                                             <div className="flex items-center gap-2">
-                                                <button className="p-2 text-slate-400 hover:text-blue-600 hover:bg-blue-50 rounded-lg transition-colors">
+                                                {/* Ver factura */}
+                                                <button
+                                                    onClick={() => router.push(`/dashboard/invoices/${invoice.id}`)}
+                                                    className="p-2 text-slate-400 hover:text-blue-600 hover:bg-blue-50 rounded-lg transition-colors"
+                                                    title="Ver factura"
+                                                >
                                                     <Eye className="w-4 h-4" />
                                                 </button>
-                                                <button className="p-2 text-slate-400 hover:text-emerald-600 hover:bg-emerald-50 rounded-lg transition-colors">
+
+                                                {/* Editar factura */}
+                                                <button
+                                                    onClick={() => router.push(`/dashboard/invoices/${invoice.id}/edit`)}
+                                                    className="p-2 text-slate-400 hover:text-emerald-600 hover:bg-emerald-50 rounded-lg transition-colors"
+                                                    title="Editar factura"
+                                                >
                                                     <Edit className="w-4 h-4" />
                                                 </button>
-                                                <button className="p-2 text-slate-400 hover:text-purple-600 hover:bg-purple-50 rounded-lg transition-colors">
+
+                                                {/* Marcar como pagada (solo si no está pagada) */}
+                                                {invoice.status !== 'paid' && (
+                                                    <button
+                                                        onClick={() => updateInvoiceStatus(invoice.id, 'paid')}
+                                                        className="p-2 text-slate-400 hover:text-green-600 hover:bg-green-50 rounded-lg transition-colors"
+                                                        title="Marcar como pagada"
+                                                    >
+                                                        <CheckCircle className="w-4 h-4" />
+                                                    </button>
+                                                )}
+
+                                                {/* Descargar PDF */}
+                                                <button
+                                                    onClick={() => {
+                                                        // TODO: Implementar descarga de PDF
+                                                        alert('Funcionalidad de PDF en desarrollo');
+                                                    }}
+                                                    className="p-2 text-slate-400 hover:text-purple-600 hover:bg-purple-50 rounded-lg transition-colors"
+                                                    title="Descargar PDF"
+                                                >
                                                     <Download className="w-4 h-4" />
                                                 </button>
-                                                <button className="p-2 text-slate-400 hover:text-slate-600 hover:bg-slate-50 rounded-lg transition-colors">
-                                                    <MoreHorizontal className="w-4 h-4" />
-                                                </button>
+
+                                                {/* Menú de más opciones */}
+                                                <div className="relative group">
+                                                    <button className="p-2 text-slate-400 hover:text-slate-600 hover:bg-slate-50 rounded-lg transition-colors">
+                                                        <MoreHorizontal className="w-4 h-4" />
+                                                    </button>
+
+                                                    {/* Dropdown menu */}
+                                                    <div className="absolute right-0 top-full mt-1 w-48 bg-white rounded-lg shadow-lg border border-slate-200 opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all duration-200 z-20">
+                                                        <div className="py-1">
+                                                            <button
+                                                                onClick={() => duplicateInvoice(invoice)}
+                                                                className="w-full px-4 py-2 text-left text-sm text-slate-700 hover:bg-slate-50 transition-colors"
+                                                            >
+                                                                Duplicar factura
+                                                            </button>
+                                                            <button
+                                                                onClick={() => updateInvoiceStatus(invoice.id, 'sent')}
+                                                                className="w-full px-4 py-2 text-left text-sm text-slate-700 hover:bg-slate-50 transition-colors"
+                                                                disabled={invoice.status === 'sent'}
+                                                            >
+                                                                Marcar como enviada
+                                                            </button>
+                                                            <button
+                                                                onClick={() => updateInvoiceStatus(invoice.id, 'cancelled')}
+                                                                className="w-full px-4 py-2 text-left text-sm text-slate-700 hover:bg-slate-50 transition-colors"
+                                                            >
+                                                                Cancelar factura
+                                                            </button>
+                                                            <div className="border-t border-slate-200 my-1"></div>
+                                                            <button
+                                                                onClick={() => deleteInvoice(invoice.id)}
+                                                                className="w-full px-4 py-2 text-left text-sm text-red-600 hover:bg-red-50 transition-colors"
+                                                            >
+                                                                Eliminar factura
+                                                            </button>
+                                                        </div>
+                                                    </div>
+                                                </div>
                                             </div>
                                         </td>
                                     </tr>
@@ -309,24 +470,36 @@ const InvoicesPageClient = () => {
                             </tbody>
                         </table>
                     </div>
-                </div>
 
-                {filteredInvoices.length === 0 && (
-                    <div className="text-center py-12">
-                        <FileText className="w-16 h-16 text-slate-300 mx-auto mb-4" />
-                        <h3 className="text-lg font-semibold text-slate-900 mb-2">No hay facturas</h3>
-                        <p className="text-slate-600 mb-6">Crea tu primera factura para empezar a facturar</p>
-                        <button
-                            onClick={() => setShowCreateModal(true)}
-                            className="px-6 py-3 bg-gradient-to-r from-blue-600 to-blue-700 text-white rounded-xl font-semibold hover:from-blue-700 hover:to-blue-800 transition-all duration-200 shadow-lg shadow-blue-600/25"
-                        >
-                            Crear Primera Factura
-                        </button>
-                    </div>
-                )}
+                    {/* Empty state */}
+                    {filteredInvoices.length === 0 && !loading && (
+                        <div className="text-center py-12">
+                            <div className="w-16 h-16 bg-gradient-to-br from-slate-100 to-slate-200 rounded-2xl flex items-center justify-center mx-auto mb-4">
+                                <FileText className="w-8 h-8 text-slate-400" />
+                            </div>
+                            <h3 className="text-lg font-semibold text-slate-900 mb-2">
+                                {searchTerm || statusFilter !== 'all' ? 'No se encontraron facturas' : 'No hay facturas'}
+                            </h3>
+                            <p className="text-slate-600 mb-6">
+                                {searchTerm || statusFilter !== 'all'
+                                    ? 'Intenta ajustar los filtros de búsqueda'
+                                    : 'Crea tu primera factura para empezar a facturar'
+                                }
+                            </p>
+                            {!searchTerm && statusFilter === 'all' && (
+                                <button
+                                    onClick={() => router.push('/dashboard/invoices/new')}
+                                    className="px-6 py-3 bg-gradient-to-r from-blue-600 to-blue-700 text-white rounded-xl font-semibold hover:from-blue-700 hover:to-blue-800 transition-all duration-200 shadow-lg shadow-blue-600/25 flex items-center gap-2 mx-auto"
+                                >
+                                    <Plus className="w-5 h-5" />
+                                    Crear Primera Factura
+                                </button>
+                            )}
+                        </div>
+                    )}
+                </div>
             </div>
         </div>
     );
-};
-
+}
 export default InvoicesPageClient;
