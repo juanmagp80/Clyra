@@ -3,7 +3,13 @@ import { cookies } from 'next/headers';
 import { redirect } from 'next/navigation';
 import ClientDetails from './ClientDetails';
 
-export default async function Page({ params }: { params: { id: string } }) {
+interface Props {
+    params: {
+        id: string;
+    };
+}
+
+export default async function Page({ params }: Props) {
     const supabase = createServerComponentClient({ cookies });
 
     const {
