@@ -6,7 +6,6 @@ import ClientDetails from './ClientDetails';
 interface PageProps {
     params: Promise<{
         id: string;
-        clientId?: string; // Optional for compatibility
     }>;
 }
 
@@ -24,9 +23,21 @@ export default async function ClientDetailPage({ params }: PageProps) {
     // Await the params before using them
     const { id } = await params;
 
+    // Fetch the client data
+    const { data: client, error } = await supabase
+        .from('clients')
+        .select('*')
+        .eq('id', id)
+        .eq('user_id', session.user.id)
+        .single();
+
+    if (error || !client) {
+        redirect('/dashboard/clients');
+    }
+
     return (
         <ClientDetails
-            client={id}
+            client={client}
             userEmail={session.user.email || ''}
         />
     );
