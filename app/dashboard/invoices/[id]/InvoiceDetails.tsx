@@ -279,7 +279,6 @@ export default function InvoiceDetails({ invoiceId, userEmail }: InvoiceDetailsP
                                         Información del Cliente
                                     </CardTitle>
                                 </CardHeader>
-                               // En el return, en la sección de información del cliente:
 
                                 <CardContent className="p-6">
                                     {invoice.client ? (
