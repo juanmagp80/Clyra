@@ -3,56 +3,32 @@
 import Sidebar from '@/components/Sidebar';
 import { Button } from '@/components/ui/Button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/Card';
+import { Input } from '@/components/ui/Input';
 import { createClientComponentClient } from '@supabase/auth-helpers-nextjs';
 import {
-    AlertCircle,
     ArrowLeft,
+    Calculator,
     Calendar,
-    CheckCircle,
-    Clock,
     DollarSign,
-    Download,
-    Edit,
     FileText,
-    Mail,
-    Phone,
-    Send,
-    User
+    Plus,
+    Save,
+    Trash2
 } from 'lucide-react';
 import { useRouter } from 'next/navigation';
-import { useEffect, useState } from 'react';
+import { useCallback, useEffect, useState } from 'react';
 
-// Actualizar la interfaz Invoice para que coincida:
-
-interface Invoice {
+interface Client {
     id: string;
-    invoice_number: string;
-    title: string;
-    description?: string;
-    amount: number;
-    tax_rate: number;
-    tax_amount: number;
-    total_amount: number;
-    status: 'draft' | 'sent' | 'paid' | 'overdue' | 'cancelled';
-    issue_date: string;
-    due_date: string;
-    paid_date?: string;
-    notes?: string;
-    created_at: string;
+    name: string;
+    company?: string;
+    email?: string;
+}
+
+interface Project {
+    id: string;
+    name: string;
     client_id: string;
-    project_id?: string;
-    client?: {
-        id: string;
-        name: string;
-        company?: string;
-        email?: string;
-        phone?: string;
-    };
-    project?: {
-        id: string;
-        name: string;
-        description?: string;
-    };
 }
 
 interface InvoiceItem {
@@ -61,26 +37,37 @@ interface InvoiceItem {
     quantity: number;
     unit_price: number;
     total: number;
+    isNew?: boolean;
 }
 
-interface InvoiceDetailsProps {
+interface Invoice {
+    id: string;
+    invoice_number: string;
+    title: string;
+    description?: string;
+    client_id: string;
+    project_id?: string;
+    tax_rate: number;
+    issue_date: string;
+    due_date: string;
+    notes?: string;
+    status: string;
+}
+
+interface EditInvoicePageProps {
     invoiceId: string;
     userEmail: string;
 }
 
-interface Client {
-    id: string;
-    name: string;
-    company?: string;
-    email?: string;
-    // Quitamos phone y address
-}
-export default function InvoiceDetails({ invoiceId, userEmail }: InvoiceDetailsProps) {
+export default function EditInvoicePage({ invoiceId, userEmail }: EditInvoicePageProps) {
     const [invoice, setInvoice] = useState<Invoice | null>(null);
-    const [items, setItems] = useState<InvoiceItem[]>([]);
+    const [clients, setClients] = useState<Client[]>([]);
+    const [projects, setProjects] = useState<Project[]>([]);
+    const [filteredProjects, setFilteredProjects] = useState<Project[]>([]);
     const [loading, setLoading] = useState(true);
+    const [saving, setSaving] = useState(false);
+    const [items, setItems] = useState<InvoiceItem[]>([]);
 
-    // Add formData and setFormData state
     const [formData, setFormData] = useState({
         client_id: '',
         project_id: '',
@@ -95,24 +82,26 @@ export default function InvoiceDetails({ invoiceId, userEmail }: InvoiceDetailsP
     const supabase = createClientComponentClient();
     const router = useRouter();
 
+    // Filtrar proyectos por cliente seleccionado
     useEffect(() => {
-        fetchInvoiceData();
-    }, [invoiceId]);
-    // Agregar esta función después del useEffect y antes de updateInvoiceStatus:
+        if (formData.client_id) {
+            const clientProjects = projects.filter(p => p.client_id === formData.client_id);
+            setFilteredProjects(clientProjects);
+        } else {
+            setFilteredProjects([]);
+        }
+    }, [formData.client_id, projects]);
 
-    const fetchInvoiceData = async () => {
+    // Cargar datos de la factura
+    const fetchInvoiceData = useCallback(async () => {
         try {
             const { data: { user } } = await supabase.auth.getUser();
             if (!user) return;
 
-            // Obtener factura CON datos del cliente y proyecto
+            // Obtener factura
             const { data: invoiceData, error: invoiceError } = await supabase
                 .from('invoices')
-                .select(`
-                *,
-                client:clients(id, name, company, email, phone),
-                project:projects(id, name, description)
-            `)
+                .select('*')
                 .eq('id', invoiceId)
                 .eq('user_id', user.id)
                 .single();
@@ -145,7 +134,27 @@ export default function InvoiceDetails({ invoiceId, userEmail }: InvoiceDetailsP
             if (itemsError) {
                 console.error('Error fetching invoice items:', itemsError);
             } else {
-                setItems(itemsData || []);
+                const formattedItems = (itemsData || []).map(item => ({
+                    id: item.id,
+                    description: item.description,
+                    quantity: item.quantity,
+                    unit_price: item.unit_price,
+                    total: item.total,
+                    isNew: false
+                }));
+
+                if (formattedItems.length === 0) {
+                    formattedItems.push({
+                        id: 'new-1',
+                        description: '',
+                        quantity: 1,
+                        unit_price: 0,
+                        total: 0,
+                        isNew: true
+                    });
+                }
+
+                setItems(formattedItems);
             }
         } catch (error) {
             console.error('Error:', error);
@@ -153,49 +162,228 @@ export default function InvoiceDetails({ invoiceId, userEmail }: InvoiceDetailsP
         } finally {
             setLoading(false);
         }
-    };
-    // En la función fetchInvoiceData, cambiar la consulta de la factura:
+    }, [invoiceId, supabase, router]);
 
-    // Actualizar la interfaz Client:
-
-
-    const updateInvoiceStatus = async (newStatus: string) => {
+    // Cargar clientes y proyectos
+    const fetchClientsAndProjects = useCallback(async () => {
         try {
-            const updateData: any = { status: newStatus };
+            const { data: { user } } = await supabase.auth.getUser();
+            if (!user) return;
 
-            if (newStatus === 'paid') {
-                updateData.paid_date = new Date().toISOString();
+            // Obtener clientes
+            const { data: clientsData, error: clientsError } = await supabase
+                .from('clients')
+                .select('id, name, company, email')
+                .eq('user_id', user.id)
+                .order('name');
+
+            if (clientsError) {
+                console.error('Error fetching clients:', clientsError);
+            } else {
+                setClients(clientsData || []);
             }
 
-            const { error } = await supabase
-                .from('invoices')
-                .update(updateData)
-                .eq('id', invoiceId);
+            // Obtener proyectos
+            const { data: projectsData, error: projectsError } = await supabase
+                .from('projects')
+                .select('id, name, client_id')
+                .eq('user_id', user.id)
+                .order('name');
 
-            if (error) throw error;
-
-            fetchInvoiceData(); // Recargar datos
+            if (projectsError) {
+                console.error('Error fetching projects:', projectsError);
+            } else {
+                setProjects(projectsData || []);
+            }
         } catch (error) {
-            console.error('Error updating invoice status:', error);
-            alert('Error al actualizar el estado de la factura');
+            console.error('Error:', error);
+        }
+    }, [supabase]);
+
+    useEffect(() => {
+        fetchInvoiceData();
+        fetchClientsAndProjects();
+    }, [fetchInvoiceData, fetchClientsAndProjects]);
+
+    // Gestión de items
+    const addItem = () => {
+        const newItem: InvoiceItem = {
+            id: `new-${Date.now()}`,
+            description: '',
+            quantity: 1,
+            unit_price: 0,
+            total: 0,
+            isNew: true
+        };
+        setItems([...items, newItem]);
+    };
+
+    const removeItem = (itemId: string) => {
+        if (items.length > 1) {
+            setItems(items.filter(item => item.id !== itemId));
         }
     };
 
-    const getStatusDisplay = (status: string) => {
-        const displays = {
-            draft: { icon: Edit, color: 'text-slate-600', bg: 'bg-slate-100', label: 'Borrador' },
-            sent: { icon: Clock, color: 'text-blue-600', bg: 'bg-blue-100', label: 'Enviada' },
-            paid: { icon: CheckCircle, color: 'text-emerald-600', bg: 'bg-emerald-100', label: 'Pagada' },
-            overdue: { icon: AlertCircle, color: 'text-red-600', bg: 'bg-red-100', label: 'Vencida' },
-            cancelled: { icon: AlertCircle, color: 'text-gray-600', bg: 'bg-gray-100', label: 'Cancelada' }
+    // Reemplazar la función updateItem:
+
+    const updateItem = (itemId: string, field: keyof InvoiceItem, value: string | number) => {
+        setItems(items.map(item => {
+            if (item.id === itemId) {
+                const updatedItem = { ...item };
+
+                // Manejar diferentes tipos de campos
+                if (field === 'description') {
+                    updatedItem.description = String(value);
+                } else if (field === 'quantity') {
+                    updatedItem.quantity = Number(value) || 0;
+                } else if (field === 'unit_price') {
+                    updatedItem.unit_price = Number(value) || 0;
+                }
+
+                // Recalcular total cuando cambie cantidad o precio
+                if (field === 'quantity' || field === 'unit_price') {
+                    updatedItem.total = updatedItem.quantity * updatedItem.unit_price;
+                }
+
+                return updatedItem;
+            }
+            return item;
+        }));
+    };
+
+    // Calcular totales
+    // Reemplazar la función calculateTotals:
+
+    const calculateTotals = () => {
+        const validItems = items.filter(item =>
+            item.description.trim() &&
+            item.quantity > 0 &&
+            item.unit_price > 0
+        );
+
+        const subtotal = validItems.reduce((sum, item) => {
+            const itemTotal = Number(item.quantity) * Number(item.unit_price);
+            return sum + (isNaN(itemTotal) ? 0 : itemTotal);
+        }, 0);
+
+        const taxRate = Number(formData.tax_rate) || 0;
+        const taxAmount = (subtotal * taxRate) / 100;
+        const total = subtotal + taxAmount;
+
+        return {
+            subtotal: subtotal.toFixed(2),
+            taxAmount: taxAmount.toFixed(2),
+            total: total.toFixed(2)
         };
-        return displays[status as keyof typeof displays] || displays.draft;
+    };
+
+    // Guardar cambios
+    // Reemplazar la función updateInvoice completa:
+
+    const updateInvoice = async () => {
+        try {
+            if (!formData.client_id || !formData.title.trim()) {
+                alert('Por favor completa todos los campos obligatorios');
+                return;
+            }
+
+            setSaving(true);
+            const { data: { user } } = await supabase.auth.getUser();
+            if (!user) return;
+
+            const totals = calculateTotals();
+
+            // 1. Actualizar factura principal
+            const { error: invoiceError } = await supabase
+                .from('invoices')
+                .update({
+                    client_id: formData.client_id,
+                    project_id: formData.project_id || null,
+                    title: formData.title.trim(),
+                    description: formData.description.trim() || null,
+                    amount: parseFloat(totals.subtotal),
+                    tax_rate: formData.tax_rate,
+                    tax_amount: parseFloat(totals.taxAmount),
+                    total_amount: parseFloat(totals.total),
+                    issue_date: formData.issue_date,
+                    due_date: formData.due_date,
+                    notes: formData.notes.trim() || null,
+                    updated_at: new Date().toISOString()
+                })
+                .eq('id', invoiceId)
+                .eq('user_id', user.id);
+
+            if (invoiceError) {
+                console.error('Error updating invoice:', invoiceError);
+                alert('Error al actualizar la factura');
+                return;
+            }
+
+            // 2. Gestionar items de manera más eficiente
+            const validItems = items.filter(item =>
+                item.description.trim() &&
+                item.quantity > 0 &&
+                item.unit_price > 0
+            );
+
+            if (validItems.length === 0) {
+                alert('Debe haber al menos un item válido en la factura');
+                return;
+            }
+
+            // 3. Eliminar SOLO los items existentes (no los nuevos)
+            const existingItems = validItems.filter(item => !item.isNew && item.id);
+            const newItems = validItems.filter(item => item.isNew || !item.id);
+
+            // Primero eliminar items existentes que ya no están
+            const { error: deleteError } = await supabase
+                .from('invoice_items')
+                .delete()
+                .eq('invoice_id', invoiceId);
+
+            if (deleteError) {
+                console.error('Error deleting old items:', deleteError);
+                alert('Error al actualizar los items de la factura');
+                return;
+            }
+
+            // 4. Insertar TODOS los items válidos (tanto existentes como nuevos)
+            const invoiceItems = validItems.map(item => ({
+                invoice_id: invoiceId,
+                description: item.description.trim(),
+                quantity: Number(item.quantity),
+                unit_price: Number(item.unit_price),
+                total: Number(item.total),
+                created_at: new Date().toISOString()
+            }));
+
+            const { error: itemsError } = await supabase
+                .from('invoice_items')
+                .insert(invoiceItems);
+
+            if (itemsError) {
+                console.error('Error inserting invoice items:', itemsError);
+                alert('Error al guardar los items de la factura');
+                return;
+            }
+
+            // 5. Redirigir a la vista de la factura
+            router.push(`/dashboard/invoices/${invoiceId}`);
+
+        } catch (error) {
+            console.error('Error updating invoice:', error);
+            alert('Error inesperado al actualizar la factura');
+        } finally {
+            setSaving(false);
+        }
     };
 
     const handleLogout = async () => {
         await supabase.auth.signOut();
         router.push('/login');
     };
+
+    const totals = calculateTotals();
 
     if (loading) {
         return (
@@ -219,7 +407,7 @@ export default function InvoiceDetails({ invoiceId, userEmail }: InvoiceDetailsP
                     <div className="text-center">
                         <FileText className="w-16 h-16 text-slate-300 mx-auto mb-4" />
                         <h3 className="text-lg font-semibold text-slate-900 mb-2">Factura no encontrada</h3>
-                        <p className="text-slate-600 mb-6">La factura que buscas no existe o no tienes permisos para verla.</p>
+                        <p className="text-slate-600 mb-6">La factura que buscas no existe o no tienes permisos para editarla.</p>
                         <Button
                             onClick={() => router.push('/dashboard/invoices')}
                             variant="outline"
@@ -233,9 +421,6 @@ export default function InvoiceDetails({ invoiceId, userEmail }: InvoiceDetailsP
         );
     }
 
-    const statusDisplay = getStatusDisplay(invoice.status);
-    const StatusIcon = statusDisplay.icon;
-
     return (
         <div className="flex h-screen bg-gradient-to-br from-slate-50 via-white to-slate-100">
             <Sidebar userEmail={userEmail} onLogout={handleLogout} />
@@ -248,7 +433,7 @@ export default function InvoiceDetails({ invoiceId, userEmail }: InvoiceDetailsP
                             <div className="flex items-center gap-4">
                                 <Button
                                     variant="outline"
-                                    onClick={() => router.push('/dashboard/invoices')}
+                                    onClick={() => router.push(`/dashboard/invoices/${invoiceId}`)}
                                     className="rounded-lg border-slate-200 hover:bg-slate-50"
                                 >
                                     <ArrowLeft className="h-4 w-4 mr-2" />
@@ -256,43 +441,32 @@ export default function InvoiceDetails({ invoiceId, userEmail }: InvoiceDetailsP
                                 </Button>
                                 <div>
                                     <h1 className="text-3xl font-bold bg-gradient-to-r from-slate-900 to-slate-700 bg-clip-text text-transparent">
-                                        {invoice.invoice_number}
+                                        Editar {invoice.invoice_number}
                                     </h1>
-                                    <p className="text-slate-600 mt-1 font-medium flex items-center gap-2">
-                                        <span className={`inline-flex items-center gap-1 px-2 py-1 rounded-full text-xs font-semibold ${statusDisplay.bg} ${statusDisplay.color}`}>
-                                            <StatusIcon className="h-3 w-3" />
-                                            {statusDisplay.label}
-                                        </span>
-                                        <span>•</span>
-                                        <span>{invoice.title}</span>
+                                    <p className="text-slate-600 mt-1 font-medium">
+                                        Modifica los detalles de tu factura
                                     </p>
                                 </div>
                             </div>
                             <div className="flex items-center gap-3">
-                                {invoice.status !== 'paid' && (
-                                    <Button
-                                        onClick={() => updateInvoiceStatus('paid')}
-                                        variant="outline"
-                                        className="rounded-lg border-emerald-200 hover:bg-emerald-50 hover:text-emerald-600"
-                                    >
-                                        <CheckCircle className="h-4 w-4 mr-2" />
-                                        Marcar como Pagada
-                                    </Button>
-                                )}
                                 <Button
-                                    onClick={() => router.push(`/dashboard/invoices/${invoice.id}/edit`)}
+                                    onClick={() => router.push(`/dashboard/invoices/${invoiceId}`)}
                                     variant="outline"
-                                    className="rounded-lg border-blue-200 hover:bg-blue-50 hover:text-blue-600"
+                                    className="rounded-lg border-slate-200 hover:bg-slate-50"
                                 >
-                                    <Edit className="h-4 w-4 mr-2" />
-                                    Editar
+                                    Cancelar
                                 </Button>
                                 <Button
-                                    onClick={() => alert('Funcionalidad de PDF en desarrollo')}
-                                    className="bg-gradient-to-r from-purple-600 to-purple-700 text-white rounded-xl hover:from-purple-700 hover:to-purple-800"
+                                    onClick={updateInvoice}
+                                    disabled={saving}
+                                    className="bg-gradient-to-r from-blue-600 to-blue-700 text-white rounded-xl hover:from-blue-700 hover:to-blue-800"
                                 >
-                                    <Download className="h-4 w-4 mr-2" />
-                                    Descargar PDF
+                                    {saving ? (
+                                        <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin mr-2" />
+                                    ) : (
+                                        <Save className="h-4 w-4 mr-2" />
+                                    )}
+                                    {saving ? 'Guardando...' : 'Guardar Cambios'}
                                 </Button>
                             </div>
                         </div>
@@ -301,247 +475,319 @@ export default function InvoiceDetails({ invoiceId, userEmail }: InvoiceDetailsP
 
                 <div className="p-6 space-y-8">
                     <div className="grid gap-8 lg:grid-cols-3">
-                        {/* Contenido principal */}
+                        {/* Formulario principal */}
                         <div className="lg:col-span-2 space-y-6">
-                            {/* Información del cliente */}
+                            {/* Información básica */}
                             <Card className="rounded-2xl shadow-sm border-slate-100">
                                 <CardHeader className="bg-gradient-to-r from-blue-50 to-slate-50 rounded-t-2xl">
                                     <CardTitle className="flex items-center gap-2 text-slate-900">
                                         <div className="p-2 bg-gradient-to-br from-blue-500 to-blue-600 rounded-lg">
-                                            <User className="h-4 w-4 text-white" />
+                                            <FileText className="h-4 w-4 text-white" />
                                         </div>
-                                        Información del Cliente
+                                        Información de la Factura
                                     </CardTitle>
                                 </CardHeader>
-
-
                                 <CardContent className="p-6">
-                                    {invoice.client ? (
-                                        <div className="grid gap-4 md:grid-cols-2">
-                                            <div>
-                                                <h3 className="font-semibold text-slate-900 mb-2">{invoice.client.name}</h3>
-                                                {invoice.client.company && (
-                                                    <p className="text-slate-600 mb-2">{invoice.client.company}</p>
-                                                )}
-                                                {invoice.client.email && (
-                                                    <p className="text-slate-600 flex items-center gap-2 mb-1">
-                                                        <Mail className="h-4 w-4" />
-                                                        {invoice.client.email}
-                                                    </p>
-                                                )}
-                                                {invoice.client.phone && (
-                                                    <p className="text-slate-600 flex items-center gap-2 mb-1">
-                                                        <Phone className="h-4 w-4" />
-                                                        {invoice.client.phone}
-                                                    </p>
-                                                )}
-                                            </div>
-                                            {invoice.project && (
-                                                <div>
-                                                    <h4 className="font-semibold text-slate-900 mb-2">Proyecto Asociado</h4>
-                                                    <p className="text-slate-700 font-medium">{invoice.project.name}</p>
-                                                    {invoice.project.description && (
-                                                        <p className="text-slate-600 text-sm mt-1">{invoice.project.description}</p>
-                                                    )}
-                                                </div>
-                                            )}
+                                    <div className="grid gap-4 md:grid-cols-2">
+                                        <div>
+                                            <label className="text-sm font-semibold text-slate-700 mb-2 block">
+                                                Cliente *
+                                            </label>
+                                            <select
+                                                value={formData.client_id}
+                                                onChange={(e) => {
+                                                    setFormData({
+                                                        ...formData,
+                                                        client_id: e.target.value,
+                                                        project_id: ''
+                                                    });
+                                                }}
+                                                className="w-full p-3 border border-slate-200 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all"
+                                            >
+                                                <option value="">Seleccionar cliente</option>
+                                                {clients.map((client) => (
+                                                    <option key={client.id} value={client.id}>
+                                                        {client.name} {client.company ? `- ${client.company}` : ''}
+                                                    </option>
+                                                ))}
+                                            </select>
                                         </div>
-                                    ) : (
-                                        <p className="text-slate-500">Cliente no encontrado</p>
-                                    )}
+                                        <div>
+                                            <label className="text-sm font-semibold text-slate-700 mb-2 block">
+                                                Proyecto (Opcional)
+                                            </label>
+                                            <select
+                                                value={formData.project_id}
+                                                onChange={(e) => setFormData({ ...formData, project_id: e.target.value })}
+                                                className="w-full p-3 border border-slate-200 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all"
+                                                disabled={!formData.client_id}
+                                            >
+                                                <option value="">Sin proyecto</option>
+                                                {filteredProjects.map((project) => (
+                                                    <option key={project.id} value={project.id}>
+                                                        {project.name}
+                                                    </option>
+                                                ))}
+                                            </select>
+                                        </div>
+                                        <div className="md:col-span-2">
+                                            <label className="text-sm font-semibold text-slate-700 mb-2 block">
+                                                Título de la Factura *
+                                            </label>
+                                            <Input
+                                                value={formData.title}
+                                                onChange={(e) => setFormData({ ...formData, title: e.target.value })}
+                                                placeholder="Ej: Desarrollo web - Enero 2024"
+                                                className="rounded-xl border-slate-200"
+                                            />
+                                        </div>
+                                        <div className="md:col-span-2">
+                                            <label className="text-sm font-semibold text-slate-700 mb-2 block">
+                                                Descripción (Opcional)
+                                            </label>
+                                            <textarea
+                                                className="w-full p-3 border border-slate-200 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all"
+                                                rows={3}
+                                                value={formData.description}
+                                                onChange={(e) => setFormData({ ...formData, description: e.target.value })}
+                                                placeholder="Descripción adicional de la factura..."
+                                            />
+                                        </div>
+                                    </div>
                                 </CardContent>
                             </Card>
 
-                            {/* Descripción de la factura */}
-                            {invoice.description && (
-                                <Card className="rounded-2xl shadow-sm border-slate-100">
-                                    <CardHeader className="bg-gradient-to-r from-emerald-50 to-slate-50 rounded-t-2xl">
-                                        <CardTitle className="flex items-center gap-2 text-slate-900">
-                                            <div className="p-2 bg-gradient-to-br from-emerald-500 to-emerald-600 rounded-lg">
-                                                <FileText className="h-4 w-4 text-white" />
-                                            </div>
-                                            Descripción
-                                        </CardTitle>
-                                    </CardHeader>
-                                    <CardContent className="p-6">
-                                        <p className="text-slate-700 leading-relaxed">{invoice.description}</p>
-                                    </CardContent>
-                                </Card>
-                            )}
+                            {/* Fechas */}
+                            <Card className="rounded-2xl shadow-sm border-slate-100">
+                                <CardHeader className="bg-gradient-to-r from-emerald-50 to-slate-50 rounded-t-2xl">
+                                    <CardTitle className="flex items-center gap-2 text-slate-900">
+                                        <div className="p-2 bg-gradient-to-br from-emerald-500 to-emerald-600 rounded-lg">
+                                            <Calendar className="h-4 w-4 text-white" />
+                                        </div>
+                                        Fechas
+                                    </CardTitle>
+                                </CardHeader>
+                                <CardContent className="p-6">
+                                    <div className="grid gap-4 md:grid-cols-2">
+                                        <div>
+                                            <label className="text-sm font-semibold text-slate-700 mb-2 block">
+                                                Fecha de Emisión
+                                            </label>
+                                            <Input
+                                                type="date"
+                                                value={formData.issue_date}
+                                                onChange={(e) => setFormData({ ...formData, issue_date: e.target.value })}
+                                                className="rounded-xl border-slate-200"
+                                            />
+                                        </div>
+                                        <div>
+                                            <label className="text-sm font-semibold text-slate-700 mb-2 block">
+                                                Fecha de Vencimiento
+                                            </label>
+                                            <Input
+                                                type="date"
+                                                value={formData.due_date}
+                                                onChange={(e) => setFormData({ ...formData, due_date: e.target.value })}
+                                                className="rounded-xl border-slate-200"
+                                            />
+                                        </div>
+                                    </div>
+                                </CardContent>
+                            </Card>
 
                             {/* Items de la factura */}
                             <Card className="rounded-2xl shadow-sm border-slate-100">
                                 <CardHeader className="bg-gradient-to-r from-purple-50 to-slate-50 rounded-t-2xl">
-                                    <CardTitle className="flex items-center gap-2 text-slate-900">
-                                        <div className="p-2 bg-gradient-to-br from-purple-500 to-purple-600 rounded-lg">
-                                            <DollarSign className="h-4 w-4 text-white" />
-                                        </div>
-                                        Detalles de Facturación
-                                    </CardTitle>
-                                </CardHeader>
-                                <CardContent className="p-0">
-                                    <div className="overflow-x-auto">
-                                        <table className="w-full">
-                                            <thead className="bg-slate-50 border-b border-slate-200">
-                                                <tr>
-                                                    <th className="px-6 py-4 text-left text-sm font-semibold text-slate-700">Descripción</th>
-                                                    <th className="px-6 py-4 text-right text-sm font-semibold text-slate-700">Cantidad</th>
-                                                    <th className="px-6 py-4 text-right text-sm font-semibold text-slate-700">Precio Unit.</th>
-                                                    <th className="px-6 py-4 text-right text-sm font-semibold text-slate-700">Total</th>
-                                                </tr>
-                                            </thead>
-                                            <tbody className="divide-y divide-slate-200">
-                                                {items.map((item) => (
-                                                    <tr key={item.id}>
-                                                        <td className="px-6 py-4 text-slate-900">{item.description}</td>
-                                                        <td className="px-6 py-4 text-right text-slate-700">{item.quantity}</td>
-                                                        <td className="px-6 py-4 text-right text-slate-700">${item.unit_price.toFixed(2)}</td>
-                                                        <td className="px-6 py-4 text-right font-semibold text-slate-900">${item.total.toFixed(2)}</td>
-                                                    </tr>
-                                                ))}
-                                            </tbody>
-                                        </table>
+                                    <div className="flex items-center justify-between">
+                                        <CardTitle className="flex items-center gap-2 text-slate-900">
+                                            <div className="p-2 bg-gradient-to-br from-purple-500 to-purple-600 rounded-lg">
+                                                <DollarSign className="h-4 w-4 text-white" />
+                                            </div>
+                                            Items de la Factura
+                                        </CardTitle>
+                                        <Button
+                                            onClick={addItem}
+                                            variant="outline"
+                                            size="sm"
+                                            className="rounded-lg border-purple-200 hover:bg-purple-50 hover:text-purple-600"
+                                        >
+                                            <Plus className="h-4 w-4 mr-2" />
+                                            Añadir Item
+                                        </Button>
                                     </div>
-
-                                    {/* Totales */}
-                                    <div className="p-6 bg-slate-50 border-t border-slate-200">
-                                        <div className="space-y-2 max-w-sm ml-auto">
-                                            <div className="flex justify-between items-center">
-                                                <span className="text-slate-600">Subtotal:</span>
-                                                <span className="font-semibold text-slate-900">${invoice.amount.toFixed(2)}</span>
-                                            </div>
-                                            <div className="flex justify-between items-center">
-                                                <span className="text-slate-600">Impuestos ({invoice.tax_rate}%):</span>
-                                                <span className="font-semibold text-slate-900">${invoice.tax_amount.toFixed(2)}</span>
-                                            </div>
-                                            <div className="border-t border-slate-300 pt-2">
-                                                <div className="flex justify-between items-center">
-                                                    <span className="text-lg font-bold text-slate-900">Total:</span>
-                                                    <span className="text-2xl font-bold text-emerald-600">${invoice.total_amount.toFixed(2)}</span>
+                                </CardHeader>
+                                <CardContent className="p-6">
+                                    <div className="space-y-4">
+                                        {items.map((item) => (
+                                            <div key={item.id} className="p-4 border border-slate-200 rounded-xl bg-slate-50">
+                                                <div className="grid gap-4 md:grid-cols-12">
+                                                    <div className="md:col-span-5">
+                                                        <label className="text-sm font-semibold text-slate-700 mb-2 block">
+                                                            Descripción *
+                                                        </label>
+                                                        <Input
+                                                            value={item.description}
+                                                            onChange={(e) => updateItem(item.id, 'description', e.target.value)}
+                                                            placeholder="Descripción del servicio/producto"
+                                                            className="rounded-lg border-slate-200"
+                                                        />
+                                                    </div>
+                                                    <div className="md:col-span-2">
+                                                        <label className="text-sm font-semibold text-slate-700 mb-2 block">
+                                                            Cantidad
+                                                        </label>
+                                                        <Input
+                                                            type="number"
+                                                            min="0"
+                                                            step="0.01"
+                                                            value={item.quantity}
+                                                            onChange={(e) => updateItem(item.id, 'quantity', parseFloat(e.target.value) || 0)}
+                                                            className="rounded-lg border-slate-200"
+                                                        />
+                                                    </div>
+                                                    <div className="md:col-span-2">
+                                                        <label className="text-sm font-semibold text-slate-700 mb-2 block">
+                                                            Precio Unitario
+                                                        </label>
+                                                        <Input
+                                                            type="number"
+                                                            min="0"
+                                                            step="0.01"
+                                                            value={item.unit_price}
+                                                            onChange={(e) => updateItem(item.id, 'unit_price', parseFloat(e.target.value) || 0)}
+                                                            className="rounded-lg border-slate-200"
+                                                        />
+                                                    </div>
+                                                    <div className="md:col-span-2">
+                                                        <label className="text-sm font-semibold text-slate-700 mb-2 block">
+                                                            Total
+                                                        </label>
+                                                        <div className="p-3 bg-white border border-slate-200 rounded-lg text-slate-900 font-semibold">
+                                                            ${item.total.toFixed(2)}
+                                                        </div>
+                                                    </div>
+                                                    <div className="md:col-span-1 flex items-end">
+                                                        <Button
+                                                            onClick={() => removeItem(item.id)}
+                                                            variant="outline"
+                                                            size="sm"
+                                                            disabled={items.length === 1}
+                                                            className="rounded-lg border-red-200 hover:bg-red-50 hover:text-red-600"
+                                                        >
+                                                            <Trash2 className="h-4 w-4" />
+                                                        </Button>
+                                                    </div>
                                                 </div>
                                             </div>
-                                        </div>
+                                        ))}
                                     </div>
                                 </CardContent>
                             </Card>
 
                             {/* Notas */}
-                            {invoice.notes && (
-                                <Card className="rounded-2xl shadow-sm border-slate-100">
-                                    <CardHeader className="bg-gradient-to-r from-amber-50 to-slate-50 rounded-t-2xl">
-                                        <CardTitle className="flex items-center gap-2 text-slate-900">
-                                            <div className="p-2 bg-gradient-to-br from-amber-500 to-amber-600 rounded-lg">
-                                                <FileText className="h-4 w-4 text-white" />
-                                            </div>
-                                            Notas Adicionales
-                                        </CardTitle>
-                                    </CardHeader>
-                                    <CardContent className="p-6">
-                                        <p className="text-slate-700 leading-relaxed whitespace-pre-wrap">{invoice.notes}</p>
-                                    </CardContent>
-                                </Card>
-                            )}
+                            <Card className="rounded-2xl shadow-sm border-slate-100">
+                                <CardHeader className="bg-gradient-to-r from-amber-50 to-slate-50 rounded-t-2xl">
+                                    <CardTitle className="flex items-center gap-2 text-slate-900">
+                                        <div className="p-2 bg-gradient-to-br from-amber-500 to-amber-600 rounded-lg">
+                                            <FileText className="h-4 w-4 text-white" />
+                                        </div>
+                                        Notas Adicionales
+                                    </CardTitle>
+                                </CardHeader>
+                                <CardContent className="p-6">
+                                    <textarea
+                                        className="w-full p-3 border border-slate-200 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all"
+                                        rows={4}
+                                        value={formData.notes}
+                                        onChange={(e) => setFormData({ ...formData, notes: e.target.value })}
+                                        placeholder="Términos y condiciones, notas de pago, etc..."
+                                    />
+                                </CardContent>
+                            </Card>
                         </div>
 
-                        {/* Sidebar con información adicional */}
+                        {/* Resumen lateral */}
                         <div className="space-y-6">
-                            {/* Fechas importantes */}
+                            {/* Información de la factura */}
                             <Card className="rounded-2xl shadow-sm border-slate-100 sticky top-24">
                                 <CardHeader className="bg-gradient-to-r from-slate-50 to-white rounded-t-2xl">
                                     <CardTitle className="flex items-center gap-2 text-slate-900">
                                         <div className="p-2 bg-gradient-to-br from-slate-500 to-slate-600 rounded-lg">
-                                            <Calendar className="h-4 w-4 text-white" />
+                                            <FileText className="h-4 w-4 text-white" />
                                         </div>
-                                        Fechas Importantes
+                                        Información
                                     </CardTitle>
                                 </CardHeader>
                                 <CardContent className="p-6">
                                     <div className="space-y-4">
                                         <div>
-                                            <label className="text-sm font-semibold text-slate-700">Fecha de Emisión</label>
-                                            <p className="text-slate-900 mt-1">
-                                                {new Date(invoice.issue_date).toLocaleDateString('es-ES', {
-                                                    year: 'numeric',
-                                                    month: 'long',
-                                                    day: 'numeric'
-                                                })}
-                                            </p>
+                                            <label className="text-sm font-semibold text-slate-700">Número de Factura</label>
+                                            <p className="text-slate-900 mt-1 font-mono text-lg">{invoice.invoice_number}</p>
                                         </div>
                                         <div>
-                                            <label className="text-sm font-semibold text-slate-700">Fecha de Vencimiento</label>
-                                            <p className="text-slate-900 mt-1">
-                                                {new Date(invoice.due_date).toLocaleDateString('es-ES', {
-                                                    year: 'numeric',
-                                                    month: 'long',
-                                                    day: 'numeric'
-                                                })}
-                                            </p>
-                                        </div>
-                                        {invoice.paid_date && (
-                                            <div>
-                                                <label className="text-sm font-semibold text-emerald-600">Fecha de Pago</label>
-                                                <p className="text-emerald-700 mt-1 font-medium">
-                                                    {new Date(invoice.paid_date).toLocaleDateString('es-ES', {
-                                                        year: 'numeric',
-                                                        month: 'long',
-                                                        day: 'numeric'
-                                                    })}
-                                                </p>
-                                            </div>
-                                        )}
-                                        <div>
-                                            <label className="text-sm font-semibold text-slate-700">Creada el</label>
-                                            <p className="text-slate-600 mt-1 text-sm">
-                                                {new Date(invoice.created_at).toLocaleDateString('es-ES', {
-                                                    year: 'numeric',
-                                                    month: 'long',
-                                                    day: 'numeric',
-                                                    hour: '2-digit',
-                                                    minute: '2-digit'
-                                                })}
-                                            </p>
+                                            <label className="text-sm font-semibold text-slate-700">Estado Actual</label>
+                                            <p className="text-slate-900 mt-1 capitalize">{invoice.status}</p>
                                         </div>
                                     </div>
                                 </CardContent>
                             </Card>
 
-                            {/* Acciones rápidas */}
+                            {/* Configuración de impuestos */}
                             <Card className="rounded-2xl shadow-sm border-slate-100">
                                 <CardHeader className="bg-gradient-to-r from-indigo-50 to-white rounded-t-2xl">
-                                    <CardTitle className="text-slate-900">Acciones Rápidas</CardTitle>
+                                    <CardTitle className="flex items-center gap-2 text-slate-900">
+                                        <div className="p-2 bg-gradient-to-br from-indigo-500 to-indigo-600 rounded-lg">
+                                            <Calculator className="h-4 w-4 text-white" />
+                                        </div>
+                                        Configuración
+                                    </CardTitle>
                                 </CardHeader>
                                 <CardContent className="p-6">
-                                    <div className="space-y-3">
-                                        {invoice.status === 'draft' && (
-                                            <Button
-                                                onClick={() => updateInvoiceStatus('sent')}
-                                                variant="outline"
-                                                className="w-full rounded-lg border-blue-200 hover:bg-blue-50 hover:text-blue-600"
-                                            >
-                                                <Send className="h-4 w-4 mr-2" />
-                                                Marcar como Enviada
-                                            </Button>
-                                        )}
-                                        {invoice.status !== 'paid' && (
-                                            <Button
-                                                onClick={() => updateInvoiceStatus('paid')}
-                                                variant="outline"
-                                                className="w-full rounded-lg border-emerald-200 hover:bg-emerald-50 hover:text-emerald-600"
-                                            >
-                                                <CheckCircle className="h-4 w-4 mr-2" />
-                                                Marcar como Pagada
-                                            </Button>
-                                        )}
-                                        {invoice.status !== 'cancelled' && (
-                                            <Button
-                                                onClick={() => updateInvoiceStatus('cancelled')}
-                                                variant="outline"
-                                                className="w-full rounded-lg border-red-200 hover:bg-red-50 hover:text-red-600"
-                                            >
-                                                <AlertCircle className="h-4 w-4 mr-2" />
-                                                Cancelar Factura
-                                            </Button>
-                                        )}
+                                    <div>
+                                        <label className="text-sm font-semibold text-slate-700 mb-2 block">
+                                            Tasa de Impuesto (%)
+                                        </label>
+                                        <Input
+                                            type="number"
+                                            min="0"
+                                            max="100"
+                                            step="0.01"
+                                            value={formData.tax_rate}
+                                            onChange={(e) => setFormData({ ...formData, tax_rate: parseFloat(e.target.value) || 0 })}
+                                            className="rounded-xl border-slate-200"
+                                        />
+                                    </div>
+                                </CardContent>
+                            </Card>
+
+                            {/* Resumen de totales */}
+                            <Card className="rounded-2xl shadow-sm border-slate-100">
+                                <CardHeader className="bg-gradient-to-r from-emerald-50 to-white rounded-t-2xl">
+                                    <CardTitle className="flex items-center gap-2 text-slate-900">
+                                        <div className="p-2 bg-gradient-to-br from-emerald-500 to-emerald-600 rounded-lg">
+                                            <DollarSign className="h-4 w-4 text-white" />
+                                        </div>
+                                        Resumen
+                                    </CardTitle>
+                                </CardHeader>
+                                <CardContent className="p-6">
+                                    <div className="space-y-4">
+                                        <div className="flex justify-between items-center py-2">
+                                            <span className="text-slate-600 font-medium">Subtotal:</span>
+                                            <span className="text-slate-900 font-semibold">${totals.subtotal}</span>
+                                        </div>
+                                        <div className="flex justify-between items-center py-2">
+                                            <span className="text-slate-600 font-medium">
+                                                Impuestos ({formData.tax_rate}%):
+                                            </span>
+                                            <span className="text-slate-900 font-semibold">${totals.taxAmount}</span>
+                                        </div>
+                                        <div className="border-t border-slate-200 pt-4">
+                                            <div className="flex justify-between items-center">
+                                                <span className="text-lg font-bold text-slate-900">Total:</span>
+                                                <span className="text-2xl font-bold text-emerald-600">${totals.total}</span>
+                                            </div>
+                                        </div>
                                     </div>
                                 </CardContent>
                             </Card>
