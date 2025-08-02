@@ -1,7 +1,7 @@
 import { createServerComponentClient } from '@supabase/auth-helpers-nextjs';
 import { cookies } from 'next/headers';
 import { redirect } from 'next/navigation';
-import ClientDetails from './ClientDetails';
+import ProjectDetails from './ProjectDetails';
 
 interface PageProps {
     params: Promise<{
@@ -9,7 +9,7 @@ interface PageProps {
     }>;
 }
 
-export default async function ClientDetailPage({ params }: PageProps) {
+export default async function ProjectDetailPage({ params }: PageProps) {
     const supabase = createServerComponentClient({ cookies });
 
     const {
@@ -23,21 +23,9 @@ export default async function ClientDetailPage({ params }: PageProps) {
     // Await the params before using them
     const { id } = await params;
 
-    // Fetch the client data
-    const { data: client, error } = await supabase
-        .from('clients')
-        .select('*')
-        .eq('id', id)
-        .eq('user_id', session.user.id)
-        .single();
-
-    if (error || !client) {
-        redirect('/dashboard/clients');
-    }
-
     return (
-        <ClientDetails
-            client={client}
+        <ProjectDetails
+            projectId={id}
             userEmail={session.user.email || ''}
         />
     );
