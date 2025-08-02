@@ -335,7 +335,6 @@ export default function InvoiceDetails({ invoiceId, userEmail }: InvoiceDetailsP
                                                         {invoice.client.phone}
                                                     </p>
                                                 )}
-                                                {/* Quitamos la referencia a address */}
                                             </div>
                                             {invoice.project && (
                                                 <div>
