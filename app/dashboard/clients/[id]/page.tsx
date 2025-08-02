@@ -3,28 +3,31 @@ import { cookies } from 'next/headers';
 import { redirect } from 'next/navigation';
 import ClientDetails from './ClientDetails';
 
-interface Props {
-    params: {
+interface PageProps {
+    params: Promise<{
         id: string;
-    };
+        clientId?: string; // Optional for compatibility
+    }>;
 }
 
-export default async function Page({ params }: Props) {
+export default async function ClientDetailPage({ params }: PageProps) {
     const supabase = createServerComponentClient({ cookies });
 
     const {
         data: { session },
     } = await supabase.auth.getSession();
 
-    if (!session || !session.user?.email) redirect('/login');
+    if (!session) {
+        redirect('/login');
+    }
 
-    const { data: client, error } = await supabase
-        .from('clients')
-        .select('*')
-        .eq('id', params.id)
-        .single();
+    // Await the params before using them
+    const { id } = await params;
 
-    if (error || !client) redirect('/dashboard/clients');
-
-    return <ClientDetails client={client} userEmail={session.user.email} />;
+    return (
+        <ClientDetails
+            client={id}
+            userEmail={session.user.email || ''}
+        />
+    );
 }
