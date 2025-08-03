@@ -1,35 +1,101 @@
 'use client';
-import { createSupabaseClient } from '@/src/lib/supabase';
-import { useRouter } from 'next/navigation';
-import { useState } from 'react';
+import { supabase } from '@/src/lib/supabase';
 import Link from 'next/link';
+import { useRouter, useSearchParams } from 'next/navigation';
+import { useEffect, useState } from 'react';
 
 export default function LoginPage() {
     const [email, setEmail] = useState('');
     const [password, setPassword] = useState('');
     const [loading, setLoading] = useState(false);
     const [error, setError] = useState('');
+    const [resendLoading, setResendLoading] = useState(false);
+    const [resendSuccess, setResendSuccess] = useState(false);
     const router = useRouter();
-    const supabase = createSupabaseClient();
+    const searchParams = useSearchParams();
 
-    const login = async () => {
-        if (!email || !password) {
-            setError('Por favor completa todos los campos');
+    // ✅ Función para reenviar confirmación
+    const resendConfirmation = async () => {
+        if (!email) {
+            setError('Por favor ingresa tu email primero');
             return;
         }
 
-        setLoading(true);
+        setResendLoading(true);
         setError('');
 
-        const { error } = await supabase.auth.signInWithPassword({ email, password });
+        const { error } = await supabase.auth.resend({
+            type: 'signup',
+            email: email,
+            options: {
+                emailRedirectTo: `${window.location.origin}/auth/callback`
+            }
+        });
 
-        if (!error) {
-            router.push('/dashboard');
-        } else {
+        if (error) {
             setError(error.message);
+        } else {
+            setResendSuccess(true);
+            setError('');
+            setTimeout(() => setResendSuccess(false), 5000);
         }
+
+        setResendLoading(false);
+    };
+
+    // ✅ Función de login simplificada
+    const login = async () => {
+        setError('');
+        setLoading(true);
+
+        const { data, error } = await supabase.auth.signInWithPassword({
+            email,
+            password
+        });
+
+        if (error) {
+            if (error.message.includes('Email not confirmed') ||
+                error.message.includes('email_not_confirmed') ||
+                error.message.includes('not confirmed')) {
+                setError('Por favor confirma tu email antes de iniciar sesión. Revisa tu bandeja de entrada y spam.');
+            } else if (error.message.includes('Invalid login credentials')) {
+                setError('Email o contraseña incorrectos. Verifica tus datos.');
+            } else {
+                setError(error.message);
+            }
+        } else if (data.session) {
+            // ✅ Solo redirigir si hay sesión
+            window.location.href = '/dashboard'; // Usar window.location en lugar de router
+        }
+
         setLoading(false);
     };
+
+    // ✅ Solo manejo de errores de URL - SIN verificación de sesión
+    useEffect(() => {
+        const errorParam = searchParams.get('error');
+        if (errorParam) {
+            switch (errorParam) {
+                case 'link_expired':
+                    setError('El enlace de confirmación ha expirado. Solicita uno nuevo.');
+                    break;
+                case 'auth_error':
+                    setError('Error en la autenticación. Inténtalo de nuevo.');
+                    break;
+                case 'session_error':
+                    setError('Error creando la sesión. Inténtalo de nuevo.');
+                    break;
+                case 'user_error':
+                    setError('Error obteniendo datos de usuario.');
+                    break;
+                case 'processing_error':
+                    setError('Error procesando la confirmación.');
+                    break;
+                default:
+                    setError('Error desconocido. Inténtalo de nuevo.');
+            }
+        }
+    }, [searchParams]);
 
     return (
         <div style={{
@@ -84,6 +150,7 @@ export default function LoginPage() {
                 </div>
 
                 <div style={{ padding: '0 2rem 2rem' }}>
+                    {/* Mensaje de error */}
                     {error && (
                         <div style={{
                             padding: '0.75rem',
@@ -97,7 +164,23 @@ export default function LoginPage() {
                             {error}
                         </div>
                     )}
-                    
+
+                    {/* Mensaje de éxito */}
+                    {resendSuccess && (
+                        <div style={{
+                            padding: '0.75rem',
+                            backgroundColor: '#f0fdf4',
+                            border: '1px solid #bbf7d0',
+                            borderRadius: '0.375rem',
+                            color: '#166534',
+                            fontSize: '0.875rem',
+                            marginBottom: '1rem'
+                        }}>
+                            Email de confirmación reenviado. Revisa tu bandeja de entrada.
+                        </div>
+                    )}
+
+                    {/* Campo Email */}
                     <div style={{ marginBottom: '1rem' }}>
                         <label style={{
                             display: 'block',
@@ -118,16 +201,12 @@ export default function LoginPage() {
                                 padding: '0.75rem',
                                 border: '1px solid #d1d5db',
                                 borderRadius: '0.375rem',
-                                fontSize: '0.875rem',
-                                paddingLeft: '2.5rem',
-                                backgroundImage: 'url("data:image/svg+xml,%3csvg xmlns=\'http://www.w3.org/2000/svg\' fill=\'none\' viewBox=\'0 0 24 24\' stroke=\'%236b7280\'%3e%3cpath stroke-linecap=\'round\' stroke-linejoin=\'round\' stroke-width=\'2\' d=\'M3 8l7.89 4.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z\' /%3e%3c/svg%3e")',
-                                backgroundRepeat: 'no-repeat',
-                                backgroundPosition: '0.75rem center',
-                                backgroundSize: '1rem'
+                                fontSize: '0.875rem'
                             }}
                         />
                     </div>
-                    
+
+                    {/* Campo Contraseña */}
                     <div style={{ marginBottom: '1.5rem' }}>
                         <label style={{
                             display: 'block',
@@ -143,24 +222,20 @@ export default function LoginPage() {
                             placeholder="Tu contraseña"
                             value={password}
                             onChange={(e) => setPassword(e.target.value)}
-                            onKeyPress={(e) => e.key === 'Enter' && login()}
+                            onKeyPress={(e) => e.key === 'Enter' && !loading && login()}
                             style={{
                                 width: '100%',
                                 padding: '0.75rem',
                                 border: '1px solid #d1d5db',
                                 borderRadius: '0.375rem',
-                                fontSize: '0.875rem',
-                                paddingLeft: '2.5rem',
-                                backgroundImage: 'url("data:image/svg+xml,%3csvg xmlns=\'http://www.w3.org/2000/svg\' fill=\'none\' viewBox=\'0 0 24 24\' stroke=\'%236b7280\'%3e%3cpath stroke-linecap=\'round\' stroke-linejoin=\'round\' stroke-width=\'2\' d=\'M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z\' /%3e%3c/svg%3e")',
-                                backgroundRepeat: 'no-repeat',
-                                backgroundPosition: '0.75rem center',
-                                backgroundSize: '1rem'
+                                fontSize: '0.875rem'
                             }}
                         />
                     </div>
 
-                    <button 
-                        onClick={login} 
+                    {/* Botón Login */}
+                    <button
+                        onClick={login}
                         disabled={loading}
                         style={{
                             width: '100%',
@@ -178,14 +253,37 @@ export default function LoginPage() {
                         {loading ? 'Iniciando sesión...' : 'Iniciar sesión'}
                     </button>
 
+                    {/* Botón reenviar confirmación */}
+                    {error && error.includes('confirma tu email') && (
+                        <button
+                            onClick={resendConfirmation}
+                            disabled={resendLoading}
+                            style={{
+                                width: '100%',
+                                padding: '0.75rem',
+                                backgroundColor: resendLoading ? '#f3f4f6' : '#f9fafb',
+                                color: resendLoading ? '#9ca3af' : '#374151',
+                                border: '1px solid #d1d5db',
+                                borderRadius: '0.375rem',
+                                fontSize: '0.875rem',
+                                fontWeight: '500',
+                                cursor: resendLoading ? 'not-allowed' : 'pointer',
+                                marginBottom: '1rem'
+                            }}
+                        >
+                            {resendLoading ? 'Reenviando...' : 'Reenviar email de confirmación'}
+                        </button>
+                    )}
+
+                    {/* Link a registro */}
                     <div style={{
                         textAlign: 'center',
                         fontSize: '0.875rem',
                         color: '#64748b'
                     }}>
                         ¿No tienes cuenta?{' '}
-                        <Link 
-                            href="/register" 
+                        <Link
+                            href="/register"
                             style={{
                                 color: '#3b82f6',
                                 textDecoration: 'none',

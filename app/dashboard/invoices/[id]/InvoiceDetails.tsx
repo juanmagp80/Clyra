@@ -254,7 +254,9 @@ export default function InvoiceDetails({ invoiceId, userEmail }: InvoiceDetailsP
                                     Editar
                                 </Button>
                                 <Button
-                                    onClick={() => alert('Funcionalidad de PDF en desarrollo')}
+                                    onClick={() => {
+                                        window.open(`/api/invoices/${invoice.id}/pdf`, '_blank');
+                                    }}
                                     className="bg-gradient-to-r from-purple-600 to-purple-700 text-white rounded-xl hover:from-purple-700 hover:to-purple-800"
                                 >
                                     <Download className="h-4 w-4 mr-2" />

@@ -1,17 +1,16 @@
-import Link from 'next/link';
 import { Button } from '@/components/ui/Button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/Card';
-import { 
-  Users, 
-  Calendar, 
-  DollarSign, 
-  Clock, 
-  BarChart3, 
-  Mail,
-  CheckCircle,
+import {
   ArrowRight,
-  Star
+  BarChart3,
+  Calendar,
+  Clock,
+  DollarSign,
+  Mail,
+  Star,
+  Users
 } from 'lucide-react';
+import Link from 'next/link';
 
 export default function Home() {
   const features = [
@@ -94,7 +93,7 @@ export default function Home() {
             El CRM perfecto para <span className="text-primary">freelancers</span>
           </h1>
           <p className="text-xl text-muted-foreground mb-8 max-w-2xl mx-auto">
-            Gestiona clientes, proyectos, tiempo y facturación desde una sola plataforma. 
+            Gestiona clientes, proyectos, tiempo y facturación desde una sola plataforma.
             Diseñado especialmente para profesionales independientes.
           </p>
           <div className="flex gap-4 justify-center flex-wrap">

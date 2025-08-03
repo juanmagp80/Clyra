@@ -1,0 +1,104 @@
+import InvoicePDF from '@/components/InvoicePDF';
+import { Document, renderToBuffer } from '@react-pdf/renderer';
+import { createRouteHandlerClient } from '@supabase/auth-helpers-nextjs';
+import { cookies } from 'next/headers';
+import { NextRequest, NextResponse } from 'next/server';
+import React from 'react';
+
+export async function GET(
+    request: NextRequest,
+    { params }: { params: Promise<{ id: string }> }
+) {
+    try {
+        const { id } = await params;
+        const cookieStore = cookies();
+        const supabase = createRouteHandlerClient({
+            cookies: () => cookieStore
+        });
+
+        // Verificar autenticación
+        const { data: { user }, error: userError } = await supabase.auth.getUser();
+        if (userError || !user) {
+            return new NextResponse('Unauthorized', { status: 401 });
+        }
+
+        // Obtener datos de la factura
+        const { data: invoice, error: invoiceError } = await supabase
+            .from('invoices')
+            .select(`
+                *,
+                client:clients(name, company, email, phone),
+                project:projects(name, description)
+            `)
+            .eq('id', id)
+            .eq('user_id', user.id)
+            .single();
+
+        if (invoiceError || !invoice) {
+            console.error('Invoice error:', invoiceError);
+            return new NextResponse('Invoice not found', { status: 404 });
+        }
+
+        // Obtener items de la factura
+        const { data: items, error: itemsError } = await supabase
+            .from('invoice_items')
+            .select('*')
+            .eq('invoice_id', id)
+            .order('created_at');
+
+        if (itemsError) {
+            console.error('Items error:', itemsError);
+            return new NextResponse('Error fetching items', { status: 500 });
+        }
+
+        // ✅ OBTENER DATOS DE LA EMPRESA DEL USUARIO
+        const { data: company, error: companyError } = await supabase
+            .from('companies')
+            .select('*')
+            .eq('user_id', user.id)
+            .single();
+
+        if (companyError) {
+            console.warn('Could not fetch company data:', companyError);
+        }
+
+        // ✅ INFORMACIÓN DE LA EMPRESA CON FALLBACKS
+        const companyInfo = {
+            name: company?.name || 'Tu Empresa',
+            email: company?.email || user.email || 'contacto@tuempresa.com',
+            phone: company?.phone || '+34 123 456 789',
+            website: company?.website || 'www.tuempresa.com',
+            address: company?.address || ''
+        };
+
+        console.log('Generating PDF for invoice:', invoice.invoice_number);
+        console.log('Items count:', items?.length || 0);
+        console.log('Company info:', companyInfo);
+
+        // ✅ GENERAR PDF
+        const pdfBuffer = await renderToBuffer(
+            React.createElement(Document, {},
+                React.createElement(InvoicePDF, {
+                    invoice,
+                    items: items || [],
+                    companyInfo
+                })
+            )
+        );
+
+        const uint8Array = new Uint8Array(pdfBuffer);
+
+        return new Response(uint8Array, {
+            headers: {
+                'Content-Type': 'application/pdf',
+                'Content-Disposition': `attachment; filename="factura-${invoice.invoice_number}.pdf"`,
+                'Cache-Control': 'no-cache, no-store, must-revalidate'
+            }
+        });
+
+    } catch (error) {
+        console.error('Error generating PDF:', error);
+        const errorMessage = error instanceof Error ? error.message : 'Unknown error occurred';
+        return new NextResponse(`Error generating PDF: ${errorMessage}`, { status: 500 });
+    }
+}
