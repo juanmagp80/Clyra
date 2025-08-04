@@ -15,13 +15,14 @@ import { notFound } from 'next/navigation';
 import { demoClients, demoProjects } from '../../demo-data';
 
 interface Props {
-    params: {
+    params: Promise<{
         id: string;
-    };
+    }>;
 }
 
-export default function DemoProjectDetailsPage({ params }: Props) {
-    const project = demoProjects.find(p => p.id === params.id);
+export default async function DemoProjectDetailsPage({ params }: Props) {
+    const { id } = await params;
+    const project = demoProjects.find(p => p.id === id);
 
     if (!project) {
         notFound();

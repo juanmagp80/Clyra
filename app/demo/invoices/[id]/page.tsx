@@ -20,13 +20,14 @@ import { notFound } from 'next/navigation';
 import { demoClients, demoInvoices, demoProjects, demoUser } from '../../demo-data';
 
 interface Props {
-    params: {
+    params: Promise<{
         id: string;
-    };
+    }>;
 }
 
-export default function DemoInvoiceDetailsPage({ params }: Props) {
-    const invoice = demoInvoices.find(inv => inv.id === params.id);
+export default async function DemoInvoiceDetailsPage({ params }: Props) {
+    const { id } = await params;
+    const invoice = demoInvoices.find(inv => inv.id === id);
 
     if (!invoice) {
         notFound();
