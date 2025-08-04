@@ -103,9 +103,11 @@ export default function Home() {
                 <ArrowRight className="ml-2 h-5 w-5" />
               </Button>
             </Link>
-            <Button size="lg" variant="outline" className="text-lg px-8">
-              Ver demo
-            </Button>
+            <Link href="/demo">
+              <Button size="lg" variant="outline" className="text-lg px-8">
+                Ver demo
+              </Button>
+            </Link>
           </div>
           <p className="text-sm text-muted-foreground mt-4">
             Sin tarjeta de crédito • Configuración en 2 minutos
