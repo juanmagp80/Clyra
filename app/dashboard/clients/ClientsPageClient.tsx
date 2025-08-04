@@ -4,7 +4,7 @@ import Sidebar from '@/components/Sidebar';
 import { Button } from '@/components/ui/Button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/Card';
 import { Input } from '@/components/ui/Input';
-import { createSupabaseClient } from '@/src/lib/supabase';
+import { createSupabaseClient } from '@/src/lib/supabase-client';
 import {
     Building,
     Calendar,

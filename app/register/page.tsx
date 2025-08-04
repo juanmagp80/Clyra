@@ -2,7 +2,8 @@
 import { Button } from '@/components/ui/Button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/Card';
 import { Input } from '@/components/ui/Input';
-import { supabase } from '@/src/lib/supabase';
+import { createSupabaseClient } from '@/src/lib/supabase-client';
+import { getBaseUrl } from '@/lib/url';
 import { Building, Globe, Lock, Mail, Phone, UserPlus } from 'lucide-react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
@@ -27,6 +28,9 @@ export default function RegisterPage() {
     const [success, setSuccess] = useState('');
     const router = useRouter();
     const [captchaToken, setCaptchaToken] = useState('');
+
+    // Crear instancia del cliente de Supabase
+    const supabase = createSupabaseClient();
 
 
     // Reemplaza la función register completa con esta versión corregida:
@@ -69,7 +73,7 @@ export default function RegisterPage() {
                 email,
                 password,
                 options: {
-                    emailRedirectTo: `${window.location.origin}/auth/callback`,
+                    emailRedirectTo: `${getBaseUrl()}/auth/callback`,
                     data: {
                         company_name: companyName,
                         company_email: companyEmail || email,

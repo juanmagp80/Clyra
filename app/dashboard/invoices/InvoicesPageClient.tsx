@@ -1,5 +1,5 @@
 'use client'
-import { createClientComponentClient } from '@supabase/auth-helpers-nextjs';
+import { createSupabaseClient } from '@/src/lib/supabase-client';
 import {
     AlertCircle,
     CheckCircle,
@@ -48,7 +48,7 @@ const InvoicesPageClient = () => {
     const [statusFilter, setStatusFilter] = useState<string>('all');
     const [showCreateModal, setShowCreateModal] = useState(false);
     const [userEmail, setUserEmail] = useState<string>('');
-    const supabase = createClientComponentClient();
+    const supabase = createSupabaseClient();
     const router = useRouter();
 
     const fetchInvoices = async () => {

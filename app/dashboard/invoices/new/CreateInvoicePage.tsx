@@ -4,7 +4,7 @@ import Sidebar from '@/components/Sidebar';
 import { Button } from '@/components/ui/Button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/Card';
 import { Input } from '@/components/ui/Input';
-import { createClientComponentClient } from '@supabase/auth-helpers-nextjs';
+import { createSupabaseClient } from '@/src/lib/supabase-client';
 import {
     ArrowLeft,
     Calculator,
@@ -66,7 +66,7 @@ export default function CreateInvoicePage({ userEmail }: CreateInvoicePageProps)
         notes: ''
     });
 
-    const supabase = createClientComponentClient();
+    const supabase = createSupabaseClient();
     const router = useRouter();
 
     // Cargar clientes y proyectos

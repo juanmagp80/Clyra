@@ -1,10 +1,9 @@
-import { createServerComponentClient } from '@supabase/auth-helpers-nextjs';
-import { cookies } from 'next/headers';
+import { createServerSupabaseClient } from '@/src/lib/supabase-server';
 import { redirect } from 'next/navigation';
 import TimeTrackingClient from './TimeTrackingClient';
 
 export default async function TimeTrackingPage() {
-    const supabase = createServerComponentClient({ cookies });
+    const supabase = await createServerSupabaseClient();
 
     const {
         data: { session },

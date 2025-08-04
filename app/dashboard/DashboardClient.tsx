@@ -4,7 +4,7 @@
 import DashboardStats from '@/components/DashboardStats';
 import Sidebar from '@/components/Sidebar';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/Card';
-import { createSupabaseClient } from '@/src/lib/supabase';
+import { createSupabaseClient } from '@/src/lib/supabase-client';
 import { Briefcase, Clock, User } from 'lucide-react';
 import { useRouter } from 'next/navigation';
 import { useEffect, useState } from 'react';

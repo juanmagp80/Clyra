@@ -3,7 +3,7 @@
 import Sidebar from '@/components/Sidebar';
 import { Button } from '@/components/ui/Button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/Card';
-import { createClientComponentClient } from '@supabase/auth-helpers-nextjs';
+import { createSupabaseClient } from '@/src/lib/supabase-client';
 import {
     AlertCircle,
     ArrowLeft,
@@ -71,7 +71,7 @@ export default function InvoiceDetails({ invoiceId, userEmail }: InvoiceDetailsP
     const [items, setItems] = useState<InvoiceItem[]>([]);
     const [loading, setLoading] = useState(true);
 
-    const supabase = createClientComponentClient();
+    const supabase = createSupabaseClient();
     const router = useRouter();
 
     useEffect(() => {
