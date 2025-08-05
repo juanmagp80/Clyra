@@ -241,7 +241,7 @@ export default function TimeTrackingClient({ userEmail }: TimeTrackingClientProp
         <div className="flex h-screen bg-background">
             <Sidebar userEmail={userEmail} onLogout={handleLogout} />
 
-            <main className="flex-1 ml-64 overflow-auto">
+            <main className="flex-1 ml-56 overflow-auto">
                 <div className="p-6 space-y-6">
                     {/* Header */}
                     <div className="flex items-center justify-between">

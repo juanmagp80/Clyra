@@ -2,9 +2,25 @@
 import { Button } from '@/components/ui/Button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/Card';
 import { Input } from '@/components/ui/Input';
-import { createSupabaseClient } from '@/src/lib/supabase-client';
+import { createSupabaseClient, isSupabaseConfigured } from '@/src/lib/supabase-client';
 import { getBaseUrl } from '@/lib/url';
-import { Building, Globe, Lock, Mail, Phone, UserPlus } from 'lucide-react';
+import { 
+    ArrowRight, 
+    Building, 
+    Chrome, 
+    Eye, 
+    EyeOff, 
+    Github, 
+    Globe, 
+    Lock, 
+    Mail, 
+    Phone, 
+    Sparkles, 
+    TrendingUp, 
+    UserPlus,
+    Users,
+    CheckCircle
+} from 'lucide-react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { useState } from 'react';
@@ -14,6 +30,8 @@ export default function RegisterPage() {
     const [email, setEmail] = useState('');
     const [password, setPassword] = useState('');
     const [confirmPassword, setConfirmPassword] = useState('');
+    const [showPassword, setShowPassword] = useState(false);
+    const [showConfirmPassword, setShowConfirmPassword] = useState(false);
     const [lastAttempt, setLastAttempt] = useState(0);
 
     // Estados para datos de empresa
@@ -29,6 +47,56 @@ export default function RegisterPage() {
     const router = useRouter();
     const [captchaToken, setCaptchaToken] = useState('');
 
+    // ✅ Función para registro con GitHub
+    const registerWithGitHub = async () => {
+        if (!supabase) {
+            setError('Para usar autenticación, configura Supabase en las variables de entorno.');
+            return;
+        }
+        
+        try {
+            setLoading(true);
+            const { error } = await supabase.auth.signInWithOAuth({
+                provider: 'github',
+                options: {
+                    redirectTo: `${getBaseUrl()}/auth/callback`
+                }
+            });
+            
+            if (error) {
+                setError('Error al conectar con GitHub: ' + error.message);
+            }
+        } catch (err) {
+            setError('Error de conexión con GitHub');
+        }
+        setLoading(false);
+    };
+
+    // ✅ Función para registro con Google
+    const registerWithGoogle = async () => {
+        if (!supabase) {
+            setError('Para usar autenticación, configura Supabase en las variables de entorno.');
+            return;
+        }
+        
+        try {
+            setLoading(true);
+            const { error } = await supabase.auth.signInWithOAuth({
+                provider: 'google',
+                options: {
+                    redirectTo: `${getBaseUrl()}/auth/callback`
+                }
+            });
+            
+            if (error) {
+                setError('Error al conectar con Google: ' + error.message);
+            }
+        } catch (err) {
+            setError('Error de conexión con Google');
+        }
+        setLoading(false);
+    };
+
     // Crear instancia del cliente de Supabase
     const supabase = createSupabaseClient();
 
@@ -36,6 +104,11 @@ export default function RegisterPage() {
     // Reemplaza la función register completa con esta versión corregida:
 
     const register = async () => {
+        if (!supabase) {
+            setError('Para usar autenticación, configura Supabase en las variables de entorno.');
+            return;
+        }
+        
         const now = Date.now();
         if (now - lastAttempt < 5000) {
             setError('Por favor espera 5 segundos antes de intentar de nuevo.');
@@ -114,168 +187,371 @@ export default function RegisterPage() {
     };
 
     return (
-        <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-green-50 to-emerald-100 p-4">
-            <Card className="w-full max-w-lg">
-                <CardHeader className="text-center">
-                    <div className="mx-auto mb-4 flex h-12 w-12 items-center justify-center rounded-full bg-green-100">
-                        <UserPlus className="h-6 w-6 text-green-600" />
+        <div className="min-h-screen bg-gradient-to-br from-slate-50 via-gray-50 to-zinc-100 text-slate-900 relative overflow-hidden">
+            {/* Premium Silicon Valley Background */}
+            <div className="fixed inset-0 z-0">
+                <div className="absolute inset-0 bg-gradient-to-br from-slate-50 via-gray-50 to-zinc-50" />
+                <div className="absolute inset-0 bg-[radial-gradient(circle_at_25%_25%,rgba(99,102,241,0.08),transparent_50%)]" />
+                <div className="absolute inset-0 bg-[radial-gradient(circle_at_75%_75%,rgba(139,92,246,0.06),transparent_50%)]" />
+                <div className="absolute inset-0 bg-grid-slate-900/[0.02] bg-[size:32px_32px]" />
+                
+                {/* Elegant Floating Orbs */}
+                <div className="absolute top-24 left-16 w-40 h-40 bg-gradient-to-br from-indigo-100/40 to-violet-100/40 rounded-full blur-3xl animate-pulse"></div>
+                <div className="absolute bottom-40 right-24 w-56 h-56 bg-gradient-to-br from-violet-100/40 to-indigo-100/40 rounded-full blur-3xl animate-pulse" style={{animationDelay: '1.5s'}}></div>
+                <div className="absolute top-1/3 left-8 w-28 h-28 bg-gradient-to-br from-blue-100/40 to-indigo-100/40 rounded-full blur-3xl animate-pulse" style={{animationDelay: '3s'}}></div>
+            </div>
+
+            {/* Premium Header */}
+            <header className="relative z-10 p-6">
+                <Link href="/" className="inline-flex items-center gap-3 group">
+                    <h1 className="text-xl font-black tracking-tight relative">
+                        <span className="relative text-slate-900">
+                            Taskelia
+                            <div className="absolute -top-0.5 -right-0.5 w-1 h-1 bg-gradient-to-r from-indigo-500 to-violet-500 rounded-full opacity-80"></div>
+                        </span>
+                    </h1>
+                    <span className="text-xs bg-gradient-to-r from-indigo-50 to-violet-50 border border-indigo-200 text-indigo-700 px-2 py-1 rounded-full font-medium">
+                        BETA
+                    </span>
+                </Link>
+            </header>
+
+            <div className="relative z-10 flex items-center justify-center min-h-[calc(100vh-100px)] px-4">
+                <div className="w-full max-w-4xl">
+                    {/* Premium Silicon Valley Card */}
+                    <div className="relative bg-white/95 backdrop-blur-2xl border border-slate-200/60 rounded-3xl p-8 shadow-2xl shadow-slate-900/5">
+                        {/* Premium Border Glow */}
+                        <div className="absolute inset-0 bg-gradient-to-br from-indigo-50/80 via-transparent to-violet-50/80 rounded-3xl blur-sm -z-10"></div>
+                        
+                        {/* Inner Premium Glow */}
+                        <div className="absolute inset-0 bg-gradient-to-br from-indigo-50/30 to-violet-50/30 rounded-3xl"></div>
+                        
+                        {/* Professional Header */}
+                        <div className="text-center mb-8 relative">
+                            <div className="relative inline-flex items-center justify-center w-16 h-16 bg-gradient-to-br from-indigo-600 via-blue-600 to-violet-600 rounded-2xl mb-6 shadow-xl shadow-indigo-500/25 group">
+                                <UserPlus className="w-8 h-8 text-white group-hover:scale-110 transition-transform duration-300" />
+                                {/* Premium Ring Animation */}
+                                <div className="absolute inset-0 rounded-2xl bg-gradient-to-br from-indigo-400 to-violet-400 opacity-0 group-hover:opacity-20 transition-opacity duration-300"></div>
+                            </div>
+                            
+                            <h1 className="text-3xl font-black mb-3 tracking-tight">
+                                <span className="bg-gradient-to-r from-slate-900 via-indigo-900 to-violet-900 bg-clip-text text-transparent">
+                                    Únete a Taskelia
+                                </span>
+                            </h1>
+                            <p className="text-slate-600 text-base leading-relaxed">
+                                Crea tu 
+                                <span className="text-indigo-600 font-semibold"> workspace profesional</span> en segundos
+                            </p>
+                        </div>
+
+                        {/* Professional Alerts */}
+                        {error && (
+                            <div className="bg-red-50/80 border border-red-200 rounded-xl p-4 mb-6 backdrop-blur-sm">
+                                <p className="text-red-700 text-sm font-medium">{error}</p>
+                            </div>
+                        )}
+
+                        {success && (
+                            <div className="bg-emerald-50/80 border border-emerald-200 rounded-xl p-4 mb-6 backdrop-blur-sm">
+                                <p className="text-emerald-700 text-sm font-medium">{success}</p>
+                            </div>
+                        )}
+
+                        {/* Premium Form Design */}
+                        <div className="grid md:grid-cols-2 gap-8">
+                            {/* Account Section */}
+                            <div className="space-y-6">
+                                <div className="flex items-center gap-3 mb-6">
+                                    <div className="w-8 h-8 bg-gradient-to-br from-indigo-100 to-violet-100 rounded-xl flex items-center justify-center">
+                                        <Lock className="w-4 h-4 text-indigo-600" />
+                                    </div>
+                                    <h3 className="text-lg font-bold text-slate-900">Detalles de Cuenta</h3>
+                                </div>
+
+                                {/* Email Field - Premium Style */}
+                                <div className="space-y-3">
+                                    <label className="text-sm font-semibold text-slate-700 flex items-center gap-2">
+                                        <div className="w-1 h-4 bg-gradient-to-b from-indigo-500 to-violet-500 rounded-full"></div>
+                                        Dirección de Email *
+                                    </label>
+                                    <div className="relative group">
+                                        <Mail className="absolute left-4 top-1/2 transform -translate-y-1/2 w-5 h-5 text-slate-400 group-focus-within:text-indigo-500 transition-colors duration-300" />
+                                        <Input
+                                            type="email"
+                                            placeholder="tu@empresa.com"
+                                            value={email}
+                                            onChange={(e) => setEmail(e.target.value)}
+                                            className="pl-12 bg-slate-50/50 border-slate-200 text-slate-900 placeholder:text-slate-400 focus:border-indigo-500 focus:ring-indigo-100 h-12 text-base rounded-xl hover:bg-slate-50 transition-all duration-300 font-medium"
+                                        />
+                                        <div className="absolute inset-0 rounded-xl bg-gradient-to-r from-indigo-50/40 to-violet-50/40 opacity-0 group-focus-within:opacity-100 transition-opacity duration-300 pointer-events-none"></div>
+                                    </div>
+                                </div>
+
+                                {/* Password Field - Premium Style */}
+                                <div className="space-y-3">
+                                    <label className="text-sm font-semibold text-slate-700 flex items-center gap-2">
+                                        <div className="w-1 h-4 bg-gradient-to-b from-indigo-500 to-violet-500 rounded-full"></div>
+                                        Contraseña *
+                                    </label>
+                                    <div className="relative group">
+                                        <Lock className="absolute left-4 top-1/2 transform -translate-y-1/2 w-5 h-5 text-slate-400 group-focus-within:text-indigo-500 transition-colors duration-300" />
+                                        <Input
+                                            type={showPassword ? "text" : "password"}
+                                            placeholder="Mínimo 6 caracteres"
+                                            value={password}
+                                            onChange={(e) => setPassword(e.target.value)}
+                                            className="pl-12 pr-12 bg-slate-50/50 border-slate-200 text-slate-900 placeholder:text-slate-400 focus:border-indigo-500 focus:ring-indigo-100 h-12 text-base rounded-xl hover:bg-slate-50 transition-all duration-300 font-medium"
+                                        />
+                                        <button
+                                            type="button"
+                                            onClick={() => setShowPassword(!showPassword)}
+                                            className="absolute right-4 top-1/2 transform -translate-y-1/2 text-slate-400 hover:text-slate-600 transition-colors duration-300 p-1 rounded-lg hover:bg-slate-100"
+                                        >
+                                            {showPassword ? <EyeOff className="w-5 h-5" /> : <Eye className="w-5 h-5" />}
+                                        </button>
+                                        <div className="absolute inset-0 rounded-xl bg-gradient-to-r from-indigo-50/40 to-violet-50/40 opacity-0 group-focus-within:opacity-100 transition-opacity duration-300 pointer-events-none"></div>
+                                    </div>
+                                </div>
+
+                                {/* Confirm Password Field - Premium Style */}
+                                <div className="space-y-3">
+                                    <label className="text-sm font-semibold text-slate-700 flex items-center gap-2">
+                                        <div className="w-1 h-4 bg-gradient-to-b from-indigo-500 to-violet-500 rounded-full"></div>
+                                        Confirmar Contraseña *
+                                    </label>
+                                    <div className="relative group">
+                                        <Lock className="absolute left-4 top-1/2 transform -translate-y-1/2 w-5 h-5 text-slate-400 group-focus-within:text-indigo-500 transition-colors duration-300" />
+                                        <Input
+                                            type={showConfirmPassword ? "text" : "password"}
+                                            placeholder="Repite tu contraseña"
+                                            value={confirmPassword}
+                                            onChange={(e) => setConfirmPassword(e.target.value)}
+                                            className="pl-12 pr-12 bg-slate-50/50 border-slate-200 text-slate-900 placeholder:text-slate-400 focus:border-indigo-500 focus:ring-indigo-100 h-12 text-base rounded-xl hover:bg-slate-50 transition-all duration-300 font-medium"
+                                        />
+                                        <button
+                                            type="button"
+                                            onClick={() => setShowConfirmPassword(!showConfirmPassword)}
+                                            className="absolute right-4 top-1/2 transform -translate-y-1/2 text-slate-400 hover:text-slate-600 transition-colors duration-300 p-1 rounded-lg hover:bg-slate-100"
+                                        >
+                                            {showConfirmPassword ? <EyeOff className="w-5 h-5" /> : <Eye className="w-5 h-5" />}
+                                        </button>
+                                        <div className="absolute inset-0 rounded-xl bg-gradient-to-r from-indigo-50/40 to-violet-50/40 opacity-0 group-focus-within:opacity-100 transition-opacity duration-300 pointer-events-none"></div>
+                                    </div>
+                                </div>
+                            </div>
+
+                            {/* Company Section - Premium Style */}
+                            <div className="space-y-6">
+                                <div className="flex items-center gap-3 mb-6">
+                                    <div className="w-8 h-8 bg-gradient-to-br from-violet-100 to-indigo-100 rounded-xl flex items-center justify-center">
+                                        <Building className="w-4 h-4 text-violet-600" />
+                                    </div>
+                                    <h3 className="text-lg font-bold text-slate-900">Detalles de Empresa</h3>
+                                    <span className="text-xs bg-gradient-to-r from-violet-50 to-indigo-50 border border-violet-200 text-violet-700 px-3 py-1 rounded-full font-medium">Opcional</span>
+                                </div>
+
+                                {/* Company Name - Premium Style */}
+                                <div className="space-y-3">
+                                    <label className="text-sm font-semibold text-slate-700 flex items-center gap-2">
+                                        <div className="w-1 h-4 bg-gradient-to-b from-violet-500 to-indigo-500 rounded-full"></div>
+                                        Nombre de Empresa
+                                    </label>
+                                    <div className="relative group">
+                                        <Building className="absolute left-4 top-1/2 transform -translate-y-1/2 w-5 h-5 text-slate-400 group-focus-within:text-violet-500 transition-colors duration-300" />
+                                        <Input
+                                            type="text"
+                                            placeholder="Tu Empresa S.L."
+                                            value={companyName}
+                                            onChange={(e) => setCompanyName(e.target.value)}
+                                            className="pl-12 bg-slate-50/50 border-slate-200 text-slate-900 placeholder:text-slate-400 focus:border-violet-500 focus:ring-violet-100 h-12 text-base rounded-xl hover:bg-slate-50 transition-all duration-300 font-medium"
+                                        />
+                                        <div className="absolute inset-0 rounded-xl bg-gradient-to-r from-violet-50/40 to-indigo-50/40 opacity-0 group-focus-within:opacity-100 transition-opacity duration-300 pointer-events-none"></div>
+                                    </div>
+                                </div>
+
+                                {/* Company Email - Premium Style */}
+                                <div className="space-y-3">
+                                    <label className="text-sm font-semibold text-slate-700 flex items-center gap-2">
+                                        <div className="w-1 h-4 bg-gradient-to-b from-violet-500 to-indigo-500 rounded-full"></div>
+                                        Email de Empresa
+                                    </label>
+                                    <div className="relative group">
+                                        <Mail className="absolute left-4 top-1/2 transform -translate-y-1/2 w-5 h-5 text-slate-400 group-focus-within:text-violet-500 transition-colors duration-300" />
+                                        <Input
+                                            type="email"
+                                            placeholder="contacto@tuempresa.com"
+                                            value={companyEmail}
+                                            onChange={(e) => setCompanyEmail(e.target.value)}
+                                            className="pl-12 bg-slate-50/50 border-slate-200 text-slate-900 placeholder:text-slate-400 focus:border-violet-500 focus:ring-violet-100 h-12 text-base rounded-xl hover:bg-slate-50 transition-all duration-300 font-medium"
+                                        />
+                                        <div className="absolute inset-0 rounded-xl bg-gradient-to-r from-violet-50/40 to-indigo-50/40 opacity-0 group-focus-within:opacity-100 transition-opacity duration-300 pointer-events-none"></div>
+                                    </div>
+                                </div>
+
+                                {/* Phone - Premium Style */}
+                                <div className="space-y-3">
+                                    <label className="text-sm font-semibold text-slate-700 flex items-center gap-2">
+                                        <div className="w-1 h-4 bg-gradient-to-b from-violet-500 to-indigo-500 rounded-full"></div>
+                                        Número de Teléfono
+                                    </label>
+                                    <div className="relative group">
+                                        <Phone className="absolute left-4 top-1/2 transform -translate-y-1/2 w-5 h-5 text-slate-400 group-focus-within:text-violet-500 transition-colors duration-300" />
+                                        <Input
+                                            type="tel"
+                                            placeholder="+34 123 456 789"
+                                            value={companyPhone}
+                                            onChange={(e) => setCompanyPhone(e.target.value)}
+                                            className="pl-12 bg-slate-50/50 border-slate-200 text-slate-900 placeholder:text-slate-400 focus:border-violet-500 focus:ring-violet-100 h-12 text-base rounded-xl hover:bg-slate-50 transition-all duration-300 font-medium"
+                                        />
+                                        <div className="absolute inset-0 rounded-xl bg-gradient-to-r from-violet-50/40 to-indigo-50/40 opacity-0 group-focus-within:opacity-100 transition-opacity duration-300 pointer-events-none"></div>
+                                    </div>
+                                </div>
+
+                                {/* Website - Premium Style */}
+                                <div className="space-y-3">
+                                    <label className="text-sm font-semibold text-slate-700 flex items-center gap-2">
+                                        <div className="w-1 h-4 bg-gradient-to-b from-violet-500 to-indigo-500 rounded-full"></div>
+                                        Sitio Web
+                                    </label>
+                                    <div className="relative group">
+                                        <Globe className="absolute left-4 top-1/2 transform -translate-y-1/2 w-5 h-5 text-slate-400 group-focus-within:text-violet-500 transition-colors duration-300" />
+                                        <Input
+                                            type="url"
+                                            placeholder="www.tuempresa.com"
+                                            value={companyWebsite}
+                                            onChange={(e) => setCompanyWebsite(e.target.value)}
+                                            className="pl-12 bg-slate-50/50 border-slate-200 text-slate-900 placeholder:text-slate-400 focus:border-violet-500 focus:ring-violet-100 h-12 text-base rounded-xl hover:bg-slate-50 transition-all duration-300 font-medium"
+                                        />
+                                        <div className="absolute inset-0 rounded-xl bg-gradient-to-r from-violet-50/40 to-indigo-50/40 opacity-0 group-focus-within:opacity-100 transition-opacity duration-300 pointer-events-none"></div>
+                                    </div>
+                                </div>
+
+                                {/* Address - Premium Style */}
+                                <div className="space-y-3">
+                                    <label className="text-sm font-semibold text-slate-700 flex items-center gap-2">
+                                        <div className="w-1 h-4 bg-gradient-to-b from-violet-500 to-indigo-500 rounded-full"></div>
+                                        Dirección
+                                    </label>
+                                    <Input
+                                        type="text"
+                                        placeholder="Calle Ejemplo 123, Madrid"
+                                        value={companyAddress}
+                                        onChange={(e) => setCompanyAddress(e.target.value)}
+                                        className="bg-slate-50/50 border-slate-200 text-slate-900 placeholder:text-slate-400 focus:border-violet-500 focus:ring-violet-100 h-12 text-base rounded-xl hover:bg-slate-50 transition-all duration-300 font-medium"
+                                    />
+                                </div>
+                            </div>
+                        </div>
+
+                        {/* Premium Create Account Button */}
+                        <div className="mt-8">
+                            <Button
+                                type="button"
+                                onClick={register}
+                                disabled={loading}
+                                className="w-full bg-gradient-to-r from-indigo-600 via-blue-600 to-violet-600 hover:from-indigo-700 hover:via-blue-700 hover:to-violet-700 text-white border-0 h-12 text-base font-bold rounded-xl shadow-xl shadow-indigo-500/25 group relative overflow-hidden"
+                            >
+                                {/* Premium Button Glow */}
+                                <div className="absolute inset-0 bg-gradient-to-r from-indigo-400 to-violet-400 opacity-0 group-hover:opacity-20 transition-opacity duration-300"></div>
+                                
+                                {loading ? (
+                                    <div className="flex items-center gap-3 relative z-10">
+                                        <div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin"></div>
+                                        <span>Creando cuenta...</span>
+                                    </div>
+                                ) : (
+                                    <div className="flex items-center gap-3 relative z-10">
+                                        <Sparkles className="w-4 h-4 group-hover:rotate-12 transition-transform duration-300" />
+                                        <span>Crear Cuenta</span>
+                                        <ArrowRight className="w-4 h-4 group-hover:translate-x-1 transition-transform duration-300" />
+                                    </div>
+                                )}
+                            </Button>
+                        </div>
+
+                        {/* Premium Divider */}
+                        <div className="my-8 flex items-center">
+                            <div className="flex-1 h-px bg-gradient-to-r from-transparent via-slate-300 to-transparent"></div>
+                            <div className="px-4 bg-white border border-slate-200 rounded-full shadow-sm">
+                                <span className="text-sm text-slate-600 font-medium">O regístrate con</span>
+                            </div>
+                            <div className="flex-1 h-px bg-gradient-to-r from-transparent via-slate-300 to-transparent"></div>
+                        </div>
+
+                        {/* Premium Social Login - TEMPORALMENTE DESACTIVADO */}
+                        <div className="grid grid-cols-2 gap-4 mb-8">
+                            <Button
+                                type="button"
+                                onClick={registerWithGitHub}
+                                disabled={true}
+                                variant="ghost"
+                                className="border border-slate-200 text-slate-400 bg-slate-50 cursor-not-allowed h-11 rounded-xl group transition-all duration-300 font-medium relative z-10 opacity-50"
+                            >
+                                <Github className="w-4 h-4 mr-2" />
+                                GitHub
+                            </Button>
+                            <Button
+                                type="button"
+                                onClick={registerWithGoogle}
+                                disabled={true}
+                                variant="ghost"
+                                className="border border-slate-200 text-slate-400 bg-slate-50 cursor-not-allowed h-11 rounded-xl group transition-all duration-300 font-medium relative z-10 opacity-50"
+                            >
+                                <Chrome className="w-4 h-4 mr-2" />
+                                Google
+                            </Button>
+                        </div>
+
+                        {/* Professional Footer */}
+                        <div className="text-center relative z-10">
+                            <p className="text-slate-600 mb-4">
+                                ¿Ya tienes cuenta?{' '}
+                                <Link 
+                                    href="/login" 
+                                    className="text-indigo-600 hover:text-indigo-700 font-semibold transition-colors relative z-10"
+                                >
+                                    Iniciar sesión
+                                </Link>
+                            </p>
+                            <p className="text-xs text-slate-500 leading-relaxed">
+                                Al crear una cuenta, aceptas nuestros términos de servicio y política de privacidad
+                            </p>
+                        </div>
                     </div>
-                    <CardTitle className="text-2xl font-bold">Crear cuenta en Taskelia</CardTitle>
-                    <CardDescription>
-                        Únete a la plataforma CRM para profesionales independientes
-                    </CardDescription>
-                </CardHeader>
-                <CardContent className="space-y-4">
-                    {error && (
-                        <div className="p-3 text-sm text-red-600 bg-red-50 border border-red-200 rounded-md">
-                            {error}
-                        </div>
-                    )}
 
-                    {success && (
-                        <div className="p-3 text-sm text-green-600 bg-green-50 border border-green-200 rounded-md">
-                            {success}
-                        </div>
-                    )}
-
-                    {/* Sección de cuenta */}
-                    <div className="space-y-4">
-                        <h3 className="text-lg font-semibold text-gray-900">Datos de cuenta</h3>
-
-                        <div className="space-y-2">
-                            <label className="text-sm font-medium">Email *</label>
-                            <div className="relative">
-                                <Mail className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-                                <Input
-                                    type="email"
-                                    placeholder="tu@email.com"
-                                    value={email}
-                                    onChange={(e) => setEmail(e.target.value)}
-                                    className="pl-10"
-                                />
+                    {/* Premium Features */}
+                    <div className="mt-8 grid grid-cols-3 gap-4 text-center">
+                        <div className="bg-white/90 backdrop-blur-2xl border border-slate-200/60 rounded-2xl p-4 group hover:scale-105 transition-all duration-300 shadow-lg shadow-slate-900/5">
+                            <div className="flex items-center justify-center mb-3">
+                                <div className="w-10 h-10 bg-gradient-to-br from-emerald-100 to-green-100 rounded-xl flex items-center justify-center group-hover:scale-110 transition-transform">
+                                    <CheckCircle className="w-5 h-5 text-emerald-600" />
+                                </div>
                             </div>
+                            <p className="text-sm font-bold text-slate-900">Prueba gratuita 14 días</p>
+                            <p className="text-xs text-slate-600 font-medium">Sin tarjeta requerida</p>
                         </div>
-
-                        <div className="space-y-2">
-                            <label className="text-sm font-medium">Contraseña *</label>
-                            <div className="relative">
-                                <Lock className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-                                <Input
-                                    type="password"
-                                    placeholder="Mínimo 6 caracteres"
-                                    value={password}
-                                    onChange={(e) => setPassword(e.target.value)}
-                                    className="pl-10"
-                                />
+                        <div className="bg-white/90 backdrop-blur-2xl border border-slate-200/60 rounded-2xl p-4 group hover:scale-105 transition-all duration-300 shadow-lg shadow-slate-900/5">
+                            <div className="flex items-center justify-center mb-3">
+                                <div className="w-10 h-10 bg-gradient-to-br from-indigo-100 to-violet-100 rounded-xl flex items-center justify-center group-hover:scale-110 transition-transform">
+                                    <Users className="w-5 h-5 text-indigo-600" />
+                                </div>
                             </div>
+                            <p className="text-sm font-bold text-slate-900">2K+ usuarios</p>
+                            <p className="text-xs text-slate-600 font-medium">Confían en nosotros</p>
                         </div>
-
-                        <div className="space-y-2">
-                            <label className="text-sm font-medium">Confirmar contraseña *</label>
-                            <div className="relative">
-                                <Lock className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-                                <Input
-                                    type="password"
-                                    placeholder="Repite tu contraseña"
-                                    value={confirmPassword}
-                                    onChange={(e) => setConfirmPassword(e.target.value)}
-                                    className="pl-10"
-                                />
+                        <div className="bg-white/90 backdrop-blur-2xl border border-slate-200/60 rounded-2xl p-4 group hover:scale-105 transition-all duration-300 shadow-lg shadow-slate-900/5">
+                            <div className="flex items-center justify-center mb-3">
+                                <div className="w-10 h-10 bg-gradient-to-br from-violet-100 to-indigo-100 rounded-xl flex items-center justify-center group-hover:scale-110 transition-transform">
+                                    <TrendingUp className="w-5 h-5 text-violet-600" />
+                                </div>
                             </div>
+                            <p className="text-sm font-bold text-slate-900">15h ahorradas</p>
+                            <p className="text-xs text-slate-600 font-medium">Por semana promedio</p>
                         </div>
                     </div>
-
-                    {/* Sección de empresa */}
-                    <div className="space-y-4 pt-4 border-t">
-                        <h3 className="text-lg font-semibold text-gray-900">Datos de tu empresa</h3>
-
-                        <div className="space-y-2">
-                            <label className="text-sm font-medium">Nombre de la empresa *</label>
-                            <div className="relative">
-                                <Building className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-                                <Input
-                                    type="text"
-                                    placeholder="Mi Empresa S.L."
-                                    value={companyName}
-                                    onChange={(e) => setCompanyName(e.target.value)}
-                                    className="pl-10"
-                                />
-                            </div>
-                        </div>
-
-                        <div className="space-y-2">
-                            <label className="text-sm font-medium">Email de empresa</label>
-                            <div className="relative">
-                                <Mail className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-                                <Input
-                                    type="email"
-                                    placeholder="contacto@miempresa.com (opcional)"
-                                    value={companyEmail}
-                                    onChange={(e) => setCompanyEmail(e.target.value)}
-                                    className="pl-10"
-                                />
-                            </div>
-                        </div>
-
-                        <div className="space-y-2">
-                            <label className="text-sm font-medium">Teléfono</label>
-                            <div className="relative">
-                                <Phone className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-                                <Input
-                                    type="tel"
-                                    placeholder="+34 123 456 789"
-                                    value={companyPhone}
-                                    onChange={(e) => setCompanyPhone(e.target.value)}
-                                    className="pl-10"
-                                />
-                            </div>
-                        </div>
-
-                        <div className="space-y-2">
-                            <label className="text-sm font-medium">Sitio web</label>
-                            <div className="relative">
-                                <Globe className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-                                <Input
-                                    type="url"
-                                    placeholder="www.miempresa.com"
-                                    value={companyWebsite}
-                                    onChange={(e) => setCompanyWebsite(e.target.value)}
-                                    className="pl-10"
-                                />
-                            </div>
-                        </div>
-
-                        <div className="space-y-2">
-                            <label className="text-sm font-medium">Dirección</label>
-                            <Input
-                                type="text"
-                                placeholder="Calle Ejemplo 123, Madrid"
-                                value={companyAddress}
-                                onChange={(e) => setCompanyAddress(e.target.value)}
-                            />
-                        </div>
-                    </div>
-
-                    <Button
-                        onClick={register}
-                        className="w-full bg-green-600 hover:bg-green-700"
-                        disabled={loading}
-                    >
-                        {loading ? 'Creando cuenta...' : 'Crear cuenta'}
-                    </Button>
-
-                    <div className="text-center text-sm text-muted-foreground">
-                        ¿Ya tienes cuenta?{' '}
-                        <Link href="/login" className="text-green-600 hover:underline font-medium">
-                            Iniciar sesión
-                        </Link>
-                    </div>
-
-                    <div className="text-xs text-gray-500 text-center">
-                        * Campos obligatorios
-                    </div>
-                </CardContent>
-            </Card>
+                </div>
+            </div>
         </div>
     );
 }

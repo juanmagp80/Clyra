@@ -4,13 +4,29 @@ import { NextResponse, type NextRequest } from 'next/server';
 export async function middleware(request: NextRequest) {
   console.log('🛡️ Middleware executing for:', request.nextUrl.pathname);
   
+  // ✅ Verificar variables de entorno antes de crear el cliente
+  const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
+  const supabaseKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
+  
+  // Si Supabase no está configurado, permitir todas las rutas para desarrollo
+  if (!supabaseUrl || !supabaseKey || supabaseUrl.includes('your_supabase_project_url_here')) {
+    console.log('⚠️ Supabase not configured - allowing all routes for development');
+    
+    // Solo mostrar advertencia para rutas protegidas
+    if (request.nextUrl.pathname.startsWith('/dashboard')) {
+      console.log('🔧 Dashboard access without Supabase config - configure .env.local for full functionality');
+    }
+    
+    return NextResponse.next();
+  }
+  
   let supabaseResponse = NextResponse.next({
     request,
   });
 
   const supabase = createServerClient(
-    process.env.NEXT_PUBLIC_SUPABASE_URL!,
-    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
+    supabaseUrl,
+    supabaseKey,
     {
       cookies: {
         getAll() {

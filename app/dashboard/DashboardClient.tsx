@@ -9,7 +9,13 @@ import { Briefcase, Clock, User } from 'lucide-react';
 import { useRouter } from 'next/navigation';
 import { useEffect, useState } from 'react';
 
-export default function DashboardClient({ userEmail }: { userEmail: string }) {
+export default function DashboardClient({ 
+    userEmail, 
+    isDemo = false 
+}: { 
+    userEmail: string;
+    isDemo?: boolean;
+}) {
     const supabase = createSupabaseClient();
     const router = useRouter();
 
@@ -34,6 +40,10 @@ export default function DashboardClient({ userEmail }: { userEmail: string }) {
     const [loading, setLoading] = useState(true);
 
     const handleLogout = async () => {
+        if (isDemo) {
+            router.push('/login');
+            return;
+        }
         await supabase.auth.signOut();
         router.push('/login');
     };
@@ -42,6 +52,50 @@ export default function DashboardClient({ userEmail }: { userEmail: string }) {
     const loadDashboardData = async () => {
         try {
             setLoading(true);
+            
+            // ✅ Si está en modo demo, usar datos ficticios
+            if (isDemo) {
+                setMetrics({
+                    totalClients: 12,
+                    activeProjects: 5,
+                    completedProjects: 8,
+                    monthlyRevenue: 15750,
+                    hoursThisWeek: 28,
+                    hoursThisMonth: 140,
+                    billableHoursThisWeek: 25
+                });
+                
+                setRecentActivity([
+                    {
+                        id: '1',
+                        type: 'project',
+                        title: 'Nuevo proyecto creado',
+                        subtitle: 'Diseño de App Móvil para TechCorp',
+                        date: '2 horas',
+                        icon: 'briefcase'
+                    },
+                    {
+                        id: '2',
+                        type: 'client',
+                        title: 'Cliente agregado',
+                        subtitle: 'María González - Startup Local',
+                        date: '1 día',
+                        icon: 'user'
+                    },
+                    {
+                        id: '3',
+                        type: 'time',
+                        title: 'Tiempo registrado',
+                        subtitle: '4.5 horas en desarrollo frontend',
+                        date: '2 días',
+                        icon: 'clock'
+                    }
+                ]);
+                
+                setLoading(false);
+                return;
+            }
+            
             const user = (await supabase.auth.getUser()).data.user;
             if (!user) return;
 
@@ -198,58 +252,75 @@ export default function DashboardClient({ userEmail }: { userEmail: string }) {
         loadRecentActivity();
     }, []);
     return (
-        <div className="flex h-screen bg-background">
-            <Sidebar userEmail={userEmail} onLogout={handleLogout} />
+        <div className="min-h-screen bg-gradient-to-br from-slate-50 via-gray-50 to-zinc-100 text-slate-900 relative overflow-hidden">
+            {/* Subtle Premium Background */}
+            <div className="fixed inset-0 z-0">
+                <div className="absolute inset-0 bg-gradient-to-br from-slate-50 via-gray-50 to-zinc-50" />
+                <div className="absolute inset-0 bg-[radial-gradient(circle_at_25%_25%,rgba(99,102,241,0.03),transparent_50%)]" />
+                <div className="absolute inset-0 bg-[radial-gradient(circle_at_75%_75%,rgba(139,92,246,0.03),transparent_50%)]" />
+            </div>
 
-            <main className="flex-1 ml-64 overflow-auto">
-                <div className="p-6">
-                    {loading ? (
-                        <div className="flex justify-center items-center h-64">
-                            <div className="text-lg text-gray-600">Cargando métricas...</div>
-                        </div>
-                    ) : (
-                        <>
-                            <DashboardStats
-                                totalClients={metrics.totalClients}
-                                activeProjects={metrics.activeProjects}
-                                monthlyRevenue={metrics.monthlyRevenue}
-                                hoursThisWeek={metrics.hoursThisWeek}
-                                hoursThisMonth={metrics.hoursThisMonth}
-                                billableHoursThisWeek={metrics.billableHoursThisWeek}
-                            />
+            <div className="flex h-screen relative z-10">
+                <Sidebar userEmail={userEmail} onLogout={handleLogout} />
 
-                            {/* Actividad Reciente */}
-                            <div className="mt-8">
-                                <Card>
-                                    <CardHeader>
-                                        <CardTitle className="flex items-center gap-2">
-                                            <Clock className="h-5 w-5" />
-                                            Actividad Reciente
-                                        </CardTitle>
-                                        <CardDescription>
-                                            Últimas acciones en tu CRM
-                                        </CardDescription>
-                                    </CardHeader>
-                                    <CardContent>
+                <main className="flex-1 ml-56 overflow-auto">
+                    <div className="p-4">
+                        {loading ? (
+                            <div className="flex justify-center items-center h-64">
+                                <div className="bg-white/95 backdrop-blur border border-slate-200 rounded-xl p-4 shadow-lg">
+                                    <div className="flex items-center gap-3">
+                                        <div className="w-4 h-4 border-2 border-indigo-300 border-t-indigo-600 rounded-full animate-spin"></div>
+                                        <span className="text-slate-700 font-medium">Cargando métricas...</span>
+                                    </div>
+                                </div>
+                            </div>
+                        ) : (
+                            <>
+                                <DashboardStats
+                                    totalClients={metrics.totalClients}
+                                    activeProjects={metrics.activeProjects}
+                                    monthlyRevenue={metrics.monthlyRevenue}
+                                    hoursThisWeek={metrics.hoursThisWeek}
+                                    hoursThisMonth={metrics.hoursThisMonth}
+                                    billableHoursThisWeek={metrics.billableHoursThisWeek}
+                                />
+
+                                {/* Actividad Reciente - Compact Style */}
+                                <div className="mt-4">
+                                    <div className="bg-white/95 backdrop-blur border border-slate-200 rounded-xl p-4 shadow-sm">
+                                        <div className="flex items-center gap-2 mb-3">
+                                            <div className="w-6 h-6 bg-gradient-to-br from-indigo-100 to-violet-100 rounded-lg flex items-center justify-center">
+                                                <Clock className="w-3 h-3 text-indigo-600" />
+                                            </div>
+                                            <div>
+                                                <h3 className="text-base font-bold text-slate-900">Actividad Reciente</h3>
+                                                <p className="text-slate-600 text-xs">Últimas acciones en tu workspace</p>
+                                            </div>
+                                        </div>
+                                        
                                         {recentActivity.length === 0 ? (
-                                            <div className="text-center py-8 text-gray-500">
-                                                No hay actividad reciente
+                                            <div className="text-center py-4">
+                                                <div className="w-10 h-10 bg-slate-100 rounded-lg flex items-center justify-center mx-auto mb-2">
+                                                    <Clock className="w-5 h-5 text-slate-400" />
+                                                </div>
+                                                <p className="text-slate-500 font-medium text-sm">No hay actividad reciente</p>
+                                                <p className="text-slate-400 text-xs">La actividad aparecerá aquí cuando comiences a trabajar</p>
                                             </div>
                                         ) : (
-                                            <div className="space-y-4">
+                                            <div className="space-y-2">
                                                 {recentActivity.map((activity) => {
                                                     const IconComponent = activity.icon === 'briefcase' ? Briefcase :
                                                         activity.icon === 'clock' ? Clock : User;
                                                     return (
-                                                        <div key={`${activity.type}-${activity.id}`} className="flex items-center gap-4 p-3 rounded-lg border hover:bg-gray-50 transition-colors">
-                                                            <div className="p-2 rounded-full bg-primary/10">
-                                                                <IconComponent className="h-4 w-4 text-primary" />
+                                                        <div key={`${activity.type}-${activity.id}`} className="flex items-center gap-2 p-2 rounded-lg border border-slate-100 bg-slate-50/50 hover:bg-white hover:shadow-sm transition-all duration-200">
+                                                            <div className="w-6 h-6 bg-gradient-to-br from-indigo-100 to-violet-100 rounded-lg flex items-center justify-center">
+                                                                <IconComponent className="w-3 h-3 text-indigo-600" />
                                                             </div>
-                                                            <div className="flex-1">
-                                                                <p className="font-medium text-sm">{activity.title}</p>
-                                                                <p className="text-xs text-gray-600">{activity.subtitle}</p>
+                                                            <div className="flex-1 min-w-0">
+                                                                <p className="font-semibold text-slate-900 text-xs truncate">{activity.title}</p>
+                                                                <p className="text-xs text-slate-600 truncate">{activity.subtitle}</p>
                                                             </div>
-                                                            <div className="text-xs text-gray-500">
+                                                            <div className="text-xs text-slate-500 font-medium">
                                                                 {new Date(activity.date).toLocaleDateString('es-ES')}
                                                             </div>
                                                         </div>
@@ -257,13 +328,13 @@ export default function DashboardClient({ userEmail }: { userEmail: string }) {
                                                 })}
                                             </div>
                                         )}
-                                    </CardContent>
-                                </Card>
-                            </div>
-                        </>
-                    )}
-                </div>
-            </main>
+                                    </div>
+                                </div>
+                            </>
+                        )}
+                    </div>
+                </main>
+            </div>
         </div>
     );
 }

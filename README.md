@@ -5,42 +5,105 @@ Una aplicación SaaS moderna diseñada específicamente para freelancers que bus
 ## ✨ Características
 
 - **Gestión de Clientes**: Mantén toda la información organizada
-- **Proyectos**: Planifica deadlines y haz seguimiento
+- **Proyectos**: Planifica deadlines y haz seguimiento  
 - **Facturación**: Crea facturas profesionales rápidamente
 - **Métricas**: Visualiza tu progreso e ingresos
+- **Autenticación Social**: Login con GitHub y Google
 - **Demo Interactivo**: Prueba todas las funcionalidades
 
-## 🚀 Getting Started
+## 🚀 Inicio Rápido
 
-First, run the development server:
-
+### Opción 1: Modo Demo (Sin configuración)
 ```bash
-npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
+# Clona el repositorio
+git clone <tu-repo>
+cd Clyra
+
+# Instala dependencias e inicia
+./start.sh
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+### Opción 2: Funcionalidad Completa (Con Supabase)
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+1. **Configura Supabase**:
+   - Ve a [supabase.com](https://supabase.com) y crea un proyecto gratuito
+   - En Settings > API, copia tu Project URL y anon key
+   - Edita `.env.local` y reemplaza los valores placeholder
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+2. **Configura OAuth (opcional)**:
+   - En Authentication > Providers, habilita GitHub/Google
+   - Añade la URL de callback: `http://localhost:3000/auth/callback`
 
-## Learn More
+3. **Inicia la aplicación**:
+   ```bash
+   npm install
+   npm run dev
+   ```
 
-To learn more about Next.js, take a look at the following resources:
+## 📂 Estructura del Proyecto
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+```
+├── app/                    # App Router de Next.js
+│   ├── login/             # Página de inicio de sesión
+│   ├── register/          # Página de registro
+│   ├── dashboard/         # Panel principal
+│   ├── demo/              # Modo demo sin autenticación
+│   └── auth/callback/     # Callback OAuth
+├── components/            # Componentes reutilizables
+├── src/lib/              # Configuración de Supabase
+└── .env.local            # Variables de entorno
+```
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
+## 🎯 URLs Importantes
 
-## Deploy on Vercel
+- **Landing**: `http://localhost:3000`
+- **Login**: `http://localhost:3000/login`  
+- **Registro**: `http://localhost:3000/register`
+- **Dashboard**: `http://localhost:3000/dashboard`
+- **Demo**: `http://localhost:3000/demo`
 
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
+## 🔧 Configuración de Variables de Entorno
 
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+Copia `.env.example` a `.env.local` y configura:
+
+```bash
+# Supabase Configuration
+NEXT_PUBLIC_SUPABASE_URL=tu_url_de_supabase
+NEXT_PUBLIC_SUPABASE_ANON_KEY=tu_clave_anonima
+
+# Site URL
+NEXT_PUBLIC_SITE_URL=http://localhost:3000
+```
+
+## 🛠️ Tecnologías
+
+- **Frontend**: Next.js 15, React 19, TypeScript
+- **Styling**: Tailwind CSS
+- **Backend**: Supabase (Auth + Database)
+- **Icons**: Lucide React
+- **Deployment**: Vercel-ready
+
+## 📱 Funcionalidades
+
+### Sin Configuración (Modo Demo)
+- ✅ Interfaz completa y navegación
+- ✅ Dashboard con datos ficticios  
+- ✅ Diseño responsive
+- ❌ Autenticación (solo UI)
+
+### Con Supabase Configurado
+- ✅ Todo lo anterior +
+- ✅ Login/registro funcional
+- ✅ Autenticación social (GitHub/Google)
+- ✅ Persistencia de datos
+- ✅ Sesiones de usuario
+
+## 🚀 Deploy en Vercel
+
+1. Conecta tu repositorio a [Vercel](https://vercel.com)
+2. Añade las variables de entorno en el dashboard de Vercel
+3. Actualiza `NEXT_PUBLIC_SITE_URL` con tu dominio de producción
+
+## 📝 Licencia
+
+MIT License - ve el archivo LICENSE para más detalles.

@@ -123,10 +123,10 @@ export default function ClientsPageClient({ userEmail }: ClientsPageClientProps)
         <div className="flex h-screen bg-gradient-to-br from-slate-50 via-white to-slate-100">
             <Sidebar userEmail={userEmail} onLogout={handleLogout} />
 
-            <main className="flex-1 ml-64 overflow-auto">
+            <main className="flex-1 ml-56 overflow-auto">
                 {/* Header con nuevo estilo */}
                 <div className="bg-white/80 backdrop-blur-sm border-b border-slate-200 sticky top-0 z-10">
-                    <div className="p-6">
+                    <div className="p-4">
                         <div className="flex items-center justify-between">
                             <div>
                                 <h1 className="text-3xl font-bold bg-gradient-to-r from-slate-900 to-slate-700 bg-clip-text text-transparent">
@@ -147,7 +147,7 @@ export default function ClientsPageClient({ userEmail }: ClientsPageClientProps)
                     </div>
                 </div>
 
-                <div className="p-6 space-y-6">
+                <div className="p-4 space-y-4">
                     {/* Search con nuevo estilo */}
                     <div className="bg-white rounded-2xl shadow-sm border border-slate-100 p-4">
                         <div className="relative max-w-md">
@@ -170,7 +170,7 @@ export default function ClientsPageClient({ userEmail }: ClientsPageClientProps)
                                     Completa la información del cliente
                                 </CardDescription>
                             </CardHeader>
-                            <CardContent className="p-6">
+                            <CardContent className="p-4">
                                 <div className="grid gap-4 md:grid-cols-2">
                                     <div>
                                         <label className="text-sm font-semibold text-slate-700 mb-2 block">Nombre *</label>
@@ -239,7 +239,7 @@ export default function ClientsPageClient({ userEmail }: ClientsPageClientProps)
                     )}
 
                     {/* Lista de clientes con nuevo estilo */}
-                    <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
+                    <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
                         {loading ? (
                             <div className="col-span-full text-center py-12">
                                 <div className="w-12 h-12 border-4 border-blue-600 border-t-transparent rounded-full animate-spin mx-auto mb-4"></div>
