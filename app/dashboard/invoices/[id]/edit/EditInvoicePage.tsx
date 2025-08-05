@@ -23,6 +23,8 @@ interface Client {
     name: string;
     company?: string;
     email?: string;
+    phone?: string;
+    address?: string;
 }
 
 interface Project {

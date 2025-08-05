@@ -17,6 +17,7 @@ import {
     Plus,
     Search,
     Trash2,
+    TrendingUp,
     X
 } from 'lucide-react';
 import { useRouter } from 'next/navigation';
@@ -51,9 +52,6 @@ export default function ProjectsPageClient({ userEmail }: ProjectsPageClientProp
     // Estados
     const [searchTerm, setSearchTerm] = useState('');
     const [filterStatus, setFilterStatus] = useState('all');
-    const [filterClient, setFilterClient] = useState('all');
-    const [sortBy, setSortBy] = useState('created_at');
-    const [sortOrder, setSortOrder] = useState('desc');
     const [showForm, setShowForm] = useState(false);
     const [editingProject, setEditingProject] = useState<Project | null>(null);
     const [showEditForm, setShowEditForm] = useState(false);
@@ -74,6 +72,11 @@ export default function ProjectsPageClient({ userEmail }: ProjectsPageClientProp
 
     const fetchClients = async () => {
         try {
+            if (!supabase) {
+                console.error('Supabase client not available');
+                return;
+            }
+            
             const user = (await supabase.auth.getUser()).data.user;
             if (!user) return;
 
@@ -97,6 +100,11 @@ export default function ProjectsPageClient({ userEmail }: ProjectsPageClientProp
     const fetchProjects = async () => {
         try {
             setLoading(true);
+
+            if (!supabase) {
+                console.error('Supabase client not available');
+                return;
+            }
 
             const user = (await supabase.auth.getUser()).data.user;
             if (!user) return;
@@ -124,6 +132,11 @@ export default function ProjectsPageClient({ userEmail }: ProjectsPageClientProp
 
     const addProject = async () => {
         try {
+            if (!supabase) {
+                console.error('Supabase client not available');
+                return;
+            }
+
             const user = (await supabase.auth.getUser()).data.user;
             if (!user) return;
 
@@ -162,7 +175,7 @@ export default function ProjectsPageClient({ userEmail }: ProjectsPageClientProp
 
     const updateProject = async () => {
         try {
-            if (!editingProject) return;
+            if (!editingProject || !supabase) return;
 
             const user = (await supabase.auth.getUser()).data.user;
             if (!user) return;
@@ -215,9 +228,13 @@ export default function ProjectsPageClient({ userEmail }: ProjectsPageClientProp
         setShowEditForm(true);
         setShowForm(false);
     };
-
     const deleteProject = async (projectId: string) => {
         try {
+            if (!supabase) {
+                console.error('Supabase client not available');
+                return;
+            }
+
             const user = (await supabase.auth.getUser()).data.user;
             if (!user) return;
 
@@ -236,74 +253,7 @@ export default function ProjectsPageClient({ userEmail }: ProjectsPageClientProp
         }
     };
 
-    const filteredProjects = projects.filter(project => {
-        // Filtro por término de búsqueda
-        const matchesSearch = searchTerm === '' ||
-            project.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-            project.description?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-            project.client?.name.toLowerCase().includes(searchTerm.toLowerCase());
-
-        // Filtro por estado
-        const matchesStatus = filterStatus === 'all' || project.status === filterStatus;
-
-        // Filtro por cliente
-        const matchesClient = filterClient === 'all' || project.client_id === filterClient;
-
-        return matchesSearch && matchesStatus && matchesClient;
-    }).sort((a, b) => {
-        let aValue, bValue;
-
-        switch (sortBy) {
-            case 'name':
-                aValue = a.name.toLowerCase();
-                bValue = b.name.toLowerCase();
-                break;
-            case 'status':
-                aValue = a.status;
-                bValue = b.status;
-                break;
-            case 'budget':
-                aValue = a.budget || 0;
-                bValue = b.budget || 0;
-                break;
-            case 'start_date':
-                aValue = a.start_date || '0000-00-00';
-                bValue = b.start_date || '0000-00-00';
-                break;
-            default: // created_at
-                aValue = a.created_at;
-                bValue = b.created_at;
-        }
-
-        if (sortOrder === 'asc') {
-            return aValue > bValue ? 1 : -1;
-        } else {
-            return aValue < bValue ? 1 : -1;
-        }
-    });
-
-    // Funciones para obtener estilos de estado
-    const getStatusColor = (status: string) => {
-        switch (status) {
-            case 'active': return 'bg-emerald-100 text-emerald-700 border-emerald-200';
-            case 'completed': return 'bg-blue-100 text-blue-700 border-blue-200';
-            case 'paused': return 'bg-amber-100 text-amber-700 border-amber-200';
-            case 'cancelled': return 'bg-red-100 text-red-700 border-red-200';
-            default: return 'bg-slate-100 text-slate-700 border-slate-200';
-        }
-    };
-
-    const getStatusIcon = (status: string) => {
-        switch (status) {
-            case 'active': return <Clock className="w-4 h-4" />;
-            case 'completed': return <CheckCircle className="w-4 h-4" />;
-            case 'paused': return <Pause className="w-4 h-4" />;
-            case 'cancelled': return <X className="w-4 h-4" />;
-            default: return <Clock className="w-4 h-4" />;
-        }
-    };
-
-    // Stats
+    // Stats calculations
     const totalProjects = projects.length;
     const activeProjects = projects.filter(p => p.status === 'active').length;
     const completedProjects = projects.filter(p => p.status === 'completed').length;
@@ -317,123 +267,169 @@ export default function ProjectsPageClient({ userEmail }: ProjectsPageClientProp
 
     // Render
     return (
-        <div className="flex h-screen bg-gradient-to-br from-slate-50 via-white to-slate-100">
-            <Sidebar userEmail={userEmail} onLogout={async () => {
-                await supabase.auth.signOut();
-                router.push('/login');
-            }} />
+        <div className="min-h-screen bg-gradient-to-br from-gray-50 via-white to-gray-100 relative">
+            {/* Subtle mesh background */}
+            <div className="absolute inset-0 bg-[url('data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iNjAiIGhlaWdodD0iNjAiIHZpZXdCb3g9IjAgMCA2MCA2MCIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj48ZyBmaWxsPSJub25lIiBmaWxsLXJ1bGU9ImV2ZW5vZGQiPjxnIGZpbGw9IiMwMDAwMDAiIGZpbGwtb3BhY2l0eT0iMC4wMiI+PGNpcmNsZSBjeD0iNSIgY3k9IjUiIHI9IjEiLz48L2c+PC9nPjwvc3ZnPg==')] opacity-40"></div>
+            
+            {/* Gradient overlay */}
+            <div className="absolute inset-0 bg-gradient-to-tr from-blue-500/5 via-transparent to-purple-500/5"></div>
 
-            <main className="flex-1 ml-56 overflow-auto">
-                {/* Header */}
-                <div className="bg-white/80 backdrop-blur-sm border-b border-slate-200 sticky top-0 z-10">
-                    <div className="p-4">
-                        <div className="flex items-center justify-between">
-                            <div>
-                                <h1 className="text-3xl font-bold bg-gradient-to-r from-slate-900 to-slate-700 bg-clip-text text-transparent">
-                                    Proyectos
-                                </h1>
-                                <p className="text-slate-600 mt-1 font-medium">
-                                    Gestiona tus proyectos y su progreso
-                                </p>
-                            </div>
-                            <Button
-                                onClick={() => setShowForm(true)}
-                                className="px-6 py-2.5 bg-gradient-to-r from-blue-600 to-blue-700 text-white rounded-xl font-semibold hover:from-blue-700 hover:to-blue-800 transition-all duration-200 shadow-lg shadow-blue-600/25"
-                            >
-                                <Plus className="h-4 w-4 mr-2" />
-                                Nuevo Proyecto
-                            </Button>
-                        </div>
-                    </div>
-                </div>
+            <div className="flex h-screen relative z-10">
+                <Sidebar userEmail={userEmail} onLogout={async () => {
+                    if (supabase) {
+                        await supabase.auth.signOut();
+                    }
+                    router.push('/login');
+                }} />
 
-                <div className="p-4 space-y-6">
-                    {/* Stats Cards */}
-                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-                        <Card className="rounded-2xl shadow-sm border-slate-100 hover:shadow-lg transition-shadow">
-                            <CardContent className="p-6">
-                                <div className="flex items-center justify-between">
-                                    <div>
-                                        <p className="text-slate-600 text-sm font-semibold uppercase tracking-wide">Total Proyectos</p>
-                                        <p className="text-2xl font-bold text-slate-900 mt-1">{totalProjects}</p>
-                                    </div>
-                                    <div className="p-3 bg-gradient-to-br from-blue-500 to-blue-600 rounded-xl">
-                                        <Briefcase className="w-6 h-6 text-white" />
-                                    </div>
-                                </div>
-                            </CardContent>
-                        </Card>
-
-                        <Card className="rounded-2xl shadow-sm border-slate-100 hover:shadow-lg transition-shadow">
-                            <CardContent className="p-6">
-                                <div className="flex items-center justify-between">
-                                    <div>
-                                        <p className="text-slate-600 text-sm font-semibold uppercase tracking-wide">Activos</p>
-                                        <p className="text-2xl font-bold text-emerald-700 mt-1">{activeProjects}</p>
-                                    </div>
-                                    <div className="p-3 bg-gradient-to-br from-emerald-500 to-emerald-600 rounded-xl">
-                                        <Clock className="w-6 h-6 text-white" />
-                                    </div>
-                                </div>
-                            </CardContent>
-                        </Card>
-
-                        <Card className="rounded-2xl shadow-sm border-slate-100 hover:shadow-lg transition-shadow">
-                            <CardContent className="p-6">
-                                <div className="flex items-center justify-between">
-                                    <div>
-                                        <p className="text-slate-600 text-sm font-semibold uppercase tracking-wide">Completados</p>
-                                        <p className="text-2xl font-bold text-blue-700 mt-1">{completedProjects}</p>
-                                    </div>
-                                    <div className="p-3 bg-gradient-to-br from-blue-500 to-blue-600 rounded-xl">
-                                        <CheckCircle className="w-6 h-6 text-white" />
-                                    </div>
-                                </div>
-                            </CardContent>
-                        </Card>
-
-                        <Card className="rounded-2xl shadow-sm border-slate-100 hover:shadow-lg transition-shadow">
-                            <CardContent className="p-6">
-                                <div className="flex items-center justify-between">
-                                    <div>
-                                        <p className="text-slate-600 text-sm font-semibold uppercase tracking-wide">Valor Total</p>
-                                        <p className="text-2xl font-bold text-amber-700 mt-1">${totalBudget.toLocaleString()}</p>
-                                    </div>
-                                    <div className="p-3 bg-gradient-to-br from-amber-500 to-amber-600 rounded-xl">
-                                        <DollarSign className="w-6 h-6 text-white" />
-                                    </div>
-                                </div>
-                            </CardContent>
-                        </Card>
-                    </div>
-
-                    {/* Barra de filtros */}
-                    <Card className="rounded-2xl shadow-sm border-slate-100">
-                        <CardContent className="p-6">
-                            <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-5">
+                <main className="flex-1 ml-56 overflow-auto">
+                    <div className="p-6 lg:p-8 max-w-7xl mx-auto">
+                        {/* Header */}
+                        <div className="mb-8">
+                            <div className="flex items-center justify-between mb-6">
                                 <div>
-                                    <label className="text-sm font-semibold text-slate-700 mb-2 block">
-                                        <Search className="h-4 w-4 inline mr-1" />
-                                        Buscar
-                                    </label>
+                                    <h1 className="text-3xl font-bold text-gray-900 tracking-tight">
+                                        Proyectos
+                                    </h1>
+                                    <p className="text-gray-600 mt-1">
+                                        Gestiona tus proyectos y controla el progreso
+                                    </p>
+                                </div>
+                                <div className="flex items-center space-x-3">
+                                    <div className="flex items-center space-x-2 bg-white rounded-lg px-3 py-2 shadow-sm border border-gray-200">
+                                        <div className="w-2 h-2 bg-green-500 rounded-full animate-pulse"></div>
+                                        <span className="text-sm font-medium text-gray-700">En vivo</span>
+                                    </div>
+                                    <Button
+                                        onClick={() => setShowForm(true)}
+                                        className="bg-gradient-to-r from-blue-600 to-blue-700 hover:from-blue-700 hover:to-blue-800 text-white px-6 py-2 rounded-lg shadow-sm flex items-center gap-2"
+                                    >
+                                        <Plus className="w-4 h-4" />
+                                        Nuevo Proyecto
+                                    </Button>
+                                </div>
+                            </div>
+
+                            {/* Stats Cards - Silicon Valley Style */}
+                            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
+                                {/* Total Projects */}
+                                <div className="group relative bg-white rounded-2xl p-6 shadow-sm border border-gray-200 hover:shadow-md hover:border-gray-300 transition-all duration-200">
+                                    <div className="absolute top-4 right-4">
+                                        <div className="w-10 h-10 bg-blue-50 rounded-xl flex items-center justify-center group-hover:bg-blue-100 transition-colors duration-200">
+                                            <Briefcase className="w-5 h-5 text-blue-600" />
+                                        </div>
+                                    </div>
+                                    <div className="space-y-2">
+                                        <p className="text-sm font-medium text-gray-600">Total Proyectos</p>
+                                        <p className="text-3xl font-bold text-gray-900">{totalProjects}</p>
+                                        <div className="flex items-center text-sm">
+                                            <TrendingUp className="w-4 h-4 text-emerald-500 mr-1" />
+                                            <span className="text-emerald-600 font-medium">En gestión</span>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                {/* Active Projects */}
+                                <div className="group relative bg-white rounded-2xl p-6 shadow-sm border border-gray-200 hover:shadow-md hover:border-gray-300 transition-all duration-200">
+                                    <div className="absolute top-4 right-4">
+                                        <div className="w-10 h-10 bg-emerald-50 rounded-xl flex items-center justify-center group-hover:bg-emerald-100 transition-colors duration-200">
+                                            <Clock className="w-5 h-5 text-emerald-600" />
+                                        </div>
+                                    </div>
+                                    <div className="space-y-2">
+                                        <p className="text-sm font-medium text-gray-600">Proyectos Activos</p>
+                                        <p className="text-3xl font-bold text-gray-900">{activeProjects}</p>
+                                        <div className="flex items-center text-sm">
+                                            <div className="w-4 h-4 bg-emerald-500 rounded-full mr-1 animate-pulse"></div>
+                                            <span className="text-emerald-600 font-medium">En progreso</span>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                {/* Completed Projects */}
+                                <div className="group relative bg-white rounded-2xl p-6 shadow-sm border border-gray-200 hover:shadow-md hover:border-gray-300 transition-all duration-200">
+                                    <div className="absolute top-4 right-4">
+                                        <div className="w-10 h-10 bg-purple-50 rounded-xl flex items-center justify-center group-hover:bg-purple-100 transition-colors duration-200">
+                                            <CheckCircle className="w-5 h-5 text-purple-600" />
+                                        </div>
+                                    </div>
+                                    <div className="space-y-2">
+                                        <p className="text-sm font-medium text-gray-600">Completados</p>
+                                        <p className="text-3xl font-bold text-gray-900">{completedProjects}</p>
+                                        <div className="flex items-center text-sm">
+                                            <CheckCircle className="w-4 h-4 text-purple-500 mr-1" />
+                                            <span className="text-gray-600">Finalizados</span>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                {/* Total Budget */}
+                                <div className="group relative bg-white rounded-2xl p-6 shadow-sm border border-gray-200 hover:shadow-md hover:border-gray-300 transition-all duration-200">
+                                    <div className="absolute top-4 right-4">
+                                        <div className="w-10 h-10 bg-orange-50 rounded-xl flex items-center justify-center group-hover:bg-orange-100 transition-colors duration-200">
+                                            <DollarSign className="w-5 h-5 text-orange-600" />
+                                        </div>
+                                    </div>
+                                    <div className="space-y-2">
+                                        <p className="text-sm font-medium text-gray-600">Valor Total</p>
+                                        <p className="text-3xl font-bold text-gray-900">€{totalBudget.toLocaleString()}</p>
+                                        <div className="flex items-center text-sm">
+                                            <TrendingUp className="w-4 h-4 text-emerald-500 mr-1" />
+                                            <span className="text-gray-600">En proyectos</span>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                {/* Formulario nuevo proyecto */}
+                {showForm && (
+                    <Card className="mb-8">
+                        <CardHeader>
+                            <CardTitle>Nuevo Proyecto</CardTitle>
+                            <CardDescription>Crea un nuevo proyecto para tu cliente</CardDescription>
+                        </CardHeader>
+                        <CardContent>
+                            <div className="grid gap-4 md:grid-cols-2">
+                                <div>
+                                    <label className="text-sm font-medium">Nombre del Proyecto</label>
                                     <Input
-                                        placeholder="Buscar proyectos..."
-                                        value={searchTerm}
-                                        onChange={(e) => setSearchTerm(e.target.value)}
-                                        className="rounded-xl border-slate-200 focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                                        placeholder="Ej: Desarrollo web corporativo"
+                                        value={formData.name}
+                                        onChange={(e) => setFormData({ ...formData, name: e.target.value })}
                                     />
                                 </div>
                                 <div>
-                                    <label className="text-sm font-semibold text-slate-700 mb-2 block">
-                                        <Filter className="h-4 w-4 inline mr-1" />
-                                        Estado
-                                    </label>
+                                    <label className="text-sm font-medium">Cliente</label>
                                     <select
-                                        className="w-full p-3 border border-slate-200 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all"
-                                        value={filterStatus}
-                                        onChange={(e) => setFilterStatus(e.target.value)}
+                                        className="w-full p-2 border rounded-md"
+                                        value={formData.client_id}
+                                        onChange={(e) => setFormData({ ...formData, client_id: e.target.value })}
                                     >
-                                        <option value="all">Todos</option>
+                                        <option value="">Selecciona un cliente</option>
+                                        {clients.map((client) => (
+                                            <option key={client.id} value={client.id}>
+                                                {client.name} {client.company ? `- ${client.company}` : ''}
+                                            </option>
+                                        ))}
+                                    </select>
+                                </div>
+                                <div>
+                                    <label className="text-sm font-medium">Presupuesto</label>
+                                    <Input
+                                        type="number"
+                                        placeholder="1000"
+                                        value={formData.budget}
+                                        onChange={(e) => setFormData({ ...formData, budget: e.target.value })}
+                                    />
+                                </div>
+                                <div>
+                                    <label className="text-sm font-medium">Estado</label>
+                                    <select
+                                        className="w-full p-2 border rounded-md"
+                                        value={formData.status}
+                                        onChange={(e) => setFormData({ ...formData, status: e.target.value })}
+                                    >
                                         <option value="active">Activo</option>
                                         <option value="paused">Pausado</option>
                                         <option value="completed">Completado</option>
@@ -441,403 +437,230 @@ export default function ProjectsPageClient({ userEmail }: ProjectsPageClientProp
                                     </select>
                                 </div>
                                 <div>
-                                    <label className="text-sm font-semibold text-slate-700 mb-2 block">Cliente</label>
+                                    <label className="text-sm font-medium">Fecha de Inicio</label>
+                                    <Input
+                                        type="date"
+                                        value={formData.start_date}
+                                        onChange={(e) => setFormData({ ...formData, start_date: e.target.value })}
+                                    />
+                                </div>
+                                <div>
+                                    <label className="text-sm font-medium">Fecha de Fin</label>
+                                    <Input
+                                        type="date"
+                                        value={formData.end_date}
+                                        onChange={(e) => setFormData({ ...formData, end_date: e.target.value })}
+                                    />
+                                </div>
+                                <div className="md:col-span-2">
+                                    <label className="text-sm font-medium">Descripción</label>
+                                    <textarea
+                                        className="w-full p-2 border rounded-md"
+                                        rows={3}
+                                        placeholder="Describe el proyecto..."
+                                        value={formData.description}
+                                        onChange={(e) => setFormData({ ...formData, description: e.target.value })}
+                                    />
+                                </div>
+                            </div>
+                            <div className="flex gap-2 mt-4">
+                                <Button onClick={addProject}>
+                                    Crear Proyecto
+                                </Button>
+                                <Button variant="outline" onClick={() => setShowForm(false)}>
+                                    Cancelar
+                                </Button>
+                            </div>
+                        </CardContent>
+                    </Card>
+                )}
+
+                {/* Formulario editar proyecto */}
+                {showEditForm && (
+                    <Card className="mb-8">
+                        <CardHeader>
+                            <CardTitle>Editar Proyecto</CardTitle>
+                            <CardDescription>Modifica los datos del proyecto</CardDescription>
+                        </CardHeader>
+                        <CardContent>
+                            <div className="grid gap-4 md:grid-cols-2">
+                                <div>
+                                    <label className="text-sm font-medium">Nombre del Proyecto</label>
+                                    <Input
+                                        placeholder="Ej: Desarrollo web corporativo"
+                                        value={formData.name}
+                                        onChange={(e) => setFormData({ ...formData, name: e.target.value })}
+                                    />
+                                </div>
+                                <div>
+                                    <label className="text-sm font-medium">Cliente</label>
                                     <select
-                                        className="w-full p-3 border border-slate-200 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all"
-                                        value={filterClient}
-                                        onChange={(e) => setFilterClient(e.target.value)}
+                                        className="w-full p-2 border rounded-md"
+                                        value={formData.client_id}
+                                        onChange={(e) => setFormData({ ...formData, client_id: e.target.value })}
                                     >
-                                        <option value="all">Todos</option>
+                                        <option value="">Selecciona un cliente</option>
                                         {clients.map((client) => (
                                             <option key={client.id} value={client.id}>
-                                                {client.name}
+                                                {client.name} {client.company ? `- ${client.company}` : ''}
                                             </option>
                                         ))}
                                     </select>
                                 </div>
                                 <div>
-                                    <label className="text-sm font-semibold text-slate-700 mb-2 block">Ordenar por</label>
+                                    <label className="text-sm font-medium">Presupuesto</label>
+                                    <Input
+                                        type="number"
+                                        placeholder="1000"
+                                        value={formData.budget}
+                                        onChange={(e) => setFormData({ ...formData, budget: e.target.value })}
+                                    />
+                                </div>
+                                <div>
+                                    <label className="text-sm font-medium">Estado</label>
                                     <select
-                                        className="w-full p-3 border border-slate-200 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all"
-                                        value={sortBy}
-                                        onChange={(e) => setSortBy(e.target.value)}
+                                        className="w-full p-2 border rounded-md"
+                                        value={formData.status}
+                                        onChange={(e) => setFormData({ ...formData, status: e.target.value })}
                                     >
-                                        <option value="created_at">Fecha creación</option>
-                                        <option value="name">Nombre</option>
-                                        <option value="status">Estado</option>
-                                        <option value="budget">Presupuesto</option>
-                                        <option value="start_date">Fecha inicio</option>
+                                        <option value="active">Activo</option>
+                                        <option value="paused">Pausado</option>
+                                        <option value="completed">Completado</option>
+                                        <option value="cancelled">Cancelado</option>
                                     </select>
                                 </div>
                                 <div>
-                                    <label className="text-sm font-semibold text-slate-700 mb-2 block">Orden</label>
-                                    <select
-                                        className="w-full p-3 border border-slate-200 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all"
-                                        value={sortOrder}
-                                        onChange={(e) => setSortOrder(e.target.value)}
-                                    >
-                                        <option value="desc">Descendente</option>
-                                        <option value="asc">Ascendente</option>
-                                    </select>
+                                    <label className="text-sm font-medium">Fecha de Inicio</label>
+                                    <Input
+                                        type="date"
+                                        value={formData.start_date}
+                                        onChange={(e) => setFormData({ ...formData, start_date: e.target.value })}
+                                    />
                                 </div>
+                                <div>
+                                    <label className="text-sm font-medium">Fecha de Fin</label>
+                                    <Input
+                                        type="date"
+                                        value={formData.end_date}
+                                        onChange={(e) => setFormData({ ...formData, end_date: e.target.value })}
+                                    />
+                                </div>
+                                <div className="md:col-span-2">
+                                    <label className="text-sm font-medium">Descripción</label>
+                                    <textarea
+                                        className="w-full p-2 border rounded-md"
+                                        rows={3}
+                                        placeholder="Describe el proyecto..."
+                                        value={formData.description}
+                                        onChange={(e) => setFormData({ ...formData, description: e.target.value })}
+                                    />
+                                </div>
+                            </div>
+                            <div className="flex gap-2 mt-4">
+                                <Button onClick={updateProject}>
+                                    Actualizar Proyecto
+                                </Button>
+                                <Button variant="outline" onClick={() => {
+                                    setShowEditForm(false);
+                                    setEditingProject(null);
+                                }}>
+                                    Cancelar
+                                </Button>
                             </div>
                         </CardContent>
                     </Card>
+                )}
 
-                    {/* Formulario nuevo proyecto */}
-                    {showForm && (
-                        <Card className="rounded-2xl shadow-sm border-slate-100">
-                            <CardHeader className="bg-gradient-to-r from-blue-50 to-slate-50 rounded-t-2xl">
-                                <CardTitle className="text-slate-900">Nuevo Proyecto</CardTitle>
-                                <CardDescription className="text-slate-600">Crea un nuevo proyecto para tu cliente</CardDescription>
-                            </CardHeader>
-                            <CardContent className="p-6">
-                                <div className="grid gap-4 md:grid-cols-2">
-                                    <div>
-                                        <label className="text-sm font-semibold text-slate-700 mb-2 block">Nombre del Proyecto</label>
-                                        <Input
-                                            placeholder="Ej: Desarrollo web corporativo"
-                                            value={formData.name}
-                                            onChange={(e) => setFormData({ ...formData, name: e.target.value })}
-                                            className="rounded-xl border-slate-200"
-                                        />
-                                    </div>
-                                    <div>
-                                        <label className="text-sm font-semibold text-slate-700 mb-2 block">Cliente</label>
-                                        <select
-                                            className="w-full p-3 border border-slate-200 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all"
-                                            value={formData.client_id}
-                                            onChange={(e) => setFormData({ ...formData, client_id: e.target.value })}
-                                        >
-                                            <option value="">Selecciona un cliente</option>
-                                            {clients.map((client) => (
-                                                <option key={client.id} value={client.id}>
-                                                    {client.name} {client.company ? `- ${client.company}` : ''}
-                                                </option>
-                                            ))}
-                                        </select>
-                                    </div>
-                                    <div>
-                                        <label className="text-sm font-semibold text-slate-700 mb-2 block">Presupuesto</label>
-                                        <Input
-                                            type="number"
-                                            placeholder="1000"
-                                            value={formData.budget}
-                                            onChange={(e) => setFormData({ ...formData, budget: e.target.value })}
-                                            className="rounded-xl border-slate-200"
-                                        />
-                                    </div>
-                                    <div>
-                                        <label className="text-sm font-semibold text-slate-700 mb-2 block">Estado</label>
-                                        <select
-                                            className="w-full p-3 border border-slate-200 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all"
-                                            value={formData.status}
-                                            onChange={(e) => setFormData({ ...formData, status: e.target.value })}
-                                        >
-                                            <option value="active">Activo</option>
-                                            <option value="paused">Pausado</option>
-                                            <option value="completed">Completado</option>
-                                            <option value="cancelled">Cancelado</option>
-                                        </select>
-                                    </div>
-                                    <div>
-                                        <label className="text-sm font-semibold text-slate-700 mb-2 block">Fecha de Inicio</label>
-                                        <Input
-                                            type="date"
-                                            value={formData.start_date}
-                                            onChange={(e) => setFormData({ ...formData, start_date: e.target.value })}
-                                            className="rounded-xl border-slate-200"
-                                        />
-                                    </div>
-                                    <div>
-                                        <label className="text-sm font-semibold text-slate-700 mb-2 block">Fecha de Fin</label>
-                                        <Input
-                                            type="date"
-                                            value={formData.end_date}
-                                            onChange={(e) => setFormData({ ...formData, end_date: e.target.value })}
-                                            className="rounded-xl border-slate-200"
-                                        />
-                                    </div>
-                                    <div className="md:col-span-2">
-                                        <label className="text-sm font-semibold text-slate-700 mb-2 block">Descripción</label>
-                                        <textarea
-                                            className="w-full p-3 border border-slate-200 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all"
-                                            rows={3}
-                                            placeholder="Describe el proyecto..."
-                                            value={formData.description}
-                                            onChange={(e) => setFormData({ ...formData, description: e.target.value })}
-                                        />
-                                    </div>
-                                </div>
-                                <div className="flex gap-3 mt-6">
-                                    <Button
-                                        onClick={addProject}
-                                        className="bg-gradient-to-r from-emerald-600 to-emerald-700 text-white rounded-xl hover:from-emerald-700 hover:to-emerald-800"
-                                    >
-                                        Crear Proyecto
-                                    </Button>
-                                    <Button
-                                        variant="outline"
-                                        onClick={() => setShowForm(false)}
-                                        className="rounded-xl border-slate-200 hover:bg-slate-50"
-                                    >
-                                        Cancelar
-                                    </Button>
-                                </div>
-                            </CardContent>
-                        </Card>
-                    )}
-
-                    {/* Formulario editar proyecto */}
-                    {showEditForm && (
-                        <Card className="rounded-2xl shadow-sm border-slate-100">
-                            <CardHeader className="bg-gradient-to-r from-amber-50 to-slate-50 rounded-t-2xl">
-                                <CardTitle className="text-slate-900">Editar Proyecto</CardTitle>
-                                <CardDescription className="text-slate-600">Modifica los datos del proyecto</CardDescription>
-                            </CardHeader>
-                            <CardContent className="p-6">
-                                <div className="grid gap-4 md:grid-cols-2">
-                                    <div>
-                                        <label className="text-sm font-semibold text-slate-700 mb-2 block">Nombre del Proyecto</label>
-                                        <Input
-                                            placeholder="Ej: Desarrollo web corporativo"
-                                            value={formData.name}
-                                            onChange={(e) => setFormData({ ...formData, name: e.target.value })}
-                                            className="rounded-xl border-slate-200"
-                                        />
-                                    </div>
-                                    <div>
-                                        <label className="text-sm font-semibold text-slate-700 mb-2 block">Cliente</label>
-                                        <select
-                                            className="w-full p-3 border border-slate-200 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all"
-                                            value={formData.client_id}
-                                            onChange={(e) => setFormData({ ...formData, client_id: e.target.value })}
-                                        >
-                                            <option value="">Selecciona un cliente</option>
-                                            {clients.map((client) => (
-                                                <option key={client.id} value={client.id}>
-                                                    {client.name} {client.company ? `- ${client.company}` : ''}
-                                                </option>
-                                            ))}
-                                        </select>
-                                    </div>
-                                    <div>
-                                        <label className="text-sm font-semibold text-slate-700 mb-2 block">Presupuesto</label>
-                                        <Input
-                                            type="number"
-                                            placeholder="1000"
-                                            value={formData.budget}
-                                            onChange={(e) => setFormData({ ...formData, budget: e.target.value })}
-                                            className="rounded-xl border-slate-200"
-                                        />
-                                    </div>
-                                    <div>
-                                        <label className="text-sm font-semibold text-slate-700 mb-2 block">Estado</label>
-                                        <select
-                                            className="w-full p-3 border border-slate-200 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all"
-                                            value={formData.status}
-                                            onChange={(e) => setFormData({ ...formData, status: e.target.value })}
-                                        >
-                                            <option value="active">Activo</option>
-                                            <option value="paused">Pausado</option>
-                                            <option value="completed">Completado</option>
-                                            <option value="cancelled">Cancelado</option>
-                                        </select>
-                                    </div>
-                                    <div>
-                                        <label className="text-sm font-semibold text-slate-700 mb-2 block">Fecha de Inicio</label>
-                                        <Input
-                                            type="date"
-                                            value={formData.start_date}
-                                            onChange={(e) => setFormData({ ...formData, start_date: e.target.value })}
-                                            className="rounded-xl border-slate-200"
-                                        />
-                                    </div>
-                                    <div>
-                                        <label className="text-sm font-semibold text-slate-700 mb-2 block">Fecha de Fin</label>
-                                        <Input
-                                            type="date"
-                                            value={formData.end_date}
-                                            onChange={(e) => setFormData({ ...formData, end_date: e.target.value })}
-                                            className="rounded-xl border-slate-200"
-                                        />
-                                    </div>
-                                    <div className="md:col-span-2">
-                                        <label className="text-sm font-semibold text-slate-700 mb-2 block">Descripción</label>
-                                        <textarea
-                                            className="w-full p-3 border border-slate-200 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all"
-                                            rows={3}
-                                            placeholder="Describe el proyecto..."
-                                            value={formData.description}
-                                            onChange={(e) => setFormData({ ...formData, description: e.target.value })}
-                                        />
-                                    </div>
-                                </div>
-                                <div className="flex gap-3 mt-6">
-                                    <Button
-                                        onClick={updateProject}
-                                        className="bg-gradient-to-r from-amber-600 to-amber-700 text-white rounded-xl hover:from-amber-700 hover:to-amber-800"
-                                    >
-                                        Actualizar Proyecto
-                                    </Button>
-                                    <Button
-                                        variant="outline"
-                                        onClick={() => {
-                                            setShowEditForm(false);
-                                            setEditingProject(null);
-                                        }}
-                                        className="rounded-xl border-slate-200 hover:bg-slate-50"
-                                    >
-                                        Cancelar
-                                    </Button>
-                                </div>
-                            </CardContent>
-                        </Card>
-                    )}
-
-                    {/* Contenido */}
-                    {loading ? (
-                        <div className="text-center py-12">
-                            <div className="w-12 h-12 border-4 border-blue-600 border-t-transparent rounded-full animate-spin mx-auto mb-4"></div>
-                            <p className="text-slate-600 font-medium">Cargando proyectos...</p>
-                        </div>
-                    ) : (
-                        <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
-                            {projects.length === 0 ? (
-                                <div className="col-span-full text-center py-12">
-                                    <Briefcase className="w-16 h-16 text-slate-300 mx-auto mb-4" />
-                                    <h3 className="text-lg font-semibold text-slate-900 mb-2">
-                                        No tienes proyectos aún
-                                    </h3>
-                                    <p className="text-slate-600 mb-6">
-                                        Crea tu primer proyecto para empezar
-                                    </p>
-                                    <Button
-                                        onClick={() => setShowForm(true)}
-                                        className="bg-gradient-to-r from-blue-600 to-blue-700 text-white rounded-xl"
-                                    >
-                                        <Plus className="h-4 w-4 mr-2" />
-                                        Crear Proyecto
-                                    </Button>
-                                </div>
-                            ) : filteredProjects.length === 0 ? (
-                                <div className="col-span-full text-center py-12">
-                                    <Search className="w-16 h-16 text-slate-300 mx-auto mb-4" />
-                                    <h3 className="text-lg font-semibold text-slate-900 mb-2">
-                                        No se encontraron proyectos
-                                    </h3>
-                                    <p className="text-slate-600 mb-4">
-                                        Intenta ajustar los filtros de búsqueda
-                                    </p>
-                                </div>
-                            ) : (
-                                filteredProjects.map((project) => (
-                                    <Card
-                                        key={project.id}
-                                        className="rounded-2xl shadow-sm border-slate-100 hover:shadow-xl hover:shadow-slate-200/50 transition-all duration-300 hover:-translate-y-1 cursor-pointer"
-                                        onClick={() => router.push(`/dashboard/projects/${project.id}`)}
-                                    >
-                                        <CardHeader className="pb-3">
-                                            <div className="flex items-start justify-between">
-                                                <div className="flex items-center gap-3">
-                                                    <div className="w-12 h-12 bg-gradient-to-br from-purple-500 to-purple-600 rounded-xl flex items-center justify-center text-white font-bold text-lg">
-                                                        {project.name.charAt(0).toUpperCase()}
-                                                    </div>
-                                                    <div>
-                                                        <CardTitle className="text-lg text-slate-900">{project.name}</CardTitle>
-                                                        <CardDescription className="text-slate-600">
-                                                            {project.client?.name || 'Sin cliente asignado'}
-                                                        </CardDescription>
-                                                    </div>
+                {/* Contenido */}
+                {loading ? (
+                    <div className="flex justify-center items-center h-64">
+                        <div className="text-lg text-gray-600">Cargando proyectos...</div>
+                    </div>
+                ) : (
+                    <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
+                        {projects.length === 0 ? (
+                            <div className="col-span-full text-center py-12">
+                                <h3 className="text-lg font-medium text-gray-900 mb-2">
+                                    No tienes proyectos aún
+                                </h3>
+                                <p className="text-gray-600 mb-4">
+                                    Crea tu primer proyecto para empezar
+                                </p>
+                                <Button onClick={() => setShowForm(true)}>
+                                    <Plus className="h-4 w-4 mr-2" />
+                                    Crear Proyecto
+                                </Button>
+                            </div>
+                        ) : (
+                            projects.map((project) => (
+                                <Card key={project.id} className="hover:shadow-lg transition-shadow">
+                                    <CardHeader>
+                                        <CardTitle className="text-lg">{project.name}</CardTitle>
+                                        <CardDescription>
+                                            {project.client?.name || 'Sin cliente asignado'}
+                                        </CardDescription>
+                                    </CardHeader>
+                                    <CardContent>
+                                        <div className="space-y-2 text-sm text-gray-600">
+                                            <div className="flex justify-between">
+                                                <span>Estado:</span>
+                                                <span className="capitalize font-medium">{project.status}</span>
+                                            </div>
+                                            {project.budget && (
+                                                <div className="flex justify-between">
+                                                    <span>Presupuesto:</span>
+                                                    <span>${project.budget}</span>
                                                 </div>
-                                                <span className={`inline-flex items-center gap-1 px-2 py-1 rounded-full text-xs font-medium border ${getStatusColor(project.status)}`}>
-                                                    {getStatusIcon(project.status)}
-                                                    {project.status}
-                                                </span>
-                                            </div>
-                                        </CardHeader>
-                                        <CardContent className="space-y-4">
-                                            <div className="space-y-2 text-sm">
-                                                {project.budget && (
-                                                    <div className="flex justify-between p-2 rounded-lg bg-slate-50">
-                                                        <span className="text-slate-600 flex items-center gap-1">
-                                                            <DollarSign className="w-4 h-4" />
-                                                            Presupuesto:
-                                                        </span>
-                                                        <span className="font-semibold text-slate-900">${project.budget.toLocaleString()}</span>
-                                                    </div>
-                                                )}
-                                                {project.start_date && (
-                                                    <div className="flex justify-between p-2 rounded-lg bg-slate-50">
-                                                        <span className="text-slate-600 flex items-center gap-1">
-                                                            <Calendar className="w-4 h-4" />
-                                                            Inicio:
-                                                        </span>
-                                                        <span className="font-semibold text-slate-900">{new Date(project.start_date).toLocaleDateString('es-ES')}</span>
-                                                    </div>
-                                                )}
-                                                {project.end_date && (
-                                                    <div className="flex justify-between p-2 rounded-lg bg-slate-50">
-                                                        <span className="text-slate-600 flex items-center gap-1">
-                                                            <Calendar className="w-4 h-4" />
-                                                            Fin:
-                                                        </span>
-                                                        <span className="font-semibold text-slate-900">{new Date(project.end_date).toLocaleDateString('es-ES')}</span>
-                                                    </div>
-                                                )}
-                                                <div className="flex justify-between p-2 rounded-lg bg-slate-50">
-                                                    <span className="text-slate-600">Creado:</span>
-                                                    <span className="font-semibold text-slate-900">{new Date(project.created_at).toLocaleDateString('es-ES')}</span>
+                                            )}
+                                            {project.start_date && (
+                                                <div className="flex justify-between">
+                                                    <span>Inicio:</span>
+                                                    <span>{new Date(project.start_date).toLocaleDateString('es-ES')}</span>
                                                 </div>
+                                            )}
+                                            {project.end_date && (
+                                                <div className="flex justify-between">
+                                                    <span>Fin:</span>
+                                                    <span>{new Date(project.end_date).toLocaleDateString('es-ES')}</span>
+                                                </div>
+                                            )}
+                                            <div className="flex justify-between">
+                                                <span>Creado:</span>
+                                                <span>{new Date(project.created_at).toLocaleDateString('es-ES')}</span>
                                             </div>
-
-                                            <div className="flex gap-2 pt-3 border-t border-slate-100">
-                                                <Button
-                                                    size="sm"
-                                                    variant="outline"
-                                                    onClick={(e) => {
-                                                        e.stopPropagation();
-                                                        router.push(`/dashboard/projects/${project.id}`);
-                                                    }}
-                                                    className="flex-1 border-slate-200 rounded-lg hover:bg-blue-50 hover:border-blue-300 hover:text-blue-600"
-                                                >
-                                                    <Eye className="h-4 w-4 mr-1" />
-                                                    Ver
-                                                </Button>
-                                                <Button
-                                                    size="sm"
-                                                    variant="outline"
-                                                    onClick={(e) => {
-                                                        e.stopPropagation();
-                                                        startEditing(project);
-                                                    }}
-                                                    className="flex-1 border-slate-200 rounded-lg hover:bg-emerald-50 hover:border-emerald-300 hover:text-emerald-600"
-                                                >
-                                                    <Edit className="h-4 w-4 mr-1" />
-                                                    Editar
-                                                </Button>
-                                                <Button
-                                                    size="sm"
-                                                    variant="outline"
-                                                    onClick={(e) => {
-                                                        e.stopPropagation();
-                                                        if (window.confirm('¿Estás seguro de que quieres eliminar este proyecto?')) {
-                                                            deleteProject(project.id);
-                                                        }
-                                                    }}
-                                                    className="p-2 text-red-400 hover:text-red-600 hover:bg-red-50 rounded-lg transition-colors border-slate-200"
-                                                >
-                                                    <Trash2 className="h-4 w-4" />
-                                                </Button>
-                                            </div>
-                                        </CardContent>
-                                    </Card>
-                                ))
-                            )}
-                        </div>
-                    )}
-                </div>
-            </main>
+                                        </div>
+                                        <div className="mt-4 flex gap-2">
+                                            <Button
+                                                size="sm"
+                                                variant="outline"
+                                                onClick={() => startEditing(project)}
+                                            >
+                                                <Edit className="h-4 w-4 mr-2" />
+                                                Editar
+                                            </Button>
+                                            <Button
+                                                size="sm"
+                                                variant="outline"
+                                                onClick={() => {
+                                                    if (window.confirm('¿Estás seguro de que quieres eliminar este proyecto?')) {
+                                                        deleteProject(project.id);
+                                                    }
+                                                }}
+                                                className="text-red-600 hover:text-red-700"
+                                            >
+                                                <Trash2 className="h-4 w-4 mr-2" />
+                                                Eliminar
+                                            </Button>
+                                        </div>
+                                    </CardContent>
+                                </Card>
+                            ))
+                        )}
+                    </div>
+                )}
+                    </div>
+                </main>
+            </div>
         </div>
     );
 }

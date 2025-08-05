@@ -15,6 +15,7 @@ import {
     Edit,
     FileText,
     Mail,
+    MapPin,
     Phone,
     Send,
     User
@@ -45,7 +46,7 @@ interface Invoice {
         company?: string;
         email?: string;
         phone?: string;
-        // Quitamos address de aquí
+        address?: string;
     };
     project?: {
         id: string;
@@ -302,7 +303,12 @@ export default function InvoiceDetails({ invoiceId, userEmail }: InvoiceDetailsP
                                                         {invoice.client.phone}
                                                     </p>
                                                 )}
-                                                {/* Quitamos la sección de address */}
+                                                {invoice.client.address && (
+                                                    <p className="text-slate-600 flex items-center gap-2 mb-1">
+                                                        <MapPin className="h-4 w-4" />
+                                                        {invoice.client.address}
+                                                    </p>
+                                                )}
                                             </div>
                                             {invoice.project && (
                                                 <div>

@@ -25,7 +25,8 @@ interface Client {
     name: string;
     company?: string;
     email?: string;
-    // Quitamos phone y address
+    phone?: string;
+    address?: string;
 }
 
 interface Project {

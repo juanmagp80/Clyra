@@ -7,6 +7,9 @@ type Client = {
     name: string;
     email: string;
     tag: string;
+    phone?: string;
+    company?: string;
+    address?: string;
 };
 
 export default function ClientsList() {

@@ -11,6 +11,7 @@ import {
     Edit,
     Eye,
     Mail,
+    MapPin,
     Phone,
     Plus,
     Search,
@@ -27,6 +28,7 @@ type Client = {
     tag: string;
     phone?: string;
     company?: string;
+    address?: string;
     created_at: string;
 };
 
@@ -48,15 +50,20 @@ export default function ClientsPageClient({ userEmail }: ClientsPageClientProps)
         email: '',
         phone: '',
         company: '',
+        address: '',
         tag: ''
     });
 
     const handleLogout = async () => {
-        await supabase.auth.signOut();
+        if (supabase) {
+            await supabase.auth.signOut();
+        }
         router.push('/login');
     };
 
     const fetchClients = async () => {
+        if (!supabase) return;
+        
         setLoading(true);
         try {
             const { data, error } = await supabase
@@ -77,7 +84,7 @@ export default function ClientsPageClient({ userEmail }: ClientsPageClientProps)
     };
 
     const addClient = async () => {
-        if (!formData.name.trim()) return;
+        if (!formData.name.trim() || !supabase) return;
 
         try {
             const user = (await supabase.auth.getUser()).data.user;
@@ -98,6 +105,7 @@ export default function ClientsPageClient({ userEmail }: ClientsPageClientProps)
                     email: '',
                     phone: '',
                     company: '',
+                    address: '',
                     tag: ''
                 });
                 setShowForm(false);
@@ -120,216 +128,316 @@ export default function ClientsPageClient({ userEmail }: ClientsPageClientProps)
     );
 
     return (
-        <div className="flex h-screen bg-gradient-to-br from-slate-50 via-white to-slate-100">
-            <Sidebar userEmail={userEmail} onLogout={handleLogout} />
+        <div className="min-h-screen bg-gradient-to-br from-gray-50 via-white to-gray-100 relative">
+            {/* Subtle mesh background */}
+            <div className="absolute inset-0 bg-[url('data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iNjAiIGhlaWdodD0iNjAiIHZpZXdCb3g9IjAgMCA2MCA2MCIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj48ZyBmaWxsPSJub25lIiBmaWxsLXJ1bGU9ImV2ZW5vZGQiPjxnIGZpbGw9IiMwMDAwMDAiIGZpbGwtb3BhY2l0eT0iMC4wMiI+PGNpcmNsZSBjeD0iNSIgY3k9IjUiIHI9IjEiLz48L2c+PC9nPjwvc3ZnPg==')] opacity-40"></div>
+            
+            {/* Gradient overlay */}
+            <div className="absolute inset-0 bg-gradient-to-tr from-blue-500/5 via-transparent to-purple-500/5"></div>
 
-            <main className="flex-1 ml-56 overflow-auto">
-                {/* Header con nuevo estilo */}
-                <div className="bg-white/80 backdrop-blur-sm border-b border-slate-200 sticky top-0 z-10">
-                    <div className="p-4">
-                        <div className="flex items-center justify-between">
+            <div className="flex h-screen relative z-10">
+                <Sidebar userEmail={userEmail} onLogout={handleLogout} />
+
+                <main className="flex-1 ml-56 overflow-auto">
+                    <div className="p-6 lg:p-8 max-w-7xl mx-auto">
+                        {/* Header Section */}
+                        <div className="mb-8">
+                            <div className="flex items-center justify-between mb-6">
+                                <div>
+                                    <h1 className="text-3xl font-bold text-gray-900 tracking-tight">
+                                        Gestión de Clientes
+                                    </h1>
+                                    <p className="text-gray-600 mt-1">
+                                        Organiza tu cartera de clientes y visualiza su valor
+                                    </p>
+                                </div>
+                                <Button
+                                    onClick={() => setShowForm(!showForm)}
+                                    className="bg-gradient-to-r from-blue-600 to-blue-700 hover:from-blue-700 hover:to-blue-800 text-white shadow-sm"
+                                >
+                                    <Plus className="w-4 h-4 mr-2" />
+                                    Nuevo Cliente
+                                </Button>
+                            </div>
+
+                            {/* Stats Cards */}
+                            <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
+                                <div className="group relative bg-white rounded-2xl p-6 shadow-sm border border-gray-200 hover:shadow-md hover:border-gray-300 transition-all duration-200">
+                                    <div className="absolute top-4 right-4">
+                                        <div className="w-10 h-10 bg-blue-50 rounded-xl flex items-center justify-center group-hover:bg-blue-100 transition-colors duration-200">
+                                            <Users className="w-5 h-5 text-blue-600" />
+                                        </div>
+                                    </div>
+                                    <div className="space-y-2">
+                                        <p className="text-sm font-medium text-gray-600">Total Clientes</p>
+                                        <p className="text-3xl font-bold text-gray-900">{clients.length}</p>
+                                        <div className="flex items-center text-sm">
+                                            <div className="w-2 h-2 bg-green-500 rounded-full mr-2"></div>
+                                            <span className="text-gray-600">Cartera activa</span>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <div className="group relative bg-white rounded-2xl p-6 shadow-sm border border-gray-200 hover:shadow-md hover:border-gray-300 transition-all duration-200">
+                                    <div className="absolute top-4 right-4">
+                                        <div className="w-10 h-10 bg-green-50 rounded-xl flex items-center justify-center group-hover:bg-green-100 transition-colors duration-200">
+                                            <Building className="w-5 h-5 text-green-600" />
+                                        </div>
+                                    </div>
+                                    <div className="space-y-2">
+                                        <p className="text-sm font-medium text-gray-600">Con Empresa</p>
+                                        <p className="text-3xl font-bold text-gray-900">
+                                            {clients.filter(client => client.company).length}
+                                        </p>
+                                        <div className="flex items-center text-sm">
+                                            <div className="w-2 h-2 bg-green-500 rounded-full mr-2"></div>
+                                            <span className="text-gray-600">Corporativos</span>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <div className="group relative bg-white rounded-2xl p-6 shadow-sm border border-gray-200 hover:shadow-md hover:border-gray-300 transition-all duration-200">
+                                    <div className="absolute top-4 right-4">
+                                        <div className="w-10 h-10 bg-purple-50 rounded-xl flex items-center justify-center group-hover:bg-purple-100 transition-colors duration-200">
+                                            <Mail className="w-5 h-5 text-purple-600" />
+                                        </div>
+                                    </div>
+                                    <div className="space-y-2">
+                                        <p className="text-sm font-medium text-gray-600">Con Email</p>
+                                        <p className="text-3xl font-bold text-gray-900">
+                                            {clients.filter(client => client.email).length}
+                                        </p>
+                                        <div className="flex items-center text-sm">
+                                            <div className="w-2 h-2 bg-purple-500 rounded-full mr-2"></div>
+                                            <span className="text-gray-600">Contactables</span>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        {/* Header Actions & Search */}
+                        <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-6">
                             <div>
-                                <h1 className="text-3xl font-bold bg-gradient-to-r from-slate-900 to-slate-700 bg-clip-text text-transparent">
-                                    Clientes
-                                </h1>
-                                <p className="text-slate-600 mt-1 font-medium">
-                                    Gestiona tu cartera de clientes
+                                <h2 className="text-2xl font-bold text-gray-900 mb-2">
+                                    Clientes ({filteredClients.length})
+                                </h2>
+                                <p className="text-gray-600">
+                                    Gestiona toda la información de tus clientes en un solo lugar
                                 </p>
                             </div>
-                            <Button
-                                onClick={() => setShowForm(!showForm)}
-                                className="px-6 py-2.5 bg-gradient-to-r from-blue-600 to-blue-700 text-white rounded-xl font-semibold hover:from-blue-700 hover:to-blue-800 transition-all duration-200 shadow-lg shadow-blue-600/25"
-                            >
-                                <Plus className="h-4 w-4 mr-2" />
-                                Nuevo Cliente
-                            </Button>
+                            <div className="flex items-center gap-3 w-full sm:w-auto">
+                                <div className="relative flex-1 sm:flex-none">
+                                    <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-4 h-4" />
+                                    <Input
+                                        placeholder="Buscar clientes..."
+                                        value={searchTerm}
+                                        onChange={(e) => setSearchTerm(e.target.value)}
+                                        className="pl-10 w-full sm:w-64 border-gray-200 focus:border-blue-500 focus:ring-blue-500"
+                                    />
+                                </div>
+                            </div>
                         </div>
-                    </div>
-                </div>
 
-                <div className="p-4 space-y-4">
-                    {/* Search con nuevo estilo */}
-                    <div className="bg-white rounded-2xl shadow-sm border border-slate-100 p-4">
-                        <div className="relative max-w-md">
-                            <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-slate-400" />
-                            <Input
-                                placeholder="Buscar clientes..."
-                                value={searchTerm}
-                                onChange={(e) => setSearchTerm(e.target.value)}
-                                className="pl-10 border-slate-200 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                            />
-                        </div>
-                    </div>
-
-                    {/* Formulario de nuevo cliente con nuevo estilo */}
+                    {/* Formulario de nuevo cliente */}
                     {showForm && (
-                        <Card className="rounded-2xl shadow-sm border-slate-100">
-                            <CardHeader className="bg-gradient-to-r from-blue-50 to-slate-50 rounded-t-2xl">
-                                <CardTitle className="text-slate-900">Añadir Nuevo Cliente</CardTitle>
-                                <CardDescription className="text-slate-600">
-                                    Completa la información del cliente
-                                </CardDescription>
-                            </CardHeader>
-                            <CardContent className="p-4">
+                        <div className="bg-white rounded-2xl border border-gray-200 shadow-sm mb-8">
+                            <div className="p-6 border-b border-gray-200">
+                                <h3 className="text-lg font-semibold text-gray-900">Añadir Nuevo Cliente</h3>
+                                <p className="text-sm text-gray-500 mt-1">Completa la información del cliente</p>
+                            </div>
+                            <div className="p-6">
                                 <div className="grid gap-4 md:grid-cols-2">
                                     <div>
-                                        <label className="text-sm font-semibold text-slate-700 mb-2 block">Nombre *</label>
+                                        <label className="text-sm font-medium text-gray-700 mb-2 block">Nombre *</label>
                                         <Input
                                             placeholder="Nombre completo"
                                             value={formData.name}
                                             onChange={(e) => setFormData({ ...formData, name: e.target.value })}
-                                            className="rounded-xl border-slate-200"
+                                            className="border-gray-200 focus:border-blue-500 focus:ring-blue-500"
                                         />
                                     </div>
                                     <div>
-                                        <label className="text-sm font-semibold text-slate-700 mb-2 block">Email</label>
+                                        <label className="text-sm font-medium text-gray-700 mb-2 block">Email</label>
                                         <Input
                                             type="email"
                                             placeholder="email@ejemplo.com"
                                             value={formData.email}
                                             onChange={(e) => setFormData({ ...formData, email: e.target.value })}
-                                            className="rounded-xl border-slate-200"
+                                            className="border-gray-200 focus:border-blue-500 focus:ring-blue-500"
                                         />
                                     </div>
                                     <div>
-                                        <label className="text-sm font-semibold text-slate-700 mb-2 block">Teléfono</label>
+                                        <label className="text-sm font-medium text-gray-700 mb-2 block">Teléfono</label>
                                         <Input
                                             placeholder="+34 600 000 000"
                                             value={formData.phone}
                                             onChange={(e) => setFormData({ ...formData, phone: e.target.value })}
-                                            className="rounded-xl border-slate-200"
+                                            className="border-gray-200 focus:border-blue-500 focus:ring-blue-500"
                                         />
                                     </div>
                                     <div>
-                                        <label className="text-sm font-semibold text-slate-700 mb-2 block">Empresa</label>
+                                        <label className="text-sm font-medium text-gray-700 mb-2 block">Empresa</label>
                                         <Input
                                             placeholder="Nombre de la empresa"
                                             value={formData.company}
                                             onChange={(e) => setFormData({ ...formData, company: e.target.value })}
-                                            className="rounded-xl border-slate-200"
+                                            className="border-gray-200 focus:border-blue-500 focus:ring-blue-500"
                                         />
                                     </div>
                                     <div>
-                                        <label className="text-sm font-semibold text-slate-700 mb-2 block">Etiqueta</label>
+                                        <label className="text-sm font-medium text-gray-700 mb-2 block">Dirección</label>
+                                        <Input
+                                            placeholder="Calle, número, ciudad..."
+                                            value={formData.address}
+                                            onChange={(e) => setFormData({ ...formData, address: e.target.value })}
+                                            className="border-gray-200 focus:border-blue-500 focus:ring-blue-500"
+                                        />
+                                    </div>
+                                    <div>
+                                        <label className="text-sm font-medium text-gray-700 mb-2 block">Etiqueta</label>
                                         <Input
                                             placeholder="VIP, Nuevo, etc."
                                             value={formData.tag}
                                             onChange={(e) => setFormData({ ...formData, tag: e.target.value })}
-                                            className="rounded-xl border-slate-200"
+                                            className="border-gray-200 focus:border-blue-500 focus:ring-blue-500"
                                         />
                                     </div>
                                 </div>
                                 <div className="flex gap-3 mt-6">
                                     <Button
                                         onClick={addClient}
-                                        className="px-6 py-2 bg-gradient-to-r from-emerald-600 to-emerald-700 text-white rounded-xl font-semibold hover:from-emerald-700 hover:to-emerald-800 transition-all duration-200"
+                                        className="bg-gradient-to-r from-blue-600 to-blue-700 hover:from-blue-700 hover:to-blue-800 text-white"
                                     >
                                         Añadir Cliente
                                     </Button>
                                     <Button
                                         variant="outline"
                                         onClick={() => setShowForm(false)}
-                                        className="px-6 py-2 border-slate-200 rounded-xl hover:bg-slate-50"
+                                        className="border-gray-200 hover:bg-gray-50"
                                     >
                                         Cancelar
                                     </Button>
                                 </div>
-                            </CardContent>
-                        </Card>
+                            </div>
+                        </div>
                     )}
 
-                    {/* Lista de clientes con nuevo estilo */}
-                    <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
+                    {/* Clients Grid */}
+                    <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6">
                         {loading ? (
-                            <div className="col-span-full text-center py-12">
-                                <div className="w-12 h-12 border-4 border-blue-600 border-t-transparent rounded-full animate-spin mx-auto mb-4"></div>
-                                <p className="text-slate-600 font-medium">Cargando clientes...</p>
+                            <div className="col-span-full flex flex-col items-center justify-center py-12 space-y-4">
+                                <div className="relative">
+                                    <div className="w-16 h-16 border-4 border-gray-200 rounded-full"></div>
+                                    <div className="absolute top-0 left-0 w-16 h-16 border-4 border-transparent border-t-blue-500 rounded-full animate-spin"></div>
+                                </div>
+                                <div className="space-y-2 text-center">
+                                    <h3 className="text-lg font-semibold text-gray-900">Cargando clientes</h3>
+                                    <p className="text-sm text-gray-500">Obteniendo información...</p>
+                                </div>
                             </div>
                         ) : filteredClients.length === 0 ? (
                             <div className="col-span-full text-center py-12">
-                                <Users className="w-16 h-16 text-slate-300 mx-auto mb-4" />
-                                <h3 className="text-lg font-semibold text-slate-900 mb-2">
+                                <div className="w-16 h-16 bg-gray-100 rounded-2xl flex items-center justify-center mx-auto mb-4">
+                                    <Users className="w-8 h-8 text-gray-400" />
+                                </div>
+                                <h3 className="text-lg font-semibold text-gray-900 mb-2">
                                     {searchTerm ? 'No se encontraron clientes' : 'No tienes clientes todavía'}
                                 </h3>
-                                <p className="text-slate-600">
-                                    {searchTerm ? 'Intenta con otros términos de búsqueda' : 'Comienza agregando tu primer cliente'}
+                                <p className="text-gray-500 max-w-sm mx-auto">
+                                    {searchTerm ? 
+                                        `No hay clientes que coincidan con "${searchTerm}"` : 
+                                        'Comienza agregando tu primer cliente para organizar tu cartera'
+                                    }
                                 </p>
+                                {searchTerm && (
+                                    <Button 
+                                        onClick={() => setSearchTerm('')} 
+                                        variant="outline" 
+                                        className="mt-4 border-gray-200 hover:bg-gray-50"
+                                    >
+                                        Limpiar búsqueda
+                                    </Button>
+                                )}
                             </div>
                         ) : (
                             filteredClients.map((client) => (
-                                <Card
+                                <div
                                     key={client.id}
-                                    className="rounded-2xl shadow-sm border-slate-100 hover:shadow-xl hover:shadow-slate-200/50 transition-all duration-300 hover:-translate-y-1"
+                                    className="group relative bg-white rounded-2xl p-6 shadow-sm border border-gray-200 hover:shadow-md hover:border-gray-300 transition-all duration-200"
                                 >
-                                    <CardHeader className="pb-3">
-                                        <div className="flex items-start justify-between">
-                                            <div className="flex items-center gap-3">
-                                                <div className="w-12 h-12 bg-gradient-to-br from-blue-500 to-blue-600 rounded-xl flex items-center justify-center text-white font-bold text-lg">
+                                    <div className="flex items-start justify-between mb-4">
+                                        <div className="flex items-center space-x-3">
+                                            <div className="w-12 h-12 bg-gradient-to-r from-blue-500 to-purple-600 rounded-xl flex items-center justify-center">
+                                                <span className="text-white font-bold text-lg">
                                                     {client.name.charAt(0).toUpperCase()}
-                                                </div>
-                                                <div>
-                                                    <CardTitle className="text-lg text-slate-900">{client.name}</CardTitle>
-                                                    {client.company && (
-                                                        <CardDescription className="text-slate-600 flex items-center gap-1">
-                                                            <Building className="w-3 h-3" />
-                                                            {client.company}
-                                                        </CardDescription>
-                                                    )}
-                                                </div>
-                                            </div>
-                                            {client.tag && (
-                                                <span className="text-xs bg-gradient-to-r from-blue-100 to-blue-200 text-blue-700 px-3 py-1 rounded-full font-semibold border border-blue-200">
-                                                    {client.tag}
                                                 </span>
-                                            )}
+                                            </div>
+                                            <div>
+                                                <h3 className="font-semibold text-gray-900">{client.name}</h3>
+                                                {client.company && (
+                                                    <div className="flex items-center gap-1 text-sm text-gray-600">
+                                                        <Building className="w-4 h-4" />
+                                                        <span>{client.company}</span>
+                                                    </div>
+                                                )}
+                                            </div>
                                         </div>
-                                    </CardHeader>
-                                    <CardContent className="space-y-3">
+                                        {client.tag && (
+                                            <span className="px-2 py-1 text-xs font-medium rounded-full bg-blue-100 text-blue-800 border border-blue-200">
+                                                {client.tag}
+                                            </span>
+                                        )}
+                                    </div>
+
+                                    <div className="space-y-2">
                                         {client.email && (
-                                            <div className="flex items-center text-sm text-slate-600">
-                                                <Mail className="h-4 w-4 mr-3 text-slate-400" />
+                                            <div className="flex items-center gap-2 text-sm text-gray-600">
+                                                <Mail className="w-4 h-4" />
                                                 <span className="truncate">{client.email}</span>
                                             </div>
                                         )}
                                         {client.phone && (
-                                            <div className="flex items-center text-sm text-slate-600">
-                                                <Phone className="h-4 w-4 mr-3 text-slate-400" />
-                                                {client.phone}
+                                            <div className="flex items-center gap-2 text-sm text-gray-600">
+                                                <Phone className="w-4 h-4" />
+                                                <span>{client.phone}</span>
                                             </div>
                                         )}
-
-                                        <div className="flex items-center text-sm text-slate-600">
-                                            <Calendar className="h-4 w-4 mr-3 text-slate-400" />
-                                            {new Date(client.created_at).toLocaleDateString('es-ES')}
+                                        {client.address && (
+                                            <div className="flex items-center gap-2 text-sm text-gray-600">
+                                                <MapPin className="w-4 h-4" />
+                                                <span className="truncate">{client.address}</span>
+                                            </div>
+                                        )}
+                                        <div className="flex items-center gap-2 text-sm text-gray-600">
+                                            <Calendar className="w-4 h-4" />
+                                            <span>{new Date(client.created_at).toLocaleDateString('es-ES')}</span>
                                         </div>
+                                    </div>
 
-                                        <div className="flex gap-2 pt-3 border-t border-slate-100">
-                                            <Link href={`/dashboard/clients/${client.id}`} className="flex-1">
-                                                <Button
-                                                    size="sm"
-                                                    variant="outline"
-                                                    className="w-full border-slate-200 rounded-lg hover:bg-blue-50 hover:border-blue-300 hover:text-blue-600"
-                                                >
-                                                    <Eye className="h-4 w-4 mr-1" />
-                                                    Ver
-                                                </Button>
-                                            </Link>
+                                    <div className="flex gap-2 pt-4 border-t border-gray-100 mt-4">
+                                        <Link href={`/dashboard/clients/${client.id}`} className="flex-1">
                                             <Button
-                                                size="sm"
                                                 variant="outline"
-                                                className="flex-1 border-slate-200 rounded-lg hover:bg-emerald-50 hover:border-emerald-300 hover:text-emerald-600"
+                                                className="w-full text-sm border-gray-200 hover:bg-blue-50 hover:border-blue-300 hover:text-blue-600"
                                             >
-                                                <Edit className="h-4 w-4 mr-1" />
-                                                Editar
+                                                Ver Detalles
                                             </Button>
-                                        </div>
-                                    </CardContent>
-                                </Card>
+                                        </Link>
+                                        <Button 
+                                            size="sm" 
+                                            className="bg-blue-600 hover:bg-blue-700"
+                                        >
+                                            <Plus className="w-4 h-4" />
+                                        </Button>
+                                    </div>
+                                </div>
                             ))
                         )}
                     </div>
                 </div>
             </main>
         </div>
+    </div>
     );
 }

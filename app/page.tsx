@@ -109,13 +109,11 @@ export default function Home() {
                 <div className="absolute -top-1 -right-1 w-1.5 h-1.5 bg-gradient-to-r from-cyan-400 to-purple-400 rounded-full opacity-80 animate-pulse"></div>
               </span>
             </h1>
-            <span className="text-xs bg-gradient-to-r from-purple-500/20 to-cyan-500/20 border border-purple-500/30 text-purple-300 px-2 py-1 rounded-full">
-              VERSIÓN BETA
-            </span>
+
           </div>
           <div className="flex items-center gap-4">
             <Link href="/login">
-              <Button variant="ghost" className="text-white border-white/20 hover:bg-white/10">
+              <Button variant="ghost" className="text-white border-white/20 hover:bg-white/90">
                 Iniciar Sesión
               </Button>
             </Link>

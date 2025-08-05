@@ -200,6 +200,7 @@ interface InvoicePDFProps {
             company?: string;
             email?: string;
             phone?: string;
+            address?: string;
         };
         project?: {
             name: string;
@@ -275,6 +276,9 @@ const InvoicePDF: React.FC<InvoicePDFProps> = ({ invoice, items, companyInfo }) 
                             )}
                             {invoice.client.phone && (
                                 <Text style={styles.text}>{invoice.client.phone}</Text>
+                            )}
+                            {invoice.client.address && (
+                                <Text style={styles.text}>{invoice.client.address}</Text>
                             )}
                         </>
                     )}
