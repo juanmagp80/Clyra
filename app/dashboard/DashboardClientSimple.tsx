@@ -60,7 +60,7 @@ export default function DashboardClientSimple({ userEmail }: { userEmail: string
                     color: '#3b82f6',
                     marginBottom: '2rem'
                 }}>
-                    Clyra
+                    Taskelia
                     <span style={{
                         fontSize: '0.75rem',
                         backgroundColor: '#dbeafe',
@@ -419,7 +419,7 @@ export default function DashboardClientSimple({ userEmail }: { userEmail: string
                             fontWeight: 'bold',
                             marginBottom: '0.5rem'
                         }}>
-                            Bienvenido a Clyra
+                            Bienvenido a Taskelia
                         </h3>
                         <p style={{ 
                             color: '#64748b',

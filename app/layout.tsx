@@ -3,7 +3,7 @@ import './globals.css';
 import './fallback.css';
 
 export const metadata: Metadata = {
-  title: 'Clyra - Gestión de Clientes',
+  title: 'Taskelia - Gestión de Clientes',
   description: 'Sistema de gestión de clientes con Supabase y Next.js',
 };
 

@@ -146,8 +146,8 @@ export default async function DemoProjectDetailsPage({ params }: Props) {
                                             <span>{progressPercentage}%</span>
                                         </div>
                                         <div className="w-full bg-gray-200 rounded-full h-2">
-                                            <div 
-                                                className="bg-blue-600 h-2 rounded-full" 
+                                            <div
+                                                className="bg-blue-600 h-2 rounded-full"
                                                 style={{ width: `${progressPercentage}%` }}
                                             ></div>
                                         </div>
@@ -189,7 +189,7 @@ export default async function DemoProjectDetailsPage({ params }: Props) {
                                     </div>
                                     <span className="font-bold">{formatCurrency(project.budget)}</span>
                                 </div>
-                                
+
                                 <div className="flex items-center justify-between">
                                     <div className="flex items-center gap-2">
                                         <Users className="w-4 h-4 text-muted-foreground" />
@@ -214,23 +214,23 @@ export default async function DemoProjectDetailsPage({ params }: Props) {
                                 <CardTitle className="text-lg">Acciones</CardTitle>
                             </CardHeader>
                             <CardContent className="space-y-3">
-                                <Button 
-                                    className="w-full" 
+                                <Button
+                                    className="w-full"
                                     onClick={() => handleAction('Actualizar progreso')}
                                 >
                                     <FileText className="w-4 h-4 mr-2" />
                                     Actualizar Progreso
                                 </Button>
-                                <Button 
-                                    variant="outline" 
+                                <Button
+                                    variant="outline"
                                     className="w-full"
                                     onClick={() => handleAction('Generar informe')}
                                 >
                                     <FileText className="w-4 h-4 mr-2" />
                                     Generar Informe
                                 </Button>
-                                <Button 
-                                    variant="outline" 
+                                <Button
+                                    variant="outline"
                                     className="w-full"
                                     onClick={() => handleAction('Crear factura')}
                                 >
@@ -310,7 +310,7 @@ export default async function DemoProjectDetailsPage({ params }: Props) {
                             ¿Te gusta este nivel de detalle?
                         </h2>
                         <p className="text-primary-foreground/80 mb-6 max-w-2xl mx-auto">
-                            Con Clyra puedes gestionar todos tus proyectos con este nivel de detalle y mucho más.
+                            Con Taskelia puedes gestionar todos tus proyectos con este nivel de detalle y mucho más.
                             Crea tu cuenta gratuita y empezar a organizar tu negocio.
                         </p>
                         <div className="flex flex-col sm:flex-row gap-4 justify-center">
@@ -321,7 +321,7 @@ export default async function DemoProjectDetailsPage({ params }: Props) {
                                 </Button>
                             </Link>
                             <Link href="/demo/projects">
-                                <Button size="lg" variant="outline" className="border-primary-foreground/20 text-primary-foreground hover:bg-primary-foreground hover:text-primary">
+                                <Button size="lg" className="bg-white text-blue-600 hover:bg-blue-50">
                                     Ver todos los proyectos
                                 </Button>
                             </Link>

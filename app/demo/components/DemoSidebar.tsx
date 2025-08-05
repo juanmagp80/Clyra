@@ -76,10 +76,18 @@ export default function DemoSidebar() {
 
   return (
     <div className="flex h-full w-64 flex-col fixed inset-y-0 z-50 bg-card border-r">
-      {/* Logo con badge de Demo */}
+      {/* Logo tipográfico con badge de Demo */}
       <div className="flex h-16 items-center border-b px-6">
-        <h1 className="text-xl font-bold text-primary">Clyra</h1>
-        <span className="ml-2 text-xs bg-amber-100 text-amber-800 px-2 py-1 rounded-full">
+        <div className="flex items-center gap-2">
+          <h1 className="text-xl font-black tracking-tight relative">
+            <span className="relative text-foreground">
+              Taskelia
+              {/* Punto decorativo sutil */}
+              <div className="absolute -top-0.5 -right-0.5 w-1 h-1 bg-gradient-to-r from-cyan-500 to-purple-500 rounded-full opacity-70"></div>
+            </span>
+          </h1>
+        </div>
+        <span className="ml-3 text-xs bg-amber-100 text-amber-800 px-2 py-1 rounded-full">
           DEMO
         </span>
       </div>
@@ -128,7 +136,7 @@ export default function DemoSidebar() {
               Usuario Demo
             </p>
             <p className="text-xs text-muted-foreground truncate">
-              demo@clyra.com
+              demo@taskelia.com
             </p>
           </div>
         </div>

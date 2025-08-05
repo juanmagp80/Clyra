@@ -2,7 +2,7 @@ import { Metadata } from 'next';
 import InvoicesPageClient from './InvoicesPageClient';
 
 export const metadata: Metadata = {
-    title: 'Facturas | Clyra CRM',
+    title: 'Facturas | Taskelia CRM',
     description: 'Gestiona tus facturas y pagos',
 };
 

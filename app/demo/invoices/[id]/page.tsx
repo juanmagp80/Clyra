@@ -8,7 +8,6 @@ import {
     Copy,
     Download,
     Edit,
-    Eye,
     FileText,
     Mail,
     Send,
@@ -390,7 +389,7 @@ export default async function DemoInvoiceDetailsPage({ params }: Props) {
                                 </Button>
                             </Link>
                             <Link href="/demo/invoices">
-                                <Button size="lg" variant="outline" className="border-white text-white hover:bg-white hover:text-blue-600">
+                                <Button size="lg" className="bg-white text-blue-600 hover:bg-blue-50">
                                     Ver más facturas
                                 </Button>
                             </Link>

@@ -1,6 +1,16 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# Taskelia - CRM para Freelancers
 
-## Getting Started
+Una aplicación SaaS moderna diseñada específicamente para freelancers que buscan organizar su negocio de manera simple y eficiente.
+
+## ✨ Características
+
+- **Gestión de Clientes**: Mantén toda la información organizada
+- **Proyectos**: Planifica deadlines y haz seguimiento
+- **Facturación**: Crea facturas profesionales rápidamente
+- **Métricas**: Visualiza tu progreso e ingresos
+- **Demo Interactivo**: Prueba todas las funcionalidades
+
+## 🚀 Getting Started
 
 First, run the development server:
 

@@ -2,14 +2,14 @@
 import { Button } from '@/components/ui/Button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/Card';
 import { Input } from '@/components/ui/Input';
-import { 
-  BarChart3, 
-  Calendar, 
-  DollarSign, 
-  Plus, 
-  Search, 
-  Sparkles, 
-  TrendingUp 
+import {
+    BarChart3,
+    Calendar,
+    DollarSign,
+    Plus,
+    Search,
+    Sparkles,
+    TrendingUp
 } from 'lucide-react';
 import Link from 'next/link';
 import { useState } from 'react';
@@ -205,7 +205,7 @@ export default function DemoProjectsPage() {
             <div className="grid grid-cols-1 lg:grid-cols-2 xl:grid-cols-3 gap-6">
                 {filteredProjects.map((project) => {
                     const client = getClientInfo(project.client_id);
-                    
+
                     return (
                         <Card key={project.id} className="hover:shadow-lg transition-all duration-200 border border-slate-200 hover:border-blue-300">
                             <CardHeader className="pb-3">
@@ -222,7 +222,7 @@ export default function DemoProjectsPage() {
                                     {getPriorityBadge(project.priority)}
                                 </div>
                             </CardHeader>
-                            
+
                             <CardContent className="space-y-4">
                                 {/* Description */}
                                 <p className="text-sm text-slate-600 line-clamp-2">
@@ -237,8 +237,8 @@ export default function DemoProjectsPage() {
                                             <span className="font-medium">{project.progress}%</span>
                                         </div>
                                         <div className="w-full bg-slate-200 rounded-full h-2">
-                                            <div 
-                                                className="bg-blue-600 h-2 rounded-full transition-all duration-300" 
+                                            <div
+                                                className="bg-blue-600 h-2 rounded-full transition-all duration-300"
                                                 style={{ width: `${project.progress}%` }}
                                             ></div>
                                         </div>
@@ -309,7 +309,7 @@ export default function DemoProjectsPage() {
                         ¿Quieres controlar tus proyectos así?
                     </h2>
                     <p className="text-blue-100 mb-6 max-w-2xl mx-auto">
-                        Gestiona fechas límite, progreso, presupuestos y mantén a tus clientes 
+                        Gestiona fechas límite, progreso, presupuestos y mantén a tus clientes
                         informados sobre el estado de sus proyectos.
                     </p>
                     <div className="flex flex-col sm:flex-row gap-4 justify-center">
@@ -320,7 +320,7 @@ export default function DemoProjectsPage() {
                             </Button>
                         </Link>
                         <Link href="/demo/invoices">
-                            <Button size="lg" variant="outline" className="border-white text-white hover:bg-white hover:text-blue-600">
+                            <Button size="lg" className="bg-white text-blue-600 hover:bg-blue-50">
                                 Ver Demo de Facturas
                             </Button>
                         </Link>

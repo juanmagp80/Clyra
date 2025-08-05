@@ -193,7 +193,7 @@ function LoginPageContent() {
                         marginBottom: '0.5rem',
                         color: '#1e293b'
                     }}>
-                        Iniciar sesión en Clyra
+                        Iniciar sesión en Taskelia
                     </h1>
                     <p style={{
                         color: '#64748b',

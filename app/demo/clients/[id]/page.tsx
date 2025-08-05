@@ -1,18 +1,17 @@
 'use client';
 import { Button } from '@/components/ui/Button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/Card';
-import { 
-  ArrowLeft, 
-  Building2, 
-  Calendar, 
-  DollarSign, 
-  Eye, 
-  FileText, 
-  Mail, 
-  Phone, 
-  Plus, 
-  Sparkles, 
-  TrendingUp 
+import {
+  ArrowLeft,
+  Building2,
+  Calendar,
+  Eye,
+  FileText,
+  Mail,
+  Phone,
+  Plus,
+  Sparkles,
+  TrendingUp
 } from 'lucide-react';
 import Link from 'next/link';
 import { useParams } from 'next/navigation';
@@ -318,7 +317,7 @@ export default function DemoClientDetailsPage() {
                 </Button>
               </Link>
               <Link href="/demo/projects">
-                <Button size="lg" variant="outline" className="border-white text-white hover:bg-white hover:text-blue-600">
+                <Button size="lg" className="bg-white text-blue-600 hover:bg-blue-50">
                   Ver Demo de Proyectos
                 </Button>
               </Link>

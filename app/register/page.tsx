@@ -120,7 +120,7 @@ export default function RegisterPage() {
                     <div className="mx-auto mb-4 flex h-12 w-12 items-center justify-center rounded-full bg-green-100">
                         <UserPlus className="h-6 w-6 text-green-600" />
                     </div>
-                    <CardTitle className="text-2xl font-bold">Crear cuenta en Clyra</CardTitle>
+                    <CardTitle className="text-2xl font-bold">Crear cuenta en Taskelia</CardTitle>
                     <CardDescription>
                         Únete a la plataforma CRM para profesionales independientes
                     </CardDescription>

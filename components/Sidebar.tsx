@@ -78,7 +78,7 @@ export default function Sidebar({ userEmail, onLogout }: SidebarProps) {
     <div className="flex h-full w-64 flex-col fixed inset-y-0 z-50 bg-card border-r">
       {/* Logo */}
       <div className="flex h-16 items-center border-b px-6">
-        <h1 className="text-xl font-bold text-primary">Clyra</h1>
+        <h1 className="text-xl font-bold text-primary">Taskelia</h1>
         <span className="ml-2 text-xs bg-primary/10 text-primary px-2 py-1 rounded-full">
           PRO
         </span>

@@ -2,18 +2,16 @@
 import { Button } from '@/components/ui/Button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/Card';
 import { Input } from '@/components/ui/Input';
-import { 
-  ArrowLeft, 
-  Building2, 
-  DollarSign, 
-  Eye, 
-  Mail, 
-  Phone, 
-  Plus, 
-  Search, 
-  Sparkles, 
-  TrendingUp, 
-  Users 
+import {
+  Building2,
+  DollarSign,
+  Mail,
+  Phone,
+  Plus,
+  Search,
+  Sparkles,
+  TrendingUp,
+  Users
 } from 'lucide-react';
 import Link from 'next/link';
 import { useState } from 'react';
@@ -37,11 +35,11 @@ export default function DemoClientsPage() {
   const getLastProjectStatus = (clientId: string) => {
     const projects = getClientProjects(clientId);
     if (projects.length === 0) return null;
-    
-    const lastProject = projects.sort((a, b) => 
+
+    const lastProject = projects.sort((a, b) =>
       new Date(b.created_at).getTime() - new Date(a.created_at).getTime()
     )[0];
-    
+
     return lastProject.status;
   };
 
@@ -162,7 +160,7 @@ export default function DemoClientsPage() {
           {filteredClients.map((client) => {
             const projects = getClientProjects(client.id);
             const lastStatus = getLastProjectStatus(client.id);
-            
+
             return (
               <Card key={client.id} className="hover:shadow-lg transition-all duration-200 border border-slate-200 hover:border-blue-300">
                 <CardHeader className="pb-3">
@@ -179,7 +177,7 @@ export default function DemoClientsPage() {
                     {lastStatus && getStatusBadge(lastStatus)}
                   </div>
                 </CardHeader>
-                
+
                 <CardContent className="space-y-4">
                   {/* Contact Info */}
                   <div className="space-y-2">
@@ -249,7 +247,7 @@ export default function DemoClientsPage() {
               ¿Quieres gestionar tus clientes así?
             </h2>
             <p className="text-blue-100 mb-6 max-w-2xl mx-auto">
-              Organiza toda la información de contacto, historial de proyectos y 
+              Organiza toda la información de contacto, historial de proyectos y
               estadísticas de ingresos en un lugar centralizado.
             </p>
             <div className="flex flex-col sm:flex-row gap-4 justify-center">
@@ -260,7 +258,7 @@ export default function DemoClientsPage() {
                 </Button>
               </Link>
               <Link href="/demo/projects">
-                <Button size="lg" variant="outline" className="border-white text-white hover:bg-white hover:text-blue-600">
+                <Button size="lg" className="bg-white text-blue-600 hover:bg-blue-50">
                   Ver Demo de Proyectos
                 </Button>
               </Link>
