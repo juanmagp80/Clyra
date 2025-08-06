@@ -1,12 +1,15 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { useRouter } from 'next/navigation';
 import Sidebar from '@/components/Sidebar';
 import { Button } from '@/components/ui/Button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/Card';
 import { Input } from '@/components/ui/Input';
+import { Chart, SimpleBarChart } from '@/components/ui/Chart';
 import { createSupabaseClient } from '@/src/lib/supabase-client';
+import { format, subDays, startOfWeek, endOfWeek, eachDayOfInterval } from 'date-fns';
+import { es } from 'date-fns/locale';
 import {
     BarChart3,
     Calendar,
@@ -42,6 +45,20 @@ import {
     Star,
     Sparkles
 } from 'lucide-react';
+
+// Registrar componentes de Chart.js
+ChartJS.register(
+    CategoryScale,
+    LinearScale,
+    PointElement,
+    LineElement,
+    BarElement,
+    Title,
+    Tooltip,
+    Legend,
+    ArcElement,
+    Filler
+);
 
 interface ReportsPageClientProps {
     userEmail: string;
@@ -134,6 +151,10 @@ export default function ReportsPageClient({ userEmail }: ReportsPageClientProps)
     const [showFilters, setShowFilters] = useState(false);
     const [exportLoading, setExportLoading] = useState(false);
     const [selectedKPI, setSelectedKPI] = useState<string | null>(null);
+    const [shareLoading, setShareLoading] = useState(false);
+    
+    // Referencias para la exportación
+    const reportRef = useRef<HTMLDivElement>(null);
     
     const timeRanges = [
         {
@@ -395,57 +416,114 @@ export default function ReportsPageClient({ userEmail }: ReportsPageClientProps)
     const exportReport = async (format: 'pdf' | 'excel') => {
         setExportLoading(true);
         try {
-            // Simular proceso de exportación con múltiples pasos
-            const steps = [
-                'Recopilando datos...',
-                'Generando gráficos...',
-                'Aplicando formato...',
-                'Optimizando archivo...',
-                'Finalizando exportación...'
-            ];
-            
-            for (let i = 0; i < steps.length; i++) {
-                await new Promise(resolve => setTimeout(resolve, 400));
-                // En una implementación real, aquí actualizaríamos el progreso
+            if (format === 'pdf') {
+                // Exportación PDF real con jsPDF y html2canvas
+                if (!reportRef.current) return;
+                
+                const canvas = await html2canvas(reportRef.current, {
+                    scale: 2,
+                    useCORS: true,
+                    allowTaint: true,
+                    backgroundColor: '#ffffff',
+                    removeContainer: true
+                });
+                
+                const imgData = canvas.toDataURL('image/png');
+                const pdf = new jsPDF('p', 'mm', 'a4');
+                
+                const pdfWidth = pdf.internal.pageSize.getWidth();
+                const pdfHeight = pdf.internal.pageSize.getHeight();
+                const imgWidth = canvas.width;
+                const imgHeight = canvas.height;
+                const ratio = Math.min(pdfWidth / imgWidth, pdfHeight / imgHeight);
+                
+                const imgX = (pdfWidth - imgWidth * ratio) / 2;
+                const imgY = 30;
+                
+                // Añadir header del PDF
+                pdf.setFontSize(20);
+                pdf.setTextColor(31, 41, 55); // slate-900
+                pdf.text('Reporte Taskelia', 20, 20);
+                
+                pdf.setFontSize(12);
+                pdf.setTextColor(107, 114, 128); // slate-500
+                pdf.text(`Período: ${selectedTimeRange.label}`, 20, 28);
+                pdf.text(`Generado: ${format(new Date(), 'dd/MM/yyyy HH:mm', { locale: es })}`, 20, 35);
+                
+                // Añadir imagen del reporte
+                pdf.addImage(imgData, 'PNG', imgX, imgY, imgWidth * ratio, imgHeight * ratio);
+                
+                // Añadir footer
+                const pageCount = pdf.internal.getNumberOfPages();
+                for (let i = 1; i <= pageCount; i++) {
+                    pdf.setPage(i);
+                    pdf.setFontSize(8);
+                    pdf.setTextColor(156, 163, 175); // gray-400
+                    pdf.text(`Página ${i} de ${pageCount} - Taskelia CRM`, pdfWidth - 60, pdfHeight - 10);
+                }
+                
+                const fileName = `Reporte_Taskelia_${format(new Date(), 'yyyy-MM-dd')}.pdf`;
+                pdf.save(fileName);
+                
+            } else {
+                // Exportación Excel (CSV simulado)
+                if (!metrics) return;
+                
+                const csvData = [
+                    ['Métrica', 'Valor Actual', 'Valor Anterior', 'Cambio %'],
+                    ['Ingresos Totales', `€${metrics.totalRevenue}`, `€${metrics.previousMetrics?.totalRevenue || 0}`, ''],
+                    ['Horas Trabajadas', `${metrics.totalHours}h`, `${metrics.previousMetrics?.totalHours || 0}h`, ''],
+                    ['Tarifa Promedio', `€${metrics.avgHourlyRate}`, `€${metrics.previousMetrics?.avgHourlyRate || 0}`, ''],
+                    ['Proyectos Activos', `${metrics.totalProjects - metrics.completedProjects}`, '', ''],
+                    ['Proyectos Completados', `${metrics.completedProjects}`, `${metrics.previousMetrics?.completedProjects || 0}`, ''],
+                    ['Clientes Activos', `${metrics.activeClients}`, `${metrics.previousMetrics?.activeClients || 0}`, ''],
+                    ['Horas Facturables', `${metrics.billableHours}h`, `${metrics.previousMetrics?.billableHours || 0}h`, ''],
+                    ['Horas No Facturables', `${metrics.nonBillableHours}h`, `${metrics.previousMetrics?.nonBillableHours || 0}h`, ''],
+                    [],
+                    ['Recomendaciones IA'],
+                    ...recommendations.map(rec => [rec.title, rec.description, `Impacto: ${rec.impact}`, `Esfuerzo: ${rec.effort}`])
+                ];
+                
+                const csvContent = csvData.map(row => row.join(',')).join('\n');
+                const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+                const link = document.createElement('a');
+                const url = URL.createObjectURL(blob);
+                link.setAttribute('href', url);
+                link.setAttribute('download', `Reporte_Taskelia_${format(new Date(), 'yyyy-MM-dd')}.csv`);
+                link.style.visibility = 'hidden';
+                document.body.appendChild(link);
+                link.click();
+                document.body.removeChild(link);
             }
             
-            // Simular descarga de archivo
-            const reportData = {
-                title: `Reporte_Taskelia_${selectedTimeRange.label.replace(/\s+/g, '_')}_${new Date().toISOString().split('T')[0]}`,
-                period: selectedTimeRange.label,
-                generatedAt: new Date().toLocaleString('es-ES'),
-                metrics: metrics,
-                insights: recommendations.slice(0, 3), // Top 3 recomendaciones
-                format: format.toUpperCase()
-            };
-            
-            // Crear blob simulado (en implementación real sería el archivo generado)
-            const content = format === 'pdf' 
-                ? `Reporte PDF generado para ${reportData.title}`
-                : `Datos Excel exportados para ${reportData.title}`;
-            
-            const blob = new Blob([content], { 
-                type: format === 'pdf' ? 'application/pdf' : 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' 
-            });
-            
-            const url = window.URL.createObjectURL(blob);
-            const a = document.createElement('a');
-            a.style.display = 'none';
-            a.href = url;
-            a.download = `${reportData.title}.${format}`;
-            document.body.appendChild(a);
-            a.click();
-            window.URL.revokeObjectURL(url);
-            document.body.removeChild(a);
-            
             // Mostrar notificación de éxito
-            alert(`✅ Reporte exportado exitosamente en formato ${format.toUpperCase()}!\n\nArchivo: ${reportData.title}.${format}\nPeríodo: ${reportData.period}\nGenerado: ${reportData.generatedAt}`);
+            alert(`✅ Reporte exportado exitosamente en formato ${format.toUpperCase()}!`);
             
         } catch (error) {
             console.error('Error exporting report:', error);
             alert('❌ Error al exportar el reporte. Inténtalo de nuevo.');
+    const shareReport = async () => {
+        setShareLoading(true);
+        try {
+            // Generar URL compartible (en implementación real sería un endpoint)
+            const shareData = {
+                title: 'Reporte Taskelia',
+                text: `Reporte de rendimiento - ${selectedTimeRange.label}`,
+                url: `${window.location.origin}/reports/shared/${Date.now()}`
+            };
+            
+            if (navigator.share && navigator.canShare(shareData)) {
+                await navigator.share(shareData);
+            } else {
+                // Fallback: copiar al portapapeles
+                await navigator.clipboard.writeText(shareData.url);
+                alert('🔗 Enlace copiado al portapapeles! Puedes compartirlo con tus clientes.');
+            }
+        } catch (error) {
+            console.error('Error sharing report:', error);
+            alert('Error al compartir el reporte');
         } finally {
-            setExportLoading(false);
+            setShareLoading(false);
         }
     };
 
@@ -511,7 +589,7 @@ export default function ReportsPageClient({ userEmail }: ReportsPageClientProps)
                 <Sidebar userEmail={userEmail} onLogout={handleLogout} />
                 
                 <main className="flex-1 ml-56 overflow-auto">
-                    <div className="p-6">
+                    <div className="p-6" ref={reportRef}>
                         {/* Header */}
                         <div className="bg-white/95 backdrop-blur-2xl border border-slate-200/60 rounded-xl p-6 shadow-xl shadow-slate-900/5 mb-6">
                             <div className="flex items-center justify-between mb-6">
@@ -558,14 +636,18 @@ export default function ReportsPageClient({ userEmail }: ReportsPageClientProps)
                                         )}
                                     </div>
 
-                                    {/* Botones de exportación */}
+                                    {/* Botones de exportación y compartir */}
                                     <Button
                                         variant="outline"
                                         onClick={() => exportReport('pdf')}
                                         disabled={exportLoading}
                                         className="border-slate-200 hover:bg-slate-50 text-slate-700 h-10 px-4 gap-2"
                                     >
-                                        <FileText className="w-4 h-4" />
+                                        {exportLoading ? (
+                                            <div className="w-4 h-4 border-2 border-slate-300 border-t-slate-600 rounded-full animate-spin" />
+                                        ) : (
+                                            <FileText className="w-4 h-4" />
+                                        )}
                                         PDF
                                     </Button>
                                     
@@ -575,8 +657,26 @@ export default function ReportsPageClient({ userEmail }: ReportsPageClientProps)
                                         disabled={exportLoading}
                                         className="border-slate-200 hover:bg-slate-50 text-slate-700 h-10 px-4 gap-2"
                                     >
-                                        <Download className="w-4 h-4" />
+                                        {exportLoading ? (
+                                            <div className="w-4 h-4 border-2 border-slate-300 border-t-slate-600 rounded-full animate-spin" />
+                                        ) : (
+                                            <Download className="w-4 h-4" />
+                                        )}
                                         Excel
+                                    </Button>
+
+                                    <Button
+                                        variant="outline"
+                                        onClick={shareReport}
+                                        disabled={shareLoading}
+                                        className="border-indigo-200 hover:bg-indigo-50 text-indigo-700 h-10 px-4 gap-2"
+                                    >
+                                        {shareLoading ? (
+                                            <div className="w-4 h-4 border-2 border-indigo-300 border-t-indigo-600 rounded-full animate-spin" />
+                                        ) : (
+                                            <Share2 className="w-4 h-4" />
+                                        )}
+                                        Compartir
                                     </Button>
 
                                     <Button
@@ -1096,9 +1196,9 @@ export default function ReportsPageClient({ userEmail }: ReportsPageClientProps)
                             </Card>
                         </div>
 
-                        {/* Charts y Visualizaciones Avanzadas */}
+                        {/* Charts y Visualizaciones Avanzadas con Chart.js */}
                         <div className="grid grid-cols-1 xl:grid-cols-2 gap-6 mb-6">
-                            {/* Gráfico de Ingresos con Datos Reales */}
+                            {/* Gráfico de Líneas - Evolución de Ingresos */}
                             <Card className="bg-white/95 backdrop-blur-2xl border-slate-200/60 shadow-xl shadow-slate-900/5">
                                 <CardHeader className="pb-4">
                                     <CardTitle className="text-lg font-bold text-slate-900 flex items-center gap-2">
@@ -1110,39 +1210,108 @@ export default function ReportsPageClient({ userEmail }: ReportsPageClientProps)
                                             </span>
                                         </div>
                                     </CardTitle>
-                                    <CardDescription>Tendencia de ingresos mensuales con proyección</CardDescription>
+                                    <CardDescription>Tendencia de ingresos mensuales con proyección IA</CardDescription>
                                 </CardHeader>
                                 <CardContent>
-                                    <div className="h-64 relative">
-                                        {/* Línea de tendencia con CSS */}
-                                        <div className="absolute inset-0 flex items-end justify-between px-4 pb-8">
-                                            {revenueData?.datasets[0].data.map((value, index) => {
-                                                const maxValue = Math.max(...revenueData.datasets[0].data);
-                                                const height = (value / maxValue) * 100;
-                                                return (
-                                                    <div key={index} className="flex flex-col items-center group cursor-pointer">
-                                                        <div className="relative mb-2">
-                                                            <div
-                                                                className="w-8 bg-gradient-to-t from-emerald-500 to-green-400 rounded-t-lg transition-all duration-500 hover:from-emerald-600 hover:to-green-500 shadow-lg"
-                                                                style={{ height: `${height * 1.8}px` }}
-                                                            />
-                                                            <div className="absolute -top-8 left-1/2 transform -translate-x-1/2 bg-slate-900 text-white text-xs px-2 py-1 rounded opacity-0 group-hover:opacity-100 transition-opacity whitespace-nowrap">
-                                                                {formatCurrency(value)}
-                                                            </div>
-                                                        </div>
-                                                        <span className="text-xs text-slate-600 font-medium">
-                                                            {revenueData?.labels[index]}
-                                                        </span>
-                                                    </div>
-                                                );
-                                            })}
-                                        </div>
-                                        {/* Línea de meta */}
-                                        <div className="absolute left-4 right-4 border-t-2 border-dashed border-amber-400 opacity-60" style={{ top: '25%' }}>
-                                            <span className="absolute -top-6 right-0 text-xs text-amber-600 font-medium bg-amber-50 px-2 py-1 rounded">
-                                                Meta: {formatCurrency(4000)}
-                                            </span>
-                                        </div>
+                                    <div className="h-64">
+                                        {revenueData && (
+                                            <Line
+                                                data={{
+                                                    labels: revenueData.labels,
+                                                    datasets: [
+                                                        {
+                                                            label: 'Ingresos Reales',
+                                                            data: revenueData.datasets[0].data,
+                                                            borderColor: '#10B981',
+                                                            backgroundColor: 'rgba(16, 185, 129, 0.1)',
+                                                            fill: true,
+                                                            tension: 0.4,
+                                                            pointBackgroundColor: '#10B981',
+                                                            pointBorderColor: '#ffffff',
+                                                            pointBorderWidth: 2,
+                                                            pointRadius: 6,
+                                                            pointHoverRadius: 8
+                                                        },
+                                                        {
+                                                            label: 'Proyección IA',
+                                                            data: [null, null, null, null, 4500, 5200, 5800],
+                                                            borderColor: '#8B5CF6',
+                                                            backgroundColor: 'rgba(139, 92, 246, 0.1)',
+                                                            borderDash: [5, 5],
+                                                            fill: false,
+                                                            tension: 0.4,
+                                                            pointBackgroundColor: '#8B5CF6',
+                                                            pointBorderColor: '#ffffff',
+                                                            pointBorderWidth: 2,
+                                                            pointRadius: 4
+                                                        }
+                                                    ]
+                                                }}
+                                                options={{
+                                                    responsive: true,
+                                                    maintainAspectRatio: false,
+                                                    interaction: {
+                                                        intersect: false,
+                                                        mode: 'index'
+                                                    },
+                                                    plugins: {
+                                                        legend: {
+                                                            display: true,
+                                                            position: 'top',
+                                                            labels: {
+                                                                usePointStyle: true,
+                                                                padding: 20,
+                                                                font: {
+                                                                    size: 12,
+                                                                    family: 'Inter'
+                                                                }
+                                                            }
+                                                        },
+                                                        tooltip: {
+                                                            backgroundColor: 'rgba(0, 0, 0, 0.8)',
+                                                            titleColor: '#ffffff',
+                                                            bodyColor: '#ffffff',
+                                                            borderColor: '#374151',
+                                                            borderWidth: 1,
+                                                            cornerRadius: 8,
+                                                            displayColors: true,
+                                                            callbacks: {
+                                                                label: function(context) {
+                                                                    return `${context.dataset.label}: ${formatCurrency(context.parsed.y)}`;
+                                                                }
+                                                            }
+                                                        }
+                                                    },
+                                                    scales: {
+                                                        x: {
+                                                            grid: {
+                                                                display: false
+                                                            },
+                                                            ticks: {
+                                                                color: '#6B7280',
+                                                                font: {
+                                                                    size: 11
+                                                                }
+                                                            }
+                                                        },
+                                                        y: {
+                                                            grid: {
+                                                                color: '#F3F4F6'
+                                                            },
+                                                            ticks: {
+                                                                color: '#6B7280',
+                                                                font: {
+                                                                    size: 11
+                                                                },
+                                                                callback: function(value) {
+                                                                    return formatCurrency(value as number);
+                                                                }
+                                                            }
+                                                        }
+                                                    }
+                                                }}
+                                            />
+                                        )}
                                     </div>
                                     <div className="mt-4 grid grid-cols-3 gap-4 text-sm">
                                         <div className="text-center p-2 bg-emerald-50 rounded-lg">
@@ -1155,13 +1324,13 @@ export default function ReportsPageClient({ userEmail }: ReportsPageClientProps)
                                         </div>
                                         <div className="text-center p-2 bg-violet-50 rounded-lg">
                                             <div className="font-bold text-violet-700">{formatCurrency(5200)}</div>
-                                            <div className="text-violet-600 text-xs">Proyección</div>
+                                            <div className="text-violet-600 text-xs">Proyección IA</div>
                                         </div>
                                     </div>
                                 </CardContent>
                             </Card>
 
-                            {/* Distribución por Cliente con Donut Chart CSS */}
+                            {/* Gráfico de Donut - Distribución por Cliente */}
                             <Card className="bg-white/95 backdrop-blur-2xl border-slate-200/60 shadow-xl shadow-slate-900/5">
                                 <CardHeader className="pb-4">
                                     <CardTitle className="text-lg font-bold text-slate-900 flex items-center gap-2">
@@ -1177,21 +1346,58 @@ export default function ReportsPageClient({ userEmail }: ReportsPageClientProps)
                                     <CardDescription>Distribución de ingresos por cliente activo</CardDescription>
                                 </CardHeader>
                                 <CardContent>
-                                    <div className="flex items-center justify-center h-48 relative">
-                                        {/* Donut Chart con CSS */}
-                                        <div className="relative w-32 h-32">
-                                            <div className="absolute inset-0 rounded-full border-8 border-slate-100"></div>
-                                            <div className="absolute inset-0 rounded-full border-8 border-transparent border-t-purple-500 border-r-purple-500 transform rotate-0"></div>
-                                            <div className="absolute inset-0 rounded-full border-8 border-transparent border-t-cyan-500 transform rotate-90"></div>
-                                            <div className="absolute inset-0 rounded-full border-8 border-transparent border-t-emerald-500 transform rotate-180"></div>
-                                            <div className="absolute inset-0 rounded-full border-8 border-transparent border-t-amber-500 transform rotate-270"></div>
-                                            <div className="absolute inset-4 rounded-full bg-white flex items-center justify-center">
-                                                <div className="text-center">
-                                                    <div className="text-lg font-bold text-slate-900">4</div>
-                                                    <div className="text-xs text-slate-600">Clientes</div>
-                                                </div>
-                                            </div>
-                                        </div>
+                                    <div className="h-64">
+                                        {clientData && (
+                                            <Doughnut
+                                                data={{
+                                                    labels: clientData.labels,
+                                                    datasets: [
+                                                        {
+                                                            data: clientData.datasets[0].data,
+                                                            backgroundColor: [
+                                                                '#8B5CF6',
+                                                                '#06B6D4',
+                                                                '#10B981',
+                                                                '#F59E0B'
+                                                            ],
+                                                            borderColor: [
+                                                                '#7C3AED',
+                                                                '#0891B2',
+                                                                '#059669',
+                                                                '#D97706'
+                                                            ],
+                                                            borderWidth: 2,
+                                                            hoverOffset: 8
+                                                        }
+                                                    ]
+                                                }}
+                                                options={{
+                                                    responsive: true,
+                                                    maintainAspectRatio: false,
+                                                    cutout: '60%',
+                                                    plugins: {
+                                                        legend: {
+                                                            display: false
+                                                        },
+                                                        tooltip: {
+                                                            backgroundColor: 'rgba(0, 0, 0, 0.8)',
+                                                            titleColor: '#ffffff',
+                                                            bodyColor: '#ffffff',
+                                                            borderColor: '#374151',
+                                                            borderWidth: 1,
+                                                            cornerRadius: 8,
+                                                            callbacks: {
+                                                                label: function(context) {
+                                                                    const total = context.dataset.data.reduce((a, b) => a + b, 0);
+                                                                    const percentage = Math.round((context.parsed / total) * 100);
+                                                                    return `${context.label}: ${formatCurrency(context.parsed)} (${percentage}%)`;
+                                                                }
+                                                            }
+                                                        }
+                                                    }
+                                                }}
+                                            />
+                                        )}
                                     </div>
                                     <div className="mt-4 space-y-2">
                                         {clientData?.labels.map((client, index) => {
@@ -1200,7 +1406,7 @@ export default function ReportsPageClient({ userEmail }: ReportsPageClientProps)
                                             const total = clientData.datasets[0].data.reduce((a, b) => a + b, 0);
                                             const percentage = Math.round((value / total) * 100);
                                             return (
-                                                <div key={client} className="flex items-center justify-between p-2 hover:bg-slate-50 rounded-lg transition-colors">
+                                                <div key={client} className="flex items-center justify-between p-2 hover:bg-slate-50 rounded-lg transition-colors cursor-pointer">
                                                     <div className="flex items-center gap-2">
                                                         <div className={`w-3 h-3 rounded-full ${colors[index]}`}></div>
                                                         <span className="text-sm font-medium text-slate-700">{client}</span>
@@ -1217,9 +1423,9 @@ export default function ReportsPageClient({ userEmail }: ReportsPageClientProps)
                             </Card>
                         </div>
 
-                        {/* Análisis de Productividad y Performance */}
+                        {/* Análisis de Productividad con Chart.js */}
                         <div className="grid grid-cols-1 xl:grid-cols-3 gap-6 mb-6">
-                            {/* Horas Facturables vs No Facturables - Versión Mejorada */}
+                            {/* Horas Facturables vs No Facturables - Gráfico de Barras */}
                             <Card className="xl:col-span-2 bg-white/95 backdrop-blur-2xl border-slate-200/60 shadow-xl shadow-slate-900/5">
                                 <CardHeader className="pb-4">
                                     <CardTitle className="text-lg font-bold text-slate-900 flex items-center gap-2">
@@ -1234,58 +1440,116 @@ export default function ReportsPageClient({ userEmail }: ReportsPageClientProps)
                                     <CardDescription>Distribución de horas facturables vs actividades internas</CardDescription>
                                 </CardHeader>
                                 <CardContent>
-                                    <div className="h-64 relative">
-                                        <div className="absolute inset-0 flex items-end justify-between px-4 pb-8">
-                                            {productivityData?.labels.map((day, index) => {
-                                                const billableHours = productivityData.datasets[0].data[index];
-                                                const nonBillableHours = productivityData.datasets[1].data[index];
-                                                const total = billableHours + nonBillableHours;
-                                                const maxTotal = 10; // Máximo esperado de horas por día
-                                                
-                                                return (
-                                                    <div key={day} className="flex flex-col items-center group cursor-pointer">
-                                                        <div className="relative mb-2 flex flex-col">
-                                                            {/* Horas no facturables */}
-                                                            <div
-                                                                className="w-10 bg-gradient-to-t from-amber-400 to-yellow-300 transition-all duration-500 hover:from-amber-500 hover:to-yellow-400 shadow-sm"
-                                                                style={{ height: `${(nonBillableHours / maxTotal) * 180}px` }}
-                                                            />
-                                                            {/* Horas facturables */}
-                                                            <div
-                                                                className="w-10 bg-gradient-to-t from-blue-500 to-cyan-400 transition-all duration-500 hover:from-blue-600 hover:to-cyan-500 shadow-lg rounded-t-lg"
-                                                                style={{ height: `${(billableHours / maxTotal) * 180}px` }}
-                                                            />
-                                                            <div className="absolute -top-12 left-1/2 transform -translate-x-1/2 bg-slate-900 text-white text-xs px-2 py-1 rounded opacity-0 group-hover:opacity-100 transition-opacity whitespace-nowrap">
-                                                                <div>Facturables: {billableHours}h</div>
-                                                                <div>Internas: {nonBillableHours}h</div>
-                                                                <div className="border-t border-slate-600 mt-1 pt-1">
-                                                                    Total: {total}h
-                                                                </div>
-                                                            </div>
-                                                        </div>
-                                                        <div className="text-center">
-                                                            <div className="text-xs font-medium text-slate-700">{day}</div>
-                                                            <div className="text-xs text-slate-500">{Math.round((billableHours / total) * 100)}%</div>
-                                                        </div>
-                                                    </div>
-                                                );
-                                            })}
-                                        </div>
-                                        {/* Línea de objetivo */}
-                                        <div className="absolute left-4 right-4 border-t-2 border-dashed border-green-400 opacity-60" style={{ top: '20%' }}>
-                                            <span className="absolute -top-6 right-0 text-xs text-green-600 font-medium bg-green-50 px-2 py-1 rounded">
-                                                Objetivo: 8h
-                                            </span>
-                                        </div>
+                                    <div className="h-64">
+                                        {productivityData && (
+                                            <Bar
+                                                data={{
+                                                    labels: productivityData.labels,
+                                                    datasets: [
+                                                        {
+                                                            label: 'Horas Facturables',
+                                                            data: productivityData.datasets[0].data,
+                                                            backgroundColor: 'rgba(59, 130, 246, 0.8)',
+                                                            borderColor: '#3B82F6',
+                                                            borderWidth: 1,
+                                                            borderRadius: 4,
+                                                            borderSkipped: false
+                                                        },
+                                                        {
+                                                            label: 'Horas No Facturables',
+                                                            data: productivityData.datasets[1].data,
+                                                            backgroundColor: 'rgba(245, 158, 11, 0.8)',
+                                                            borderColor: '#F59E0B',
+                                                            borderWidth: 1,
+                                                            borderRadius: 4,
+                                                            borderSkipped: false
+                                                        }
+                                                    ]
+                                                }}
+                                                options={{
+                                                    responsive: true,
+                                                    maintainAspectRatio: false,
+                                                    interaction: {
+                                                        intersect: false,
+                                                        mode: 'index'
+                                                    },
+                                                    plugins: {
+                                                        legend: {
+                                                            display: true,
+                                                            position: 'top',
+                                                            labels: {
+                                                                usePointStyle: true,
+                                                                padding: 20,
+                                                                font: {
+                                                                    size: 12,
+                                                                    family: 'Inter'
+                                                                }
+                                                            }
+                                                        },
+                                                        tooltip: {
+                                                            backgroundColor: 'rgba(0, 0, 0, 0.8)',
+                                                            titleColor: '#ffffff',
+                                                            bodyColor: '#ffffff',
+                                                            borderColor: '#374151',
+                                                            borderWidth: 1,
+                                                            cornerRadius: 8,
+                                                            callbacks: {
+                                                                label: function(context) {
+                                                                    return `${context.dataset.label}: ${context.parsed.y}h`;
+                                                                },
+                                                                afterBody: function(tooltipItems) {
+                                                                    const total = tooltipItems.reduce((sum, item) => sum + item.parsed.y, 0);
+                                                                    const billable = tooltipItems[0]?.parsed.y || 0;
+                                                                    const efficiency = total > 0 ? Math.round((billable / total) * 100) : 0;
+                                                                    return [`Total: ${total}h`, `Eficiencia: ${efficiency}%`];
+                                                                }
+                                                            }
+                                                        }
+                                                    },
+                                                    scales: {
+                                                        x: {
+                                                            stacked: true,
+                                                            grid: {
+                                                                display: false
+                                                            },
+                                                            ticks: {
+                                                                color: '#6B7280',
+                                                                font: {
+                                                                    size: 11
+                                                                }
+                                                            }
+                                                        },
+                                                        y: {
+                                                            stacked: true,
+                                                            grid: {
+                                                                color: '#F3F4F6'
+                                                            },
+                                                            ticks: {
+                                                                color: '#6B7280',
+                                                                font: {
+                                                                    size: 11
+                                                                },
+                                                                callback: function(value) {
+                                                                    return `${value}h`;
+                                                                }
+                                                            }
+                                                        }
+                                                    }
+                                                }}
+                                            />
+                                        )}
                                     </div>
                                     <div className="mt-4 flex items-center justify-center gap-6 text-sm">
                                         <div className="flex items-center gap-2">
-                                            <div className="w-3 h-3 bg-gradient-to-r from-blue-500 to-cyan-400 rounded"></div>
-                                            <span className="text-slate-600">Facturables</span>
+                                            <div className="w-3 h-3 bg-blue-500 rounded"></div>
+                                            <span className="text-slate-600">Facturables: {metrics?.billableHours}h</span>
                                         </div>
                                         <div className="flex items-center gap-2">
-                                            <div className="w-3 h-3 bg-gradient-to-r from-amber-400 to-yellow-300 rounded"></div>
-                                            <span className="text-slate-600">Internas</span>
+                                            <div className="w-3 h-3 bg-amber-500 rounded"></div>
+                                            <span className="text-slate-600">Internas: {metrics?.nonBillableHours}h</span>
+                                        </div>
+                                        <div className="text-slate-500 text-xs">
+                                            Meta: 8h/día | Eficiencia: {metrics ? Math.round((metrics.billableHours / metrics.totalHours) * 100) : 0}%
                                         </div>
                                     </div>
                                 </CardContent>

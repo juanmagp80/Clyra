@@ -1,6 +1,6 @@
 import { redirect } from 'next/navigation';
 import { createServerSupabaseClient } from '@/src/lib/supabase-server';
-import ReportsPageClient from './ReportsPageClient';
+import ReportsPageClientSimple from './ReportsPageClientSimple';
 
 export default async function ReportsPage() {
     const supabase = await createServerSupabaseClient();
@@ -10,5 +10,5 @@ export default async function ReportsPage() {
         redirect('/login');
     }
 
-    return <ReportsPageClient userEmail={session.user.email} />;
+    return <ReportsPageClientSimple userEmail={session.user.email} />;
 }

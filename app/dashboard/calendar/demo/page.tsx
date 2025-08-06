@@ -1,6 +1,5 @@
 import CalendarPageClientDemo from './CalendarPageClientDemo';
 
-export default function CalendarPage() {
-    // Usar versión demo para evitar errores de base de datos
+export default function CalendarPageDemo() {
     return <CalendarPageClientDemo />;
 }
