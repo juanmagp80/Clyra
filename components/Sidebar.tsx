@@ -19,7 +19,7 @@ import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 
 interface SidebarProps {
-  userEmail: string;
+  userEmail?: string;
   onLogout: () => void;
 }
 
@@ -66,7 +66,7 @@ const navigation = [
   },
   {
     name: 'Email',
-    href: '/dashboard/email',
+    href: '/dashboard/emails',
     icon: Mail,
   },
 ];
@@ -129,16 +129,16 @@ export default function Sidebar({ userEmail, onLogout }: SidebarProps) {
           <div className="flex-shrink-0">
             <div className="h-8 w-8 rounded-lg bg-gradient-to-br from-indigo-600 via-blue-600 to-violet-600 flex items-center justify-center shadow-lg shadow-indigo-500/25">
               <span className="text-xs font-bold text-white">
-                {userEmail.charAt(0).toUpperCase()}
+                {userEmail?.charAt(0).toUpperCase() || 'U'}
               </span>
             </div>
           </div>
           <div className="ml-2 flex-1 min-w-0">
             <p className="text-xs font-bold text-slate-900 truncate">
-              {userEmail.split('@')[0]}
+              {userEmail?.split('@')[0] || 'Usuario'}
             </p>
             <p className="text-xs text-slate-600 truncate font-medium">
-              {userEmail}
+              {userEmail || 'Sin email'}
             </p>
           </div>
         </div>

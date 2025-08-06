@@ -1,21 +1,21 @@
 import { createServerSupabaseClient } from '@/src/lib/supabase-server';
 import { Metadata } from 'next';
 import { redirect } from 'next/navigation';
-import InvoicesPageClient from './InvoicesPageClient';
+import EmailsPageClient from './EmailsPageClient';
 
 export const metadata: Metadata = {
-    title: 'Facturas | Taskelia CRM',
-    description: 'Gestiona tus facturas y pagos',
+    title: 'Emails | Taskelia CRM',
+    description: 'Centro de comunicaciones y email marketing',
 };
 
-export default async function InvoicesPage() {
+export default async function EmailsPage() {
     const supabase = await createServerSupabaseClient();
-    
+
     const { data: { user }, error } = await supabase.auth.getUser();
-    
+
     if (error || !user) {
         redirect('/login');
     }
-    
-    return <InvoicesPageClient userEmail={user.email!} />;
+
+    return <EmailsPageClient userEmail={user.email!} />;
 }

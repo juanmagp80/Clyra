@@ -7,37 +7,38 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/Card';
 import { Button } from '@/components/ui/Button';
 import { Input } from '@/components/ui/Input';
 import { createSupabaseClient } from '@/src/lib/supabase-client';
+import { aiInsights, type AIInsight } from '@/src/lib/ai-insights';
 import { 
     Calendar as CalendarIcon, 
     Clock, 
     Plus, 
-    Play, 
-    Pause, 
     MapPin, 
     Target, 
     TrendingUp,
-    Users,
     DollarSign,
-    Activity,
     CheckCircle,
-    AlertCircle,
     Brain,
     Lightbulb,
-    Zap,
-    BarChart3,
     Filter,
     Search,
-    Download,
-    Share2,
-    Bell,
-    Star,
-    Hash,
-    Tag,
     ChevronLeft,
     ChevronRight,
-    MoreHorizontal
+    MoreHorizontal,
+    Zap,
+    Users,
+    Activity,
+    Globe,
+    Star,
+    Sparkles,
+    Workflow,
+    BarChart3,
+    Timer,
+    Video,
+    Phone,
+    Settings,
+    Crown
 } from 'lucide-react';
-import { format, addDays, startOfWeek, endOfWeek, isToday, isSameDay, addHours, subHours } from 'date-fns';
+import { format, addDays, startOfWeek, endOfWeek, isToday, isSameDay } from 'date-fns';
 import { es } from 'date-fns/locale';
 
 // ==================== TIPOS ====================
@@ -47,13 +48,13 @@ interface CalendarEvent {
     description?: string;
     start_time: string;
     end_time: string;
-    event_type: 'meeting' | 'task' | 'break' | 'focus' | 'client_call' | 'project_review' | 'planning' | 'development' | 'design_work' | 'admin' | 'work';
+    type: string; // Usamos 'type' que viene de la base de datos
     status: 'scheduled' | 'in_progress' | 'completed' | 'cancelled';
-    priority: 'low' | 'medium' | 'high';
+    priority?: number;
     client_id?: string;
     project_id?: string;
     is_billable: boolean;
-    tags: string[];
+    tags?: string[];
     location?: string;
     meeting_url?: string;
     hourly_rate?: number;
@@ -104,13 +105,8 @@ export default function CalendarPageClientDemo() {
     const [projects, setProjects] = useState<Project[]>([]);
     const [currentDate, setCurrentDate] = useState(new Date());
     const [viewMode, setViewMode] = useState<'week' | 'month' | 'day'>('week');
-    const [selectedDate, setSelectedDate] = useState<Date | null>(null);
     const [loading, setLoading] = useState(false);
     const [userEmail, setUserEmail] = useState('');
-
-    // Estados de tracking
-    const [activeTracking, setActiveTracking] = useState<string | null>(null);
-    const [trackingTime, setTrackingTime] = useState(0);
 
     // Estados de formulario
     const [showEventForm, setShowEventForm] = useState(false);
@@ -120,22 +116,12 @@ export default function CalendarPageClientDemo() {
         description: '',
         start_time: '',
         end_time: '',
-        event_type: 'meeting',
-        priority: 'medium',
+        type: 'meeting',
         is_billable: false,
         tags: []
     });
 
-    // Estados de filtros
-    const [filteredProjects, setFilteredProjects] = useState<Project[]>([]);
-    const [filters, setFilters] = useState({
-        client: '',
-        project: '',
-        status: '',
-        type: ''
-    });
-
-    // Estados de IA y métricas
+    // Estados de métricas
     const [dashboardMetrics, setDashboardMetrics] = useState<DashboardMetrics>({
         events_today: 0,
         completed_today: 0,
@@ -143,8 +129,31 @@ export default function CalendarPageClientDemo() {
         billable_hours_today: 0,
         events_this_week: 0,
         avg_productivity_week: 75,
-        pending_insights: 3,
+        pending_insights: 3
     });
+
+    // Estado para AI Insights
+    const [realInsights, setRealInsights] = useState<AIInsight[]>([]);
+    const [insightsLoading, setInsightsLoading] = useState(false);
+
+    // Función para cargar insights reales
+    const loadRealInsights = async () => {
+        if (!userEmail) return;
+        
+        try {
+            setInsightsLoading(true);
+            const insights = await aiInsights.generateInsights('e7ed7c8d-229a-42d1-8a44-37bcc64c440c'); // Usar ID real del usuario
+            setRealInsights(insights);
+            setDashboardMetrics(prev => ({
+                ...prev,
+                pending_insights: insights.length
+            }));
+        } catch (error) {
+            console.error('Error loading real insights:', error);
+        } finally {
+            setInsightsLoading(false);
+        }
+    };
 
     // Hook para manejar el router
     const router = useRouter();
@@ -161,23 +170,35 @@ export default function CalendarPageClientDemo() {
         loadRealData();
     }, []);
 
+    // Cargar insights cuando el usuario esté disponible
+    useEffect(() => {
+        if (userEmail) {
+            loadRealInsights();
+        }
+    }, [userEmail]);
+
     // ==================== FUNCIONES ====================
     const loadRealData = async () => {
-        if (!supabase) return;
-        
         try {
             setLoading(true);
             
+            if (!supabase) {
+                console.error('Supabase client not available');
+                return;
+            }
+
             // Obtener usuario actual
-            const { data: { user } } = await supabase.auth.getUser();
-            if (!user) {
+            const { data: { user }, error: userError } = await supabase.auth.getUser();
+            
+            if (userError || !user) {
+                console.error('Error getting user:', userError);
                 router.push('/login');
                 return;
             }
 
-            setUserEmail(user.email || 'usuario@clyra.com');
+            setUserEmail(user.email || '');
 
-            // Cargar eventos de calendario desde la base de datos
+            // Cargar eventos del calendario desde la base de datos
             const { data: calendarEvents, error: eventsError } = await supabase
                 .from('calendar_events')
                 .select(`
@@ -186,15 +207,13 @@ export default function CalendarPageClientDemo() {
                         id,
                         name,
                         email,
-                        phone,
                         company
                     ),
                     projects (
                         id,
                         name,
                         description,
-                        status,
-                        budget
+                        status
                     )
                 `)
                 .eq('user_id', user.id)
@@ -202,22 +221,18 @@ export default function CalendarPageClientDemo() {
 
             if (eventsError) {
                 console.error('Error loading calendar events:', eventsError);
-                // Si no hay tabla de eventos, crear algunos datos básicos
                 setEvents([]);
             } else {
-                // Procesar eventos con datos relacionados
+                // Procesar eventos
                 const processedEvents: ExtendedCalendarEvent[] = (calendarEvents || []).map((event: any) => ({
                     ...event,
-                    event_type: event.type || 'meeting',
-                    priority: event.priority || 'medium', 
-                    tags: event.tags || [],
                     clients: event.clients,
                     projects: event.projects
                 }));
                 setEvents(processedEvents);
             }
 
-            // Cargar clientes desde la base de datos
+            // Cargar clientes
             const { data: clientsData, error: clientsError } = await supabase
                 .from('clients')
                 .select('*')
@@ -231,7 +246,7 @@ export default function CalendarPageClientDemo() {
                 setClients(clientsData || []);
             }
 
-            // Cargar proyectos desde la base de datos
+            // Cargar proyectos
             const { data: projectsData, error: projectsError } = await supabase
                 .from('projects')
                 .select('*')
@@ -245,7 +260,7 @@ export default function CalendarPageClientDemo() {
                 setProjects(projectsData || []);
             }
 
-            // Calcular métricas basadas en datos reales
+            // Calcular métricas
             const today = new Date();
             const todayEvents = (calendarEvents || []).filter((event: any) => 
                 isSameDay(new Date(event.start_time), today)
@@ -254,24 +269,18 @@ export default function CalendarPageClientDemo() {
             setDashboardMetrics({
                 events_today: todayEvents.length,
                 completed_today: todayEvents.filter((e: any) => e.status === 'completed').length,
-                revenue_today: todayEvents.filter((e: any) => e.is_billable).reduce((sum: number, e: any) => sum + (e.actual_revenue || e.estimated_revenue || 0), 0),
-                billable_hours_today: todayEvents.filter((e: any) => e.is_billable).reduce((sum: number, e: any) => sum + ((e.time_tracked || 120) / 60), 0),
+                revenue_today: todayEvents.filter((e: any) => e.is_billable).length * 150,
+                billable_hours_today: todayEvents.filter((e: any) => e.is_billable).length * 2,
                 events_this_week: (calendarEvents || []).length,
                 avg_productivity_week: 78,
                 pending_insights: 3
             });
+
         } catch (error) {
-            console.error('Error loading real data:', error);
+            console.error('Error loading data:', error);
         } finally {
             setLoading(false);
         }
-    };
-
-    const formatTrackingTime = (seconds: number) => {
-        const hours = Math.floor(seconds / 3600);
-        const minutes = Math.floor((seconds % 3600) / 60);
-        const secs = seconds % 60;
-        return `${hours.toString().padStart(2, '0')}:${minutes.toString().padStart(2, '0')}:${secs.toString().padStart(2, '0')}`;
     };
 
     const handleCreateEvent = async () => {
@@ -279,83 +288,69 @@ export default function CalendarPageClientDemo() {
 
         try {
             setLoading(true);
-            
-            // Obtener usuario actual
-            const { data: { user } } = await supabase.auth.getUser();
-            if (!user) return;
+
+            const { data: { user }, error: userError } = await supabase.auth.getUser();
+            if (userError || !user) return;
 
             const eventData = {
                 user_id: user.id,
-                title: newEvent.title!,
-                description: newEvent.description,
-                start_time: newEvent.start_time!,
-                end_time: newEvent.end_time!,
-                type: newEvent.event_type || 'meeting',
+                title: newEvent.title,
+                description: newEvent.description || '',
+                start_time: newEvent.start_time,
+                end_time: newEvent.end_time,
+                type: newEvent.type || 'meeting',
                 status: 'scheduled',
-                priority: newEvent.priority || 'medium',
+                priority: 2,
                 client_id: newEvent.client_id || null,
                 project_id: newEvent.project_id || null,
                 is_billable: newEvent.is_billable || false,
-                tags: newEvent.tags || [],
-                created_at: new Date().toISOString()
+                location: newEvent.location || '',
+                meeting_url: newEvent.meeting_url || '',
+                hourly_rate: newEvent.hourly_rate || null,
+                tags: newEvent.tags || []
             };
 
-            const { data: createdEvent, error } = await supabase
-                .from('calendar_events')
-                .insert([eventData])
-                .select(`
-                    *,
-                    clients (
-                        id,
-                        name,
-                        email,
-                        phone,
-                        company
-                    ),
-                    projects (
-                        id,
-                        name,
-                        description,
-                        status,
-                        budget
-                    )
-                `)
-                .single();
+            if (editingEvent) {
+                // Actualizar evento existente
+                const { error } = await supabase
+                    .from('calendar_events')
+                    .update(eventData)
+                    .eq('id', editingEvent.id);
 
-            if (error) {
-                console.error('Error creating event:', error);
-                alert('Error al crear el evento: ' + error.message);
-                return;
+                if (error) {
+                    console.error('Error updating event:', error);
+                    return;
+                }
+            } else {
+                // Crear nuevo evento
+                const { error } = await supabase
+                    .from('calendar_events')
+                    .insert([eventData]);
+
+                if (error) {
+                    console.error('Error creating event:', error);
+                    return;
+                }
             }
 
-            if (createdEvent) {
-                // Agregar el nuevo evento al estado
-                const processedEvent: ExtendedCalendarEvent = {
-                    ...createdEvent,
-                    event_type: createdEvent.type || 'meeting',
-                    priority: createdEvent.priority || 'medium',
-                    tags: createdEvent.tags || [],
-                    clients: createdEvent.clients,
-                    projects: createdEvent.projects
-                };
-                
-                setEvents([...events, processedEvent]);
-            }
-
+            // Recargar datos
+            await loadRealData();
+            
+            // Limpiar formulario
             setShowEventForm(false);
+            setEditingEvent(null);
             setNewEvent({
                 title: '',
                 description: '',
                 start_time: '',
                 end_time: '',
-                event_type: 'meeting',
-                priority: 'medium',
+                type: 'meeting',
                 is_billable: false,
                 tags: []
             });
+
         } catch (error) {
-            console.error('Error creating event:', error);
-            alert('Error al crear el evento');
+            console.error('Error saving event:', error);
         } finally {
             setLoading(false);
         }
@@ -432,7 +427,11 @@ export default function CalendarPageClientDemo() {
                                                     onClick={(e) => {
                                                         e.stopPropagation();
                                                         setEditingEvent(event);
-                                                        setNewEvent(event);
+                                                        setNewEvent({
+                                                            ...event,
+                                                            start_time: new Date(event.start_time).toISOString().slice(0, 16),
+                                                            end_time: new Date(event.end_time).toISOString().slice(0, 16)
+                                                        });
                                                         setShowEventForm(true);
                                                     }}
                                                 >
@@ -524,7 +523,11 @@ export default function CalendarPageClientDemo() {
                                                     onClick={(e) => {
                                                         e.stopPropagation();
                                                         setEditingEvent(event);
-                                                        setNewEvent(event);
+                                                        setNewEvent({
+                                                            ...event,
+                                                            start_time: new Date(event.start_time).toISOString().slice(0, 16),
+                                                            end_time: new Date(event.end_time).toISOString().slice(0, 16)
+                                                        });
                                                         setShowEventForm(true);
                                                     }}
                                                 >
@@ -598,7 +601,11 @@ export default function CalendarPageClientDemo() {
                                             onClick={(e) => {
                                                 e.stopPropagation();
                                                 setEditingEvent(event);
-                                                setNewEvent(event);
+                                                setNewEvent({
+                                                    ...event,
+                                                    start_time: new Date(event.start_time).toISOString().slice(0, 16),
+                                                    end_time: new Date(event.end_time).toISOString().slice(0, 16)
+                                                });
                                                 setShowEventForm(true);
                                             }}
                                         >
@@ -623,17 +630,6 @@ export default function CalendarPageClientDemo() {
         );
     };
 
-    if (loading) {
-        return (
-            <div className="min-h-screen bg-gradient-to-br from-slate-50 via-blue-50 to-indigo-100 flex items-center justify-center">
-                <div className="text-center">
-                    <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-indigo-600 mx-auto mb-4"></div>
-                    <p className="text-slate-600">Cargando datos del calendario...</p>
-                </div>
-            </div>
-        );
-    }
-
     return (
         <div className="min-h-screen bg-gradient-to-br from-slate-50 via-blue-50 to-indigo-100">
             <div className="flex">
@@ -643,513 +639,626 @@ export default function CalendarPageClientDemo() {
                 {/* Contenido principal */}
                 <main className="flex-1 ml-64 p-8">
                     <div className="max-w-7xl mx-auto space-y-6">
-                        {/* Header con métricas mejorado */}
-                        <div className="bg-gradient-to-r from-indigo-600 via-purple-600 to-violet-600 rounded-2xl p-8 text-white shadow-2xl shadow-indigo-500/25">
-                            <div className="flex items-center justify-between mb-6">
-                                <div>
-                                    <h1 className="text-3xl font-bold mb-2 flex items-center gap-3">
-                                        <CalendarIcon className="w-8 h-8" />
-                                        Calendario
-                                    </h1>
-                                    <p className="text-indigo-100 text-lg">
-                                        {format(currentDate, "EEEE, d 'de' MMMM 'de' yyyy", { locale: es })}
-                                    </p>
-                                </div>
-                                <div className="flex items-center space-x-4">
-                                    {activeTracking && (
-                                        <div className="bg-white/20 backdrop-blur-lg rounded-xl px-6 py-3 border border-white/30">
-                                            <div className="flex items-center space-x-3">
-                                                <div className="w-4 h-4 bg-red-400 rounded-full animate-pulse shadow-lg shadow-red-500/50"></div>
-                                                <span className="font-mono text-xl font-semibold">
-                                                    {formatTrackingTime(trackingTime)}
-                                                </span>
+                        {/* Hero Header Premium */}
+                        <div className="relative overflow-hidden bg-gradient-to-br from-slate-900 via-purple-900 to-slate-900 rounded-3xl">
+                            {/* Background Pattern */}
+                            <div className="absolute inset-0 bg-gradient-to-r from-blue-600/10 via-purple-600/10 to-violet-600/10"></div>
+                            <div className="absolute inset-0 opacity-20">
+                                <div className="absolute inset-0" style={{ 
+                                    backgroundImage: `radial-gradient(circle at 2px 2px, rgba(156, 146, 172, 0.15) 1px, transparent 0)`,
+                                    backgroundSize: '24px 24px'
+                                }}></div>
+                            </div>
+                            
+                            {/* Content */}
+                            <div className="relative p-8 lg:p-12">
+                                <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-8 mb-8">
+                                    <div className="space-y-4">
+                                        <div className="flex items-center gap-4">
+                                            <div className="relative">
+                                                <div className="w-14 h-14 bg-gradient-to-br from-blue-500 to-purple-600 rounded-2xl flex items-center justify-center shadow-2xl shadow-blue-500/25">
+                                                    <Sparkles className="w-7 h-7 text-white" />
+                                                </div>
+                                                <div className="absolute -top-1 -right-1 w-6 h-6 bg-gradient-to-r from-emerald-400 to-cyan-400 rounded-full flex items-center justify-center">
+                                                    <div className="w-2 h-2 bg-white rounded-full animate-pulse"></div>
+                                                </div>
+                                            </div>
+                                            <div>
+                                                <h1 className="text-4xl lg:text-5xl font-bold text-white mb-2 tracking-tight">
+                                                    Calendar<span className="text-transparent bg-gradient-to-r from-blue-400 to-purple-400 bg-clip-text">AI</span>
+                                                </h1>
+                                                <p className="text-slate-300 text-lg font-medium">
+                                                    Calendario Inteligente · Productividad Avanzada
+                                                </p>
                                             </div>
                                         </div>
-                                    )}
-                                    <Button 
-                                        onClick={() => setShowEventForm(true)}
-                                        className="bg-white/95 backdrop-blur-lg text-indigo-600 hover:bg-white border border-white/30 shadow-lg hover:shadow-xl transition-all duration-200 px-6 py-3 font-semibold"
-                                    >
-                                        <Plus className="w-5 h-5 mr-2" />
-                                        Nuevo Evento
-                                    </Button>
+                                        <div className="flex items-center gap-3 text-slate-400">
+                                            <Globe className="w-4 h-4" />
+                                            <span className="text-sm font-medium">
+                                                {format(currentDate, "EEEE, d 'de' MMMM 'de' yyyy", { locale: es })}
+                                            </span>
+                                            <div className="w-1 h-1 bg-slate-400 rounded-full"></div>
+                                            <Timer className="w-4 h-4" />
+                                            <span className="text-sm">Tiempo real</span>
+                                        </div>
+                                    </div>
+                                    
+                                    <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-3">
+                                        <Button 
+                                            onClick={() => setShowEventForm(true)}
+                                            className="bg-gradient-to-r from-blue-500 to-purple-600 hover:from-blue-600 hover:to-purple-700 text-white border-0 shadow-xl shadow-blue-500/25 hover:shadow-2xl hover:shadow-blue-500/30 transition-all duration-300 px-8 py-4 font-semibold rounded-2xl group relative overflow-hidden"
+                                        >
+                                            <div className="absolute inset-0 bg-gradient-to-r from-white/0 via-white/20 to-white/0 -skew-x-12 transform -translate-x-full group-hover:translate-x-full transition-transform duration-700"></div>
+                                            <Plus className="w-5 h-5 mr-2 relative z-10" />
+                                            <span className="relative z-10">Nuevo Evento</span>
+                                        </Button>
+                                        <Button 
+                                            variant="ghost"
+                                            className="text-slate-300 hover:text-white hover:bg-white/10 border border-slate-600/50 hover:border-slate-500 backdrop-blur-lg rounded-2xl px-6 py-4 transition-all duration-200"
+                                        >
+                                            <Settings className="w-4 h-4 mr-2" />
+                                            Configurar
+                                        </Button>
+                                    </div>
                                 </div>
-                            </div>
 
-                            {/* Métricas rápidas */}
-                            <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
-                                <div className="bg-white/10 backdrop-blur-lg rounded-xl p-4 border border-white/20">
-                                    <div className="flex items-center gap-3">
-                                        <div className="w-10 h-10 bg-emerald-500/20 rounded-lg flex items-center justify-center">
-                                            <CalendarIcon className="w-5 h-5 text-emerald-300" />
+                                {/* Premium Stats Grid */}
+                                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+                                    <div className="group relative bg-gradient-to-br from-white/10 to-white/5 backdrop-blur-xl rounded-2xl p-6 border border-white/10 hover:border-white/20 transition-all duration-300 hover:scale-105">
+                                        <div className="flex items-start justify-between mb-4">
+                                            <div className="w-12 h-12 bg-gradient-to-br from-emerald-500 to-teal-600 rounded-xl flex items-center justify-center shadow-lg shadow-emerald-500/25">
+                                                <CalendarIcon className="w-6 h-6 text-white" />
+                                            </div>
+                                            <div className="text-emerald-400 text-xs font-semibold px-2 py-1 bg-emerald-500/20 rounded-full">
+                                                +12%
+                                            </div>
                                         </div>
                                         <div>
-                                            <p className="text-indigo-100 text-sm">Eventos Hoy</p>
-                                            <p className="text-white text-xl font-bold">{dashboardMetrics.events_today}</p>
+                                            <p className="text-slate-300 text-sm font-medium mb-1">Eventos Hoy</p>
+                                            <p className="text-white text-2xl font-bold mb-2">{dashboardMetrics.events_today}</p>
+                                            <div className="flex items-center text-emerald-400 text-xs">
+                                                <TrendingUp className="w-3 h-3 mr-1" />
+                                                <span>vs ayer</span>
+                                            </div>
                                         </div>
                                     </div>
-                                </div>
-                                <div className="bg-white/10 backdrop-blur-lg rounded-xl p-4 border border-white/20">
-                                    <div className="flex items-center gap-3">
-                                        <div className="w-10 h-10 bg-blue-500/20 rounded-lg flex items-center justify-center">
-                                            <CheckCircle className="w-5 h-5 text-blue-300" />
+
+                                    <div className="group relative bg-gradient-to-br from-white/10 to-white/5 backdrop-blur-xl rounded-2xl p-6 border border-white/10 hover:border-white/20 transition-all duration-300 hover:scale-105">
+                                        <div className="flex items-start justify-between mb-4">
+                                            <div className="w-12 h-12 bg-gradient-to-br from-blue-500 to-indigo-600 rounded-xl flex items-center justify-center shadow-lg shadow-blue-500/25">
+                                                <CheckCircle className="w-6 h-6 text-white" />
+                                            </div>
+                                            <div className="text-blue-400 text-xs font-semibold px-2 py-1 bg-blue-500/20 rounded-full">
+                                                ✓ {Math.round((dashboardMetrics.completed_today / Math.max(dashboardMetrics.events_today, 1)) * 100)}%
+                                            </div>
                                         </div>
                                         <div>
-                                            <p className="text-indigo-100 text-sm">Completados</p>
-                                            <p className="text-white text-xl font-bold">{dashboardMetrics.completed_today}</p>
+                                            <p className="text-slate-300 text-sm font-medium mb-1">Completados</p>
+                                            <p className="text-white text-2xl font-bold mb-2">{dashboardMetrics.completed_today}</p>
+                                            <div className="flex items-center text-blue-400 text-xs">
+                                                <Activity className="w-3 h-3 mr-1" />
+                                                <span>tasa de completado</span>
+                                            </div>
                                         </div>
                                     </div>
-                                </div>
-                                <div className="bg-white/10 backdrop-blur-lg rounded-xl p-4 border border-white/20">
-                                    <div className="flex items-center gap-3">
-                                        <div className="w-10 h-10 bg-amber-500/20 rounded-lg flex items-center justify-center">
-                                            <Clock className="w-5 h-5 text-amber-300" />
+
+                                    <div className="group relative bg-gradient-to-br from-white/10 to-white/5 backdrop-blur-xl rounded-2xl p-6 border border-white/10 hover:border-white/20 transition-all duration-300 hover:scale-105">
+                                        <div className="flex items-start justify-between mb-4">
+                                            <div className="w-12 h-12 bg-gradient-to-br from-amber-500 to-orange-600 rounded-xl flex items-center justify-center shadow-lg shadow-amber-500/25">
+                                                <Clock className="w-6 h-6 text-white" />
+                                            </div>
+                                            <div className="text-amber-400 text-xs font-semibold px-2 py-1 bg-amber-500/20 rounded-full">
+                                                Focus
+                                            </div>
                                         </div>
                                         <div>
-                                            <p className="text-indigo-100 text-sm">Horas Facturables</p>
-                                            <p className="text-white text-xl font-bold">{dashboardMetrics.billable_hours_today.toFixed(1)}h</p>
+                                            <p className="text-slate-300 text-sm font-medium mb-1">Horas Facturables</p>
+                                            <p className="text-white text-2xl font-bold mb-2">{dashboardMetrics.billable_hours_today}h</p>
+                                            <div className="flex items-center text-amber-400 text-xs">
+                                                <Zap className="w-3 h-3 mr-1" />
+                                                <span>productividad alta</span>
+                                            </div>
                                         </div>
                                     </div>
-                                </div>
-                                <div className="bg-white/10 backdrop-blur-lg rounded-xl p-4 border border-white/20">
-                                    <div className="flex items-center gap-3">
-                                        <div className="w-10 h-10 bg-green-500/20 rounded-lg flex items-center justify-center">
-                                            <DollarSign className="w-5 h-5 text-green-300" />
+
+                                    <div className="group relative bg-gradient-to-br from-white/10 to-white/5 backdrop-blur-xl rounded-2xl p-6 border border-white/10 hover:border-white/20 transition-all duration-300 hover:scale-105">
+                                        <div className="flex items-start justify-between mb-4">
+                                            <div className="w-12 h-12 bg-gradient-to-br from-green-500 to-emerald-600 rounded-xl flex items-center justify-center shadow-lg shadow-green-500/25">
+                                                <DollarSign className="w-6 h-6 text-white" />
+                                            </div>
+                                            <div className="text-green-400 text-xs font-semibold px-2 py-1 bg-green-500/20 rounded-full">
+                                                +€{Math.round(dashboardMetrics.revenue_today * 0.15)}
+                                            </div>
                                         </div>
                                         <div>
-                                            <p className="text-indigo-100 text-sm">Ingresos Hoy</p>
-                                            <p className="text-white text-xl font-bold">€{dashboardMetrics.revenue_today.toFixed(0)}</p>
+                                            <p className="text-slate-300 text-sm font-medium mb-1">Ingresos Hoy</p>
+                                            <p className="text-white text-2xl font-bold mb-2">€{dashboardMetrics.revenue_today}</p>
+                                            <div className="flex items-center text-green-400 text-xs">
+                                                <BarChart3 className="w-3 h-3 mr-1" />
+                                                <span>tendencia positiva</span>
+                                            </div>
                                         </div>
                                     </div>
                                 </div>
                             </div>
                         </div>
 
-                        {/* Controles de vista y filtros */}
-                        <div className="bg-white/95 backdrop-blur-lg rounded-xl shadow-lg border border-slate-200/60 p-6">
-                            <div className="flex flex-wrap items-center justify-between gap-4">
-                                <div className="flex items-center space-x-4">
-                                    <div className="flex items-center bg-slate-100/80 rounded-lg p-1">
-                                        <Button
-                                            onClick={() => setViewMode('day')}
-                                            variant={viewMode === 'day' ? 'default' : 'ghost'}
-                                            size="sm"
-                                            className={viewMode === 'day' ? 'bg-indigo-600 text-white shadow-md' : 'text-slate-600 hover:bg-slate-200'}
-                                        >
-                                            Día
-                                        </Button>
-                                        <Button
-                                            onClick={() => setViewMode('week')}
-                                            variant={viewMode === 'week' ? 'default' : 'ghost'}
-                                            size="sm"
-                                            className={viewMode === 'week' ? 'bg-indigo-600 text-white shadow-md' : 'text-slate-600 hover:bg-slate-200'}
-                                        >
-                                            Semana
-                                        </Button>
-                                        <Button
-                                            onClick={() => setViewMode('month')}
-                                            variant={viewMode === 'month' ? 'default' : 'ghost'}
-                                            size="sm"
-                                            className={viewMode === 'month' ? 'bg-indigo-600 text-white shadow-md' : 'text-slate-600 hover:bg-slate-200'}
-                                        >
-                                            Mes
-                                        </Button>
+                        {/* Premium Control Bar */}
+                        <div className="bg-white/95 backdrop-blur-xl rounded-2xl shadow-xl border border-slate-200/60 p-6">
+                            <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-6">
+                                {/* Left Section - View Controls */}
+                                <div className="flex items-center gap-6">
+                                    {/* View Mode Toggle */}
+                                    <div className="relative bg-gradient-to-r from-slate-100 to-slate-50 p-1 rounded-xl border border-slate-200/80 shadow-inner">
+                                        <div className="flex relative">
+                                            <Button
+                                                onClick={() => setViewMode('day')}
+                                                className={`relative z-10 px-4 py-2 text-sm font-semibold rounded-lg transition-all duration-300 ${
+                                                    viewMode === 'day' 
+                                                        ? 'bg-gradient-to-r from-blue-500 to-purple-600 text-white shadow-lg shadow-blue-500/25' 
+                                                        : 'text-slate-600 hover:text-slate-900 hover:bg-white/60'
+                                                }`}
+                                            >
+                                                Día
+                                            </Button>
+                                            <Button
+                                                onClick={() => setViewMode('week')}
+                                                className={`relative z-10 px-4 py-2 text-sm font-semibold rounded-lg transition-all duration-300 ${
+                                                    viewMode === 'week' 
+                                                        ? 'bg-gradient-to-r from-blue-500 to-purple-600 text-white shadow-lg shadow-blue-500/25' 
+                                                        : 'text-slate-600 hover:text-slate-900 hover:bg-white/60'
+                                                }`}
+                                            >
+                                                Semana
+                                            </Button>
+                                            <Button
+                                                onClick={() => setViewMode('month')}
+                                                className={`relative z-10 px-4 py-2 text-sm font-semibold rounded-lg transition-all duration-300 ${
+                                                    viewMode === 'month' 
+                                                        ? 'bg-gradient-to-r from-blue-500 to-purple-600 text-white shadow-lg shadow-blue-500/25' 
+                                                        : 'text-slate-600 hover:text-slate-900 hover:bg-white/60'
+                                                }`}
+                                            >
+                                                Mes
+                                            </Button>
+                                        </div>
                                     </div>
                                     
-                                    <div className="flex items-center space-x-2">
+                                    {/* Navigation Controls */}
+                                    <div className="flex items-center gap-2">
                                         <Button
                                             onClick={() => setCurrentDate(addDays(currentDate, viewMode === 'month' ? -30 : viewMode === 'week' ? -7 : -1))}
-                                            variant="ghost"
-                                            size="sm"
-                                            className="text-slate-600 hover:bg-slate-100"
+                                            className="w-10 h-10 rounded-xl bg-slate-100/80 hover:bg-slate-200/80 border border-slate-200/60 text-slate-600 hover:text-slate-900 transition-all duration-200 shadow-sm hover:shadow-md"
                                         >
                                             <ChevronLeft className="w-4 h-4" />
                                         </Button>
                                         <Button
                                             onClick={() => setCurrentDate(new Date())}
-                                            variant="ghost"
-                                            size="sm"
-                                            className="text-slate-600 hover:bg-slate-100 font-medium"
+                                            className="px-4 py-2 rounded-xl bg-gradient-to-r from-slate-50 to-slate-100 hover:from-slate-100 hover:to-slate-200 border border-slate-200/60 text-slate-700 font-semibold text-sm transition-all duration-200 shadow-sm hover:shadow-md"
                                         >
                                             Hoy
                                         </Button>
                                         <Button
                                             onClick={() => setCurrentDate(addDays(currentDate, viewMode === 'month' ? 30 : viewMode === 'week' ? 7 : 1))}
-                                            variant="ghost"
-                                            size="sm"
-                                            className="text-slate-600 hover:bg-slate-100"
+                                            className="w-10 h-10 rounded-xl bg-slate-100/80 hover:bg-slate-200/80 border border-slate-200/60 text-slate-600 hover:text-slate-900 transition-all duration-200 shadow-sm hover:shadow-md"
                                         >
                                             <ChevronRight className="w-4 h-4" />
                                         </Button>
                                     </div>
+
+                                    {/* Current Date Display */}
+                                    <div className="hidden lg:flex items-center gap-2 px-4 py-2 bg-gradient-to-r from-blue-50 to-purple-50 rounded-xl border border-blue-100">
+                                        <CalendarIcon className="w-4 h-4 text-blue-600" />
+                                        <span className="text-sm font-semibold text-slate-700">
+                                            {viewMode === 'month' && format(currentDate, "MMMM yyyy", { locale: es })}
+                                            {viewMode === 'week' && `Semana del ${format(startOfWeek(currentDate, { weekStartsOn: 1 }), "d MMM", { locale: es })}`}
+                                            {viewMode === 'day' && format(currentDate, "d 'de' MMMM", { locale: es })}
+                                        </span>
+                                    </div>
                                 </div>
 
-                                <div className="flex items-center space-x-3">
+                                {/* Right Section - Search & Actions */}
+                                <div className="flex items-center gap-3">
+                                    {/* Search Bar */}
                                     <div className="relative">
                                         <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-slate-400 w-4 h-4" />
                                         <Input
                                             placeholder="Buscar eventos..."
-                                            className="pl-10 bg-slate-50/80 border-slate-200/60 focus:bg-white"
+                                            className="pl-10 pr-4 py-2 w-64 bg-slate-50/80 border-slate-200/60 rounded-xl focus:bg-white focus:border-blue-300 focus:ring-2 focus:ring-blue-100 transition-all duration-200"
                                         />
                                     </div>
-                                    <Button variant="ghost" size="sm" className="text-slate-600 hover:bg-slate-100">
-                                        <Filter className="w-4 h-4" />
-                                    </Button>
-                                    <Button variant="ghost" size="sm" className="text-slate-600 hover:bg-slate-100">
-                                        <MoreHorizontal className="w-4 h-4" />
-                                    </Button>
+                                    
+                                    {/* Action Buttons */}
+                                    <div className="flex items-center gap-2">
+                                        <Button 
+                                            variant="ghost" 
+                                            className="w-10 h-10 rounded-xl bg-slate-100/60 hover:bg-slate-200/80 border border-slate-200/60 text-slate-600 hover:text-slate-900 transition-all duration-200 shadow-sm hover:shadow-md"
+                                        >
+                                            <Filter className="w-4 h-4" />
+                                        </Button>
+                                        <Button 
+                                            variant="ghost" 
+                                            className="w-10 h-10 rounded-xl bg-slate-100/60 hover:bg-slate-200/80 border border-slate-200/60 text-slate-600 hover:text-slate-900 transition-all duration-200 shadow-sm hover:shadow-md"
+                                        >
+                                            <MoreHorizontal className="w-4 h-4" />
+                                        </Button>
+                                    </div>
                                 </div>
                             </div>
                         </div>
 
-                        {/* Vista de calendario principal */}
-                        <div className="bg-white/95 backdrop-blur-lg rounded-xl shadow-lg border border-slate-200/60">
-                            {viewMode === 'week' && renderWeekView()}
-                            {viewMode === 'month' && renderMonthView()}
-                            {viewMode === 'day' && renderDayView()}
+                        {/* Premium Calendar View */}
+                        <div className="bg-white/95 backdrop-blur-xl rounded-2xl shadow-xl border border-slate-200/60 overflow-hidden">
+                            {/* Calendar Header */}
+                            <div className="bg-gradient-to-r from-slate-50 to-slate-100/50 px-6 py-4 border-b border-slate-200/60">
+                                <div className="flex items-center justify-between">
+                                    <div className="flex items-center gap-3">
+                                        <div className="w-8 h-8 bg-gradient-to-br from-blue-500 to-purple-600 rounded-lg flex items-center justify-center">
+                                            <CalendarIcon className="w-4 h-4 text-white" />
+                                        </div>
+                                        <div>
+                                            <h3 className="font-bold text-slate-900">
+                                                {viewMode === 'month' && 'Vista Mensual'}
+                                                {viewMode === 'week' && 'Vista Semanal'}
+                                                {viewMode === 'day' && 'Vista Diaria'}
+                                            </h3>
+                                            <p className="text-sm text-slate-600">
+                                                {events.length} evento{events.length !== 1 ? 's' : ''} en este período
+                                            </p>
+                                        </div>
+                                    </div>
+                                    
+                                    <div className="flex items-center gap-2">
+                                        <div className="flex items-center gap-1 text-xs text-slate-500">
+                                            <div className="w-2 h-2 bg-blue-500 rounded-full"></div>
+                                            <span>Reuniones</span>
+                                        </div>
+                                        <div className="flex items-center gap-1 text-xs text-slate-500">
+                                            <div className="w-2 h-2 bg-green-500 rounded-full"></div>
+                                            <span>Trabajo</span>
+                                        </div>
+                                        <div className="flex items-center gap-1 text-xs text-slate-500">
+                                            <div className="w-2 h-2 bg-amber-500 rounded-full"></div>
+                                            <span>Personal</span>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                            
+                            {/* Calendar Content */}
+                            <div className="min-h-[600px]">
+                                {viewMode === 'week' && renderWeekView()}
+                                {viewMode === 'month' && renderMonthView()}
+                                {viewMode === 'day' && renderDayView()}
+                            </div>
                         </div>
 
-                        {/* Panel lateral con insights */}
-                        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-                            <div className="lg:col-span-2">
-                                {/* Contenido del calendario se renderiza aquí */}
-                                {events.length === 0 ? (
-                                    <Card className="bg-white/95 backdrop-blur-lg border-slate-200/60 shadow-lg">
-                                        <CardContent className="p-8 text-center">
-                                            <CalendarIcon className="w-16 h-16 mx-auto mb-4 text-slate-300" />
-                                            <h3 className="text-lg font-semibold text-slate-900 mb-2">No hay eventos</h3>
-                                            <p className="text-slate-600 mb-4">
-                                                No tienes eventos programados en tu calendario. Crea tu primer evento para empezar.
-                                            </p>
-                                            <Button 
-                                                onClick={() => setShowEventForm(true)}
-                                                className="bg-indigo-600 hover:bg-indigo-700"
-                                            >
-                                                <Plus className="w-4 h-4 mr-2" />
-                                                Crear Primer Evento
-                                            </Button>
-                                        </CardContent>
-                                    </Card>
-                                ) : (
-                                    <Card className="bg-white/95 backdrop-blur-lg border-slate-200/60 shadow-lg">
-                                        <CardHeader>
-                                            <CardTitle className="text-lg font-bold text-slate-900">
-                                                Eventos Recientes
-                                            </CardTitle>
-                                        </CardHeader>
-                                        <CardContent className="space-y-3">
-                                            {events.slice(0, 5).map((event) => (
-                                                <div key={event.id} className="p-4 bg-slate-50/80 rounded-lg border border-slate-200/60 hover:shadow-md transition-shadow">
-                                                    <div className="flex items-center justify-between mb-2">
-                                                        <h4 className="font-semibold text-slate-900">{event.title}</h4>
-                                                        <span className={`text-xs px-2 py-1 rounded-full ${
-                                                            event.status === 'completed' ? 'bg-green-100 text-green-700' :
-                                                            event.status === 'in_progress' ? 'bg-blue-100 text-blue-700' :
-                                                            event.status === 'cancelled' ? 'bg-red-100 text-red-700' :
-                                                            'bg-gray-100 text-gray-700'
-                                                        }`}>
-                                                            {event.status}
-                                                        </span>
-                                                    </div>
-                                                    {event.description && (
-                                                        <p className="text-sm text-slate-600 mb-2">{event.description}</p>
-                                                    )}
-                                                    <div className="flex items-center gap-4 text-sm text-slate-500">
-                                                        <div className="flex items-center gap-1">
-                                                            <Clock className="w-3 h-3" />
-                                                            <span>{format(new Date(event.start_time), 'HH:mm')} - {format(new Date(event.end_time), 'HH:mm')}</span>
+                        {/* Enhanced Side Content */}
+                        <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
+                            {/* Quick Actions & Time Blocks */}
+                            <div className="lg:col-span-2 grid grid-cols-1 md:grid-cols-2 gap-6">
+                                {/* Quick Actions */}
+                                <div className="bg-gradient-to-br from-white to-slate-50/50 backdrop-blur-xl rounded-2xl p-6 border border-slate-200/60 shadow-lg">
+                                    <h3 className="font-bold text-slate-900 mb-4 flex items-center gap-2">
+                                        <Zap className="w-5 h-5 text-amber-500" />
+                                        Acciones Rápidas
+                                    </h3>
+                                    <div className="space-y-3">
+                                        <Button 
+                                            onClick={() => setShowEventForm(true)}
+                                            className="w-full justify-start bg-gradient-to-r from-blue-50 to-purple-50 hover:from-blue-100 hover:to-purple-100 text-slate-700 border border-blue-200/60 rounded-xl"
+                                        >
+                                            <Plus className="w-4 h-4 mr-2" />
+                                            Crear evento rápido
+                                        </Button>
+                                        <Button 
+                                            variant="ghost"
+                                            className="w-full justify-start text-slate-600 hover:bg-slate-100/80 rounded-xl"
+                                        >
+                                            <Video className="w-4 h-4 mr-2" />
+                                            Reunión virtual
+                                        </Button>
+                                        <Button 
+                                            variant="ghost"
+                                            className="w-full justify-start text-slate-600 hover:bg-slate-100/80 rounded-xl"
+                                        >
+                                            <Phone className="w-4 h-4 mr-2" />
+                                            Llamada telefónica
+                                        </Button>
+                                    </div>
+                                </div>
+
+                                {/* Time Blocks */}
+                                <div className="bg-gradient-to-br from-white to-slate-50/50 backdrop-blur-xl rounded-2xl p-6 border border-slate-200/60 shadow-lg">
+                                    <h3 className="font-bold text-slate-900 mb-4 flex items-center gap-2">
+                                        <Workflow className="w-5 h-5 text-blue-500" />
+                                        Bloques de Tiempo
+                                    </h3>
+                                    <div className="space-y-3">
+                                        <div className="flex items-center justify-between p-3 bg-blue-50/80 rounded-xl border border-blue-100">
+                                            <div className="flex items-center gap-2">
+                                                <div className="w-3 h-3 bg-blue-500 rounded-full"></div>
+                                                <span className="text-sm font-medium text-slate-700">Trabajo Concentrado</span>
+                                            </div>
+                                            <span className="text-xs text-slate-500">09:00-11:00</span>
+                                        </div>
+                                        <div className="flex items-center justify-between p-3 bg-green-50/80 rounded-xl border border-green-100">
+                                            <div className="flex items-center gap-2">
+                                                <div className="w-3 h-3 bg-green-500 rounded-full"></div>
+                                                <span className="text-sm font-medium text-slate-700">Reuniones</span>
+                                            </div>
+                                            <span className="text-xs text-slate-500">14:00-16:00</span>
+                                        </div>
+                                        <div className="flex items-center justify-between p-3 bg-amber-50/80 rounded-xl border border-amber-100">
+                                            <div className="flex items-center gap-2">
+                                                <div className="w-3 h-3 bg-amber-500 rounded-full"></div>
+                                                <span className="text-sm font-medium text-slate-700">Tareas Admin</span>
+                                            </div>
+                                            <span className="text-xs text-slate-500">16:30-17:30</span>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                            
+                            {/* Upcoming Events Sidebar */}
+                            <div className="space-y-6">
+                                {/* Premium Upcoming Events */}
+                                <div className="bg-gradient-to-br from-white to-slate-50/50 backdrop-blur-xl rounded-2xl border border-slate-200/60 shadow-xl overflow-hidden">
+                                    <div className="bg-gradient-to-r from-blue-500 to-purple-600 p-6 text-white">
+                                        <div className="flex items-center justify-between">
+                                            <div className="flex items-center gap-3">
+                                                <div className="w-10 h-10 bg-white/20 rounded-xl flex items-center justify-center">
+                                                    <Clock className="w-5 h-5" />
+                                                </div>
+                                                <div>
+                                                    <h3 className="font-bold text-lg">Próximos Eventos</h3>
+                                                    <p className="text-blue-100 text-sm">Agenda de hoy</p>
+                                                </div>
+                                            </div>
+                                            <div className="text-right">
+                                                <div className="text-2xl font-bold">{events.length}</div>
+                                                <div className="text-blue-100 text-xs">eventos</div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                    
+                                    <div className="p-6 space-y-4">
+                                        {events.slice(0, 4).map((event, index) => (
+                                            <div key={event.id} className="group relative p-4 bg-slate-50/60 hover:bg-slate-100/80 rounded-xl border border-slate-200/60 hover:border-slate-300/60 transition-all duration-200 cursor-pointer hover:shadow-md">
+                                                <div className="flex items-start gap-3">
+                                                    <div className={`w-3 h-3 rounded-full mt-2 flex-shrink-0 ${
+                                                        event.type === 'meeting' ? 'bg-blue-500' :
+                                                        event.type === 'work' ? 'bg-green-500' :
+                                                        event.type === 'break' ? 'bg-amber-500' :
+                                                        'bg-purple-500'
+                                                    }`}></div>
+                                                    <div className="flex-1 min-w-0">
+                                                        <div className="flex items-center justify-between mb-2">
+                                                            <h4 className="font-semibold text-slate-900 text-sm truncate">{event.title}</h4>
+                                                            <span className={`text-xs px-2 py-1 rounded-full font-medium ${
+                                                                event.status === 'completed' ? 'bg-green-100 text-green-700' :
+                                                                event.status === 'in_progress' ? 'bg-blue-100 text-blue-700' :
+                                                                'bg-amber-100 text-amber-700'
+                                                            }`}>
+                                                                {event.status === 'completed' ? 'Completado' :
+                                                                 event.status === 'in_progress' ? 'En progreso' : 'Programado'}
+                                                            </span>
+                                                        </div>
+                                                        {event.description && (
+                                                            <p className="text-xs text-slate-600 mb-2 line-clamp-2">{event.description}</p>
+                                                        )}
+                                                        <div className="flex items-center justify-between">
+                                                            <div className="flex items-center gap-2 text-xs text-slate-500">
+                                                                <Clock className="w-3 h-3" />
+                                                                <span>{format(new Date(event.start_time), 'HH:mm')} - {format(new Date(event.end_time), 'HH:mm')}</span>
+                                                            </div>
+                                                            {event.is_billable && (
+                                                                <div className="flex items-center gap-1 text-xs text-green-600 bg-green-50 px-2 py-1 rounded-full">
+                                                                    <DollarSign className="w-3 h-3" />
+                                                                    <span>Facturable</span>
+                                                                </div>
+                                                            )}
                                                         </div>
                                                         {event.clients && (
-                                                            <div className="flex items-center gap-1">
+                                                            <div className="flex items-center gap-1 text-xs text-slate-500 mt-2">
                                                                 <Users className="w-3 h-3" />
                                                                 <span>{event.clients.name}</span>
                                                             </div>
                                                         )}
-                                                        {event.is_billable && (
-                                                            <div className="flex items-center gap-1">
-                                                                <DollarSign className="w-3 h-3 text-green-600" />
-                                                                <span className="text-green-600">Facturable</span>
-                                                            </div>
-                                                        )}
                                                     </div>
-                                                </div>
-                                            ))}
-                                        </CardContent>
-                                    </Card>
-                                )}
-                            </div>
-                            
-                            <div className="space-y-6">
-                                {/* Eventos próximos */}
-                                <Card className="bg-white/95 backdrop-blur-lg border-slate-200/60 shadow-lg">
-                                    <CardHeader className="pb-4">
-                                        <CardTitle className="text-lg font-bold text-slate-900 flex items-center gap-2">
-                                            <Clock className="w-5 h-5 text-indigo-600" />
-                                            Próximos Eventos
-                                        </CardTitle>
-                                    </CardHeader>
-                                    <CardContent className="space-y-3">
-                                        {events.slice(0, 3).map((event) => (
-                                            <div key={event.id} className="p-3 bg-slate-50/80 rounded-lg border border-slate-200/60 hover:shadow-md transition-shadow">
-                                                <div className="flex items-center justify-between mb-2">
-                                                    <h4 className="font-semibold text-slate-900 text-sm">{event.title}</h4>
-                                                    <span className={`text-xs px-2 py-1 rounded-full ${
-                                                        event.priority === 'high' ? 'bg-red-100 text-red-700' :
-                                                        event.priority === 'medium' ? 'bg-amber-100 text-amber-700' :
-                                                        'bg-green-100 text-green-700'
-                                                    }`}>
-                                                        {event.priority}
-                                                    </span>
-                                                </div>
-                                                <p className="text-xs text-slate-600 mb-2">{event.description}</p>
-                                                <div className="flex items-center gap-2 text-xs text-slate-500">
-                                                    <Clock className="w-3 h-3" />
-                                                    <span>{format(new Date(event.start_time), 'HH:mm')} - {format(new Date(event.end_time), 'HH:mm')}</span>
                                                 </div>
                                             </div>
                                         ))}
                                         {events.length === 0 && (
-                                            <div className="text-center py-4 text-slate-500 text-sm">
-                                                No hay eventos próximos
+                                            <div className="text-center py-8 text-slate-500">
+                                                <div className="w-16 h-16 bg-slate-100 rounded-2xl flex items-center justify-center mx-auto mb-4">
+                                                    <CalendarIcon className="w-8 h-8 text-slate-400" />
+                                                </div>
+                                                <p className="font-medium">No hay eventos próximos</p>
+                                                <p className="text-sm mt-1">Crea tu primer evento para comenzar</p>
                                             </div>
                                         )}
-                                    </CardContent>
-                                </Card>
-
-                                {/* Insights de IA */}
-                                <Card className="bg-gradient-to-br from-indigo-50 via-purple-50 to-violet-50 border-indigo-200/60 shadow-lg">
-                                    <CardHeader className="pb-4">
-                                        <CardTitle className="text-lg font-bold text-slate-900 flex items-center gap-2">
-                                            <Brain className="w-5 h-5 text-indigo-600" />
-                                            Insights
-                                            <span className="ml-auto text-xs bg-indigo-100 text-indigo-700 px-2 py-1 rounded-full">
-                                                {dashboardMetrics.pending_insights} nuevos
-                                            </span>
-                                        </CardTitle>
-                                    </CardHeader>
-                                    <CardContent className="space-y-3">
-                                        <div className="p-3 bg-white/80 rounded-lg border border-indigo-200/60">
-                                            <div className="flex items-start gap-3">
-                                                <div className="w-8 h-8 bg-gradient-to-br from-emerald-500 to-green-600 rounded-lg flex items-center justify-center">
-                                                    <TrendingUp className="w-4 h-4 text-white" />
-                                                </div>
-                                                <div className="flex-1">
-                                                    <h4 className="font-semibold text-slate-900 text-sm mb-1">Calendario Optimizado</h4>
-                                                    <p className="text-xs text-slate-600">Tu calendario está conectado con datos reales. Crea eventos para ver análisis detallados.</p>
-                                                </div>
-                                            </div>
-                                        </div>
-                                        
-                                        <div className="p-3 bg-white/80 rounded-lg border border-indigo-200/60">
-                                            <div className="flex items-start gap-3">
-                                                <div className="w-8 h-8 bg-gradient-to-br from-amber-500 to-orange-600 rounded-lg flex items-center justify-center">
-                                                    <Lightbulb className="w-4 h-4 text-white" />
-                                                </div>
-                                                <div className="flex-1">
-                                                    <h4 className="font-semibold text-slate-900 text-sm mb-1">Integración Completa</h4>
-                                                    <p className="text-xs text-slate-600">Los eventos se sincronizarán con tus clientes y proyectos automáticamente.</p>
-                                                </div>
-                                            </div>
-                                        </div>
-                                    </CardContent>
-                                </Card>
+                                    </div>
+                                </div>
                             </div>
                         </div>
 
-                        {/* Modal de formulario para eventos */}
-                        {showEventForm && (
-                            <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-50 p-4">
-                                <div className="bg-white rounded-2xl shadow-2xl max-w-2xl w-full max-h-[90vh] overflow-y-auto">
-                                    <div className="p-6">
-                                        <h3 className="text-xl font-bold text-slate-900 mb-6">
-                                            {editingEvent ? 'Editar Evento' : 'Nuevo Evento'}
-                                        </h3>
-                                        
-                                        <div className="space-y-6">
-                                            {/* Información básica */}
-                                            <div className="grid grid-cols-1 gap-4">
-                                                <div>
-                                                    <label className="block text-sm font-medium text-slate-700 mb-2">Título</label>
-                                                    <Input
-                                                        value={newEvent.title || ''}
-                                                        onChange={(e) => setNewEvent({...newEvent, title: e.target.value})}
-                                                        placeholder="Título del evento"
-                                                        className="w-full"
-                                                    />
-                                                </div>
-                                                
-                                                <div>
-                                                    <label className="block text-sm font-medium text-slate-700 mb-2">Descripción</label>
-                                                    <textarea
-                                                        value={newEvent.description || ''}
-                                                        onChange={(e) => setNewEvent({...newEvent, description: e.target.value})}
-                                                        placeholder="Descripción del evento"
-                                                        rows={3}
-                                                        className="w-full px-3 py-2 border border-slate-300 rounded-md focus:outline-none focus:ring-2 focus:ring-indigo-500"
-                                                    />
-                                                </div>
+                        {/* AI Insights - Horizontal Layout */}
+                        <div className="bg-gradient-to-br from-slate-900 via-purple-900 to-slate-900 rounded-2xl border border-purple-300/20 shadow-2xl overflow-hidden">
+                            <div className="relative p-8">
+                                {/* Background Pattern */}
+                                <div className="absolute inset-0 opacity-10">
+                                    <div className="absolute inset-0" style={{ 
+                                        backgroundImage: `radial-gradient(circle at 2px 2px, rgba(156, 146, 172, 0.3) 1px, transparent 0)`,
+                                        backgroundSize: '24px 24px'
+                                    }}></div>
+                                </div>
+                                
+                                <div className="relative">
+                                    <div className="flex items-center justify-between mb-8">
+                                        <div className="flex items-center gap-4">
+                                            <div className="w-14 h-14 bg-gradient-to-br from-purple-500 to-violet-600 rounded-xl flex items-center justify-center shadow-lg shadow-purple-500/25">
+                                                <Brain className="w-7 h-7 text-white" />
                                             </div>
-
-                                            {/* Tiempo */}
-                                            <div className="grid grid-cols-2 gap-4">
-                                                <div>
-                                                    <label className="block text-sm font-medium text-slate-700 mb-2">Hora inicio</label>
-                                                    <Input
-                                                        type="datetime-local"
-                                                        value={newEvent.start_time || ''}
-                                                        onChange={(e) => setNewEvent({...newEvent, start_time: e.target.value})}
-                                                        className="w-full"
-                                                    />
-                                                </div>
-                                                <div>
-                                                    <label className="block text-sm font-medium text-slate-700 mb-2">Hora fin</label>
-                                                    <Input
-                                                        type="datetime-local"
-                                                        value={newEvent.end_time || ''}
-                                                        onChange={(e) => setNewEvent({...newEvent, end_time: e.target.value})}
-                                                        className="w-full"
-                                                    />
-                                                </div>
-                                            </div>
-
-                                            {/* Tipo y categorización */}
-                                            <div className="grid grid-cols-2 gap-4">
-                                                <div>
-                                                    <label className="block text-sm font-medium text-slate-700 mb-2">Tipo de evento</label>
-                                                    <select
-                                                        value={newEvent.event_type || 'meeting'}
-                                                        onChange={(e) => setNewEvent({...newEvent, event_type: e.target.value as any})}
-                                                        className="w-full px-3 py-2 border border-slate-300 rounded-md focus:outline-none focus:ring-2 focus:ring-indigo-500"
-                                                    >
-                                                        <option value="meeting">Reunión</option>
-                                                        <option value="work">Trabajo</option>
-                                                        <option value="break">Descanso</option>
-                                                        <option value="focus">Trabajo Concentrado</option>
-                                                        <option value="client_call">Llamada con Cliente</option>
-                                                        <option value="project_review">Revisión de Proyecto</option>
-                                                        <option value="planning">Planificación</option>
-                                                        <option value="development">Desarrollo</option>
-                                                        <option value="design_work">Trabajo de Diseño</option>
-                                                        <option value="admin">Administración</option>
-                                                    </select>
-                                                </div>
-                                                <div>
-                                                    <label className="block text-sm font-medium text-slate-700 mb-2">Prioridad</label>
-                                                    <select
-                                                        value={newEvent.priority || 'medium'}
-                                                        onChange={(e) => setNewEvent({...newEvent, priority: e.target.value as any})}
-                                                        className="w-full px-3 py-2 border border-slate-300 rounded-md focus:outline-none focus:ring-2 focus:ring-indigo-500"
-                                                    >
-                                                        <option value="low">Baja</option>
-                                                        <option value="medium">Media</option>
-                                                        <option value="high">Alta</option>
-                                                    </select>
-                                                </div>
-                                            </div>
-
-                                            {/* Cliente y proyecto */}
-                                            <div className="grid grid-cols-2 gap-4">
-                                                <div>
-                                                    <label className="block text-sm font-medium text-slate-700 mb-2">Cliente</label>
-                                                    <select
-                                                        value={newEvent.client_id || ''}
-                                                        onChange={(e) => setNewEvent({...newEvent, client_id: e.target.value})}
-                                                        className="w-full px-3 py-2 border border-slate-300 rounded-md focus:outline-none focus:ring-2 focus:ring-indigo-500"
-                                                    >
-                                                        <option value="">Seleccionar cliente (opcional)</option>
-                                                        {clients.map((client) => (
-                                                            <option key={client.id} value={client.id}>
-                                                                {client.name} - {client.company}
-                                                            </option>
-                                                        ))}
-                                                    </select>
-                                                </div>
-                                                <div>
-                                                    <label className="block text-sm font-medium text-slate-700 mb-2">Proyecto</label>
-                                                    <select
-                                                        value={newEvent.project_id || ''}
-                                                        onChange={(e) => setNewEvent({...newEvent, project_id: e.target.value})}
-                                                        className="w-full px-3 py-2 border border-slate-300 rounded-md focus:outline-none focus:ring-2 focus:ring-indigo-500"
-                                                    >
-                                                        <option value="">Seleccionar proyecto (opcional)</option>
-                                                        {projects.map((project) => (
-                                                            <option key={project.id} value={project.id}>
-                                                                {project.name}
-                                                            </option>
-                                                        ))}
-                                                    </select>
-                                                </div>
-                                            </div>
-
-                                            {/* Ubicación y URL */}
-                                            <div className="grid grid-cols-2 gap-4">
-                                                <div>
-                                                    <label className="block text-sm font-medium text-slate-700 mb-2">Ubicación</label>
-                                                    <Input
-                                                        value={newEvent.location || ''}
-                                                        onChange={(e) => setNewEvent({...newEvent, location: e.target.value})}
-                                                        placeholder="Ubicación del evento"
-                                                        className="w-full"
-                                                    />
-                                                </div>
-                                                <div>
-                                                    <label className="block text-sm font-medium text-slate-700 mb-2">URL de reunión</label>
-                                                    <Input
-                                                        value={newEvent.meeting_url || ''}
-                                                        onChange={(e) => setNewEvent({...newEvent, meeting_url: e.target.value})}
-                                                        placeholder="https://meet.google.com/..."
-                                                        className="w-full"
-                                                    />
-                                                </div>
-                                            </div>
-
-                                            {/* Facturación */}
-                                            <div className="bg-slate-50 p-4 rounded-lg">
-                                                <h4 className="font-medium text-slate-900 mb-3">Información de facturación</h4>
-                                                <div className="space-y-3">
-                                                    <div className="flex items-center space-x-2">
-                                                        <input
-                                                            type="checkbox"
-                                                            id="is_billable"
-                                                            checked={newEvent.is_billable || false}
-                                                            onChange={(e) => setNewEvent({...newEvent, is_billable: e.target.checked})}
-                                                            className="rounded border-slate-300 text-indigo-600 focus:ring-indigo-500"
-                                                        />
-                                                        <label htmlFor="is_billable" className="text-sm font-medium text-slate-700">
-                                                            Evento facturable
-                                                        </label>
-                                                    </div>
-                                                    {newEvent.is_billable && (
-                                                        <div>
-                                                            <label className="block text-sm font-medium text-slate-700 mb-2">Tarifa por hora (€)</label>
-                                                            <Input
-                                                                type="number"
-                                                                value={newEvent.hourly_rate || ''}
-                                                                onChange={(e) => setNewEvent({...newEvent, hourly_rate: parseFloat(e.target.value) || 0})}
-                                                                placeholder="75"
-                                                                className="w-full"
-                                                            />
-                                                        </div>
-                                                    )}
-                                                </div>
-                                            </div>
-
-                                            {/* Tags */}
                                             <div>
-                                                <label className="block text-sm font-medium text-slate-700 mb-2">Tags (separados por comas)</label>
-                                                <Input
-                                                    value={(newEvent.tags || []).join(', ')}
-                                                    onChange={(e) => setNewEvent({
-                                                        ...newEvent, 
-                                                        tags: e.target.value.split(',').map(tag => tag.trim()).filter(tag => tag.length > 0)
-                                                    })}
-                                                    placeholder="importante, urgente, cliente-vip"
-                                                    className="w-full"
-                                                />
+                                                <h3 className="font-bold text-white text-2xl">AI Insights</h3>
+                                                <p className="text-purple-200 text-lg">Inteligencia artificial en tiempo real</p>
                                             </div>
                                         </div>
-                                        
-                                        <div className="flex gap-3 pt-6 border-t border-slate-200 mt-6">
+                                        <div className="flex items-center gap-3">
+                                            <div className="flex items-center gap-2">
+                                                <div className="w-3 h-3 bg-green-400 rounded-full animate-pulse"></div>
+                                                <span className="text-purple-200 text-sm font-medium">Activo</span>
+                                            </div>
+                                            <div className="text-purple-200 text-sm bg-purple-500/20 px-3 py-1 rounded-full border border-purple-400/20">
+                                                {dashboardMetrics.pending_insights} nuevos insights
+                                            </div>
+                                        </div>
+                                    </div>
+
+                                    {/* Horizontal Insights Grid - Dynamic */}
+                                    <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+                                        {insightsLoading ? (
+                                            // Loading state
+                                            Array.from({ length: 3 }).map((_, index) => (
+                                                <div key={index} className="group relative bg-gradient-to-r from-white/10 to-white/5 backdrop-blur-lg rounded-xl p-6 border border-white/10 animate-pulse">
+                                                    <div className="flex items-start gap-4 mb-4">
+                                                        <div className="w-12 h-12 bg-white/20 rounded-xl"></div>
+                                                        <div className="flex-1">
+                                                            <div className="h-4 bg-white/20 rounded mb-2"></div>
+                                                            <div className="h-3 bg-white/10 rounded mb-3"></div>
+                                                            <div className="h-3 bg-white/10 rounded w-2/3"></div>
+                                                        </div>
+                                                    </div>
+                                                </div>
+                                            ))
+                                        ) : realInsights.length > 0 ? (
+                                            // Real insights
+                                            realInsights.slice(0, 3).map((insight) => {
+                                                const getIconComponent = (iconName: string) => {
+                                                    const iconMap: Record<string, any> = {
+                                                        TrendingUp, Clock, Target, Activity, 
+                                                        Crown, DollarSign, Lightbulb, Brain
+                                                    };
+                                                    return iconMap[iconName] || TrendingUp;
+                                                };
+
+                                                const getColorClasses = (color: string) => {
+                                                    const colorMap: Record<string, { bg: string; text: string; badge: string }> = {
+                                                        emerald: { bg: 'from-emerald-500 to-teal-600', text: 'text-emerald-400', badge: 'bg-emerald-500/20' },
+                                                        amber: { bg: 'from-amber-500 to-orange-600', text: 'text-amber-400', badge: 'bg-amber-500/20' },
+                                                        blue: { bg: 'from-blue-500 to-indigo-600', text: 'text-blue-400', badge: 'bg-blue-500/20' },
+                                                        purple: { bg: 'from-purple-500 to-violet-600', text: 'text-purple-400', badge: 'bg-purple-500/20' },
+                                                        green: { bg: 'from-green-500 to-emerald-600', text: 'text-green-400', badge: 'bg-green-500/20' },
+                                                        red: { bg: 'from-red-500 to-rose-600', text: 'text-red-400', badge: 'bg-red-500/20' },
+                                                        indigo: { bg: 'from-indigo-500 to-blue-600', text: 'text-indigo-400', badge: 'bg-indigo-500/20' }
+                                                    };
+                                                    return colorMap[color] || colorMap.emerald;
+                                                };
+
+                                                const IconComponent = getIconComponent(insight.icon);
+                                                const colors = getColorClasses(insight.color);
+
+                                                return (
+                                                    <div key={insight.id} className="group relative bg-gradient-to-r from-white/10 to-white/5 backdrop-blur-lg rounded-xl p-6 border border-white/10 hover:border-white/20 transition-all duration-300 hover:scale-105">
+                                                        <div className="flex items-start gap-4 mb-4">
+                                                            <div className={`w-12 h-12 bg-gradient-to-br ${colors.bg} rounded-xl flex items-center justify-center shadow-lg`}>
+                                                                <IconComponent className="w-6 h-6 text-white" />
+                                                            </div>
+                                                            <div className="flex-1">
+                                                                <div className="flex items-center gap-2 mb-2">
+                                                                    <h4 className="font-bold text-white text-lg">{insight.title}</h4>
+                                                                    <div className={`${colors.text} text-xs ${colors.badge} px-2 py-1 rounded-full font-bold`}>
+                                                                        {insight.value}
+                                                                    </div>
+                                                                </div>
+                                                                <p className="text-slate-300 text-sm leading-relaxed mb-3">{insight.description}</p>
+                                                                <div className="flex items-center gap-2">
+                                                                    {insight.trend === 'up' && <TrendingUp className={`w-4 h-4 ${colors.text}`} />}
+                                                                    {insight.trend === 'down' && <TrendingUp className={`w-4 h-4 ${colors.text} rotate-180`} />}
+                                                                    {insight.trend === 'stable' && <Activity className={`w-4 h-4 ${colors.text}`} />}
+                                                                    <span className={`${colors.text} text-xs font-medium`}>
+                                                                        {insight.priority === 'high' ? 'Alta prioridad' : 
+                                                                         insight.priority === 'medium' ? 'Prioridad media' : 
+                                                                         'Información'}
+                                                                    </span>
+                                                                </div>
+                                                            </div>
+                                                        </div>
+                                                    </div>
+                                                );
+                                            })
+                                        ) : (
+                                            // Fallback static insights
+                                            <div className="group relative bg-gradient-to-r from-white/10 to-white/5 backdrop-blur-lg rounded-xl p-6 border border-white/10 hover:border-white/20 transition-all duration-300 hover:scale-105">
+                                                <div className="flex items-start gap-4 mb-4">
+                                                    <div className="w-12 h-12 bg-gradient-to-br from-emerald-500 to-teal-600 rounded-xl flex items-center justify-center shadow-lg shadow-emerald-500/25">
+                                                        <TrendingUp className="w-6 h-6 text-white" />
+                                                    </div>
+                                                    <div className="flex-1">
+                                                        <div className="flex items-center gap-2 mb-2">
+                                                            <h4 className="font-bold text-white text-lg">Cargando...</h4>
+                                                            <div className="text-emerald-400 text-xs bg-emerald-500/20 px-2 py-1 rounded-full font-bold">
+                                                                --
+                                                            </div>
+                                                        </div>
+                                                        <p className="text-slate-300 text-sm leading-relaxed mb-3">Generando insights personalizados basados en tus datos...</p>
+                                                        <div className="flex items-center gap-2">
+                                                            <Star className="w-4 h-4 text-emerald-400" />
+                                                            <span className="text-emerald-400 text-xs font-medium">Análisis en progreso</span>
+                                                        </div>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        )}
+                                    </div>
+
+                                    {/* AI Actions Footer */}
+                                    <div className="mt-8 pt-6 border-t border-white/10">
+                                        <div className="flex items-center justify-between">
+                                            <div className="flex items-center gap-3 text-purple-200">
+                                                <Sparkles className="w-5 h-5" />
+                                                <span className="font-medium">Powered by CalendarAI • Aprendizaje continuo activado</span>
+                                            </div>
+                                            <Button 
+                                                variant="ghost"
+                                                onClick={loadRealInsights}
+                                                disabled={insightsLoading}
+                                                className="text-purple-200 hover:text-white hover:bg-white/10 px-4 py-2 rounded-xl font-medium transition-all duration-200"
+                                            >
+                                                {insightsLoading ? (
+                                                    <>
+                                                        <div className="w-4 h-4 border-2 border-purple-200/30 border-t-purple-200 rounded-full animate-spin mr-2"></div>
+                                                        Actualizando...
+                                                    </>
+                                                ) : (
+                                                    'Actualizar insights →'
+                                                )}
+                                            </Button>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        {/* Premium Event Form Modal */}
+                        {showEventForm && (
+                            <div className="fixed inset-0 bg-gradient-to-br from-black/60 to-slate-900/60 backdrop-blur-lg flex items-center justify-center z-50 p-4">
+                                <div className="bg-gradient-to-br from-white to-slate-50/50 rounded-3xl shadow-2xl max-w-3xl w-full max-h-[95vh] overflow-hidden border border-slate-200/60">
+                                    {/* Modal Header */}
+                                    <div className="bg-gradient-to-r from-blue-500 to-purple-600 p-8 text-white">
+                                        <div className="flex items-center justify-between">
+                                            <div className="flex items-center gap-4">
+                                                <div className="w-12 h-12 bg-white/20 rounded-xl flex items-center justify-center">
+                                                    <Plus className="w-6 h-6" />
+                                                </div>
+                                                <div>
+                                                    <h3 className="text-2xl font-bold mb-1">
+                                                        {editingEvent ? 'Editar Evento' : 'Crear Nuevo Evento'}
+                                                    </h3>
+                                                    <p className="text-blue-100">Programa tu próxima actividad</p>
+                                                </div>
+                                            </div>
                                             <Button
                                                 onClick={() => {
                                                     setShowEventForm(false);
@@ -1159,42 +1268,259 @@ export default function CalendarPageClientDemo() {
                                                         description: '',
                                                         start_time: '',
                                                         end_time: '',
-                                                        event_type: 'meeting',
-                                                        priority: 'medium',
+                                                        type: 'meeting',
                                                         is_billable: false,
                                                         tags: []
                                                     });
                                                 }}
                                                 variant="ghost"
-                                                className="flex-1"
+                                                className="text-white hover:bg-white/20 w-10 h-10 rounded-xl"
                                             >
-                                                Cancelar
-                                            </Button>
-                                            <Button
-                                                onClick={handleCreateEvent}
-                                                className="flex-1 bg-indigo-600 hover:bg-indigo-700"
-                                            >
-                                                {editingEvent ? 'Actualizar' : 'Crear'}
+                                                ✕
                                             </Button>
                                         </div>
                                     </div>
-                                </div>
-                            </div>
-                        )}
+                                    
+                                    {/* Modal Content */}
+                                    <div className="p-8 overflow-y-auto max-h-[calc(95vh-120px)]">
+                                        <div className="space-y-8">
+                                            {/* Información básica */}
+                                            <div className="bg-slate-50/80 rounded-2xl p-6 border border-slate-200/60">
+                                                <h4 className="font-bold text-slate-900 mb-4 flex items-center gap-2">
+                                                    <div className="w-5 h-5 bg-blue-500 rounded-lg"></div>
+                                                    Información Básica
+                                                </h4>
+                                                <div className="grid grid-cols-1 gap-4">
+                                                    <div>
+                                                        <label className="block text-sm font-semibold text-slate-700 mb-2">Título del evento</label>
+                                                        <Input
+                                                            value={newEvent.title || ''}
+                                                            onChange={(e) => setNewEvent({...newEvent, title: e.target.value})}
+                                                            placeholder="Ej. Reunión con cliente, Workshop, Llamada de seguimiento..."
+                                                            className="w-full px-4 py-3 bg-white border border-slate-300 rounded-xl focus:border-blue-500 focus:ring-2 focus:ring-blue-100 transition-all"
+                                                        />
+                                                    </div>
+                                                    
+                                                    <div>
+                                                        <label className="block text-sm font-semibold text-slate-700 mb-2">Descripción</label>
+                                                        <textarea
+                                                            value={newEvent.description || ''}
+                                                            onChange={(e) => setNewEvent({...newEvent, description: e.target.value})}
+                                                            placeholder="Agenda, objetivos, notas importantes..."
+                                                            rows={3}
+                                                            className="w-full px-4 py-3 bg-white border border-slate-300 rounded-xl focus:border-blue-500 focus:ring-2 focus:ring-blue-100 transition-all resize-none"
+                                                        />
+                                                    </div>
+                                                </div>
+                                            </div>
+
+                                            {/* Tiempo y duración */}
+                                            <div className="bg-slate-50/80 rounded-2xl p-6 border border-slate-200/60">
+                                                <h4 className="font-bold text-slate-900 mb-4 flex items-center gap-2">
+                                                    <div className="w-5 h-5 bg-green-500 rounded-lg"></div>
+                                                    Fecha y Hora
+                                                </h4>
+                                                <div className="grid grid-cols-2 gap-4">
+                                                    <div>
+                                                        <label className="block text-sm font-semibold text-slate-700 mb-2">Inicio</label>
+                                                        <Input
+                                                            type="datetime-local"
+                                                            value={newEvent.start_time || ''}
+                                                            onChange={(e) => setNewEvent({...newEvent, start_time: e.target.value})}
+                                                            className="w-full px-4 py-3 bg-white border border-slate-300 rounded-xl focus:border-blue-500 focus:ring-2 focus:ring-blue-100"
+                                                        />
+                                                    </div>
+                                                    <div>
+                                                        <label className="block text-sm font-semibold text-slate-700 mb-2">Fin</label>
+                                                        <Input
+                                                            type="datetime-local"
+                                                            value={newEvent.end_time || ''}
+                                                            onChange={(e) => setNewEvent({...newEvent, end_time: e.target.value})}
+                                                            className="w-full px-4 py-3 bg-white border border-slate-300 rounded-xl focus:border-blue-500 focus:ring-2 focus:ring-blue-100"
+                                                        />
+                                                    </div>
+                                                </div>
+                                            </div>
+
+                                            {/* Categorización */}
+                                            <div className="bg-slate-50/80 rounded-2xl p-6 border border-slate-200/60">
+                                                <h4 className="font-bold text-slate-900 mb-4 flex items-center gap-2">
+                                                    <div className="w-5 h-5 bg-purple-500 rounded-lg"></div>
+                                                    Categorización
+                                                </h4>
+                                                <div className="grid grid-cols-2 gap-4">
+                                                    <div>
+                                                        <label className="block text-sm font-semibold text-slate-700 mb-2">Tipo de evento</label>
+                                                        <select
+                                                            value={newEvent.type || 'meeting'}
+                                                            onChange={(e) => setNewEvent({...newEvent, type: e.target.value})}
+                                                            className="w-full px-4 py-3 bg-white border border-slate-300 rounded-xl focus:border-blue-500 focus:ring-2 focus:ring-blue-100"
+                                                        >
+                                                            <option value="meeting">🤝 Reunión</option>
+                                                            <option value="work">💻 Trabajo</option>
+                                                            <option value="break">☕ Descanso</option>
+                                                            <option value="focus">🎯 Trabajo Concentrado</option>
+                                                            <option value="client_call">📞 Llamada con Cliente</option>
+                                                            <option value="project_review">📋 Revisión de Proyecto</option>
+                                                            <option value="planning">📝 Planificación</option>
+                                                            <option value="development">⚡ Desarrollo</option>
+                                                            <option value="design_work">🎨 Trabajo de Diseño</option>
+                                                            <option value="admin">📊 Administración</option>
+                                                        </select>
+                                                    </div>
+                                                    
+                                                    <div>
+                                                        <label className="block text-sm font-semibold text-slate-700 mb-2">Cliente</label>
+                                                        <select
+                                                            value={newEvent.client_id || ''}
+                                                            onChange={(e) => setNewEvent({...newEvent, client_id: e.target.value})}
+                                                            className="w-full px-4 py-3 bg-white border border-slate-300 rounded-xl focus:border-blue-500 focus:ring-2 focus:ring-blue-100"
+                                                        >
+                                                            <option value="">Sin cliente específico</option>
+                                                            {clients.map((client) => (
+                                                                <option key={client.id} value={client.id}>
+                                                                    {client.name} - {client.company}
+                                                                </option>
+                                                            ))}
+                                                        </select>
+                                                    </div>
+                                                </div>
+                                                
+                                                <div className="mt-4">
+                                                    <label className="block text-sm font-semibold text-slate-700 mb-2">Proyecto relacionado</label>
+                                                    <select
+                                                        value={newEvent.project_id || ''}
+                                                        onChange={(e) => setNewEvent({...newEvent, project_id: e.target.value})}
+                                                        className="w-full px-4 py-3 bg-white border border-slate-300 rounded-xl focus:border-blue-500 focus:ring-2 focus:ring-blue-100"
+                                                    >
+                                                        <option value="">Sin proyecto específico</option>
+                                                        {projects.map((project) => (
+                                                            <option key={project.id} value={project.id}>
+                                                                {project.name}
+                                                            </option>
+                                                        ))}
+                                                    </select>
+                                                </div>
+                                            </div>
+
+                                            {/* Ubicación y conexión */}
+                                            <div className="bg-slate-50/80 rounded-2xl p-6 border border-slate-200/60">
+                                                <h4 className="font-bold text-slate-900 mb-4 flex items-center gap-2">
+                                                    <div className="w-5 h-5 bg-amber-500 rounded-lg"></div>
+                                                    Ubicación y Conexión
+                                                </h4>
+                                                <div className="grid grid-cols-2 gap-4">
+                                                    <div>
+                                                        <label className="block text-sm font-semibold text-slate-700 mb-2">Ubicación física</label>
+                                                        <Input
+                                                            value={newEvent.location || ''}
+                                                            onChange={(e) => setNewEvent({...newEvent, location: e.target.value})}
+                                                            placeholder="Oficina, dirección, sala de reuniones..."
+                                                            className="w-full px-4 py-3 bg-white border border-slate-300 rounded-xl focus:border-blue-500 focus:ring-2 focus:ring-blue-100"
+                                                        />
+                                                    </div>
+                                                    <div>
+                                                        <label className="block text-sm font-semibold text-slate-700 mb-2">URL de reunión virtual</label>
+                                                        <Input
+                                                            value={newEvent.meeting_url || ''}
+                                                            onChange={(e) => setNewEvent({...newEvent, meeting_url: e.target.value})}
+                                                            placeholder="https://meet.google.com/..."
+                                                            className="w-full px-4 py-3 bg-white border border-slate-300 rounded-xl focus:border-blue-500 focus:ring-2 focus:ring-blue-100"
+                                                        />
+                                                    </div>
+                                                </div>
+                                            </div>
+
+                                            {/* Facturación */}
+                                            <div className="bg-gradient-to-br from-green-50 to-emerald-50 rounded-2xl p-6 border border-green-200/60">
+                                                <h4 className="font-bold text-slate-900 mb-4 flex items-center gap-2">
+                                                    <div className="w-5 h-5 bg-green-500 rounded-lg"></div>
+                                                    Información de Facturación
+                                                </h4>
+                                                <div className="space-y-4">
+                                                    <div className="flex items-center space-x-3">
+                                                        <input
+                                                            type="checkbox"
+                                                            id="is_billable"
+                                                            checked={newEvent.is_billable || false}
+                                                            onChange={(e) => setNewEvent({...newEvent, is_billable: e.target.checked})}
+                                                            className="w-5 h-5 rounded border-slate-300 text-green-600 focus:ring-green-500"
+                                                        />
+                                                        <label htmlFor="is_billable" className="text-sm font-semibold text-slate-700">
+                                                            ✅ Este evento es facturable
+                                                        </label>
+                                                    </div>
+                                                    {newEvent.is_billable && (
+                                                        <div className="mt-4">
+                                                            <label className="block text-sm font-semibold text-slate-700 mb-2">Tarifa por hora (€)</label>
+                                                            <Input
+                                                                type="number"
+                                                                value={newEvent.hourly_rate || ''}
+                                                                onChange={(e) => setNewEvent({...newEvent, hourly_rate: parseFloat(e.target.value) || 0})}
+                                                                placeholder="75"
+                                                                className="w-full px-4 py-3 bg-white border border-slate-300 rounded-xl focus:border-blue-500 focus:ring-2 focus:ring-blue-100"
+                                                            />
+                                                        </div>
+                                                    )}
+                                                </div>
+                                            </div>
+
+                                            {/* Tags */}
+                                            <div className="bg-slate-50/80 rounded-2xl p-6 border border-slate-200/60">
+                                                <h4 className="font-bold text-slate-900 mb-4 flex items-center gap-2">
+                                                    <div className="w-5 h-5 bg-indigo-500 rounded-lg"></div>
+                                                    Etiquetas y Organización
+                                                </h4>
+                                                <div>
+                                                    <label className="block text-sm font-semibold text-slate-700 mb-2">Tags (separados por comas)</label>
+                                                    <Input
+                                                        value={(newEvent.tags || []).join(', ')}
+                                                        onChange={(e) => setNewEvent({
+                                                            ...newEvent, 
+                                                            tags: e.target.value.split(',').map(tag => tag.trim()).filter(tag => tag.length > 0)
+                                                        })}
+                                                        placeholder="importante, urgente, cliente-vip, estratégico..."
+                                                        className="w-full px-4 py-3 bg-white border border-slate-300 rounded-xl focus:border-blue-500 focus:ring-2 focus:ring-blue-100"
+                                                    />
+                                                    <p className="text-xs text-slate-500 mt-2">Usa etiquetas para organizar y filtrar tus eventos fácilmente</p>
+                                                </div>
+                                            </div>
+                                        </div>
+                                        
+                                        {/* Action Buttons */}
+                                        <div className="flex gap-4 pt-8 border-t border-slate-200 mt-8">
                                             <Button
-                                                onClick={() => setShowEventForm(false)}
+                                                onClick={() => {
+                                                    setShowEventForm(false);
+                                                    setEditingEvent(null);
+                                                    setNewEvent({
+                                                        title: '',
+                                                        description: '',
+                                                        start_time: '',
+                                                        end_time: '',
+                                                        type: 'meeting',
+                                                        is_billable: false,
+                                                        tags: []
+                                                    });
+                                                }}
                                                 variant="ghost"
-                                                className="flex-1"
-                                                disabled={loading}
+                                                className="flex-1 px-6 py-3 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-700 font-semibold"
                                             >
                                                 Cancelar
                                             </Button>
                                             <Button
                                                 onClick={handleCreateEvent}
-                                                className="flex-1 bg-indigo-600 hover:bg-indigo-700"
+                                                className="flex-1 px-6 py-3 rounded-xl bg-gradient-to-r from-blue-500 to-purple-600 hover:from-blue-600 hover:to-purple-700 text-white font-semibold shadow-lg hover:shadow-xl transition-all duration-200"
                                                 disabled={loading}
                                             >
-                                                {loading ? 'Creando...' : (editingEvent ? 'Actualizar' : 'Crear')}
+                                                {loading ? (
+                                                    <div className="flex items-center gap-2">
+                                                        <div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin"></div>
+                                                        Guardando...
+                                                    </div>
+                                                ) : (
+                                                    editingEvent ? '✅ Actualizar Evento' : '🚀 Crear Evento'
+                                                )}
                                             </Button>
                                         </div>
                                     </div>

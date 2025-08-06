@@ -75,6 +75,7 @@ export default function CalendarPageClient({ userEmail }: CalendarPageClientProp
     const [dashboardMetrics, setDashboardMetrics] = useState<DashboardMetrics | null>(null);
     const [smartSuggestions, setSmartSuggestions] = useState<SmartSuggestion[]>([]);
     const [showAIPanel, setShowAIPanel] = useState(true);
+    const [lastInsightsUpdate, setLastInsightsUpdate] = useState<Date | null>(null);
     const [aiLoading, setAILoading] = useState(false);
     
     // Estados CRM
@@ -580,6 +581,7 @@ export default function CalendarPageClient({ userEmail }: CalendarPageClientProp
         try {
             // Generar insights locales automáticamente
             await loadAIData(); // Recargar datos locales
+            setLastInsightsUpdate(new Date()); // Registrar última actualización
         } catch (error) {
             console.error('Error generating AI insights:', error);
         } finally {
@@ -868,9 +870,10 @@ export default function CalendarPageClient({ userEmail }: CalendarPageClientProp
                                         disabled={aiLoading}
                                         variant="outline"
                                         className="border-purple-200 hover:bg-purple-50 text-purple-700 h-9 px-3"
+                                        title={lastInsightsUpdate ? `Última actualización: ${lastInsightsUpdate.toLocaleTimeString()}` : 'Generar insights actualizados'}
                                     >
                                         <Sparkles className="w-4 h-4 mr-2" />
-                                        {aiLoading ? 'Generando...' : 'Insights IA'}
+                                        {aiLoading ? 'Actualizando...' : 'Actualizar Insights'}
                                     </Button>
                                     
                                     <Button
@@ -1264,9 +1267,16 @@ export default function CalendarPageClient({ userEmail }: CalendarPageClientProp
                                 {/* Insights de IA */}
                                 <Card className="bg-gradient-to-br from-white/95 to-purple-50/30 backdrop-blur-2xl border border-purple-200/60 shadow-xl shadow-purple-500/10">
                                     <CardHeader className="pb-2">
-                                        <div className="flex items-center gap-2">
-                                            <Brain className="w-5 h-5 text-purple-600" />
-                                            <CardTitle className="text-lg font-bold text-slate-900">Insights IA</CardTitle>
+                                        <div className="flex items-center justify-between">
+                                            <div className="flex items-center gap-2">
+                                                <Brain className="w-5 h-5 text-purple-600" />
+                                                <CardTitle className="text-lg font-bold text-slate-900">Insights IA</CardTitle>
+                                            </div>
+                                            {lastInsightsUpdate && (
+                                                <span className="text-xs text-slate-500">
+                                                    Actualizado: {lastInsightsUpdate.toLocaleTimeString()}
+                                                </span>
+                                            )}
                                         </div>
                                     </CardHeader>
                                     <CardContent>

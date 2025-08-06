@@ -1,6 +1,15 @@
-import TasksPageClientDemo from './TasksPageClientDemo';
+import { createServerSupabaseClient } from '@/src/lib/supabase-server';
+import { redirect } from 'next/navigation';
+import TasksPageClient from './TasksPageClient';
 
-export default function TasksPage() {
-    // Usar versión demo para evitar errores de base de datos
-    return <TasksPageClientDemo />;
+export default async function TasksPage() {
+    const supabase = await createServerSupabaseClient();
+    
+    const { data: { user }, error } = await supabase.auth.getUser();
+    
+    if (error || !user) {
+        redirect('/login');
+    }
+    
+    return <TasksPageClient userEmail={user.email!} />;
 }
