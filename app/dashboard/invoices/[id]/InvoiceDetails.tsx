@@ -369,8 +369,8 @@ export default function InvoiceDetails({ invoiceId, userEmail }: InvoiceDetailsP
                                                     <tr key={item.id}>
                                                         <td className="px-6 py-4 text-slate-900">{item.description}</td>
                                                         <td className="px-6 py-4 text-right text-slate-700">{item.quantity}</td>
-                                                        <td className="px-6 py-4 text-right text-slate-700">${item.unit_price.toFixed(2)}</td>
-                                                        <td className="px-6 py-4 text-right font-semibold text-slate-900">${item.total.toFixed(2)}</td>
+                                                        <td className="px-6 py-4 text-right text-slate-700">€{item.unit_price.toFixed(2)}</td>
+                                                        <td className="px-6 py-4 text-right font-semibold text-slate-900">€{item.total.toFixed(2)}</td>
                                                     </tr>
                                                 ))}
                                             </tbody>
@@ -382,16 +382,16 @@ export default function InvoiceDetails({ invoiceId, userEmail }: InvoiceDetailsP
                                         <div className="space-y-2 max-w-sm ml-auto">
                                             <div className="flex justify-between items-center">
                                                 <span className="text-slate-600">Subtotal:</span>
-                                                <span className="font-semibold text-slate-900">${invoice.amount.toFixed(2)}</span>
+                                                <span className="font-semibold text-slate-900">€{invoice.amount.toFixed(2)}</span>
                                             </div>
                                             <div className="flex justify-between items-center">
                                                 <span className="text-slate-600">Impuestos ({invoice.tax_rate}%):</span>
-                                                <span className="font-semibold text-slate-900">${invoice.tax_amount.toFixed(2)}</span>
+                                                <span className="font-semibold text-slate-900">€{invoice.tax_amount.toFixed(2)}</span>
                                             </div>
                                             <div className="border-t border-slate-300 pt-2">
                                                 <div className="flex justify-between items-center">
                                                     <span className="text-lg font-bold text-slate-900">Total:</span>
-                                                    <span className="text-2xl font-bold text-emerald-600">${invoice.total_amount.toFixed(2)}</span>
+                                                    <span className="text-2xl font-bold text-emerald-600">€{invoice.total_amount.toFixed(2)}</span>
                                                 </div>
                                             </div>
                                         </div>

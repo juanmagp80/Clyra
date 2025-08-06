@@ -15,7 +15,9 @@ import {
     Target,
     Star,
     Rocket,
-    Award
+    Award,
+    Calendar,
+    CheckCircle
 } from 'lucide-react';
 import Link from 'next/link';
 import { useState, useEffect } from 'react';
@@ -333,6 +335,74 @@ export default function DemoPage() {
                                 <Button className="w-full bg-gradient-to-r from-purple-500 to-violet-400 hover:from-purple-600 hover:to-violet-500 shadow-lg hover:shadow-purple-500/25 group-hover:scale-105 transition-all duration-300">
                                     <Zap className="w-4 h-4 mr-2" />
                                     Ver Facturas Pro
+                                    <ArrowRight className="w-4 h-4 ml-2" />
+                                </Button>
+                            </Link>
+                        </CardContent>
+                    </Card>
+
+                    {/* Calendar Section */}
+                    <Card className="group relative overflow-hidden border-0 shadow-xl hover:shadow-2xl transition-all duration-500 hover:scale-105 bg-gradient-to-br from-indigo-50 to-blue-50">
+                        <div className="absolute inset-0 bg-gradient-to-r from-indigo-500 to-blue-400 opacity-0 group-hover:opacity-10 transition-opacity duration-300"></div>
+                        <CardHeader className="relative z-10">
+                            <CardTitle className="flex items-center gap-3 text-xl">
+                                <div className="p-3 rounded-xl bg-gradient-to-r from-indigo-500 to-blue-400 text-white shadow-lg group-hover:scale-110 transition-transform duration-300">
+                                    <Calendar className="w-6 h-6" />
+                                </div>
+                                <span className="bg-gradient-to-r from-indigo-600 to-blue-600 bg-clip-text text-transparent font-bold">
+                                    Calendario Inteligente
+                                </span>
+                            </CardTitle>
+                        </CardHeader>
+                        <CardContent className="relative z-10">
+                            <p className="text-slate-600 mb-6 leading-relaxed">
+                                Optimiza tu tiempo con IA, time tracking automático y integración completa con CRM.
+                            </p>
+                            <div className="flex items-center justify-between mb-4">
+                                <span className="text-sm text-slate-500">Productividad</span>
+                                <span className="text-sm font-semibold text-indigo-600">78%</span>
+                            </div>
+                            <div className="w-full bg-indigo-100 rounded-full h-2 mb-6">
+                                <div className="bg-gradient-to-r from-indigo-500 to-blue-400 h-2 rounded-full w-[78%] animate-pulse"></div>
+                            </div>
+                            <Link href="/demo/calendar">
+                                <Button className="w-full bg-gradient-to-r from-indigo-500 to-blue-400 hover:from-indigo-600 hover:to-blue-500 shadow-lg hover:shadow-indigo-500/25 group-hover:scale-105 transition-all duration-300">
+                                    <Calendar className="w-4 h-4 mr-2" />
+                                    Ver Calendario IA
+                                    <ArrowRight className="w-4 h-4 ml-2" />
+                                </Button>
+                            </Link>
+                        </CardContent>
+                    </Card>
+
+                    {/* Tasks Section */}
+                    <Card className="group relative overflow-hidden border-0 shadow-xl hover:shadow-2xl transition-all duration-500 hover:scale-105 bg-gradient-to-br from-emerald-50 to-teal-50">
+                        <div className="absolute inset-0 bg-gradient-to-r from-emerald-500 to-teal-400 opacity-0 group-hover:opacity-10 transition-opacity duration-300"></div>
+                        <CardHeader className="relative z-10">
+                            <CardTitle className="flex items-center gap-3 text-xl">
+                                <div className="p-3 rounded-xl bg-gradient-to-r from-emerald-500 to-teal-400 text-white shadow-lg group-hover:scale-110 transition-transform duration-300">
+                                    <CheckCircle className="w-6 h-6" />
+                                </div>
+                                <span className="bg-gradient-to-r from-emerald-600 to-teal-600 bg-clip-text text-transparent font-bold">
+                                    Gestión de Tareas
+                                </span>
+                            </CardTitle>
+                        </CardHeader>
+                        <CardContent className="relative z-10">
+                            <p className="text-slate-600 mb-6 leading-relaxed">
+                                Organiza, prioriza y trackea tus tareas con herramientas avanzadas de productividad.
+                            </p>
+                            <div className="flex items-center justify-between mb-4">
+                                <span className="text-sm text-slate-500">Completadas</span>
+                                <span className="text-sm font-semibold text-emerald-600">67%</span>
+                            </div>
+                            <div className="w-full bg-emerald-100 rounded-full h-2 mb-6">
+                                <div className="bg-gradient-to-r from-emerald-500 to-teal-400 h-2 rounded-full w-[67%] animate-pulse"></div>
+                            </div>
+                            <Link href="/demo/tasks">
+                                <Button className="w-full bg-gradient-to-r from-emerald-500 to-teal-400 hover:from-emerald-600 hover:to-teal-500 shadow-lg hover:shadow-emerald-500/25 group-hover:scale-105 transition-all duration-300">
+                                    <CheckCircle className="w-4 h-4 mr-2" />
+                                    Ver Tareas
                                     <ArrowRight className="w-4 h-4 ml-2" />
                                 </Button>
                             </Link>

@@ -713,7 +713,7 @@ export default function ProjectDetails({ projectId, userEmail }: ProjectDetailsP
                                                 <div>
                                                     <p className="text-sm text-slate-600 font-semibold">Presupuesto</p>
                                                     <p className="text-xl font-bold text-slate-900">
-                                                        {project.budget ? `$${project.budget.toLocaleString()}` : 'No definido'}
+                                                        {project.budget ? `€${project.budget.toLocaleString()}` : 'No definido'}
                                                     </p>
                                                 </div>
                                             </div>

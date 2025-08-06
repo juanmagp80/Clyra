@@ -300,7 +300,7 @@ const InvoicesPageClient = () => {
                                     <div className="space-y-2">
                                         <p className="text-sm font-medium text-gray-600">Pagadas</p>
                                         <p className="text-2xl font-bold text-gray-900">{totalStats.paid}</p>
-                                        <p className="text-xs text-green-600">${totalStats.paidAmount.toLocaleString()}</p>
+                                        <p className="text-xs text-green-600">€{totalStats.paidAmount.toLocaleString()}</p>
                                     </div>
                                 </div>
 
@@ -313,7 +313,7 @@ const InvoicesPageClient = () => {
                                     <div className="space-y-2">
                                         <p className="text-sm font-medium text-gray-600">Pendientes</p>
                                         <p className="text-2xl font-bold text-gray-900">{totalStats.sent}</p>
-                                        <p className="text-xs text-yellow-600">${(totalStats.totalAmount - totalStats.paidAmount).toLocaleString()}</p>
+                                        <p className="text-xs text-yellow-600">€{(totalStats.totalAmount - totalStats.paidAmount).toLocaleString()}</p>
                                     </div>
                                 </div>
 
@@ -352,7 +352,7 @@ const InvoicesPageClient = () => {
                                     <div className="space-y-2">
                                         <p className="text-sm font-medium text-gray-600">Ingresos</p>
                                         <p className="text-2xl font-bold text-gray-900">
-                                            ${totalStats.totalAmount.toLocaleString()}
+                                            €{totalStats.totalAmount.toLocaleString()}
                                         </p>
                                         <p className="text-xs text-purple-600">Total facturado</p>
                                     </div>
@@ -476,10 +476,10 @@ const InvoicesPageClient = () => {
                                                 <div className="lg:col-span-2 text-center lg:text-left">
                                                     <p className="text-sm text-gray-500">Total</p>
                                                     <p className="text-xl font-bold text-gray-900">
-                                                        ${invoice.total_amount.toLocaleString()}
+                                                        €{invoice.total_amount.toLocaleString()}
                                                     </p>
                                                     <p className="text-xs text-gray-500">
-                                                        +${invoice.tax_amount.toLocaleString()} IVA
+                                                        +€{invoice.tax_amount.toLocaleString()} IVA
                                                     </p>
                                                 </div>
 

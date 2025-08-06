@@ -55,8 +55,8 @@ const DashboardStats = ({
       gradient: 'from-purple-500 to-purple-600'
     },
     {
-      title: 'Revenue Mensual',
-      value: `$${monthlyRevenue.toLocaleString()}`,
+      title: 'Ingresos Mensuales',
+      value: `€${monthlyRevenue.toLocaleString()}`,
       icon: DollarSign,
       change: '+24%',
       changeType: 'positive' as const,

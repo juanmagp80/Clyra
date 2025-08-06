@@ -281,3 +281,268 @@ export const demoStats = {
   completedProjects: demoProjects.filter(p => p.status === 'completed').length,
   averageProjectValue: demoProjects.reduce((sum, p) => sum + p.budget, 0) / demoProjects.length
 };
+
+// Datos demo para el calendario
+export const demoCalendarEvents = [
+  {
+    id: 'demo-event-1',
+    title: 'Reunión inicial - TechStart',
+    description: 'Definir scope y timeline del proyecto de landing page',
+    start_time: '2024-12-27T10:00:00',
+    end_time: '2024-12-27T11:30:00',
+    type: 'client_call',
+    status: 'scheduled',
+    is_billable: true,
+    hourly_rate: 75,
+    location: '',
+    meeting_url: 'https://meet.google.com/abc-defg-hij',
+    client_id: 'demo-1',
+    project_id: 'demo-proj-1',
+    user_id: 'demo-user',
+    created_at: '2024-12-25T09:00:00'
+  },
+  {
+    id: 'demo-event-2',
+    title: 'Diseño de wireframes',
+    description: 'Crear wireframes detallados para la nueva landing page',
+    start_time: '2024-12-27T14:00:00',
+    end_time: '2024-12-27T17:00:00',
+    type: 'work',
+    status: 'in_progress',
+    is_billable: true,
+    hourly_rate: 65,
+    location: 'Oficina casa',
+    meeting_url: '',
+    client_id: 'demo-1',
+    project_id: 'demo-proj-1',
+    user_id: 'demo-user',
+    created_at: '2024-12-25T09:15:00'
+  },
+  {
+    id: 'demo-event-3',
+    title: 'Descanso y café ☕',
+    description: 'Tiempo de descanso para mantener la productividad',
+    start_time: '2024-12-27T12:00:00',
+    end_time: '2024-12-27T12:15:00',
+    type: 'break',
+    status: 'completed',
+    is_billable: false,
+    hourly_rate: 0,
+    location: '',
+    meeting_url: '',
+    client_id: '',
+    project_id: '',
+    user_id: 'demo-user',
+    created_at: '2024-12-25T09:30:00'
+  },
+  {
+    id: 'demo-event-4',
+    title: 'Review menú digital - Restaurante Oliva',
+    description: 'Presentación del primer prototipo del menú digital',
+    start_time: '2024-12-28T11:00:00',
+    end_time: '2024-12-28T12:00:00',
+    type: 'meeting',
+    status: 'scheduled',
+    is_billable: true,
+    hourly_rate: 70,
+    location: 'Restaurante Oliva',
+    meeting_url: '',
+    client_id: 'demo-2',
+    project_id: 'demo-proj-3',
+    user_id: 'demo-user',
+    created_at: '2024-12-25T10:00:00'
+  },
+  {
+    id: 'demo-event-5',
+    title: 'Desarrollo frontend',
+    description: 'Implementación de componentes React para la landing',
+    start_time: '2024-12-28T09:00:00',
+    end_time: '2024-12-28T13:00:00',
+    type: 'work',
+    status: 'scheduled',
+    is_billable: true,
+    hourly_rate: 65,
+    location: 'Oficina casa',
+    meeting_url: '',
+    client_id: 'demo-1',
+    project_id: 'demo-proj-1',
+    user_id: 'demo-user',
+    created_at: '2024-12-25T10:15:00'
+  },
+  {
+    id: 'demo-event-6',
+    title: 'Planificación semanal',
+    description: 'Revisar objetivos y planificar tareas de la próxima semana',
+    start_time: '2024-12-29T09:00:00',
+    end_time: '2024-12-29T10:00:00',
+    type: 'admin',
+    status: 'scheduled',
+    is_billable: false,
+    hourly_rate: 0,
+    location: '',
+    meeting_url: '',
+    client_id: '',
+    project_id: '',
+    user_id: 'demo-user',
+    created_at: '2024-12-25T10:30:00'
+  }
+];
+
+// Datos demo para tareas
+export const demoTasks = [
+  {
+    id: 'demo-task-1',
+    title: 'Completar wireframes de landing page',
+    description: 'Finalizar los wireframes detallados para todas las secciones de la landing page de TechStart',
+    status: 'in_progress',
+    priority: 'high',
+    due_date: '2024-12-27',
+    completed_at: null,
+    project_id: 'demo-proj-1',
+    client_id: 'demo-1',
+    estimated_hours: 6,
+    actual_hours: 3.5,
+    is_billable: true,
+    tags: ['diseño', 'wireframes', 'landing'],
+    user_id: 'demo-user',
+    created_at: '2024-12-25T08:00:00'
+  },
+  {
+    id: 'demo-task-2',
+    title: 'Revisar feedback del cliente',
+    description: 'Analizar los comentarios recibidos sobre el prototipo inicial del menú digital',
+    status: 'pending',
+    priority: 'medium',
+    due_date: '2024-12-28',
+    completed_at: null,
+    project_id: 'demo-proj-3',
+    client_id: 'demo-2',
+    estimated_hours: 2,
+    actual_hours: 0,
+    is_billable: true,
+    tags: ['review', 'feedback', 'menú'],
+    user_id: 'demo-user',
+    created_at: '2024-12-25T08:15:00'
+  },
+  {
+    id: 'demo-task-3',
+    title: 'Enviar propuesta para app móvil',
+    description: 'Preparar y enviar la propuesta técnica y económica para la app de FitnessCenter Pro',
+    status: 'completed',
+    priority: 'high',
+    due_date: '2024-12-26',
+    completed_at: '2024-12-26T16:30:00',
+    project_id: 'demo-proj-4',
+    client_id: 'demo-3',
+    estimated_hours: 4,
+    actual_hours: 3.8,
+    is_billable: false,
+    tags: ['propuesta', 'app', 'fitness'],
+    user_id: 'demo-user',
+    created_at: '2024-12-24T09:00:00'
+  },
+  {
+    id: 'demo-task-4',
+    title: 'Implementar sistema de autenticación',
+    description: 'Desarrollar el login y registro para la landing page con integración de redes sociales',
+    status: 'pending',
+    priority: 'medium',
+    due_date: '2024-12-30',
+    completed_at: null,
+    project_id: 'demo-proj-1',
+    client_id: 'demo-1',
+    estimated_hours: 8,
+    actual_hours: 0,
+    is_billable: true,
+    tags: ['desarrollo', 'auth', 'frontend'],
+    user_id: 'demo-user',
+    created_at: '2024-12-25T08:30:00'
+  },
+  {
+    id: 'demo-task-5',
+    title: 'Optimizar imágenes y assets',
+    description: 'Comprimir y optimizar todas las imágenes para mejorar el rendimiento web',
+    status: 'pending',
+    priority: 'low',
+    due_date: '2024-12-31',
+    completed_at: null,
+    project_id: 'demo-proj-1',
+    client_id: 'demo-1',
+    estimated_hours: 3,
+    actual_hours: 0,
+    is_billable: true,
+    tags: ['optimización', 'imágenes', 'performance'],
+    user_id: 'demo-user',
+    created_at: '2024-12-25T08:45:00'
+  },
+  {
+    id: 'demo-task-6',
+    title: 'Configurar Google Analytics',
+    description: 'Instalar y configurar tracking de GA4 para el nuevo sitio web',
+    status: 'pending',
+    priority: 'medium',
+    due_date: '2024-12-29',
+    completed_at: null,
+    project_id: 'demo-proj-1',
+    client_id: 'demo-1',
+    estimated_hours: 2,
+    actual_hours: 0,
+    is_billable: true,
+    tags: ['analytics', 'tracking', 'seo'],
+    user_id: 'demo-user',
+    created_at: '2024-12-25T09:00:00'
+  },
+  {
+    id: 'demo-task-7',
+    title: 'Diseñar iconografía personalizada',
+    description: 'Crear iconos únicos para el menú digital que reflejen la identidad del restaurante',
+    status: 'in_progress',
+    priority: 'medium',
+    due_date: '2024-12-28',
+    completed_at: null,
+    project_id: 'demo-proj-3',
+    client_id: 'demo-2',
+    estimated_hours: 5,
+    actual_hours: 2.2,
+    is_billable: true,
+    tags: ['diseño', 'iconos', 'identidad'],
+    user_id: 'demo-user',
+    created_at: '2024-12-25T09:15:00'
+  }
+];
+
+// Extender las estadísticas demo
+export const demoCalendarStats = {
+  eventsToday: demoCalendarEvents.filter(e => 
+    new Date(e.start_time).toDateString() === new Date().toDateString()
+  ).length,
+  eventsThisWeek: demoCalendarEvents.length,
+  hoursScheduledToday: demoCalendarEvents
+    .filter(e => new Date(e.start_time).toDateString() === new Date().toDateString())
+    .reduce((sum, e) => {
+      const duration = (new Date(e.end_time).getTime() - new Date(e.start_time).getTime()) / (1000 * 60 * 60);
+      return sum + duration;
+    }, 0),
+  revenueToday: demoCalendarEvents
+    .filter(e => new Date(e.start_time).toDateString() === new Date().toDateString() && e.is_billable)
+    .reduce((sum, e) => {
+      const duration = (new Date(e.end_time).getTime() - new Date(e.start_time).getTime()) / (1000 * 60 * 60);
+      return sum + (duration * e.hourly_rate);
+    }, 0),
+  productivityScore: 78,
+  eventsInProgress: demoCalendarEvents.filter(e => e.status === 'in_progress').length
+};
+
+export const demoTaskStats = {
+  totalTasks: demoTasks.length,
+  completedTasks: demoTasks.filter(t => t.status === 'completed').length,
+  inProgressTasks: demoTasks.filter(t => t.status === 'in_progress').length,
+  pendingTasks: demoTasks.filter(t => t.status === 'pending').length,
+  overdueTasks: demoTasks.filter(t => 
+    t.status !== 'completed' && new Date(t.due_date) < new Date()
+  ).length,
+  totalEstimatedHours: demoTasks.reduce((sum, t) => sum + t.estimated_hours, 0),
+  totalActualHours: demoTasks.reduce((sum, t) => sum + t.actual_hours, 0),
+  completionRate: Math.round((demoTasks.filter(t => t.status === 'completed').length / demoTasks.length) * 100),
+  averageTaskDuration: demoTasks.reduce((sum, t) => sum + t.estimated_hours, 0) / demoTasks.length
+};

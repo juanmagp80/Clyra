@@ -665,7 +665,7 @@ export default function EditInvoicePage({ invoiceId, userEmail }: EditInvoicePag
                                                             Total
                                                         </label>
                                                         <div className="p-3 bg-white border border-slate-200 rounded-lg text-slate-900 font-semibold">
-                                                            ${item.total.toFixed(2)}
+                                                            €{item.total.toFixed(2)}
                                                         </div>
                                                     </div>
                                                     <div className="md:col-span-1 flex items-end">
@@ -776,18 +776,18 @@ export default function EditInvoicePage({ invoiceId, userEmail }: EditInvoicePag
                                     <div className="space-y-4">
                                         <div className="flex justify-between items-center py-2">
                                             <span className="text-slate-600 font-medium">Subtotal:</span>
-                                            <span className="text-slate-900 font-semibold">${totals.subtotal}</span>
+                                            <span className="text-slate-900 font-semibold">€{totals.subtotal}</span>
                                         </div>
                                         <div className="flex justify-between items-center py-2">
                                             <span className="text-slate-600 font-medium">
                                                 Impuestos ({formData.tax_rate}%):
                                             </span>
-                                            <span className="text-slate-900 font-semibold">${totals.taxAmount}</span>
+                                            <span className="text-slate-900 font-semibold">€{totals.taxAmount}</span>
                                         </div>
                                         <div className="border-t border-slate-200 pt-4">
                                             <div className="flex justify-between items-center">
                                                 <span className="text-lg font-bold text-slate-900">Total:</span>
-                                                <span className="text-2xl font-bold text-emerald-600">${totals.total}</span>
+                                                <span className="text-2xl font-bold text-emerald-600">€{totals.total}</span>
                                             </div>
                                         </div>
                                     </div>

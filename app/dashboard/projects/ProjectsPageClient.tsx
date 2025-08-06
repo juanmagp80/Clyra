@@ -609,7 +609,7 @@ export default function ProjectsPageClient({ userEmail }: ProjectsPageClientProp
                                             {project.budget && (
                                                 <div className="flex justify-between">
                                                     <span>Presupuesto:</span>
-                                                    <span>${project.budget}</span>
+                                                    <span>€{project.budget}</span>
                                                 </div>
                                             )}
                                             {project.start_date && (
