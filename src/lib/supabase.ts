@@ -1,11 +1,18 @@
-import { createClientComponentClient } from '@supabase/auth-helpers-nextjs';
-import { createClient } from '@supabase/supabase-js';
+import { createBrowserClient } from '@supabase/ssr';
 
-// Cliente de Supabase para componentes de servidor
+// Variables de entorno
 const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL!;
 const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!;
 
-export const supabase = createClient(supabaseUrl, supabaseAnonKey);
+// Cliente singleton para componentes de cliente
+let supabaseInstance: ReturnType<typeof createBrowserClient> | null = null;
 
-// Cliente de Supabase para componentes de cliente
-export const createSupabaseClient = () => createClientComponentClient();
+export const createSupabaseClient = () => {
+    if (!supabaseInstance) {
+        supabaseInstance = createBrowserClient(supabaseUrl, supabaseAnonKey);
+    }
+    return supabaseInstance;
+};
+
+// Para compatibilidad hacia atrás
+export const supabase = createSupabaseClient();

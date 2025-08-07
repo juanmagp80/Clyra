@@ -4,12 +4,14 @@ import TasksPageClient from './TasksPageClient';
 
 export default async function TasksPage() {
     const supabase = await createServerSupabaseClient();
-    
-    const { data: { user }, error } = await supabase.auth.getUser();
-    
-    if (error || !user) {
+
+    const {
+        data: { session },
+    } = await supabase.auth.getSession();
+
+    if (!session || !session.user?.email) {
         redirect('/login');
     }
-    
-    return <TasksPageClient userEmail={user.email!} />;
+
+    return <TasksPageClient userEmail={session.user.email} />;
 }

@@ -12,6 +12,7 @@ import {
   Home,
   LogOut,
   Mail,
+  MessageCircle,
   Settings,
   Users
 } from 'lucide-react';
@@ -68,6 +69,11 @@ const navigation = [
     name: 'Email',
     href: '/dashboard/emails',
     icon: Mail,
+  },
+  {
+    name: 'Comunicaciones',
+    href: '/dashboard/client-communications',
+    icon: MessageCircle,
   },
 ];
 

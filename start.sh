@@ -39,7 +39,11 @@ if ! command -v npx &> /dev/null; then
 fi
 
 # Iniciar el servidor
-echo "🌟 Iniciando servidor en http://localhost:3000"
+echo "🌟 Iniciando servidor de desarrollo..."
+echo "🔍 Next.js detectará automáticamente el puerto disponible"
+echo ""
+echo "📋 URLs típicas (puede variar el puerto):"
+echo "🔗 Home: http://localhost:3000 (o 3001, 3002...)"
 echo "🔗 Login: http://localhost:3000/login"
 echo "🔗 Registro: http://localhost:3000/register"
 echo "🔗 Dashboard: http://localhost:3000/dashboard"

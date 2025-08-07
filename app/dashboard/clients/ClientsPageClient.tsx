@@ -5,11 +5,13 @@ import { createSupabaseClient } from '@/src/lib/supabase-client';
 import {
     Building,
     Calendar,
+    Edit3,
     Mail,
     MapPin,
     Phone,
     Plus,
     Search,
+    Trash2,
     Users
 } from 'lucide-react';
 import Link from 'next/link';
@@ -49,6 +51,18 @@ export default function ClientsPageClient({ userEmail }: ClientsPageClientProps)
         tag: ''
     });
 
+    // Estados para edición
+    const [editingClient, setEditingClient] = useState<Client | null>(null);
+    const [showEditForm, setShowEditForm] = useState(false);
+    const [editFormData, setEditFormData] = useState({
+        name: '',
+        email: '',
+        phone: '',
+        company: '',
+        address: '',
+        tag: ''
+    });
+
     useEffect(() => {
         fetchClients();
     }, []);
@@ -57,9 +71,17 @@ export default function ClientsPageClient({ userEmail }: ClientsPageClientProps)
         try {
             if (!supabase) return;
             
+            // Obtener el usuario actual
+            const { data: { user } } = await supabase.auth.getUser();
+            if (!user) {
+                console.error('No hay usuario autenticado');
+                return;
+            }
+            
             const { data, error } = await supabase
                 .from('clients')
                 .select('*')
+                .eq('user_id', user.id)
                 .order('created_at', { ascending: false });
 
             if (error) {
@@ -80,9 +102,18 @@ export default function ClientsPageClient({ userEmail }: ClientsPageClientProps)
             if (!formData.name.trim() || !supabase) return;
 
             setLoading(true);
+            
+            // Obtener el usuario actual
+            const { data: { user } } = await supabase.auth.getUser();
+            if (!user) {
+                console.error('No hay usuario autenticado');
+                return;
+            }
+
             const { data, error } = await supabase
                 .from('clients')
                 .insert([{
+                    user_id: user.id,
                     name: formData.name,
                     email: formData.email,
                     phone: formData.phone,
@@ -114,6 +145,135 @@ export default function ClientsPageClient({ userEmail }: ClientsPageClientProps)
         } finally {
             setLoading(false);
         }
+    };
+
+    const updateClient = async () => {
+        try {
+            console.log('🔄 Iniciando actualización del cliente...');
+            console.log('Cliente a editar:', editingClient);
+            console.log('Datos del formulario:', editFormData);
+            
+            if (!editingClient || !editFormData.name.trim() || !supabase) {
+                console.error('❌ Faltan datos necesarios para la actualización');
+                return;
+            }
+
+            setLoading(true);
+            
+            // Obtener el usuario actual
+            const { data: { user } } = await supabase.auth.getUser();
+            if (!user) {
+                console.error('❌ No hay usuario autenticado');
+                return;
+            }
+            
+            console.log('👤 Usuario autenticado:', user.id);
+            
+            const { data, error } = await supabase
+                .from('clients')
+                .update({
+                    name: editFormData.name,
+                    email: editFormData.email,
+                    phone: editFormData.phone,
+                    company: editFormData.company,
+                    address: editFormData.address,
+                    tag: editFormData.tag
+                })
+                .eq('id', editingClient.id)
+                .eq('user_id', user.id) // Agregar filtro de seguridad
+                .select();
+
+            console.log('📡 Respuesta de Supabase:', { data, error });
+
+            if (error) {
+                console.error('❌ Error updating client:', error);
+                alert('Error actualizando cliente: ' + error.message);
+                return;
+            }
+
+            if (data && data.length > 0) {
+                console.log('✅ Cliente actualizado exitosamente:', data[0]);
+                setClients(prev => prev.map(client => client.id === data[0].id ? data[0] : client));
+                setEditFormData({
+                    name: '',
+                    email: '',
+                    phone: '',
+                    company: '',
+                    address: '',
+                    tag: ''
+                });
+                setShowEditForm(false);
+                setEditingClient(null);
+                alert('Cliente actualizado exitosamente');
+            } else {
+                console.error('⚠️ No se devolvieron datos después de la actualización');
+                alert('No se pudo actualizar el cliente');
+            }
+        } catch (error) {
+            console.error('Error updating client:', error);
+            alert('Error actualizando cliente');
+        } finally {
+            setLoading(false);
+        }
+    };
+
+    const deleteClient = async (clientId: string) => {
+        try {
+            if (!confirm('¿Estás seguro de que quieres eliminar este cliente?')) {
+                return;
+            }
+
+            if (!supabase) return;
+            
+            setLoading(true);
+            
+            const { error } = await supabase
+                .from('clients')
+                .delete()
+                .eq('id', clientId);
+
+            if (error) {
+                console.error('Error deleting client:', error);
+                alert('Error eliminando cliente: ' + error.message);
+                return;
+            }
+
+            setClients(prev => prev.filter(client => client.id !== clientId));
+            alert('Cliente eliminado exitosamente');
+        } catch (error) {
+            console.error('Error:', error);
+            alert('Error eliminando cliente');
+        } finally {
+            setLoading(false);
+        }
+    };
+
+    const startEdit = (client: Client) => {
+        console.log('🔄 Iniciando edición del cliente:', client);
+        setEditingClient(client);
+        setEditFormData({
+            name: client.name,
+            email: client.email,
+            phone: client.phone || '',
+            company: client.company || '',
+            address: client.address || '',
+            tag: client.tag
+        });
+        setShowEditForm(true);
+        console.log('✅ Formulario de edición preparado');
+    };
+
+    const cancelEdit = () => {
+        setEditingClient(null);
+        setShowEditForm(false);
+        setEditFormData({
+            name: '',
+            email: '',
+            phone: '',
+            company: '',
+            address: '',
+            tag: ''
+        });
     };
 
     const handleLogout = async () => {
@@ -345,6 +505,98 @@ export default function ClientsPageClient({ userEmail }: ClientsPageClientProps)
                                 </div>
                             )}
 
+                            {/* Formulario Premium de edición de cliente */}
+                            {showEditForm && editingClient && (
+                                <div className="mb-8">
+                                    <div className="bg-white/40 backdrop-blur-2xl rounded-2xl border border-white/60 shadow-xl shadow-indigo-500/5">
+                                        <div className="p-6 border-b border-white/30">
+                                            <h3 className="text-xl font-bold bg-gradient-to-r from-slate-700 to-slate-900 bg-clip-text text-transparent">
+                                                Editar Cliente
+                                            </h3>
+                                            <p className="text-slate-600 font-medium mt-1">Actualiza la información del cliente</p>
+                                        </div>
+                                        <div className="p-6">
+                                            <div className="grid gap-6 md:grid-cols-2">
+                                                <div>
+                                                    <label className="text-sm font-semibold text-slate-700 mb-2 block">Nombre *</label>
+                                                    <input
+                                                        type="text"
+                                                        placeholder="Nombre completo"
+                                                        value={editFormData.name}
+                                                        onChange={(e) => setEditFormData({ ...editFormData, name: e.target.value })}
+                                                        className="w-full px-4 py-3 bg-white/50 backdrop-blur-xl border border-white/60 rounded-xl focus:border-indigo-500 focus:ring-2 focus:ring-indigo-500/20 transition-all duration-200 placeholder-slate-400"
+                                                    />
+                                                </div>
+                                                <div>
+                                                    <label className="text-sm font-semibold text-slate-700 mb-2 block">Email</label>
+                                                    <input
+                                                        type="email"
+                                                        placeholder="email@ejemplo.com"
+                                                        value={editFormData.email}
+                                                        onChange={(e) => setEditFormData({ ...editFormData, email: e.target.value })}
+                                                        className="w-full px-4 py-3 bg-white/50 backdrop-blur-xl border border-white/60 rounded-xl focus:border-indigo-500 focus:ring-2 focus:ring-indigo-500/20 transition-all duration-200 placeholder-slate-400"
+                                                    />
+                                                </div>
+                                                <div>
+                                                    <label className="text-sm font-semibold text-slate-700 mb-2 block">Teléfono</label>
+                                                    <input
+                                                        type="text"
+                                                        placeholder="+34 600 000 000"
+                                                        value={editFormData.phone}
+                                                        onChange={(e) => setEditFormData({ ...editFormData, phone: e.target.value })}
+                                                        className="w-full px-4 py-3 bg-white/50 backdrop-blur-xl border border-white/60 rounded-xl focus:border-indigo-500 focus:ring-2 focus:ring-indigo-500/20 transition-all duration-200 placeholder-slate-400"
+                                                    />
+                                                </div>
+                                                <div>
+                                                    <label className="text-sm font-semibold text-slate-700 mb-2 block">Empresa</label>
+                                                    <input
+                                                        type="text"
+                                                        placeholder="Nombre de la empresa"
+                                                        value={editFormData.company}
+                                                        onChange={(e) => setEditFormData({ ...editFormData, company: e.target.value })}
+                                                        className="w-full px-4 py-3 bg-white/50 backdrop-blur-xl border border-white/60 rounded-xl focus:border-indigo-500 focus:ring-2 focus:ring-indigo-500/20 transition-all duration-200 placeholder-slate-400"
+                                                    />
+                                                </div>
+                                                <div>
+                                                    <label className="text-sm font-semibold text-slate-700 mb-2 block">Dirección</label>
+                                                    <input
+                                                        type="text"
+                                                        placeholder="Calle, número, ciudad..."
+                                                        value={editFormData.address}
+                                                        onChange={(e) => setEditFormData({ ...editFormData, address: e.target.value })}
+                                                        className="w-full px-4 py-3 bg-white/50 backdrop-blur-xl border border-white/60 rounded-xl focus:border-indigo-500 focus:ring-2 focus:ring-indigo-500/20 transition-all duration-200 placeholder-slate-400"
+                                                    />
+                                                </div>
+                                                <div>
+                                                    <label className="text-sm font-semibold text-slate-700 mb-2 block">Etiqueta</label>
+                                                    <input
+                                                        type="text"
+                                                        placeholder="VIP, Nuevo, etc."
+                                                        value={editFormData.tag}
+                                                        onChange={(e) => setEditFormData({ ...editFormData, tag: e.target.value })}
+                                                        className="w-full px-4 py-3 bg-white/50 backdrop-blur-xl border border-white/60 rounded-xl focus:border-indigo-500 focus:ring-2 focus:ring-indigo-500/20 transition-all duration-200 placeholder-slate-400"
+                                                    />
+                                                </div>
+                                            </div>
+                                            <div className="flex gap-3 mt-8 pt-6 border-t border-white/30">
+                                                <button
+                                                    onClick={updateClient}
+                                                    className="px-6 py-3 bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 text-white rounded-xl font-semibold shadow-lg hover:shadow-xl transition-all duration-200"
+                                                >
+                                                    Actualizar Cliente
+                                                </button>
+                                                <button
+                                                    onClick={cancelEdit}
+                                                    className="px-6 py-3 bg-white/70 backdrop-blur-xl border border-white/60 rounded-xl text-slate-700 font-medium hover:bg-slate-50 transition-all duration-200"
+                                                >
+                                                    Cancelar
+                                                </button>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            )}
+
                             {/* Lista Premium de Clientes */}
                             <div className="bg-white/40 backdrop-blur-2xl rounded-2xl border border-white/60 shadow-xl shadow-slate-500/5">
                                 <div className="p-6">
@@ -455,8 +707,19 @@ export default function ClientsPageClient({ userEmail }: ClientsPageClientProps)
                                                                 Ver Detalles
                                                             </button>
                                                         </Link>
-                                                        <button className="px-4 py-2 bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 text-white rounded-xl shadow-lg hover:shadow-xl transition-all duration-200">
-                                                            <Plus className="w-4 h-4" />
+                                                        <button 
+                                                            onClick={() => startEdit(client)}
+                                                            className="px-4 py-2 bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 text-white rounded-xl shadow-lg hover:shadow-xl transition-all duration-200"
+                                                            title="Editar cliente"
+                                                        >
+                                                            <Edit3 className="w-4 h-4" />
+                                                        </button>
+                                                        <button 
+                                                            onClick={() => deleteClient(client.id)}
+                                                            className="px-4 py-2 bg-gradient-to-r from-red-600 to-red-700 hover:from-red-700 hover:to-red-800 text-white rounded-xl shadow-lg hover:shadow-xl transition-all duration-200"
+                                                            title="Eliminar cliente"
+                                                        >
+                                                            <Trash2 className="w-4 h-4" />
                                                         </button>
                                                     </div>
                                                 </div>

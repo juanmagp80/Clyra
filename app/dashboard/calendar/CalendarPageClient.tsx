@@ -6,7 +6,7 @@ import Sidebar from '@/components/Sidebar';
 import { Button } from '@/components/ui/Button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/Card';
 import { Input } from '@/components/ui/Input';
-import { createSupabaseClient } from '@/src/lib/supabase-client';
+import { createSupabaseClient } from '@/src/lib/supabase';
 import { calendarAI, type CalendarEvent, type AIInsight, type DashboardMetrics, type SmartSuggestion, type EventType } from '@/src/lib/calendar-ai-local';
 import {
     Calendar as CalendarIcon,
@@ -112,13 +112,163 @@ export default function CalendarPageClient({ userEmail }: CalendarPageClientProp
         router.push('/login');
     };
 
+    // ==================== FUNCIONES DE DATOS INICIALES ====================
+    const createSampleData = async () => {
+        if (!supabase) return;
+
+        try {
+            const { data: { user } } = await supabase.auth.getUser();
+            if (!user) return;
+
+            // Crear un cliente de ejemplo
+            const { data: clientData, error: clientError } = await supabase
+                .from('clients')
+                .insert([{
+                    name: 'Cliente Demo',
+                    company: 'Empresa Demo S.L.',
+                    email: 'demo@cliente.com',
+                    phone: '+34 600 000 000',
+                    user_id: user.id
+                }])
+                .select()
+                .single();
+
+            if (clientError) {
+                console.error('Error creating sample client:', clientError);
+                return;
+            }
+
+            // Crear un proyecto de ejemplo
+            const { data: projectData, error: projectError } = await supabase
+                .from('projects')
+                .insert([{
+                    name: 'Proyecto Demo',
+                    description: 'Un proyecto de ejemplo para empezar',
+                    client_id: clientData.id,
+                    status: 'active',
+                    budget: 5000,
+                    user_id: user.id
+                }])
+                .select()
+                .single();
+
+            if (projectError) {
+                console.error('Error creating sample project:', projectError);
+                return;
+            }
+
+            // Crear eventos de ejemplo
+            const now = new Date();
+            const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+            
+            const sampleEvents = [
+                {
+                    title: '🎯 Reunión de planificación',
+                    description: 'Revisión de objetivos y planificación semanal',
+                    start_time: new Date(today.getTime() + 10 * 60 * 60 * 1000).toISOString(), // 10:00 AM hoy
+                    end_time: new Date(today.getTime() + 11 * 60 * 60 * 1000).toISOString(), // 11:00 AM hoy
+                    type: 'meeting',
+                    is_billable: true,
+                    hourly_rate: 75,
+                    status: 'scheduled',
+                    client_id: clientData.id,
+                    project_id: projectData.id,
+                    user_id: user.id
+                },
+                {
+                    title: '💻 Desarrollo web',
+                    description: 'Trabajo en la nueva funcionalidad del dashboard',
+                    start_time: new Date(today.getTime() + 14 * 60 * 60 * 1000).toISOString(), // 2:00 PM hoy
+                    end_time: new Date(today.getTime() + 16 * 60 * 60 * 1000).toISOString(), // 4:00 PM hoy
+                    type: 'work',
+                    is_billable: true,
+                    hourly_rate: 65,
+                    status: 'scheduled',
+                    client_id: clientData.id,
+                    project_id: projectData.id,
+                    user_id: user.id
+                },
+                {
+                    title: '☕ Descanso productivo',
+                    description: 'Pausa para recargar energías',
+                    start_time: new Date(today.getTime() + 16 * 60 * 60 * 1000).toISOString(), // 4:00 PM hoy
+                    end_time: new Date(today.getTime() + 16.5 * 60 * 60 * 1000).toISOString(), // 4:30 PM hoy
+                    type: 'break',
+                    is_billable: false,
+                    hourly_rate: 0,
+                    status: 'scheduled',
+                    user_id: user.id
+                }
+            ];
+
+            const { error: eventsError } = await supabase
+                .from('calendar_events')
+                .insert(sampleEvents);
+
+            if (eventsError) {
+                console.error('Error creating sample events:', eventsError);
+            } else {
+                console.log('✅ Datos de ejemplo creados exitosamente');
+                await fetchEvents();
+                await loadClientsAndProjects();
+                await loadAIData();
+            }
+        } catch (error) {
+            console.error('Error creating sample data:', error);
+        }
+    };
+
+    // Función para verificar si es primera vez del usuario
+    const checkAndCreateInitialData = async () => {
+        if (!supabase) return;
+
+        try {
+            const { data: { user } } = await supabase.auth.getUser();
+            if (!user) return;
+
+            // Verificar si ya tiene eventos
+            const { data: existingEvents, error } = await supabase
+                .from('calendar_events')
+                .select('id')
+                .eq('user_id', user.id)
+                .limit(1);
+
+            if (error && error.code !== 'PGRST116') {
+                console.error('Error checking existing events:', error);
+                return;
+            }
+
+            // Si no tiene eventos y las tablas existen, crear datos de ejemplo
+            if (!existingEvents || existingEvents.length === 0) {
+                const shouldCreateSample = confirm(
+                    '¡Bienvenido a Taskelia! 🎉\n\n' +
+                    'Parece que es tu primera vez usando el calendario.\n' +
+                    '¿Te gustaría que creemos algunos datos de ejemplo para empezar?\n\n' +
+                    '✨ Incluye: cliente demo, proyecto y eventos de muestra'
+                );
+
+                if (shouldCreateSample) {
+                    await createSampleData();
+                }
+            }
+        } catch (error) {
+            console.error('Error checking initial data:', error);
+        }
+    };
+
     // ==================== FUNCIONES CRM ====================
     const loadClientsAndProjects = async () => {
         try {
-            if (!supabase) return;
+            if (!supabase) {
+                console.warn('Supabase no configurado, no se pueden cargar clientes y proyectos');
+                return;
+            }
             
             const { data: { user } } = await supabase.auth.getUser();
-            if (!user) return;
+            if (!user) {
+                console.warn('Usuario no autenticado');
+                return;
+            }
 
             // Cargar clientes
             const { data: clientsData, error: clientsError } = await supabase
@@ -127,7 +277,12 @@ export default function CalendarPageClient({ userEmail }: CalendarPageClientProp
                 .eq('user_id', user.id)
                 .order('name');
 
-            if (!clientsError && clientsData) {
+            if (clientsError) {
+                console.error('Error loading clients:', clientsError);
+                if (clientsError.code === 'PGRST116') {
+                    console.warn('Tabla clients no existe. Creando datos demo...');
+                }
+            } else if (clientsData) {
                 setClients(clientsData);
             }
 
@@ -138,7 +293,12 @@ export default function CalendarPageClient({ userEmail }: CalendarPageClientProp
                 .eq('user_id', user.id)
                 .order('name');
 
-            if (!projectsError && projectsData) {
+            if (projectsError) {
+                console.error('Error loading projects:', projectsError);
+                if (projectsError.code === 'PGRST116') {
+                    console.warn('Tabla projects no existe. Creando datos demo...');
+                }
+            } else if (projectsData) {
                 setProjects(projectsData);
             }
         } catch (error) {
@@ -177,15 +337,34 @@ export default function CalendarPageClient({ userEmail }: CalendarPageClientProp
 
     const initializeCalendar = async () => {
         try {
-            if (!supabase) return;
+            if (!supabase) {
+                console.warn('⚠️ Supabase no configurado. El calendario funcionará en modo limitado.');
+                setLoading(false);
+                return;
+            }
             
-            const { data: { user } } = await supabase.auth.getUser();
+            const { data: { user }, error } = await supabase.auth.getUser();
+            if (error) {
+                console.error('Error getting user:', error);
+                setLoading(false);
+                return;
+            }
+            
             if (user) {
                 setUserId(user.id);
+                // Cargar datos en paralelo
                 await Promise.all([
                     fetchEvents(),
-                    loadAIData()
+                    loadClientsAndProjects()
                 ]);
+                
+                // Verificar si necesitamos crear datos iniciales
+                await checkAndCreateInitialData();
+                
+                // Cargar IA después de tener los eventos
+                await loadAIData();
+            } else {
+                console.warn('Usuario no autenticado');
             }
         } catch (error) {
             console.error('Error initializing calendar:', error);
@@ -294,8 +473,19 @@ export default function CalendarPageClient({ userEmail }: CalendarPageClientProp
     const fetchEvents = async () => {
         setLoading(true);
         try {
-            if (!supabase) return;
+            if (!supabase) {
+                console.warn('Supabase no está configurado, usando datos demo');
+                setLoading(false);
+                return;
+            }
             
+            const { data: { user } } = await supabase.auth.getUser();
+            if (!user) {
+                console.warn('Usuario no autenticado');
+                setLoading(false);
+                return;
+            }
+
             const { data, error } = await supabase
                 .from('calendar_events')
                 .select(`
@@ -303,11 +493,16 @@ export default function CalendarPageClient({ userEmail }: CalendarPageClientProp
                     clients(name, company),
                     projects(name, description)
                 `)
+                .eq('user_id', user.id)
                 .order('start_time', { ascending: true });
 
             if (error) {
                 console.error('Error fetching events:', error);
-            } else {
+                // En caso de error, no dejamos la tabla vacía
+                if (error.code === 'PGRST116') { // Table doesn't exist
+                    console.warn('Tabla calendar_events no existe. Se necesita ejecutar la migración de base de datos.');
+                }
+            } else if (data) {
                 const eventsData = data as ExtendedCalendarEvent[];
                 setEvents(eventsData);
                 
@@ -320,7 +515,7 @@ export default function CalendarPageClient({ userEmail }: CalendarPageClientProp
                 }
             }
         } catch (error) {
-            console.error('Error:', error);
+            console.error('Error fetching events:', error);
         } finally {
             setLoading(false);
         }
@@ -328,24 +523,51 @@ export default function CalendarPageClient({ userEmail }: CalendarPageClientProp
 
     // Crear nuevo evento
     const createEvent = async () => {
-        if (!newEvent.title.trim() || !newEvent.start_time || !newEvent.end_time) return;
-        if (!supabase) return;
+        if (!newEvent.title.trim() || !newEvent.start_time || !newEvent.end_time) {
+            alert('Por favor, completa todos los campos obligatorios');
+            return;
+        }
+        
+        if (!supabase) {
+            alert('Error: Base de datos no configurada');
+            return;
+        }
+
+        // Validar que la fecha de fin sea después de la de inicio
+        const startDate = new Date(newEvent.start_time);
+        const endDate = new Date(newEvent.end_time);
+        if (endDate <= startDate) {
+            alert('La fecha de fin debe ser posterior a la fecha de inicio');
+            return;
+        }
 
         try {
-            const user = (await supabase.auth.getUser()).data.user;
-            if (!user) return;
+            const { data: { user } } = await supabase.auth.getUser();
+            if (!user) {
+                alert('Error: Usuario no autenticado');
+                return;
+            }
 
-            const { error } = await supabase.from('calendar_events').insert([
-                {
-                    ...newEvent,
-                    user_id: user.id,
-                    status: 'scheduled'
-                },
-            ]);
+            // Preparar datos del evento
+            const eventData = {
+                ...newEvent,
+                user_id: user.id,
+                status: 'scheduled',
+                // Asegurar que client_id y project_id sean null si están vacíos
+                client_id: newEvent.client_id || null,
+                project_id: newEvent.project_id || null,
+                // Asegurar valores por defecto
+                is_billable: newEvent.is_billable ?? true,
+                hourly_rate: newEvent.hourly_rate || 50
+            };
+
+            const { error } = await supabase.from('calendar_events').insert([eventData]);
 
             if (error) {
                 console.error('Error creating event:', error);
+                alert(`Error al crear el evento: ${error.message}`);
             } else {
+                // Limpiar formulario
                 setNewEvent({
                     title: '',
                     description: '',
@@ -360,11 +582,13 @@ export default function CalendarPageClient({ userEmail }: CalendarPageClientProp
                     project_id: ''
                 });
                 setShowNewEventForm(false);
-                fetchEvents();
-                loadAIData(); // Recargar datos de IA
+                await fetchEvents(); // Recargar eventos
+                await loadAIData(); // Recargar datos de IA
+                alert('Evento creado exitosamente');
             }
         } catch (error) {
-            console.error('Error:', error);
+            console.error('Error creating event:', error);
+            alert('Error inesperado al crear el evento');
         }
     };
 
@@ -721,6 +945,95 @@ export default function CalendarPageClient({ userEmail }: CalendarPageClientProp
     };
 
     // ==================== FUNCIONES HELPER ====================
+    
+    // Exportar eventos a CSV
+    const exportEventsToCSV = () => {
+        if (events.length === 0) {
+            alert('No hay eventos para exportar');
+            return;
+        }
+
+        const csvHeaders = [
+            'Título',
+            'Descripción',
+            'Fecha inicio',
+            'Fecha fin',
+            'Tipo',
+            'Cliente',
+            'Proyecto',
+            'Facturable',
+            'Tarifa/hora',
+            'Estado',
+            'Ubicación'
+        ];
+
+        const csvRows = events.map(event => [
+            event.title,
+            event.description || '',
+            new Date(event.start_time).toLocaleString('es-ES'),
+            new Date(event.end_time).toLocaleString('es-ES'),
+            event.type,
+            event.clients?.name || '',
+            event.projects?.name || '',
+            event.is_billable ? 'Sí' : 'No',
+            event.hourly_rate ? `€${event.hourly_rate}` : '',
+            event.status,
+            event.location || ''
+        ]);
+
+        const csvContent = [csvHeaders, ...csvRows]
+            .map(row => row.map(field => `"${field}"`).join(','))
+            .join('\n');
+
+        const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+        const link = document.createElement('a');
+        const url = URL.createObjectURL(blob);
+        link.setAttribute('href', url);
+        link.setAttribute('download', `eventos_calendar_${new Date().toISOString().split('T')[0]}.csv`);
+        link.style.visibility = 'hidden';
+        document.body.appendChild(link);
+        link.click();
+        document.body.removeChild(link);
+    };
+
+    // Calcular estadísticas del calendario
+    const getCalendarStats = () => {
+        const today = new Date();
+        today.setHours(0, 0, 0, 0);
+        
+        const todayEvents = events.filter(e => {
+            const eventDate = new Date(e.start_time);
+            eventDate.setHours(0, 0, 0, 0);
+            return eventDate.getTime() === today.getTime();
+        });
+
+        const weekStart = new Date(today);
+        weekStart.setDate(today.getDate() - today.getDay());
+        const weekEnd = new Date(weekStart);
+        weekEnd.setDate(weekStart.getDate() + 6);
+
+        const weekEvents = events.filter(e => {
+            const eventDate = new Date(e.start_time);
+            return eventDate >= weekStart && eventDate <= weekEnd;
+        });
+
+        const billableEvents = events.filter(e => e.is_billable);
+        const totalRevenue = billableEvents.reduce((sum, event) => {
+            const duration = (new Date(event.end_time).getTime() - new Date(event.start_time).getTime()) / (1000 * 60 * 60);
+            return sum + (duration * (event.hourly_rate || 0));
+        }, 0);
+
+        return {
+            totalEvents: events.length,
+            todayEvents: todayEvents.length,
+            weekEvents: weekEvents.length,
+            completedEvents: events.filter(e => e.status === 'completed').length,
+            billableEvents: billableEvents.length,
+            totalRevenue,
+            activeTracking: activeTracking ? events.find(e => e.id === activeTracking) : null
+        };
+    };
+
     const formatDateForView = (date: Date) => {
         const options: Intl.DateTimeFormatOptions = 
             currentView === 'month' 
@@ -854,6 +1167,18 @@ export default function CalendarPageClient({ userEmail }: CalendarPageClientProp
                                 </div>
 
                                 <div className="flex items-center gap-3">
+                                    {/* Exportar eventos */}
+                                    <Button
+                                        onClick={exportEventsToCSV}
+                                        variant="outline"
+                                        className="border-emerald-200 hover:bg-emerald-50 text-emerald-700 h-9 px-3"
+                                        disabled={events.length === 0}
+                                        title="Exportar eventos a CSV"
+                                    >
+                                        <Calculator className="w-4 h-4 mr-2" />
+                                        Exportar
+                                    </Button>
+
                                     {/* Panel de IA Toggle */}
                                     <Button
                                         onClick={() => setShowAIPanel(!showAIPanel)}
@@ -1005,62 +1330,94 @@ export default function CalendarPageClient({ userEmail }: CalendarPageClientProp
                             </div>
                         )}
 
-                        {/* Quick Stats */}
+                        {/* Quick Stats - Datos Reales */}
                         <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mt-4">
-                            <Card className="bg-white/95 backdrop-blur-2xl border-slate-200/60 shadow-lg">
-                                <CardContent className="p-4">
-                                    <div className="flex items-center gap-3">
-                                        <div className="w-8 h-8 bg-gradient-to-br from-emerald-500 to-emerald-600 rounded-lg flex items-center justify-center">
-                                            <Clock className="w-4 h-4 text-white" />
-                                        </div>
-                                        <div>
-                                            <p className="text-2xl font-black text-emerald-700">8.5h</p>
-                                            <p className="text-xs text-slate-600 font-medium">Hoy planificadas</p>
-                                        </div>
-                                    </div>
-                                </CardContent>
-                            </Card>
+                            {(() => {
+                                const stats = getCalendarStats();
+                                const todayHours = getEventsForCurrentView().reduce((sum, event) => {
+                                    const duration = (new Date(event.end_time).getTime() - new Date(event.start_time).getTime()) / (1000 * 60 * 60);
+                                    return sum + duration;
+                                }, 0);
+                                
+                                const todayRevenue = getEventsForCurrentView()
+                                    .filter(e => e.is_billable)
+                                    .reduce((sum, event) => {
+                                        const duration = (new Date(event.end_time).getTime() - new Date(event.start_time).getTime()) / (1000 * 60 * 60);
+                                        return sum + (duration * (event.hourly_rate || 0));
+                                    }, 0);
 
-                            <Card className="bg-white/95 backdrop-blur-2xl border-slate-200/60 shadow-lg">
-                                <CardContent className="p-4">
-                                    <div className="flex items-center gap-3">
-                                        <div className="w-8 h-8 bg-gradient-to-br from-blue-500 to-blue-600 rounded-lg flex items-center justify-center">
-                                            <DollarSign className="w-4 h-4 text-white" />
-                                        </div>
-                                        <div>                            <p className="text-2xl font-black text-blue-700">€425</p>
-                            <p className="text-xs text-slate-600 font-medium">Ingresos hoy</p>
-                                        </div>
-                                    </div>
-                                </CardContent>
-                            </Card>
+                                const todayMeetings = getEventsForCurrentView().filter(e => 
+                                    e.type === 'meeting' || e.type === 'client_call'
+                                ).length;
 
-                            <Card className="bg-white/95 backdrop-blur-2xl border-slate-200/60 shadow-lg">
-                                <CardContent className="p-4">
-                                    <div className="flex items-center gap-3">
-                                        <div className="w-8 h-8 bg-gradient-to-br from-purple-500 to-purple-600 rounded-lg flex items-center justify-center">
-                                            <Users className="w-4 h-4 text-white" />
-                                        </div>
-                                        <div>
-                                            <p className="text-2xl font-black text-purple-700">3</p>
-                                            <p className="text-xs text-slate-600 font-medium">Reuniones</p>
-                                        </div>
-                                    </div>
-                                </CardContent>
-                            </Card>
+                                const completionRate = stats.totalEvents > 0 
+                                    ? Math.round((stats.completedEvents / stats.totalEvents) * 100)
+                                    : 0;
 
-                            <Card className="bg-white/95 backdrop-blur-2xl border-slate-200/60 shadow-lg">
-                                <CardContent className="p-4">
-                                    <div className="flex items-center gap-3">
-                                        <div className="w-8 h-8 bg-gradient-to-br from-amber-500 to-amber-600 rounded-lg flex items-center justify-center">
-                                            <Timer className="w-4 h-4 text-white" />
-                                        </div>
-                                        <div>
-                                            <p className="text-2xl font-black text-amber-700">85%</p>
-                                            <p className="text-xs text-slate-600 font-medium">Productividad</p>
-                                        </div>
-                                    </div>
-                                </CardContent>
-                            </Card>
+                                return (
+                                    <>
+                                        <Card className="bg-white/95 backdrop-blur-2xl border-slate-200/60 shadow-lg">
+                                            <CardContent className="p-4">
+                                                <div className="flex items-center gap-3">
+                                                    <div className="w-8 h-8 bg-gradient-to-br from-emerald-500 to-emerald-600 rounded-lg flex items-center justify-center">
+                                                        <Clock className="w-4 h-4 text-white" />
+                                                    </div>
+                                                    <div>
+                                                        <p className="text-2xl font-black text-emerald-700">
+                                                            {todayHours.toFixed(1)}h
+                                                        </p>
+                                                        <p className="text-xs text-slate-600 font-medium">Hoy planificadas</p>
+                                                    </div>
+                                                </div>
+                                            </CardContent>
+                                        </Card>
+
+                                        <Card className="bg-white/95 backdrop-blur-2xl border-slate-200/60 shadow-lg">
+                                            <CardContent className="p-4">
+                                                <div className="flex items-center gap-3">
+                                                    <div className="w-8 h-8 bg-gradient-to-br from-blue-500 to-blue-600 rounded-lg flex items-center justify-center">
+                                                        <DollarSign className="w-4 h-4 text-white" />
+                                                    </div>
+                                                    <div>
+                                                        <p className="text-2xl font-black text-blue-700">
+                                                            €{todayRevenue.toFixed(0)}
+                                                        </p>
+                                                        <p className="text-xs text-slate-600 font-medium">Ingresos hoy</p>
+                                                    </div>
+                                                </div>
+                                            </CardContent>
+                                        </Card>
+
+                                        <Card className="bg-white/95 backdrop-blur-2xl border-slate-200/60 shadow-lg">
+                                            <CardContent className="p-4">
+                                                <div className="flex items-center gap-3">
+                                                    <div className="w-8 h-8 bg-gradient-to-br from-purple-500 to-purple-600 rounded-lg flex items-center justify-center">
+                                                        <Users className="w-4 h-4 text-white" />
+                                                    </div>
+                                                    <div>
+                                                        <p className="text-2xl font-black text-purple-700">{todayMeetings}</p>
+                                                        <p className="text-xs text-slate-600 font-medium">Reuniones</p>
+                                                    </div>
+                                                </div>
+                                            </CardContent>
+                                        </Card>
+
+                                        <Card className="bg-white/95 backdrop-blur-2xl border-slate-200/60 shadow-lg">
+                                            <CardContent className="p-4">
+                                                <div className="flex items-center gap-3">
+                                                    <div className="w-8 h-8 bg-gradient-to-br from-amber-500 to-amber-600 rounded-lg flex items-center justify-center">
+                                                        <Timer className="w-4 h-4 text-white" />
+                                                    </div>
+                                                    <div>
+                                                        <p className="text-2xl font-black text-amber-700">{completionRate}%</p>
+                                                        <p className="text-xs text-slate-600 font-medium">Completado</p>
+                                                    </div>
+                                                </div>
+                                            </CardContent>
+                                        </Card>
+                                    </>
+                                );
+                            })()}
                         </div>
 
                         {/* Lista de Eventos de Hoy */}
