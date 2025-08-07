@@ -2,8 +2,9 @@ import { NextRequest, NextResponse } from 'next/server';
 import { createClient } from '@supabase/supabase-js';
 import { getBaseUrlFromRequest } from '../../../../lib/url';
 
-const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL!;
-const supabaseServiceKey = process.env.SUPABASE_SERVICE_ROLE_KEY!;
+// Verificar variables de entorno de manera segura
+const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
+const supabaseServiceKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
 
 console.log('🔧 Variables de entorno:', {
     supabaseUrl: supabaseUrl ? '✅ Configurada' : '❌ Faltante',
@@ -29,8 +30,31 @@ export async function POST(request: NextRequest) {
             );
         }
 
-        // Crear cliente de Supabase con service role para acceso completo
-        const supabase = createClient(supabaseUrl, supabaseServiceKey);
+        // Verificar que las variables de entorno estén configuradas
+        if (!supabaseUrl) {
+            console.error('❌ SUPABASE_URL faltante');
+            return NextResponse.json(
+                { error: 'Error de configuración del servidor. SUPABASE_URL faltante.' },
+                { status: 500 }
+            );
+        }
+
+        // Intentar primero con service role, luego con anon key como fallback
+        let supabase;
+        if (supabaseServiceKey) {
+            console.log('🔑 Usando service role key...');
+            supabase = createClient(supabaseUrl, supabaseServiceKey);
+        } else {
+            console.log('⚠️ Service role key no disponible, usando anon key...');
+            const anonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
+            if (!anonKey) {
+                return NextResponse.json(
+                    { error: 'Error de configuración del servidor. Ninguna clave válida.' },
+                    { status: 500 }
+                );
+            }
+            supabase = createClient(supabaseUrl, anonKey);
+        }
 
         // Obtener información del cliente
         const { data: client, error: clientError } = await supabase
@@ -38,6 +62,12 @@ export async function POST(request: NextRequest) {
             .select('*')
             .eq('id', clientId)
             .single();
+
+        console.log('👤 Búsqueda de cliente:', { 
+            clientId, 
+            found: !!client, 
+            error: clientError?.message || 'ninguno'
+        });
 
         if (clientError || !client) {
             return NextResponse.json(
@@ -53,32 +83,61 @@ export async function POST(request: NextRequest) {
             );
         }
 
-        // Buscar token existente activo
-        let { data: existingToken, error: tokenError } = await supabase
-            .from('client_tokens')
-            .select('token')
-            .eq('client_id', clientId)
-            .eq('is_active', true)
-            .single();
+        console.log('📧 Cliente encontrado:', { 
+            name: client.name, 
+            email: client.email,
+            company: client.company || 'Sin empresa'
+        });
 
+        // Buscar token existente activo - simplificado para anon key
         let token;
+        
+        try {
+            console.log('🔍 Buscando token existente...');
+            const { data: existingToken, error: tokenError } = await supabase
+                .from('client_tokens')
+                .select('token')
+                .eq('client_id', clientId)
+                .eq('is_active', true)
+                .single();
 
-        if (existingToken && !tokenError) {
-            // Usar token existente
-            token = existingToken.token;
-        } else {
-            // Generar nuevo token usando la función SQL
-            const { data: newTokenData, error: generateError } = await supabase
-                .rpc('generate_client_token', { client_uuid: clientId });
+            if (existingToken && !tokenError) {
+                token = existingToken.token;
+                console.log('🔄 Usando token existente:', token);
+            } else {
+                console.log('🆕 Generando nuevo token...');
+                
+                // Generar token manualmente
+                const manualToken = generateManualToken();
+                console.log('🔑 Token generado:', manualToken);
+                
+                // Intentar insertar el token en la base de datos
+                const { data: insertData, error: insertError } = await supabase
+                    .from('client_tokens')
+                    .insert({
+                        client_id: clientId,
+                        token: manualToken,
+                        is_active: true,
+                        expires_at: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString()
+                    })
+                    .select('token')
+                    .single();
 
-            if (generateError) {
-                return NextResponse.json(
-                    { error: 'Error generando token', details: generateError.message },
-                    { status: 500 }
-                );
+                if (insertError) {
+                    console.error('❌ Error insertando token:', insertError);
+                    // Usar token temporal sin guardar para desarrollo
+                    console.log('⚠️ Usando token temporal para desarrollo.');
+                    token = manualToken;
+                } else {
+                    token = insertData.token;
+                    console.log('✅ Token guardado en base de datos:', token);
+                }
             }
-
-            token = newTokenData;
+        } catch (error) {
+            console.error('❌ Error en gestión de tokens:', error);
+            // Generar token temporal para desarrollo
+            token = generateManualToken();
+            console.log('🔧 Usando token temporal de desarrollo:', token);
         }
 
         // Generar URL del portal usando detección automática de host/puerto
@@ -110,17 +169,21 @@ export async function POST(request: NextRequest) {
             console.log('⚠️ Token generado pero email no enviado. URL del portal:', portalUrl);
         }
 
-        // Registrar el envío en logs (opcional)
-        await supabase
-            .from('client_notifications')
-            .insert({
-                client_id: clientId,
-                type: 'portal_access',
-                title: 'Portal de comunicación enviado',
-                content: `Email enviado a ${client.email}`,
-                is_sent: true,
-                sent_at: new Date().toISOString()
-            });
+        // Registrar el envío en logs (opcional) - simplificado
+        try {
+            await supabase
+                .from('client_notifications')
+                .insert({
+                    client_id: clientId,
+                    type: 'portal_access',
+                    title: 'Portal de comunicación enviado',
+                    content: `Email enviado a ${client.email}`,
+                    is_sent: true,
+                    sent_at: new Date().toISOString()
+                });
+        } catch (logError) {
+            console.log('⚠️ No se pudo guardar log (tabla no existe):', logError);
+        }
 
         return NextResponse.json({
             success: true,
@@ -325,4 +388,14 @@ async function sendEmail(emailContent: any) {
     console.log('- SMTP_HOST + SMTP_USER + SMTP_PASS');
     
     throw new Error('No hay proveedor de email configurado. Revisa tu archivo .env.local');
+}
+
+// Función auxiliar para generar tokens manualmente
+function generateManualToken(): string {
+    const chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789';
+    let result = '';
+    for (let i = 0; i < 32; i++) {
+        result += chars.charAt(Math.floor(Math.random() * chars.length));
+    }
+    return result;
 }

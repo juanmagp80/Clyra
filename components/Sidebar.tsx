@@ -14,7 +14,10 @@ import {
   Mail,
   MessageCircle,
   Settings,
-  Users
+  Users,
+  Zap,
+  Bot,
+  Presentation
 } from 'lucide-react';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
@@ -39,6 +42,21 @@ const navigation = [
     name: 'Proyectos',
     href: '/dashboard/projects',
     icon: Briefcase,
+  },
+  {
+    name: 'Templates',
+    href: '/dashboard/templates',
+    icon: Zap,
+  },
+  {
+    name: 'Automaciones',
+    href: '/dashboard/automations',
+    icon: Bot,
+  },
+  {
+    name: 'Propuestas',
+    href: '/dashboard/proposals',
+    icon: Presentation,
   },
   {
     name: 'Tareas',
@@ -118,8 +136,8 @@ export default function Sidebar({ userEmail, onLogout }: SidebarProps) {
               <IconComponent
                 className={cn(
                   'mr-3 h-4 w-4 flex-shrink-0 transition-transform duration-300',
-                  isActive 
-                    ? 'text-white group-hover:scale-110' 
+                  isActive
+                    ? 'text-white group-hover:scale-110'
                     : 'text-slate-600 group-hover:text-indigo-600 group-hover:scale-110'
                 )}
               />
