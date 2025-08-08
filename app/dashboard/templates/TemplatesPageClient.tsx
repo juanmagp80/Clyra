@@ -684,7 +684,7 @@ export default function TemplatesPageClient({ userEmail }: TemplatesPageClientPr
                                             <CardContent className={`pt-0 ${viewMode === 'list' ? 'flex items-center gap-4' : ''}`}>
                                                 <div className={`flex items-center gap-2 ${viewMode === 'list' ? '' : 'w-full'}`}>
                                                     <Button
-                                                        onClick={() => useTemplate(template)}
+                                                        onClick={() => handleUseTemplate(template)}
                                                         className="flex-1 bg-gradient-to-r from-blue-600 to-indigo-600 text-white hover:from-blue-700 hover:to-indigo-700 shadow-lg hover:shadow-xl transition-all duration-200"
                                                         size="sm"
                                                     >
