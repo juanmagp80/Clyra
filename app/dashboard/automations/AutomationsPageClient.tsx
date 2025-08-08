@@ -1,10 +1,14 @@
 'use client';
 
 import { useState, useEffect } from 'react';
+import { ensurePredefinedAutomationsForUser } from '@/lib/ensurePredefinedAutomationsForUser';
+import { executeAutomationAction } from '@/lib/automationActions';
+import { getFirstClientForUser, getFirstProjectForUser } from '@/lib/getFirstClientAndProject';
 import Sidebar from '@/components/Sidebar';
 import { Button } from '@/components/ui/Button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/Card';
 import { Input } from '@/components/ui/Input';
+import AutomationForm from '@/components/ui/AutomationForm';
 import { createSupabaseClient } from '@/src/lib/supabase-client';
 import {
     Plus,
@@ -65,7 +69,8 @@ export default function AutomationsPageClient({ userEmail }: AutomationsPageClie
         executions_today: 0,
         time_saved_hours: 0
     });
-    
+    const [showForm, setShowForm] = useState(false);
+    const [creating, setCreating] = useState(false);
     const router = useRouter();
     const supabase = createSupabaseClient();
 
@@ -140,35 +145,29 @@ export default function AutomationsPageClient({ userEmail }: AutomationsPageClie
     const loadAutomations = async () => {
         try {
             setLoading(true);
-            
             if (!supabase) return;
-
             const { data: { user } } = await supabase.auth.getUser();
             if (!user) return;
-
-            // Cargar automaciones del usuario
+            // Asegura que existan las automaciones predefinidas para el usuario
+            await ensurePredefinedAutomationsForUser(user.id);
+            // Cargar automaciones públicas y privadas del usuario
             const { data, error } = await supabase
                 .from('automations')
                 .select('*')
-                .eq('user_id', user.id)
+                .or(`user_id.eq.${user.id},is_public.eq.true`)
                 .order('created_at', { ascending: false });
-
             if (error) {
                 console.error('Error loading automations:', error);
                 return;
             }
-
             setAutomations(data || []);
             setFilteredAutomations(data || []);
-            
             // Calcular estadísticas
             const total = data?.length || 0;
             const active = data?.filter(a => a.is_active).length || 0;
             const executions_today = data?.reduce((sum, a) => sum + (a.execution_count || 0), 0) || 0;
             const time_saved_hours = Math.round((executions_today * 0.5) * 10) / 10; // Estimación
-            
             setStats({ total, active, executions_today, time_saved_hours });
-            
         } catch (error) {
             console.error('Error loading automations:', error);
         } finally {
@@ -321,14 +320,61 @@ export default function AutomationsPageClient({ userEmail }: AutomationsPageClie
                                         </div>
                                         
                                         <div className="flex items-center gap-3">
-                                            <Button
-                                                onClick={() => {/* Crear nueva automación */}}
-                                                className="bg-gradient-to-r from-purple-600 to-pink-600 text-white shadow-2xl shadow-purple-500/25 hover:shadow-purple-500/40 hover:scale-105 transform transition-all duration-200"
-                                            >
-                                                <Plus className="w-5 h-5 mr-2" />
-                                                Nueva Automación
-                                            </Button>
+                    <Button
+                        onClick={() => setShowForm(!showForm)}
+                        className="bg-gradient-to-r from-purple-600 to-pink-600 text-white shadow-2xl shadow-purple-500/25 hover:shadow-purple-500/40 hover:scale-105 transform transition-all duration-200"
+                    >
+                        <Plus className="w-5 h-5 mr-2" />
+                        {showForm ? 'Cerrar formulario' : 'Nueva Automación'}
+                    </Button>
                                         </div>
+            {/* Formulario para crear automatización */}
+            {showForm && (
+                <div className="max-w-xl mx-auto my-8 bg-white/80 rounded-2xl shadow-2xl p-8 border border-white/70">
+                    <h2 className="text-2xl font-bold mb-6 text-gradient bg-gradient-to-r from-purple-700 via-pink-600 to-indigo-600 bg-clip-text text-transparent">
+                        Crear Nueva Automatización
+                    </h2>
+                    <AutomationForm
+                        loading={creating}
+                        onSubmit={async (data) => {
+                            setCreating(true);
+                            const { name, description, trigger_type, is_public } = data;
+                            // Obtener usuario autenticado
+                            const { data: userData, error: userError } = await supabase.auth.getUser();
+                            if (userError || !userData?.user) {
+                                alert('No se pudo obtener el usuario autenticado.');
+                                setCreating(false);
+                                return;
+                            }
+                            const user_id = userData.user.id;
+                            // Asegura automaciones predefinidas
+                            await ensurePredefinedAutomationsForUser(user_id);
+                            const { error } = await supabase.from('automations').insert([
+                                {
+                                    user_id,
+                                    name,
+                                    description,
+                                    trigger_type,
+                                    trigger_conditions: JSON.stringify([]),
+                                    actions: JSON.stringify([]),
+                                    is_active: true,
+                                    execution_count: 0,
+                                    is_public,
+                                    created_at: new Date().toISOString(),
+                                    updated_at: new Date().toISOString(),
+                                },
+                            ]);
+                            setCreating(false);
+                            if (!error) {
+                                setShowForm(false);
+                                await loadAutomations();
+                            } else {
+                                alert('Error al crear la automatización: ' + error.message);
+                            }
+                        }}
+                    />
+                </div>
+            )}
                                     </div>
                                 </div>
                             </div>
@@ -498,7 +544,6 @@ export default function AutomationsPageClient({ userEmail }: AutomationsPageClie
                                                         <div className={`w-12 h-12 ${automation.is_active ? 'bg-green-500' : 'bg-slate-400'} rounded-xl flex items-center justify-center shadow-lg`}>
                                                             <Bot className="w-6 h-6 text-white" />
                                                         </div>
-                                                        
                                                         <div className="flex-1">
                                                             <div className="flex items-center gap-2 mb-1">
                                                                 <h3 className="text-lg font-bold text-slate-900">{automation.name}</h3>
@@ -509,9 +554,19 @@ export default function AutomationsPageClient({ userEmail }: AutomationsPageClie
                                                                 }`}>
                                                                     {automation.is_active ? 'Activa' : 'Pausada'}
                                                                 </span>
+                                                                {automation.is_public ? (
+                                                                    <span className="ml-2 px-2 py-1 rounded-full text-xs font-semibold bg-blue-100 text-blue-700 border border-blue-200 flex items-center gap-1">
+                                                                        <svg className="w-3 h-3 inline-block" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10" /><path d="M2 12h20" /><path d="M12 2a15.3 15.3 0 0 1 0 20" /></svg>
+                                                                        Pública
+                                                                    </span>
+                                                                ) : (
+                                                                    <span className="ml-2 px-2 py-1 rounded-full text-xs font-semibold bg-slate-100 text-slate-600 border border-slate-200 flex items-center gap-1">
+                                                                        <svg className="w-3 h-3 inline-block" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24"><path d="M12 17a5 5 0 0 1-5-5V7a5 5 0 0 1 10 0v5a5 5 0 0 1-5 5z" /><path d="M17 12V7a5 5 0 0 0-10 0v5" /></svg>
+                                                                        Privada
+                                                                    </span>
+                                                                )}
                                                             </div>
                                                             <p className="text-sm text-slate-600 mb-2">{automation.description}</p>
-                                                            
                                                             <div className="flex items-center gap-4 text-xs text-slate-500">
                                                                 <span>Ejecutada {automation.execution_count} veces</span>
                                                                 <span>Éxito: {(automation.success_rate * 100).toFixed(0)}%</span>
@@ -521,7 +576,6 @@ export default function AutomationsPageClient({ userEmail }: AutomationsPageClie
                                                             </div>
                                                         </div>
                                                     </div>
-                                                    
                                                     <div className="flex items-center gap-2">
                                                         <Button
                                                             onClick={() => toggleAutomation(automation.id, automation.is_active)}
@@ -535,7 +589,6 @@ export default function AutomationsPageClient({ userEmail }: AutomationsPageClie
                                                         >
                                                             {automation.is_active ? <Pause className="w-4 h-4" /> : <Play className="w-4 h-4" />}
                                                         </Button>
-                                                        
                                                         <Button
                                                             onClick={() => duplicateAutomation(automation)}
                                                             variant="outline"
@@ -544,7 +597,43 @@ export default function AutomationsPageClient({ userEmail }: AutomationsPageClie
                                                         >
                                                             <Copy className="w-4 h-4" />
                                                         </Button>
-                                                        
+                                                        <Button
+                                                            onClick={async () => {
+                                                                const { data: userData } = await supabase.auth.getUser();
+                                                                const user_id = userData?.user?.id || '';
+                                                                let payload: any = { userEmail };
+                                                                if (automation.trigger_type === 'client_onboarding' || automation.trigger_type === 'client_communication') {
+                                                                    const client = await getFirstClientForUser(user_id);
+                                                                    if (client) {
+                                                                        payload.clientEmail = client.email;
+                                                                        payload.clientName = client.name;
+                                                                    }
+                                                                }
+                                                                if (automation.trigger_type === 'invoice_followup') {
+                                                                    const client = await getFirstClientForUser(user_id);
+                                                                    if (client) {
+                                                                        payload.clientEmail = client.email;
+                                                                        payload.clientName = client.name;
+                                                                        payload.invoiceNumber = 'INV-001'; // Aquí podrías buscar la factura real
+                                                                    }
+                                                                }
+                                                                if (automation.trigger_type === 'project_milestone' || automation.trigger_type === 'time_tracking') {
+                                                                    const project = await getFirstProjectForUser(user_id);
+                                                                    if (project) {
+                                                                        payload.clientEmail = project.client_email || userEmail;
+                                                                        payload.clientName = project.name;
+                                                                        payload.milestoneName = 'Primer hito';
+                                                                    }
+                                                                }
+                                                                await executeAutomationAction(automation.trigger_type, payload, user_id);
+                                                                alert('Automatización ejecutada con datos reales (primer cliente/proyecto encontrado)');
+                                                            }}
+                                                            variant="outline"
+                                                            size="sm"
+                                                            className="border-slate-200 hover:bg-blue-50 text-blue-600"
+                                                        >
+                                                            <Zap className="w-4 h-4" />
+                                                        </Button>
                                                         <Button
                                                             onClick={() => {/* Editar automación */}}
                                                             variant="outline"
