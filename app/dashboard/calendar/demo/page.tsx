@@ -1,5 +1,4 @@
-import CalendarPageClientDemo from './CalendarPageClientDemo';
-
+import CalendarPageClient from '../CalendarPageClient';
 export default function CalendarPageDemo() {
-    return <CalendarPageClientDemo />;
+    return <CalendarPageClient userEmail="user@example.com" />;
 }
