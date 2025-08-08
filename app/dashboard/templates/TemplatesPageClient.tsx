@@ -79,6 +79,8 @@ export default function TemplatesPageClient({ userEmail }: TemplatesPageClientPr
     // Estados para el modal de crear proyecto
     const [showProjectModal, setShowProjectModal] = useState(false);
     const [selectedTemplate, setSelectedTemplate] = useState<ProjectTemplate | null>(null);
+    const [showUseModal, setShowUseModal] = useState(false);
+    const [selectedTemplate, setSelectedTemplate] = useState<ProjectTemplate | null>(null);
     const [clients, setClients] = useState<any[]>([]);
     const [projectForm, setProjectForm] = useState({
         name: '',
@@ -451,7 +453,8 @@ export default function TemplatesPageClient({ userEmail }: TemplatesPageClientPr
     };
 
     const handleUseTemplate = (template: ProjectTemplate) => {
-        useTemplate(template);
+        setSelectedTemplate(template);
+        setShowUseModal(true);
     };
 
     useEffect(() => {
