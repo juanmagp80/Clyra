@@ -326,12 +326,12 @@ export default function ClientCommunications({ userEmail }: ClientCommunications
     };
 
     const getClientMessages = (clientId: string) => {
-        return messages.filter(m => m.client_id === clientId)
+        return messages.filter((m: Message) => m.client_id === clientId)
             .sort((a, b) => new Date(a.created_at).getTime() - new Date(b.created_at).getTime());
     };
 
     const getUnreadCount = (clientId: string) => {
-        return messages.filter(m =>
+        return messages.filter((m: Message) =>
             m.client_id === clientId &&
             m.sender_type === 'client' &&
             !m.is_read
@@ -483,18 +483,18 @@ export default function ClientCommunications({ userEmail }: ClientCommunications
                                         </CardTitle>
                                     </CardHeader>
                                     <CardContent>
-                                        {clients.filter(c => messages.some(m => m.client_id === c.id)).length === 0 ? (
+                                        {clients.filter(c => messages.some((m: Message) => m.client_id === c.id)).length === 0 ? (
                                             <div className="text-center py-4">
                                                 <p className="text-slate-500 text-sm">No hay conversaciones</p>
                                             </div>
                                         ) : (
                                             <div className="space-y-2">
                                                 {clients
-                                                    .filter(client => messages.some(m => m.client_id === client.id))
+                                                    .filter(client => messages.some((m: Message) => m.client_id === client.id))
                                                     .map((client) => {
                                                         const unreadCount = getUnreadCount(client.id);
                                                         const lastMessage = messages
-                                                            .filter(m => m.client_id === client.id)
+                                                            .filter((m: Message) => m.client_id === client.id)
                                                             .sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime())[0];
 
                                                         return (

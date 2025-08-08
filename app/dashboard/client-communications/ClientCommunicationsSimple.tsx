@@ -19,10 +19,10 @@ import {
 } from 'lucide-react';
 
 interface ClientCommunicationsProps {
-    userEmail: string;
+    userEmail?: string;
 }
 
-export default function ClientCommunicationsSimple({ userEmail }: ClientCommunicationsProps) {
+export default function ClientCommunicationsSimple({ userEmail = "demo@example.com" }: ClientCommunicationsProps) {
     const supabase = createSupabaseClient();
     const router = useRouter();
 
