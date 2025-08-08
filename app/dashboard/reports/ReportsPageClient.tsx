@@ -46,19 +46,7 @@ import {
     Sparkles
 } from 'lucide-react';
 
-// Registrar componentes de Chart.js
-ChartJS.register(
-    CategoryScale,
-    LinearScale,
-    PointElement,
-    LineElement,
-    BarElement,
-    Title,
-    Tooltip,
-    Legend,
-    ArcElement,
-    Filler
-);
+// Chart.js imports removidos - usando fallback simple;
 
 interface ReportsPageClientProps {
     userEmail: string;
