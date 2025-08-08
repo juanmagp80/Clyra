@@ -14,12 +14,15 @@ export default function DashboardClientSimple({ userEmail }: { userEmail: string
     const [loading, setLoading] = useState(true);
 
     const handleLogout = async () => {
+        if (!supabase) return;
         await supabase.auth.signOut();
         router.push('/login');
     };
 
     // Cargar métricas del dashboard
     const loadDashboardData = async () => {
+        if (!supabase) return;
+        
         try {
             const user = (await supabase.auth.getUser()).data.user;
             if (!user) return;
