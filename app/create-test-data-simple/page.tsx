@@ -29,7 +29,13 @@ export default function CreateTestDataSimplePage() {
             setUser(currentUser);
             console.log('👤 Usuario autenticado:', currentUser.id);
 
-            const results = {
+            const results: {
+                user_id: string;
+                clients: any[];
+                projects: any[];
+                invoices: any[];
+                errors: Array<{ table: string; error: string }>;
+            } = {
                 user_id: currentUser.id,
                 clients: [],
                 projects: [],
