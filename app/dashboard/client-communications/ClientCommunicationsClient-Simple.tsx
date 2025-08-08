@@ -184,12 +184,12 @@ export default function ClientCommunications({ userEmail }: ClientCommunications
             } else {
                 setMessages(data || []);
 
-                const unreadClientMessages = data?.filter(m =>
+                const unreadClientMessages = data?.filter((m: Message) =>
                     m.sender_type === 'client' && !m.is_read
                 ) || [];
 
                 if (unreadClientMessages.length > 0) {
-                    markMessagesAsRead(unreadClientMessages.map(m => m.id));
+                    markMessagesAsRead(unreadClientMessages.map((m: Message) => m.id));
                 }
             }
         } catch (error) {
