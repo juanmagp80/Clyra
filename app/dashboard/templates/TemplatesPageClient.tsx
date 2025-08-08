@@ -336,7 +336,7 @@ export default function TemplatesPageClient({ userEmail }: TemplatesPageClientPr
             }
 
             // Normalizar phases y deliverables según el modelo original (array o número)
-            let templateDataToSave = { ...templateForm.template_data };
+            const templateDataToSave = { ...templateForm.template_data };
             
             // Convertir números a arrays si es necesario
             if (typeof templateDataToSave.phases === 'number') {
@@ -447,37 +447,6 @@ export default function TemplatesPageClient({ userEmail }: TemplatesPageClientPr
             
         } catch (error) {
             console.error('Error duplicating template:', error);
-        }
-    };
-
-    // --- FUNCIÓN PARA MARCAR PROYECTO COMO COMPLETADO (CORREGIDA) ---
-    const completarProyecto = async (projectId: string) => {
-        try {
-            if (!supabase) return;
-
-            const { data: { user } } = await supabase.auth.getUser();
-            if (!user) return;
-
-            const { error } = await supabase
-                .from('projects')
-                .update({ 
-                    status: 'Completado', 
-                    end_date: new Date().toISOString() 
-                })
-                .eq('id', projectId)
-                .eq('user_id', user.id);
-
-            if (error) {
-                console.error('Error al completar el proyecto:', error);
-                alert('No se pudo completar el proyecto. Verifica el ID y permisos.');
-                return;
-            }
-
-            alert('Proyecto marcado como completado exitosamente.');
-            router.refresh(); // Recargar la página para reflejar cambios
-        } catch (error) {
-            console.error('Error al completar proyecto:', error);
-            alert('Ocurrió un error al intentar completar el proyecto.');
         }
     };
 

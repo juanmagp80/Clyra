@@ -3,7 +3,8 @@
 import { useState, useEffect } from 'react';
 import { ensurePredefinedAutomationsForUser } from '@/lib/ensurePredefinedAutomationsForUser';
 import { executeAutomationAction } from '@/lib/automationActions';
-import { getFirstClientForUser, getFirstProjectForUser } from '@/lib/getFirstClientAndProject';
+import { getFirstClientForUser, getFirstProjectForUser, getFirstInvoiceForUser, checkUserEntities } from '@/lib/getFirstClientAndProject';
+import Modal from '@/components/ui/Modal';
 import Sidebar from '@/components/Sidebar';
 import { Button } from '@/components/ui/Button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/Card';
@@ -51,6 +52,7 @@ interface Automation {
     execution_count: number;
     success_rate: number;
     created_at: string;
+    is_public?: boolean;
 }
 
 interface AutomationsPageClientProps {
@@ -58,6 +60,13 @@ interface AutomationsPageClientProps {
 }
 
 export default function AutomationsPageClient({ userEmail }: AutomationsPageClientProps) {
+    const [modalOpen, setModalOpen] = useState(false);
+    const [modalAutomation, setModalAutomation] = useState<Automation | null>(null);
+    const [entityOptions, setEntityOptions] = useState<any[]>([]);
+    const [selectedEntity, setSelectedEntity] = useState<string>('');
+    const [entityLoading, setEntityLoading] = useState(false);
+    const [executionLogs, setExecutionLogs] = useState<string[]>([]);
+    const [executing, setExecuting] = useState(false);
     const [automations, setAutomations] = useState<Automation[]>([]);
     const [filteredAutomations, setFilteredAutomations] = useState<Automation[]>([]);
     const [loading, setLoading] = useState(true);
@@ -148,14 +157,17 @@ export default function AutomationsPageClient({ userEmail }: AutomationsPageClie
             if (!supabase) return;
             const { data: { user } } = await supabase.auth.getUser();
             if (!user) return;
+            
             // Asegura que existan las automaciones predefinidas para el usuario
             await ensurePredefinedAutomationsForUser(user.id);
-            // Cargar automaciones públicas y privadas del usuario
+            
+            // Cargar TODAS las automaciones del usuario (públicas y privadas)
             const { data, error } = await supabase
                 .from('automations')
                 .select('*')
-                .or(`user_id.eq.${user.id},is_public.eq.true`)
+                .eq('user_id', user.id) // Solo automaciones del usuario actual
                 .order('created_at', { ascending: false });
+                
             if (error) {
                 console.error('Error loading automations:', error);
                 return;
@@ -215,7 +227,7 @@ export default function AutomationsPageClient({ userEmail }: AutomationsPageClie
             }
 
             await loadAutomations();
-            
+
         } catch (error) {
             console.error('Error toggling automation:', error);
         }
@@ -248,9 +260,226 @@ export default function AutomationsPageClient({ userEmail }: AutomationsPageClie
             }
 
             await loadAutomations();
-            
+
         } catch (error) {
             console.error('Error duplicating automation:', error);
+        }
+    };
+
+    const handleExecuteAutomation = async (automation: Automation) => {
+        console.log('🚀 Preparando ejecución de automatización:', automation.name);
+        
+        if (!supabase) {
+            alert('Error: Cliente Supabase no disponible');
+            return;
+        }
+        
+        const { data: userData } = await supabase.auth.getUser();
+        const user_id = userData?.user?.id || '';
+        
+        if (!user_id) {
+            alert('Error: Usuario no autenticado');
+            return;
+        }
+
+        // Abrir modal y resetear estado
+        setModalAutomation(automation);
+        setModalOpen(true);
+        setEntityOptions([]);
+        setSelectedEntity('');
+        setExecutionLogs([]);
+        setEntityLoading(true);
+        setExecuting(false);
+
+        // Determinar qué entidades cargar según el tipo de automatización
+        let entityType = '';
+        let selectQuery = '';
+        let tableName = '';
+
+        switch (automation.trigger_type) {
+            case 'client_onboarding':
+            case 'client_communication':
+            case 'client_feedback':
+            case 'sales_followup':
+                entityType = 'Clientes';
+                tableName = 'clients';
+                selectQuery = 'id, name, email, company';
+                break;
+            
+            case 'invoice_followup':
+                entityType = 'Facturas';
+                tableName = 'invoices';
+                selectQuery = 'id, invoice_number, amount, due_date, client_id';
+                break;
+            
+            case 'project_milestone':
+            case 'project_delivery':
+            case 'time_tracking':
+            case 'budget_exceeded':
+            case 'task_assigned':
+                entityType = 'Proyectos';
+                tableName = 'projects';
+                selectQuery = 'id, name, description, client_id, budget';
+                break;
+            
+            case 'meeting_reminder':
+                entityType = 'Eventos del calendario';
+                tableName = 'calendar';
+                selectQuery = 'id, title, date, client_id';
+                break;
+            
+            default:
+                // Para otros tipos, intentar con clientes como fallback
+                entityType = 'Clientes';
+                tableName = 'clients';
+                selectQuery = 'id, name, email, company';
+                break;
+        }
+
+        console.log(`� Buscando ${entityType.toLowerCase()} disponibles...`);
+        
+        try {
+            const { data, error } = await supabase
+                .from(tableName)
+                .select(selectQuery)
+                .eq('user_id', user_id)
+                .limit(50);
+
+            if (error) {
+                console.error(`❌ Error cargando ${entityType.toLowerCase()}:`, error);
+                setExecutionLogs([`❌ Error cargando ${entityType.toLowerCase()}: ${error.message}`]);
+            } else {
+                console.log(`✅ ${entityType} encontrados:`, data?.length || 0);
+                setEntityOptions(data || []);
+                setExecutionLogs([
+                    `🔍 Buscando ${entityType.toLowerCase()} disponibles...`,
+                    `✅ ${data?.length || 0} ${entityType.toLowerCase()} encontrados`
+                ]);
+            }
+        } catch (error) {
+            console.error('❌ Error en consulta:', error);
+            setExecutionLogs([`❌ Error en consulta: ${error}`]);
+        }
+
+        setEntityLoading(false);
+    };
+
+    const handleModalSubmit = async (e: React.FormEvent) => {
+        e.preventDefault();
+        if (!modalAutomation || !selectedEntity || !supabase) return;
+
+        setExecuting(true);
+        setExecutionLogs(prev => [...prev, '', '🚀 Iniciando ejecución de automatización...']);
+
+        const { data: userData } = await supabase.auth.getUser();
+        const user_id = userData?.user?.id || '';
+
+        try {
+            // Buscar la entidad seleccionada
+            const selected = entityOptions.find(opt => String(opt.id) === selectedEntity);
+            if (!selected) {
+                setExecutionLogs(prev => [...prev, '❌ No se encontró la entidad seleccionada']);
+                return;
+            }
+
+            setExecutionLogs(prev => [...prev, `📊 Entidad seleccionada: ${selected.name || selected.invoice_number || selected.title}`]);
+
+            const payload: any = { userEmail };
+
+            // Construir payload según el tipo de automatización
+            switch (modalAutomation.trigger_type) {
+                case 'client_onboarding':
+                case 'client_communication':
+                case 'client_feedback':
+                case 'sales_followup':
+                    payload.clientEmail = selected.email;
+                    payload.clientName = selected.name;
+                    payload.clientCompany = selected.company;
+                    setExecutionLogs(prev => [...prev, `📧 Cliente: ${selected.name} (${selected.email})`]);
+                    break;
+
+                case 'invoice_followup':
+                    payload.invoiceNumber = selected.invoice_number;
+                    payload.invoiceAmount = selected.amount;
+                    payload.invoiceDueDate = selected.due_date;
+                    // Buscar datos del cliente asociado
+                    if (selected.client_id) {
+                        const { data: clientData } = await supabase
+                            .from('clients')
+                            .select('name, email')
+                            .eq('id', selected.client_id)
+                            .single();
+                        if (clientData) {
+                            payload.clientEmail = clientData.email;
+                            payload.clientName = clientData.name;
+                        }
+                    }
+                    setExecutionLogs(prev => [...prev, `💰 Factura: ${selected.invoice_number} - €${selected.amount}`]);
+                    break;
+
+                case 'project_milestone':
+                case 'project_delivery':
+                case 'time_tracking':
+                case 'budget_exceeded':
+                case 'task_assigned':
+                    payload.projectId = selected.id;
+                    payload.projectName = selected.name;
+                    payload.projectBudget = selected.budget;
+                    payload.milestoneName = 'Hito completado';
+                    // Buscar datos del cliente asociado
+                    if (selected.client_id) {
+                        const { data: clientData } = await supabase
+                            .from('clients')
+                            .select('name, email')
+                            .eq('id', selected.client_id)
+                            .single();
+                        if (clientData) {
+                            payload.clientEmail = clientData.email;
+                            payload.clientName = clientData.name;
+                        }
+                    }
+                    setExecutionLogs(prev => [...prev, `📋 Proyecto: ${selected.name}`]);
+                    break;
+
+                case 'meeting_reminder':
+                    payload.meetingId = selected.id;
+                    payload.meetingTitle = selected.title;
+                    payload.meetingDate = selected.date;
+                    setExecutionLogs(prev => [...prev, `📅 Reunión: ${selected.title}`]);
+                    break;
+            }
+
+            setExecutionLogs(prev => [...prev, '⚡ Ejecutando lógica de automatización...']);
+
+            // Ejecutar la automatización
+            await executeAutomationAction(modalAutomation.trigger_type, payload, user_id);
+
+            setExecutionLogs(prev => [...prev, '✅ Automatización ejecutada exitosamente']);
+
+            // Actualizar contador de ejecución
+            await supabase
+                .from('automations')
+                .update({ 
+                    execution_count: modalAutomation.execution_count + 1,
+                    last_executed: new Date().toISOString()
+                })
+                .eq('id', modalAutomation.id);
+
+            setExecutionLogs(prev => [...prev, '📊 Estadísticas actualizadas']);
+
+            // Recargar automaciones
+            await loadAutomations();
+
+            setTimeout(() => {
+                setModalOpen(false);
+                setSelectedEntity('');
+            }, 2000);
+
+        } catch (error) {
+            console.error('❌ Error ejecutando automatización:', error);
+            setExecutionLogs(prev => [...prev, `❌ Error: ${error instanceof Error ? error.message : 'Error desconocido'}`]);
+        } finally {
+            setExecuting(false);
         }
     };
 
@@ -298,7 +527,7 @@ export default function AutomationsPageClient({ userEmail }: AutomationsPageClie
                 <div className="h-full overflow-y-auto">
                     <div className="min-h-screen bg-gradient-to-br from-slate-50/80 via-blue-50/90 to-indigo-100/80 backdrop-blur-3xl">
                         <div className="container mx-auto px-6 py-8">
-                            
+
                             {/* Header Premium */}
                             <div className="mb-8">
                                 <div className="bg-white/40 backdrop-blur-2xl rounded-3xl border border-white/60 shadow-2xl shadow-indigo-500/10 p-8">
@@ -318,66 +547,74 @@ export default function AutomationsPageClient({ userEmail }: AutomationsPageClie
                                                 </div>
                                             </div>
                                         </div>
-                                        
+
                                         <div className="flex items-center gap-3">
-                    <Button
-                        onClick={() => setShowForm(!showForm)}
-                        className="bg-gradient-to-r from-purple-600 to-pink-600 text-white shadow-2xl shadow-purple-500/25 hover:shadow-purple-500/40 hover:scale-105 transform transition-all duration-200"
-                    >
-                        <Plus className="w-5 h-5 mr-2" />
-                        {showForm ? 'Cerrar formulario' : 'Nueva Automación'}
-                    </Button>
+                                            <Button
+                                                onClick={() => setShowForm(!showForm)}
+                                                className="bg-gradient-to-r from-purple-600 to-pink-600 text-white shadow-2xl shadow-purple-500/25 hover:shadow-purple-500/40 hover:scale-105 transform transition-all duration-200"
+                                            >
+                                                <Plus className="w-5 h-5 mr-2" />
+                                                {showForm ? 'Cerrar formulario' : 'Nueva Automación'}
+                                            </Button>
                                         </div>
-            {/* Formulario para crear automatización */}
-            {showForm && (
-                <div className="max-w-xl mx-auto my-8 bg-white/80 rounded-2xl shadow-2xl p-8 border border-white/70">
-                    <h2 className="text-2xl font-bold mb-6 text-gradient bg-gradient-to-r from-purple-700 via-pink-600 to-indigo-600 bg-clip-text text-transparent">
-                        Crear Nueva Automatización
-                    </h2>
-                    <AutomationForm
-                        loading={creating}
-                        onSubmit={async (data) => {
-                            setCreating(true);
-                            const { name, description, trigger_type, is_public } = data;
-                            // Obtener usuario autenticado
-                            const { data: userData, error: userError } = await supabase.auth.getUser();
-                            if (userError || !userData?.user) {
-                                alert('No se pudo obtener el usuario autenticado.');
-                                setCreating(false);
-                                return;
-                            }
-                            const user_id = userData.user.id;
-                            // Asegura automaciones predefinidas
-                            await ensurePredefinedAutomationsForUser(user_id);
-                            const { error } = await supabase.from('automations').insert([
-                                {
-                                    user_id,
-                                    name,
-                                    description,
-                                    trigger_type,
-                                    trigger_conditions: JSON.stringify([]),
-                                    actions: JSON.stringify([]),
-                                    is_active: true,
-                                    execution_count: 0,
-                                    is_public,
-                                    created_at: new Date().toISOString(),
-                                    updated_at: new Date().toISOString(),
-                                },
-                            ]);
-                            setCreating(false);
-                            if (!error) {
-                                setShowForm(false);
-                                await loadAutomations();
-                            } else {
-                                alert('Error al crear la automatización: ' + error.message);
-                            }
-                        }}
-                    />
-                </div>
-            )}
                                     </div>
                                 </div>
                             </div>
+
+                            {/* Formulario para crear automatización */}
+                            {showForm && (
+                                <div className="max-w-xl mx-auto my-8 bg-white/80 rounded-2xl shadow-2xl p-8 border border-white/70">
+                                    <h2 className="text-2xl font-bold mb-6 text-gradient bg-gradient-to-r from-purple-700 via-pink-600 to-indigo-600 bg-clip-text text-transparent">
+                                        Crear Nueva Automatización
+                                    </h2>
+                                    <AutomationForm
+                                        loading={creating}
+                                        onSubmit={async (data) => {
+                                            setCreating(true);
+                                            
+                                            if (!supabase) {
+                                                alert('Error: Cliente Supabase no disponible');
+                                                setCreating(false);
+                                                return;
+                                            }
+                                            
+                                            const { name, description, trigger_type, is_public } = data;
+                                            // Obtener usuario autenticado
+                                            const { data: userData, error: userError } = await supabase.auth.getUser();
+                                            if (userError || !userData?.user) {
+                                                alert('No se pudo obtener el usuario autenticado.');
+                                                setCreating(false);
+                                                return;
+                                            }
+                                            const user_id = userData.user.id;
+                                            // Asegura automaciones predefinidas
+                                            await ensurePredefinedAutomationsForUser(user_id);
+                                            const { error } = await supabase.from('automations').insert([
+                                                {
+                                                    user_id,
+                                                    name,
+                                                    description,
+                                                    trigger_type,
+                                                    trigger_conditions: JSON.stringify([]),
+                                                    actions: JSON.stringify([]),
+                                                    is_active: true,
+                                                    execution_count: 0,
+                                                    is_public,
+                                                    created_at: new Date().toISOString(),
+                                                    updated_at: new Date().toISOString(),
+                                                },
+                                            ]);
+                                            setCreating(false);
+                                            if (!error) {
+                                                setShowForm(false);
+                                                await loadAutomations();
+                                            } else {
+                                                alert('Error al crear la automatización: ' + error.message);
+                                            }
+                                        }}
+                                    />
+                                </div>
+                            )}
 
                             {/* Stats Dashboard */}
                             <div className="grid grid-cols-1 md:grid-cols-4 gap-6 mb-8">
@@ -442,7 +679,7 @@ export default function AutomationsPageClient({ userEmail }: AutomationsPageClie
                             <div className="mb-8">
                                 <div className="bg-white/60 backdrop-blur-xl rounded-2xl border border-white/60 shadow-xl p-6">
                                     <div className="flex flex-col lg:flex-row gap-4 items-start lg:items-center justify-between">
-                                        
+
                                         {/* Search */}
                                         <div className="flex-1 max-w-md">
                                             <div className="relative">
@@ -462,16 +699,15 @@ export default function AutomationsPageClient({ userEmail }: AutomationsPageClie
                                             {statusFilters.map((filter) => {
                                                 const IconComponent = filter.icon;
                                                 const isActive = selectedStatus === filter.id;
-                                                
+
                                                 return (
                                                     <button
                                                         key={filter.id}
                                                         onClick={() => setSelectedStatus(filter.id)}
-                                                        className={`flex items-center gap-2 px-4 py-2 rounded-xl font-semibold transition-all duration-200 whitespace-nowrap ${
-                                                            isActive
+                                                        className={`flex items-center gap-2 px-4 py-2 rounded-xl font-semibold transition-all duration-200 whitespace-nowrap ${isActive
                                                                 ? 'bg-gradient-to-r from-purple-600 to-pink-600 text-white shadow-lg shadow-purple-500/25'
                                                                 : 'bg-white/80 text-slate-700 hover:bg-white hover:shadow-md'
-                                                        }`}
+                                                            }`}
                                                     >
                                                         <IconComponent className={`w-4 h-4 ${isActive ? 'text-white' : filter.color}`} />
                                                         {filter.name}
@@ -490,7 +726,7 @@ export default function AutomationsPageClient({ userEmail }: AutomationsPageClie
                                     <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
                                         {automationTypes.map((type) => {
                                             const IconComponent = type.icon;
-                                            
+
                                             return (
                                                 <Card key={type.id} className="group bg-white/60 backdrop-blur-xl border border-white/60 shadow-xl hover:shadow-2xl hover:scale-105 transition-all duration-300 cursor-pointer">
                                                     <CardHeader>
@@ -509,12 +745,12 @@ export default function AutomationsPageClient({ userEmail }: AutomationsPageClie
                                                                 </div>
                                                             </div>
                                                         </div>
-                                                        
+
                                                         <p className="text-sm text-slate-600 mb-4">
                                                             {type.description}
                                                         </p>
                                                     </CardHeader>
-                                                    
+
                                                     <CardContent className="pt-0">
                                                         <Button
                                                             className="w-full bg-gradient-to-r from-purple-600 to-pink-600 text-white hover:from-purple-700 hover:to-pink-700 shadow-lg hover:shadow-xl transition-all duration-200"
@@ -535,7 +771,7 @@ export default function AutomationsPageClient({ userEmail }: AutomationsPageClie
                             {filteredAutomations.length > 0 && (
                                 <div className="space-y-4">
                                     <h2 className="text-xl font-bold text-slate-900">Tus Automaciones</h2>
-                                    
+
                                     {filteredAutomations.map((automation) => (
                                         <Card key={automation.id} className="bg-white/60 backdrop-blur-xl border border-white/60 shadow-xl hover:shadow-2xl transition-all duration-300">
                                             <CardContent className="p-6">
@@ -547,11 +783,10 @@ export default function AutomationsPageClient({ userEmail }: AutomationsPageClie
                                                         <div className="flex-1">
                                                             <div className="flex items-center gap-2 mb-1">
                                                                 <h3 className="text-lg font-bold text-slate-900">{automation.name}</h3>
-                                                                <span className={`px-2 py-1 rounded-full text-xs font-semibold ${
-                                                                    automation.is_active 
-                                                                        ? 'bg-green-100 text-green-700' 
+                                                                <span className={`px-2 py-1 rounded-full text-xs font-semibold ${automation.is_active
+                                                                        ? 'bg-green-100 text-green-700'
                                                                         : 'bg-slate-100 text-slate-600'
-                                                                }`}>
+                                                                    }`}>
                                                                     {automation.is_active ? 'Activa' : 'Pausada'}
                                                                 </span>
                                                                 {automation.is_public ? (
@@ -598,36 +833,7 @@ export default function AutomationsPageClient({ userEmail }: AutomationsPageClie
                                                             <Copy className="w-4 h-4" />
                                                         </Button>
                                                         <Button
-                                                            onClick={async () => {
-                                                                const { data: userData } = await supabase.auth.getUser();
-                                                                const user_id = userData?.user?.id || '';
-                                                                let payload: any = { userEmail };
-                                                                if (automation.trigger_type === 'client_onboarding' || automation.trigger_type === 'client_communication') {
-                                                                    const client = await getFirstClientForUser(user_id);
-                                                                    if (client) {
-                                                                        payload.clientEmail = client.email;
-                                                                        payload.clientName = client.name;
-                                                                    }
-                                                                }
-                                                                if (automation.trigger_type === 'invoice_followup') {
-                                                                    const client = await getFirstClientForUser(user_id);
-                                                                    if (client) {
-                                                                        payload.clientEmail = client.email;
-                                                                        payload.clientName = client.name;
-                                                                        payload.invoiceNumber = 'INV-001'; // Aquí podrías buscar la factura real
-                                                                    }
-                                                                }
-                                                                if (automation.trigger_type === 'project_milestone' || automation.trigger_type === 'time_tracking') {
-                                                                    const project = await getFirstProjectForUser(user_id);
-                                                                    if (project) {
-                                                                        payload.clientEmail = project.client_email || userEmail;
-                                                                        payload.clientName = project.name;
-                                                                        payload.milestoneName = 'Primer hito';
-                                                                    }
-                                                                }
-                                                                await executeAutomationAction(automation.trigger_type, payload, user_id);
-                                                                alert('Automatización ejecutada con datos reales (primer cliente/proyecto encontrado)');
-                                                            }}
+                                                            onClick={() => handleExecuteAutomation(automation)}
                                                             variant="outline"
                                                             size="sm"
                                                             className="border-slate-200 hover:bg-blue-50 text-blue-600"
@@ -662,12 +868,127 @@ export default function AutomationsPageClient({ userEmail }: AutomationsPageClie
                                     <p className="text-slate-600 mb-6 max-w-md mx-auto">
                                         Intenta ajustar los filtros de búsqueda o crear una nueva automación
                                     </p>
+                                    <div className="mt-6">
+                                        <Button
+                                            onClick={() => window.open('/create-test-data-simple', '_blank')}
+                                            className="bg-gradient-to-r from-blue-600 to-purple-600 text-white font-semibold px-6 py-3 rounded-xl shadow-lg hover:shadow-xl transition-all duration-200 transform hover:scale-105"
+                                        >
+                                            <Plus className="w-5 h-5 mr-2" />
+                                            Crear Datos de Prueba
+                                        </Button>
+                                    </div>
                                 </div>
                             )}
                         </div>
                     </div>
                 </div>
             </div>
+
+            {/* Modal de Selección de Entidad */}
+            <Modal
+                isOpen={modalOpen}
+                onClose={() => setModalOpen(false)}
+                title="Ejecutar Automatización"
+            >
+                <div className="space-y-6">
+                    {modalAutomation && (
+                        <div className="p-4 bg-gradient-to-r from-purple-50 to-pink-50 rounded-lg border border-purple-100">
+                            <h3 className="font-semibold text-purple-900 mb-1">
+                                {modalAutomation.name}
+                            </h3>
+                            <p className="text-sm text-purple-700">
+                                {modalAutomation.description}
+                            </p>
+                        </div>
+                    )}
+
+                    {/* Logs de Ejecución */}
+                    <div className="bg-slate-900 rounded-lg p-4 font-mono text-sm max-h-64 overflow-y-auto">
+                        {executionLogs.map((log, index) => (
+                            <div key={index} className="text-green-400">
+                                {log}
+                            </div>
+                        ))}
+                    </div>
+
+                    {/* Formulario de Selección */}
+                    <form onSubmit={handleModalSubmit}>
+                        <div className="space-y-4">
+                            {entityLoading ? (
+                                <div className="text-center py-4">
+                                    <div className="w-8 h-8 border-2 border-purple-600 border-t-transparent rounded-full animate-spin mx-auto mb-2"></div>
+                                    <p className="text-sm text-slate-600">Cargando entidades disponibles...</p>
+                                </div>
+                            ) : entityOptions.length > 0 ? (
+                                <div>
+                                    <label className="block text-sm font-medium text-slate-700 mb-2">
+                                        Selecciona la entidad para ejecutar la automatización:
+                                    </label>
+                                    <select
+                                        value={selectedEntity}
+                                        onChange={(e) => setSelectedEntity(e.target.value)}
+                                        className="w-full px-3 py-2 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-transparent"
+                                        required
+                                        disabled={executing}
+                                    >
+                                        <option value="">-- Selecciona una opción --</option>
+                                        {entityOptions.map((entity: any) => (
+                                            <option key={entity.id} value={String(entity.id)}>
+                                                {entity.name || entity.invoice_number || entity.title || `ID: ${entity.id}`}
+                                                {entity.email && ` (${entity.email})`}
+                                                {entity.amount && ` - €${entity.amount}`}
+                                                {entity.company && ` - ${entity.company}`}
+                                            </option>
+                                        ))}
+                                    </select>
+                                </div>
+                            ) : (
+                                <div className="text-center py-8 text-slate-600">
+                                    <p className="mb-4">No se encontraron entidades disponibles para esta automatización.</p>
+                                    <Button
+                                        type="button"
+                                        onClick={() => window.open('/create-test-data-simple', '_blank')}
+                                        className="bg-blue-600 text-white hover:bg-blue-700"
+                                    >
+                                        <Plus className="w-4 h-4 mr-2" />
+                                        Crear Datos de Prueba
+                                    </Button>
+                                </div>
+                            )}
+                        </div>
+
+                        {entityOptions.length > 0 && (
+                            <div className="flex justify-end gap-3 mt-6 pt-4 border-t border-slate-200">
+                                <Button
+                                    type="button"
+                                    variant="outline"
+                                    onClick={() => setModalOpen(false)}
+                                    disabled={executing}
+                                >
+                                    Cancelar
+                                </Button>
+                                <Button
+                                    type="submit"
+                                    disabled={!selectedEntity || executing}
+                                    className="bg-gradient-to-r from-purple-600 to-pink-600 text-white"
+                                >
+                                    {executing ? (
+                                        <>
+                                            <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin mr-2"></div>
+                                            Ejecutando...
+                                        </>
+                                    ) : (
+                                        <>
+                                            <Zap className="w-4 h-4 mr-2" />
+                                            Ejecutar Automatización
+                                        </>
+                                    )}
+                                </Button>
+                            </div>
+                        )}
+                    </form>
+                </div>
+            </Modal>
         </div>
     );
 }

@@ -742,7 +742,7 @@ export default function CalendarPageClient({ userEmail }: CalendarPageClientProp
 
                 if (conflictingEvents.length > 0) {
                     // Buscar siguiente slot disponible
-                    let nextSlot = new Date(suggestedDate.getTime() + 30 * 60 * 1000); // +30 min
+                    const nextSlot = new Date(suggestedDate.getTime() + 30 * 60 * 1000); // +30 min
                     while (nextSlot.getHours() < bestPattern.timeRange.endHour) {
                         const nextEnd = new Date(nextSlot.getTime() + duration * 60 * 1000);
                         const hasConflict = events.some(e => {
