@@ -80,7 +80,6 @@ export default function TemplatesPageClient({ userEmail }: TemplatesPageClientPr
     const [showProjectModal, setShowProjectModal] = useState(false);
     const [selectedTemplate, setSelectedTemplate] = useState<ProjectTemplate | null>(null);
     const [showUseModal, setShowUseModal] = useState(false);
-    const [selectedTemplate, setSelectedTemplate] = useState<ProjectTemplate | null>(null);
     const [clients, setClients] = useState<any[]>([]);
     const [projectForm, setProjectForm] = useState({
         name: '',
