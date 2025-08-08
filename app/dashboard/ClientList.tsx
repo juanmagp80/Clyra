@@ -20,6 +20,8 @@ export default function ClientsList() {
     const supabase = createSupabaseClient();
 
     const fetchClients = async () => {
+        if (!supabase) return;
+        
         const { data, error } = await supabase
             .from('clients')
             .select('*')
@@ -30,7 +32,7 @@ export default function ClientsList() {
     };
 
     const addClient = async () => {
-        if (!name) return;
+        if (!name || !supabase) return;
 
         const user = (await supabase.auth.getUser()).data.user;
         if (!user) return;
