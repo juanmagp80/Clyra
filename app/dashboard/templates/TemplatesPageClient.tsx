@@ -450,6 +450,10 @@ export default function TemplatesPageClient({ userEmail }: TemplatesPageClientPr
         }
     };
 
+    const handleUseTemplate = (template: ProjectTemplate) => {
+        useTemplate(template);
+    };
+
     useEffect(() => {
         loadTemplates();
     }, []);
