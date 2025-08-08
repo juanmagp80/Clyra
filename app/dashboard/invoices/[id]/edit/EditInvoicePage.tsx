@@ -96,12 +96,14 @@ export default function EditInvoicePage({ invoiceId, userEmail }: EditInvoicePag
 
     // Cargar datos de la factura
     const fetchInvoiceData = useCallback(async () => {
+        if (!supabase) return;
+        
         try {
-            const { data: { user } } = await supabase.auth.getUser();
+            const { data: { user } } = await supabase!.auth.getUser();
             if (!user) return;
 
             // Obtener factura
-            const { data: invoiceData, error: invoiceError } = await supabase
+            const { data: invoiceData, error: invoiceError } = await supabase!
                 .from('invoices')
                 .select('*')
                 .eq('id', invoiceId)
@@ -127,7 +129,7 @@ export default function EditInvoicePage({ invoiceId, userEmail }: EditInvoicePag
             });
 
             // Obtener items de la factura
-            const { data: itemsData, error: itemsError } = await supabase
+            const { data: itemsData, error: itemsError } = await supabase!
                 .from('invoice_items')
                 .select('*')
                 .eq('invoice_id', invoiceId)
@@ -168,12 +170,14 @@ export default function EditInvoicePage({ invoiceId, userEmail }: EditInvoicePag
 
     // Cargar clientes y proyectos
     const fetchClientsAndProjects = useCallback(async () => {
+        if (!supabase) return;
+        
         try {
-            const { data: { user } } = await supabase.auth.getUser();
+            const { data: { user } } = await supabase!.auth.getUser();
             if (!user) return;
 
             // Obtener clientes
-            const { data: clientsData, error: clientsError } = await supabase
+            const { data: clientsData, error: clientsError } = await supabase!
                 .from('clients')
                 .select('id, name, company, email')
                 .eq('user_id', user.id)
@@ -186,7 +190,7 @@ export default function EditInvoicePage({ invoiceId, userEmail }: EditInvoicePag
             }
 
             // Obtener proyectos
-            const { data: projectsData, error: projectsError } = await supabase
+            const { data: projectsData, error: projectsError } = await supabase!
                 .from('projects')
                 .select('id, name, client_id')
                 .eq('user_id', user.id)
@@ -283,6 +287,8 @@ export default function EditInvoicePage({ invoiceId, userEmail }: EditInvoicePag
     // Reemplazar la función updateInvoice completa:
 
     const updateInvoice = async () => {
+        if (!supabase) return;
+        
         try {
             if (!formData.client_id || !formData.title.trim()) {
                 alert('Por favor completa todos los campos obligatorios');
@@ -290,13 +296,13 @@ export default function EditInvoicePage({ invoiceId, userEmail }: EditInvoicePag
             }
 
             setSaving(true);
-            const { data: { user } } = await supabase.auth.getUser();
+            const { data: { user } } = await supabase!.auth.getUser();
             if (!user) return;
 
             const totals = calculateTotals();
 
             // 1. Actualizar factura principal
-            const { error: invoiceError } = await supabase
+            const { error: invoiceError } = await supabase!
                 .from('invoices')
                 .update({
                     client_id: formData.client_id,
@@ -381,7 +387,8 @@ export default function EditInvoicePage({ invoiceId, userEmail }: EditInvoicePag
     };
 
     const handleLogout = async () => {
-        await supabase.auth.signOut();
+        if (!supabase) return;
+        await supabase!.auth.signOut();
         router.push('/login');
     };
 

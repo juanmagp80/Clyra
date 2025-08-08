@@ -82,12 +82,18 @@ export default function InvoiceDetails({ invoiceId, userEmail }: InvoiceDetailsP
     // En la función fetchInvoiceDetails, cambiar la consulta:
 
     const fetchInvoiceDetails = async () => {
+        if (!supabase) {
+            console.error('Supabase client not initialized');
+            setLoading(false);
+            return;
+        }
+        
         try {
-            const { data: { user } } = await supabase.auth.getUser();
+            const { data: { user } } = await supabase!.auth.getUser();
             if (!user) return;
 
             // Obtener factura con cliente y proyecto (SIN el campo address)
-            const { data: invoiceData, error: invoiceError } = await supabase
+            const { data: invoiceData, error: invoiceError } = await supabase!
                 .from('invoices')
                 .select(`
                 *,
@@ -107,7 +113,7 @@ export default function InvoiceDetails({ invoiceId, userEmail }: InvoiceDetailsP
             setInvoice(invoiceData);
 
             // Obtener items de la factura
-            const { data: itemsData, error: itemsError } = await supabase
+            const { data: itemsData, error: itemsError } = await supabase!
                 .from('invoice_items')
                 .select('*')
                 .eq('invoice_id', invoiceId)
@@ -127,6 +133,11 @@ export default function InvoiceDetails({ invoiceId, userEmail }: InvoiceDetailsP
     };
 
     const updateInvoiceStatus = async (newStatus: string) => {
+        if (!supabase) {
+            console.error('Supabase client not initialized');
+            return;
+        }
+        
         try {
             const updateData: any = { status: newStatus };
 
@@ -134,7 +145,7 @@ export default function InvoiceDetails({ invoiceId, userEmail }: InvoiceDetailsP
                 updateData.paid_date = new Date().toISOString();
             }
 
-            const { error } = await supabase
+            const { error } = await supabase!
                 .from('invoices')
                 .update(updateData)
                 .eq('id', invoiceId);
@@ -160,7 +171,13 @@ export default function InvoiceDetails({ invoiceId, userEmail }: InvoiceDetailsP
     };
 
     const handleLogout = async () => {
-        await supabase.auth.signOut();
+        if (!supabase) {
+            console.error('Supabase client not initialized');
+            router.push('/login');
+            return;
+        }
+        
+        await supabase!.auth.signOut();
         router.push('/login');
     };
 

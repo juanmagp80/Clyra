@@ -89,12 +89,14 @@ export default function CreateInvoicePage({ userEmail }: CreateInvoicePageProps)
     // En la función fetchClientsAndProjects, cambiar la consulta de clientes:
 
     const fetchClientsAndProjects = async () => {
+        if (!supabase) return;
+        
         try {
-            const { data: { user } } = await supabase.auth.getUser();
+            const { data: { user } } = await supabase!.auth.getUser();
             if (!user) return;
 
             // Obtener clientes (SIN el campo address)
-            const { data: clientsData, error: clientsError } = await supabase
+            const { data: clientsData, error: clientsError } = await supabase!
                 .from('clients')
                 .select('id, name, company, email')
                 .eq('user_id', user.id)
@@ -107,7 +109,7 @@ export default function CreateInvoicePage({ userEmail }: CreateInvoicePageProps)
             }
 
             // Obtener proyectos
-            const { data: projectsData, error: projectsError } = await supabase
+            const { data: projectsData, error: projectsError } = await supabase!
                 .from('projects')
                 .select('id, name, client_id')
                 .eq('user_id', user.id)
@@ -173,6 +175,8 @@ export default function CreateInvoicePage({ userEmail }: CreateInvoicePageProps)
 
     // Función para crear factura
     const createInvoice = async () => {
+        if (!supabase) return;
+        
         try {
             if (!formData.client_id || !formData.title.trim() || items.some(item => !item.description.trim())) {
                 alert('Por favor completa todos los campos obligatorios');
@@ -180,14 +184,14 @@ export default function CreateInvoicePage({ userEmail }: CreateInvoicePageProps)
             }
 
             setLoading(true);
-            const { data: { user } } = await supabase.auth.getUser();
+            const { data: { user } } = await supabase!.auth.getUser();
             if (!user) return;
 
             const totals = calculateTotals();
             const invoiceNumber = `INV-${Date.now()}`;
 
             // Crear factura
-            const { data: invoiceData, error: invoiceError } = await supabase
+            const { data: invoiceData, error: invoiceError } = await supabase!
                 .from('invoices')
                 .insert([{
                     user_id: user.id,
@@ -247,7 +251,9 @@ export default function CreateInvoicePage({ userEmail }: CreateInvoicePageProps)
     };
 
     const handleLogout = async () => {
-        await supabase.auth.signOut();
+        if (!supabase) return;
+        
+        await supabase!.auth.signOut();
         router.push('/login');
     };
 

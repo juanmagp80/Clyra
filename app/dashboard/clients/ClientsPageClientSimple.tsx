@@ -36,11 +36,14 @@ export default function ClientsPageClientSimple({ userEmail }: ClientsPageClient
     });
 
     const handleLogout = async () => {
+        if (!supabase) return;
         await supabase.auth.signOut();
         router.push('/login');
     };
 
     const fetchClients = async () => {
+        if (!supabase) return;
+        
         setLoading(true);
         try {
             const { data, error } = await supabase
@@ -61,7 +64,7 @@ export default function ClientsPageClientSimple({ userEmail }: ClientsPageClient
     };
 
     const addClient = async () => {
-        if (!formData.name.trim()) return;
+        if (!formData.name.trim() || !supabase) return;
 
         try {
             const user = (await supabase.auth.getUser()).data.user;

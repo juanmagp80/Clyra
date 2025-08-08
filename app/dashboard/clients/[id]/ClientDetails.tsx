@@ -46,11 +46,21 @@ export default function ClientDetails({ client, userEmail }: { client: any; user
     const [newTask, setNewTask] = useState('');
 
     const handleLogout = async () => {
+        if (!supabase) {
+            console.error('Supabase client not available');
+            router.push('/login');
+            return;
+        }
         await supabase.auth.signOut();
         router.push('/login');
     };
 
     const fetchClientProjects = async () => {
+        if (!supabase) {
+            console.error('Supabase client not available');
+            setLoadingProjects(false);
+            return;
+        }
         try {
             setLoadingProjects(true);
             const user = (await supabase.auth.getUser()).data.user;
@@ -76,6 +86,10 @@ export default function ClientDetails({ client, userEmail }: { client: any; user
     };
 
     const fetchNotes = async () => {
+        if (!supabase) {
+            console.error('Supabase client not available');
+            return;
+        }
         const { data } = await supabase
             .from('notes')
             .select('*')
@@ -86,6 +100,10 @@ export default function ClientDetails({ client, userEmail }: { client: any; user
     };
 
     const fetchTasks = async () => {
+        if (!supabase) {
+            console.error('Supabase client not available');
+            return;
+        }
         const { data } = await supabase
             .from('tasks')
             .select('*')
@@ -97,6 +115,11 @@ export default function ClientDetails({ client, userEmail }: { client: any; user
 
     const addNote = async () => {
         if (!newNote.trim()) return;
+        
+        if (!supabase) {
+            console.error('Supabase client not available');
+            return;
+        }
 
         const user = (await supabase.auth.getUser()).data.user;
         await supabase.from('notes').insert({
@@ -110,6 +133,11 @@ export default function ClientDetails({ client, userEmail }: { client: any; user
 
     const addTask = async () => {
         if (!newTask.trim()) return;
+        
+        if (!supabase) {
+            console.error('Supabase client not available');
+            return;
+        }
 
         const user = (await supabase.auth.getUser()).data.user;
         await supabase.from('tasks').insert({
@@ -122,6 +150,10 @@ export default function ClientDetails({ client, userEmail }: { client: any; user
     };
 
     const toggleTask = async (taskId: string, isDone: boolean) => {
+        if (!supabase) {
+            console.error('Supabase client not available');
+            return;
+        }
         await supabase.from('tasks').update({ is_done: !isDone }).eq('id', taskId);
         fetchTasks();
     };
