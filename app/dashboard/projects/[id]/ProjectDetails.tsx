@@ -99,6 +99,7 @@ export default function ProjectDetails({ projectId, userEmail }: ProjectDetailsP
         try {
             setLoading(true);
 
+            if (!supabase) return;
             const user = (await supabase.auth.getUser()).data.user;
             if (!user) {
                 router.push('/login');
@@ -161,6 +162,7 @@ export default function ProjectDetails({ projectId, userEmail }: ProjectDetailsP
     // Función para obtener clientes
     const fetchClients = async () => {
         try {
+            if (!supabase) return;
             const user = (await supabase.auth.getUser()).data.user;
             if (!user) return;
 
@@ -185,6 +187,7 @@ export default function ProjectDetails({ projectId, userEmail }: ProjectDetailsP
         try {
             if (!project) return;
 
+            if (!supabase) return;
             const user = (await supabase.auth.getUser()).data.user;
             if (!user) return;
 
@@ -221,6 +224,7 @@ export default function ProjectDetails({ projectId, userEmail }: ProjectDetailsP
         try {
             if (!project || !taskFormData.title.trim()) return;
 
+            if (!supabase) return;
             const user = (await supabase.auth.getUser()).data.user;
             if (!user) return;
 
@@ -260,6 +264,7 @@ export default function ProjectDetails({ projectId, userEmail }: ProjectDetailsP
         try {
             if (!editingTask || !taskFormData.title.trim()) return;
 
+            if (!supabase) return;
             const { error } = await supabase
                 .from('tasks')
                 .update({
@@ -295,6 +300,7 @@ export default function ProjectDetails({ projectId, userEmail }: ProjectDetailsP
     // Función para eliminar tarea
     const deleteTask = async (taskId: string) => {
         try {
+            if (!supabase) return;
             const { error } = await supabase
                 .from('tasks')
                 .delete()
@@ -333,6 +339,7 @@ export default function ProjectDetails({ projectId, userEmail }: ProjectDetailsP
                     task.status === 'in_progress' ? 'completed' :
                         'pending';
 
+            if (!supabase) return;
             const { error } = await supabase
                 .from('tasks')
                 .update({ status: newStatus })
@@ -434,7 +441,7 @@ export default function ProjectDetails({ projectId, userEmail }: ProjectDetailsP
             <div className="flex h-screen bg-gray-50 text-gray-900">
                 <div className="w-64 flex-shrink-0 bg-white shadow h-full">
                     <Sidebar userEmail={currentUserEmail} onLogout={async () => {
-                        await supabase.auth.signOut();
+                        if (supabase) await supabase.auth.signOut();
                         router.push('/login');
                     }} />
                 </div>
@@ -452,7 +459,7 @@ export default function ProjectDetails({ projectId, userEmail }: ProjectDetailsP
             <div className="flex h-screen bg-gray-50 text-gray-900">
                 <div className="w-64 flex-shrink-0 bg-white shadow h-full">
                     <Sidebar userEmail={currentUserEmail} onLogout={async () => {
-                        await supabase.auth.signOut();
+                        if (supabase) await supabase.auth.signOut();
                         router.push('/login');
                     }} />
                 </div>
@@ -480,7 +487,7 @@ export default function ProjectDetails({ projectId, userEmail }: ProjectDetailsP
     return (
         <div className="flex h-screen bg-gradient-to-br from-slate-50 via-white to-slate-100">
             <Sidebar userEmail={currentUserEmail} onLogout={async () => {
-                await supabase.auth.signOut();
+                if (supabase) await supabase.auth.signOut();
                 router.push('/login');
             }} />
 
