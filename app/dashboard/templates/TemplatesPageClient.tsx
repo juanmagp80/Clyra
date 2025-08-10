@@ -79,7 +79,6 @@ export default function TemplatesPageClient({ userEmail }: TemplatesPageClientPr
     // Estados para el modal de crear proyecto
     const [showProjectModal, setShowProjectModal] = useState(false);
     const [selectedTemplate, setSelectedTemplate] = useState<ProjectTemplate | null>(null);
-    const [showUseModal, setShowUseModal] = useState(false);
     const [clients, setClients] = useState<any[]>([]);
     const [projectForm, setProjectForm] = useState({
         name: '',
@@ -245,6 +244,107 @@ export default function TemplatesPageClient({ userEmail }: TemplatesPageClientPr
             if (updateError) {
                 console.error('Error updating usage count:', updateError);
             }
+
+            // Crear tareas basadas en el template si las tiene
+            if (selectedTemplate.template_data && typeof selectedTemplate.template_data === 'object') {
+                const templateData = selectedTemplate.template_data as any;
+                
+                // Crear tareas desde las fases del template
+                if (templateData.phases && Array.isArray(templateData.phases)) {
+                    const tasksToCreate = [];
+                    
+                    for (const [phaseIndex, phase] of templateData.phases.entries()) {
+                        if (phase.tasks && Array.isArray(phase.tasks)) {
+                            for (const [taskIndex, task] of phase.tasks.entries()) {
+                                // Calcular fecha de inicio basada en la duración de fases anteriores
+                                let taskStartDate = new Date();
+                                if (projectForm.start_date) {
+                                    taskStartDate = new Date(projectForm.start_date);
+                                }
+                                
+                                // Agregar días basados en fases anteriores
+                                for (let i = 0; i < phaseIndex; i++) {
+                                    const prevPhase = templateData.phases[i];
+                                    const phaseDuration = parseInt(prevPhase.duration) || 7;
+                                    taskStartDate.setDate(taskStartDate.getDate() + phaseDuration);
+                                }
+                                
+                                // Agregar días dentro de la fase actual
+                                taskStartDate.setDate(taskStartDate.getDate() + (taskIndex * 2));
+                                
+                                tasksToCreate.push({
+                                    user_id: user.id,
+                                    project_id: newProject.id,
+                                    title: task.name || `Tarea ${taskIndex + 1} - ${phase.name}`,
+                                    description: task.description || `Tarea de la fase: ${phase.name}`,
+                                    status: 'pending',
+                                    priority: 'medium',
+                                    due_date: taskStartDate.toISOString().split('T')[0],
+                                    is_billable: true
+                                });
+                            }
+                        } else {
+                            // Si la fase no tiene tareas específicas, crear una tarea por fase
+                            let phaseStartDate = new Date();
+                            if (projectForm.start_date) {
+                                phaseStartDate = new Date(projectForm.start_date);
+                            }
+                            
+                            for (let i = 0; i < phaseIndex; i++) {
+                                const prevPhase = templateData.phases[i];
+                                const phaseDuration = parseInt(prevPhase.duration) || 7;
+                                phaseStartDate.setDate(phaseStartDate.getDate() + phaseDuration);
+                            }
+                            
+                            tasksToCreate.push({
+                                user_id: user.id,
+                                project_id: newProject.id,
+                                title: phase.name || `Fase ${phaseIndex + 1}`,
+                                description: `Completar fase: ${phase.name}`,
+                                status: 'pending',
+                                priority: 'medium',
+                                due_date: phaseStartDate.toISOString().split('T')[0],
+                                is_billable: true
+                            });
+                        }
+                    }
+                    
+                    // Insertar todas las tareas
+                    if (tasksToCreate.length > 0) {
+                        const { error: tasksError } = await supabase
+                            .from('tasks')
+                            .insert(tasksToCreate);
+                        
+                        if (tasksError) {
+                            console.error('Error creating tasks from template:', tasksError);
+                        }
+                    }
+                }
+                
+                // Crear entregables si los hay
+                if (templateData.deliverables && Array.isArray(templateData.deliverables)) {
+                    const deliverablesAsNotes = templateData.deliverables.map((deliverable: any, index: number) => ({
+                        user_id: user.id,
+                        project_id: newProject.id,
+                        title: `Entregable: ${deliverable.name || `Entregable ${index + 1}`}`,
+                        content: deliverable.description || `Entregable definido en el template: ${selectedTemplate.name}`,
+                        type: 'deliverable'
+                    }));
+                    
+                    if (deliverablesAsNotes.length > 0) {
+                        const { error: notesError } = await supabase
+                            .from('project_notes')
+                            .insert(deliverablesAsNotes);
+                        
+                        if (notesError) {
+                            console.error('Error creating deliverables from template:', notesError);
+                        }
+                    }
+                }
+            }
+
+            // Mostrar mensaje de éxito
+            alert(`¡Proyecto "${newProject.name}" creado exitosamente con ${selectedTemplate.name}!`);
 
             // Cerrar modal y redirigir
             setShowProjectModal(false);
@@ -452,8 +552,7 @@ export default function TemplatesPageClient({ userEmail }: TemplatesPageClientPr
     };
 
     const handleUseTemplate = (template: ProjectTemplate) => {
-        setSelectedTemplate(template);
-        setShowUseModal(true);
+        useTemplate(template);
     };
 
     useEffect(() => {
@@ -904,6 +1003,65 @@ export default function TemplatesPageClient({ userEmail }: TemplatesPageClientPr
                                         placeholder="Describe los objetivos del proyecto..."
                                     />
                                 </div>
+
+                                {/* Vista previa del template */}
+                                {selectedTemplate.template_data && typeof selectedTemplate.template_data === 'object' && (
+                                    <div className="bg-slate-50 rounded-lg p-4 border border-slate-200">
+                                        <h4 className="font-semibold text-slate-700 mb-3 flex items-center">
+                                            <BookTemplate className="h-4 w-4 mr-2" />
+                                            Vista previa del template
+                                        </h4>
+                                        
+                                        {(() => {
+                                            const templateData = selectedTemplate.template_data as any;
+                                            
+                                            return (
+                                                <div className="space-y-3">
+                                                    {/* Fases */}
+                                                    {templateData.phases && Array.isArray(templateData.phases) && templateData.phases.length > 0 && (
+                                                        <div>
+                                                            <h5 className="font-medium text-slate-600 mb-2">Fases del proyecto:</h5>
+                                                            <div className="space-y-2">
+                                                                {templateData.phases.map((phase: any, index: number) => (
+                                                                    <div key={index} className="flex items-center text-sm text-slate-600">
+                                                                        <span className="w-6 h-6 bg-blue-100 text-blue-600 rounded-full flex items-center justify-center text-xs font-medium mr-3">
+                                                                            {index + 1}
+                                                                        </span>
+                                                                        <span className="font-medium">{phase.name}</span>
+                                                                        {phase.duration && (
+                                                                            <span className="ml-auto text-xs text-slate-500">
+                                                                                {phase.duration} días
+                                                                            </span>
+                                                                        )}
+                                                                    </div>
+                                                                ))}
+                                                            </div>
+                                                        </div>
+                                                    )}
+                                                    
+                                                    {/* Entregables */}
+                                                    {templateData.deliverables && Array.isArray(templateData.deliverables) && templateData.deliverables.length > 0 && (
+                                                        <div>
+                                                            <h5 className="font-medium text-slate-600 mb-2">Entregables:</h5>
+                                                            <div className="space-y-1">
+                                                                {templateData.deliverables.map((deliverable: any, index: number) => (
+                                                                    <div key={index} className="flex items-center text-sm text-slate-600">
+                                                                        <span className="w-2 h-2 bg-green-400 rounded-full mr-3"></span>
+                                                                        <span>{deliverable.name || `Entregable ${index + 1}`}</span>
+                                                                    </div>
+                                                                ))}
+                                                            </div>
+                                                        </div>
+                                                    )}
+                                                    
+                                                    <div className="text-xs text-slate-500 italic">
+                                                        Se crearán automáticamente las tareas y entregables basados en este template.
+                                                    </div>
+                                                </div>
+                                            );
+                                        })()}
+                                    </div>
+                                )}
 
                                 {/* Botones */}
                                 <div className="flex justify-end space-x-4 pt-4">

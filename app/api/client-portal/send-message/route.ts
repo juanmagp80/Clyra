@@ -1,13 +1,32 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createClient } from '@supabase/supabase-js';
 
-const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL!;
-const supabaseServiceKey = process.env.SUPABASE_SERVICE_ROLE_KEY!;
+const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
+const supabaseServiceKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
 
-const supabaseService = createClient(supabaseUrl, supabaseServiceKey);
+// Verificar que las variables de entorno estén disponibles
+if (!supabaseUrl) {
+    console.error('NEXT_PUBLIC_SUPABASE_URL no está configurada');
+}
+
+if (!supabaseServiceKey) {
+    console.error('SUPABASE_SERVICE_ROLE_KEY no está configurada');
+}
+
+const supabaseService = supabaseUrl && supabaseServiceKey ? 
+    createClient(supabaseUrl, supabaseServiceKey) : null;
 
 export async function POST(request: NextRequest) {
     try {
+        // Verificar que supabaseService esté disponible
+        if (!supabaseService) {
+            console.error('Supabase service no disponible - verificar variables de entorno');
+            return NextResponse.json(
+                { error: 'Servicio no disponible' },
+                { status: 503 }
+            );
+        }
+
         const body = await request.json();
         const { token, message, project_id, attachments = [] } = body;
 
