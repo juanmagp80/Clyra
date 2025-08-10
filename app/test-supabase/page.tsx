@@ -13,6 +13,11 @@ export default function TestSupabase() {
       try {
         console.log('🧪 Testing Supabase connection...');
         
+        if (!supabase) {
+          setStatus('Error: Supabase client not available');
+          return;
+        }
+        
         // Test basic connection
         const { data, error } = await supabase.auth.getSession();
         

@@ -144,7 +144,7 @@ export interface DashboardMetrics {
 
 // ==================== CLASE PRINCIPAL ====================
 export class CalendarAI {
-  private supabase = createSupabaseClient();
+  private supabase = createSupabaseClient()!; // Usar ! para indicar que no será null en tiempo de ejecución
   private useExternalAI: boolean = false; // Flag para IA externa (ChatGPT, etc.)
 
   constructor(useExternalAI: boolean = false) {
@@ -407,6 +407,10 @@ export class CalendarAI {
     const start = periodStart || new Date(Date.now() - 7 * 24 * 60 * 60 * 1000); // 7 días atrás
     const end = periodEnd || new Date();
 
+    if (!this.checkSupabase()) {
+      return this.calculateProductivityScoreFallback(userId, start, end);
+    }
+
     const { data, error } = await this.supabase.rpc('calculate_user_productivity_score', {
       user_uuid: userId,
       period_start: start.toISOString(),
@@ -512,11 +516,11 @@ export class CalendarAI {
           insight_type: 'schedule_optimization',
           category: 'optimal_timing',
           title: 'Hemos identificado tu horario más productivo',
-          description: `Según tus datos, eres más productivo durante ${bestPattern.pattern_name}`,
-          confidence_score: bestPattern.confidence_level,
+          description: `Según tus datos, eres más productivo durante ${bestPattern.timeRange.startHour}:00-${bestPattern.timeRange.endHour}:00`,
+          confidence_score: bestPattern.confidence,
           impact_score: 9,
           actionability_score: 8,
-          recommendations: bestPattern.recommendations,
+          recommendations: ['Programa tus tareas más importantes durante este horario'],
           status: 'new'
         });
       }
@@ -1425,9 +1429,9 @@ export class CalendarAI {
         suggestions.push({
           type: 'optimal_time',
           title: 'Programa trabajo de alta concentración',
-          description: `Tu mejor momento es ${bestPattern.pattern_name}`,
-          confidence: bestPattern.confidence_level,
-          reasoning: `Basado en datos históricos, tu productividad es ${bestPattern.productivity_impact}% más alta durante este período.`
+          description: `Tu mejor momento es ${bestPattern.timeRange.startHour}:00-${bestPattern.timeRange.endHour}:00`,
+          confidence: bestPattern.confidence,
+          reasoning: `Basado en datos históricos, tu productividad es más alta durante este período.`
         });
       }
 
@@ -1503,7 +1507,7 @@ export class CalendarAI {
       });
 
       // Encontrar los mejores bloques de tiempo
-      const patterns: ProductivityPattern[] = [];
+      const patterns: SimpleProductivityPattern[] = [];
       
       // Analizar bloques de 2 horas
       for (let hour = 6; hour <= 20; hour += 2) {
@@ -1623,24 +1627,36 @@ export class CalendarAI {
         if (avgProductivity < 3) {
           insights.push({
             id: 'productivity_low',
+            insight_type: 'productivity',
             type: 'productivity',
+            category: 'performance',
             title: 'Productividad Bajo el Promedio',
             description: `Tu productividad promedio esta semana es ${avgProductivity.toFixed(1)}/5. Considera reorganizar tu horario.`,
-            confidence: 0.85,
-            priority: 4,
-            actionRecommended: 'Revisar patrones de tiempo y considerar más descansos'
+            confidence_score: 0.85,
+            impact_score: 8,
+            actionability_score: 7,
+            recommendations: ['Revisar patrones de tiempo y considerar más descansos'],
+            suggested_actions: [],
+            status: 'new' as const,
+            created_at: new Date().toISOString()
           });
         }
 
         if (totalHours > 50) {
           insights.push({
             id: 'overwork_warning',
+            insight_type: 'productivity',
             type: 'productivity',
+            category: 'wellness',
             title: 'Riesgo de Sobretrabajo',
             description: `Has trabajado ${totalHours.toFixed(1)} horas esta semana. Es importante mantener un equilibrio.`,
-            confidence: 0.95,
-            priority: 5,
-            actionRecommended: 'Programar tiempo de descanso y evaluar carga de trabajo'
+            confidence_score: 0.95,
+            impact_score: 9,
+            actionability_score: 8,
+            recommendations: ['Programar tiempo de descanso y evaluar carga de trabajo'],
+            suggested_actions: [],
+            status: 'new' as const,
+            created_at: new Date().toISOString()
           });
         }
       }
@@ -1663,12 +1679,18 @@ export class CalendarAI {
           
           insights.push({
             id: 'revenue_forecast',
+            insight_type: 'revenue',
             type: 'revenue',
+            category: 'finance',
             title: 'Proyección de Ingresos',
             description: `Basado en tu actividad, podrías generar €${projectedMonthly.toFixed(0)} este mes.`,
-            confidence: 0.75,
-            priority: 2,
-            data: { projectedMonthly, currentRevenue: totalRevenue }
+            confidence_score: 0.75,
+            impact_score: 7,
+            actionability_score: 6,
+            recommendations: [`Proyección mensual estimada: €${projectedMonthly.toFixed(0)}`],
+            suggested_actions: [],
+            status: 'new' as const,
+            created_at: new Date().toISOString()
           });
         }
       }
@@ -1716,12 +1738,18 @@ export class CalendarAI {
           if (daysSinceContact > 10) {
             insights.push({
               id: `client_followup_${client.name}`,
+              insight_type: 'client_risk',
               type: 'client_risk',
+              category: 'relationships',
               title: 'Cliente Requiere Seguimiento',
               description: `No has tenido contacto con ${client.name} en ${Math.floor(daysSinceContact)} días.`,
-              confidence: 0.9,
-              priority: 3,
-              actionRecommended: 'Programar llamada de seguimiento o enviar email'
+              confidence_score: 0.9,
+              impact_score: 8,
+              actionability_score: 9,
+              recommendations: ['Programar llamada de seguimiento o enviar email'],
+              suggested_actions: [],
+              status: 'new' as const,
+              created_at: new Date().toISOString()
             });
           }
         });

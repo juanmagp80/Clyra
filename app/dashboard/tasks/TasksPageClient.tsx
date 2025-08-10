@@ -71,11 +71,13 @@ export default function TasksPageClient({ userEmail }: TasksPageClientProps) {
     });
 
     const handleLogout = async () => {
+        if (!supabase) return;
         await supabase.auth.signOut();
         router.push('/login');
     };
 
     const fetchTasks = async () => {
+        if (!supabase) return;
         setLoading(true);
         try {
             const { data, error } = await supabase
@@ -103,6 +105,7 @@ export default function TasksPageClient({ userEmail }: TasksPageClientProps) {
     };
 
     const fetchProjects = async () => {
+        if (!supabase) return;
         try {
             const { data, error } = await supabase
                 .from('projects')
@@ -120,6 +123,7 @@ export default function TasksPageClient({ userEmail }: TasksPageClientProps) {
 
     const addTask = async () => {
         if (!formData.title.trim()) return;
+        if (!supabase) return;
 
         try {
             const user = (await supabase.auth.getUser()).data.user;
@@ -154,6 +158,7 @@ export default function TasksPageClient({ userEmail }: TasksPageClientProps) {
     };
 
     const updateTaskStatus = async (taskId: string, newStatus: Task['status']) => {
+        if (!supabase) return;
         try {
             const { error } = await supabase
                 .from('tasks')
@@ -170,6 +175,7 @@ export default function TasksPageClient({ userEmail }: TasksPageClientProps) {
 
     const deleteTask = async (taskId: string) => {
         if (!confirm('¿Estás seguro de que quieres eliminar esta tarea?')) return;
+        if (!supabase) return;
 
         try {
             const { error } = await supabase

@@ -30,7 +30,7 @@ import {
     BarChart3,
     Timer
 } from 'lucide-react';
-import { format, addDays, isToday, isPast, isFuture } from 'date-fns';
+import { format, addDays, isToday, isPast } from 'date-fns';
 import { es } from 'date-fns/locale';
 
 // Datos demo importados
@@ -195,13 +195,29 @@ export default function TasksPageClientDemo() {
             // Cargar datos demo
             const processedTasks = demoTasks.map(task => ({
                 ...task,
-                clients: task.client_id ? demoClients.find(c => c.id === task.client_id) : undefined,
-                projects: task.project_id ? demoProjects.find(p => p.id === task.project_id) : undefined
-            }));
+                updated_at: task.created_at, // Agregar updated_at usando created_at como fallback
+                status: task.status as 'pending' | 'in_progress' | 'completed' | 'cancelled',
+                priority: task.priority as 'low' | 'medium' | 'high' | 'urgent',
+                clients: task.client_id ? {
+                    name: demoClients.find(c => c.id === task.client_id)?.name || '',
+                    company: demoClients.find(c => c.id === task.client_id)?.company
+                } : undefined,
+                projects: task.project_id ? {
+                    name: demoProjects.find(p => p.id === task.project_id)?.title || '',
+                    description: demoProjects.find(p => p.id === task.project_id)?.description
+                } : undefined
+            })) as ExtendedTask[];
 
             setTasks(processedTasks);
             setClients(demoClients);
-            setProjects(demoProjects);
+            // Convertir demoProjects para que coincida con la interfaz Project
+            const convertedProjects = demoProjects.map(project => ({
+                id: project.id,
+                name: project.title, // title -> name
+                description: project.description,
+                client_id: project.client_id
+            }));
+            setProjects(convertedProjects);
             
             // Verificar si hay tareas en progreso
             const taskInProgress = processedTasks.find(task => task.status === 'in_progress');

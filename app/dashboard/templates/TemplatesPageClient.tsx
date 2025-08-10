@@ -337,7 +337,7 @@ export default function TemplatesPageClient({ userEmail }: TemplatesPageClientPr
             }
 
             // Normalizar phases y deliverables según el modelo original (array o número)
-            const templateDataToSave = { ...templateForm.template_data };
+            const templateDataToSave = { ...templateForm.template_data } as any;
             
             // Convertir números a arrays si es necesario
             if (typeof templateDataToSave.phases === 'number') {

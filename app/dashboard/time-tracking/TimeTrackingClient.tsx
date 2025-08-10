@@ -75,12 +75,14 @@ export default function TimeTrackingClient({ userEmail }: TimeTrackingClientProp
     });
 
     const handleLogout = async () => {
+        if (!supabase) return;
         await supabase.auth.signOut();
         router.push('/login');
     };
 
     // Cargar proyectos
     const fetchProjects = async () => {
+        if (!supabase) return;
         try {
             const user = (await supabase.auth.getUser()).data.user;
             if (!user) return;
@@ -108,6 +110,7 @@ export default function TimeTrackingClient({ userEmail }: TimeTrackingClientProp
 
     // Cargar entradas de tiempo
     const fetchTimeEntries = async () => {
+        if (!supabase) return;
         try {
             setLoading(true);
             const user = (await supabase.auth.getUser()).data.user;
@@ -138,6 +141,7 @@ export default function TimeTrackingClient({ userEmail }: TimeTrackingClientProp
 
     // Iniciar timer
     const startTimer = async () => {
+        if (!supabase) return;
         if (!timerFormData.description.trim()) {
             alert('Por favor añade una descripción');
             return;
@@ -177,6 +181,7 @@ export default function TimeTrackingClient({ userEmail }: TimeTrackingClientProp
 
     // Detener timer
     const stopTimer = async () => {
+        if (!supabase) return;
         if (!activeEntry || !timerStartTime) return;
 
         try {

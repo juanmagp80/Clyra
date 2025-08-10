@@ -119,13 +119,13 @@ export class AIInsightsEngine {
       if (!topClient) return null
 
       const [clientName, revenue] = topClient
-      const totalRevenue = Object.values(clientRevenue).reduce((sum: number, rev: number) => sum + rev, 0)
-      const percentage = Math.round((revenue / totalRevenue) * 100)
+      const totalRevenue = Object.values(clientRevenue).reduce((sum: number, rev: unknown) => sum + (rev as number), 0)
+      const percentage = Math.round(((revenue as number) / totalRevenue) * 100)
 
       return {
         id: 'top-client',
         title: 'Cliente Top',
-        value: `€${revenue.toLocaleString()}`,
+        value: `€${(revenue as number).toLocaleString()}`,
         description: `${clientName} representa el ${percentage}% de ingresos este mes`,
         trend: 'up',
         category: 'revenue',
@@ -167,7 +167,7 @@ export class AIInsightsEngine {
 
       const [projectName, minutes] = topProject
       const hours = Math.round((minutes as number) / 60 * 10) / 10
-      const totalMinutes = Object.values(projectTime).reduce((sum: number, min: number) => sum + min, 0)
+      const totalMinutes = Object.values(projectTime).reduce((sum: number, min: unknown) => sum + (min as number), 0)
       const percentage = Math.round(((minutes as number) / totalMinutes) * 100)
 
       return {
@@ -300,7 +300,7 @@ export class AIInsightsEngine {
 
       const [dayName, minutes] = mostProductiveDay
       const hours = Math.round((minutes as number) / 60 * 10) / 10
-      const totalMinutes = Object.values(dayPattern).reduce((sum: number, min: number) => sum + min, 0)
+      const totalMinutes = Object.values(dayPattern).reduce((sum: number, min: unknown) => sum + (min as number), 0)
       const percentage = Math.round(((minutes as number) / totalMinutes) * 100)
 
       return {
