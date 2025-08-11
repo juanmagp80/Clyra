@@ -1,32 +1,27 @@
 'use client';
 
-import React, { useEffect, useState } from 'react';
-import { useRouter } from 'next/navigation';
-import { Button } from "@/components/ui/Button";
 import Sidebar from '@/components/Sidebar';
-import { 
-    Plus, 
-    Search, 
-    Filter, 
-    Clock, 
-    CheckCircle, 
-    Timer,
-    Pause,
+import { Button } from "@/components/ui/Button";
+import { createClientComponentClient } from '@supabase/auth-helpers-nextjs';
+import {
     Archive,
-    Edit3,
-    Edit,
-    Trash2,
-    Copy,
-    Play,
-    Square,
-    MoreVertical,
     Calendar,
-    User,
+    CheckCircle,
+    Clock,
+    Edit3,
+    Filter,
+    MoreVertical,
+    Play,
+    Plus,
+    Search,
+    Square,
     Tag,
-    AlertTriangle,
-    Activity
+    Timer,
+    Trash2,
+    User
 } from 'lucide-react';
-import { createClient } from '@supabase/supabase-js';
+import { useRouter } from 'next/navigation';
+import { useEffect, useState } from 'react';
 
 // Tipos básicos
 type TaskStatus = 'pending' | 'in_progress' | 'paused' | 'completed' | 'archived';
@@ -59,10 +54,7 @@ interface TasksPageClientProps {
 
 export default function TasksPageClient({ userEmail }: TasksPageClientProps) {
     const router = useRouter();
-    const supabase = createClient(
-        'https://joyhaxtpmrmndmifsihn.supabase.co',
-        'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImpveWhheHRwbXJtbmRtaWZzaWhuIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTM5ODA5NzUsImV4cCI6MjA2OTU1Njk3NX0.77Si27sIxzCtJqmw3Z81dJDejKcgaX9pm8eZMldPr4I'
-    );
+    const supabase = createClientComponentClient();
 
     // Estados básicos
     const [tasks, setTasks] = useState<Task[]>([]);
@@ -117,62 +109,20 @@ export default function TasksPageClient({ userEmail }: TasksPageClientProps) {
         if (!supabase) return;
         setLoading(true);
         try {
-            console.log('🚀 Cargando TODAS las tareas (bypass completo)...');
-            
-            // BYPASS TOTAL - Usar cliente admin para obtener todos los datos
-            const adminSupabase = createClient(
-                process.env.NEXT_PUBLIC_SUPABASE_URL!,
-                process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
-            );
-            
-            // Intentar con múltiples estrategias
-            let data = null;
-            let error = null;
-            
-            // Estrategia 1: Consulta normal sin filtros
-            const result1 = await adminSupabase
+            const { data, error } = await supabase
                 .from('tasks')
                 .select('*')
                 .order('created_at', { ascending: false });
-            
-            if (!result1.error) {
-                data = result1.data;
-                console.log('✅ Estrategia 1 funcionó:', data?.length || 0);
-            } else {
-                console.log('⚠️ Estrategia 1 falló:', result1.error.message);
-                
-                // Estrategia 2: Intentar con un usuario específico conocido
-                const result2 = await adminSupabase
-                    .from('tasks')
-                    .select('*')
-                    .eq('user_id', 'e7ed7c8d-229a-42d1-8a44-37bcc64c440c')
-                    .order('created_at', { ascending: false });
-                
-                if (!result2.error) {
-                    data = result2.data;
-                    console.log('✅ Estrategia 2 funcionó:', data?.length || 0);
-                } else {
-                    console.log('⚠️ Estrategia 2 falló:', result2.error.message);
-                    error = result2.error;
-                }
-            }
 
             if (error) {
-                console.error('❌ Error fetching tasks:', error);
+                console.error('Error fetching tasks:', error);
                 setTasks([]);
             } else {
                 console.log('✅ Tareas cargadas:', data?.length || 0);
-                if (data && data.length > 0) {
-                    console.log('📋 Primeras 3 tareas:', data.slice(0, 3).map(t => ({
-                        title: t.title,
-                        user_id: t.user_id?.slice(0, 8) + '...',
-                        status: t.status
-                    })));
-                }
                 setTasks((data || []) as Task[]);
             }
         } catch (error) {
-            console.error('💥 Error crítico:', error);
+            console.error('Error crítico:', error);
             setTasks([]);
         } finally {
             setLoading(false);
@@ -182,39 +132,38 @@ export default function TasksPageClient({ userEmail }: TasksPageClientProps) {
     const fetchProjects = async () => {
         if (!supabase) return;
         try {
-            console.log('🚀 Cargando TODOS los proyectos (sin filtro de usuario)...');
-            
-            // BYPASS TOTAL - Usar cliente admin para obtener todos los datos
-            const adminSupabase = createClient(
-                process.env.NEXT_PUBLIC_SUPABASE_URL!,
-                process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
-            );
-            
-            // Estrategia 2: Intentar con un usuario específico conocido
-            const { data, error } = await adminSupabase
-                .from('projects')
-                .select('*')
-                .eq('user_id', 'e7ed7c8d-229a-42d1-8a44-37bcc64c440c')
-                .order('name', { ascending: true });
-
-            if (error) {
-                console.error('❌ Error fetching projects:', error);
+            let uid = userId;
+            if (!uid) {
+                const { data: authData } = await supabase.auth.getUser();
+                uid = authData.user?.id || null;
+                setUserId(uid);
+            }
+            if (!uid) {
                 setProjects([]);
+                return;
+            }
+
+            const { data, error } = await supabase
+                .from('projects')
+                .select('id, name, status')
+                .eq('user_id', uid)
+                .order('name');
+
+            if (!error && data) {
+                const activeProjects = data.filter(project => !project.status || project.status === 'active');
+                setProjects(activeProjects as Project[]);
+                console.log('✅ Proyectos cargados:', activeProjects.length);
             } else {
-                console.log('✅ Proyectos cargados:', data?.length || 0);
-                if (data && data.length > 0) {
-                    console.log('� Primeros 3 proyectos:', data.slice(0, 3).map(p => ({
-                        name: p.name,
-                        user_id: p.user_id
-                    })));
-                }
-                setProjects((data || []) as Project[]);
+                console.error('Error fetching projects:', error);
+                setProjects([]);
             }
         } catch (error) {
-            console.error('💥 Error crítico:', error);
+            console.error('Error crítico proyectos:', error);
             setProjects([]);
         }
-    };    const createTask = async () => {
+    };
+
+    const createTask = async () => {
         if (!newTask.title.trim()) {
             alert('⚠️ El título de la tarea es obligatorio');
             return;
@@ -226,21 +175,14 @@ export default function TasksPageClient({ userEmail }: TasksPageClientProps) {
         if (!supabase) return;
 
         try {
-            // Usar el usuario consolidado
-            const CONSOLIDATED_USER_ID = 'e7ed7c8d-229a-42d1-8a44-37bcc64c440c';
-            
             const taskData = {
                 title: newTask.title,
                 description: newTask.description || null,
                 status: newTask.status,
                 priority: newTask.priority,
                 project_id: newTask.project_id,
-                user_id: CONSOLIDATED_USER_ID, // ✅ Agregamos user_id
-                due_date: newTask.due_date || null,
-                created_at: new Date().toISOString()
+                due_date: newTask.due_date || null
             };
-
-            console.log('📤 Enviando datos de tarea:', taskData);
 
             const { data, error } = await supabase
                 .from('tasks')
@@ -259,7 +201,7 @@ export default function TasksPageClient({ userEmail }: TasksPageClientProps) {
             setShowNewTaskModal(false);
             resetNewTaskForm();
             await fetchTasks();
-            
+
         } catch (error) {
             console.error('Error:', error);
             alert('Error crítico al crear la tarea');
@@ -271,7 +213,7 @@ export default function TasksPageClient({ userEmail }: TasksPageClientProps) {
         try {
             const { error } = await supabase
                 .from('tasks')
-                .update({ 
+                .update({
                     status: newStatus,
                     ...(newStatus === 'completed' ? { completed_at: new Date().toISOString() } : {})
                 })
@@ -364,7 +306,7 @@ export default function TasksPageClient({ userEmail }: TasksPageClientProps) {
     // Filtros
     const filteredTasks = tasks.filter(task => {
         const matchesSearch = task.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                            task.description?.toLowerCase().includes(searchTerm.toLowerCase());
+            task.description?.toLowerCase().includes(searchTerm.toLowerCase());
         const matchesStatus = statusFilter === 'all' || task.status === statusFilter;
         const matchesPriority = priorityFilter === 'all' || task.priority === priorityFilter;
         const matchesProject = projectFilter === 'all' || task.project_id === projectFilter;
@@ -381,11 +323,6 @@ export default function TasksPageClient({ userEmail }: TasksPageClientProps) {
     };
 
     useEffect(() => {
-        // Usar el usuario consolidado directamente
-        const CONSOLIDATED_USER_ID = 'e7ed7c8d-229a-42d1-8a44-37bcc64c440c';
-        setUserId(CONSOLIDATED_USER_ID);
-        console.log('✅ Usuario consolidado usado:', CONSOLIDATED_USER_ID);
-        console.log('🚀 Cargando datos...');
         fetchTasks();
         fetchProjects();
     }, []);
@@ -415,8 +352,8 @@ export default function TasksPageClient({ userEmail }: TasksPageClientProps) {
         <div className="min-h-screen bg-gradient-to-br from-slate-50 via-blue-50 to-indigo-100">
             <div className="flex min-h-screen">
                 {/* Sidebar Premium */}
-                <Sidebar 
-                    userEmail={userEmail} 
+                <Sidebar
+                    userEmail={userEmail}
                     onLogout={handleLogout}
                 />
 
@@ -431,7 +368,7 @@ export default function TasksPageClient({ userEmail }: TasksPageClientProps) {
                                 </h1>
                                 <p className="text-slate-600 mt-2">Organiza y controla tus tareas de forma eficiente</p>
                             </div>
-                            <Button 
+                            <Button
                                 onClick={() => setShowNewTaskModal(true)}
                                 className="bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 text-white shadow-lg hover:shadow-xl transition-all duration-300"
                             >
@@ -552,13 +489,13 @@ export default function TasksPageClient({ userEmail }: TasksPageClientProps) {
                                 <Tag className="h-16 w-16 text-slate-400 mx-auto mb-4" />
                                 <h3 className="text-lg font-semibold text-slate-700 mb-2">No hay tareas</h3>
                                 <p className="text-slate-500 mb-6">
-                                    {tasks.length === 0 
+                                    {tasks.length === 0
                                         ? "Aún no has creado ninguna tarea. ¡Comienza creando tu primera tarea!"
                                         : "No hay tareas que coincidan con los filtros actuales."
                                     }
                                 </p>
                                 {tasks.length === 0 && (
-                                    <Button 
+                                    <Button
                                         onClick={() => setShowNewTaskModal(true)}
                                         className="bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 text-white"
                                     >
@@ -574,29 +511,27 @@ export default function TasksPageClient({ userEmail }: TasksPageClientProps) {
                                         <div className="flex-1">
                                             <div className="flex items-center gap-3 mb-2">
                                                 <h3 className="text-lg font-semibold text-slate-900">{task.title}</h3>
-                                                <span className={`px-2 py-1 rounded-full text-xs font-medium ${
-                                                    task.status === 'completed' ? 'bg-green-100 text-green-800' :
-                                                    task.status === 'in_progress' ? 'bg-blue-100 text-blue-800' :
-                                                    task.status === 'paused' ? 'bg-yellow-100 text-yellow-800' :
-                                                    task.status === 'archived' ? 'bg-gray-100 text-gray-800' :
-                                                    'bg-slate-100 text-slate-800'
-                                                }`}>
+                                                <span className={`px-2 py-1 rounded-full text-xs font-medium ${task.status === 'completed' ? 'bg-green-100 text-green-800' :
+                                                        task.status === 'in_progress' ? 'bg-blue-100 text-blue-800' :
+                                                            task.status === 'paused' ? 'bg-yellow-100 text-yellow-800' :
+                                                                task.status === 'archived' ? 'bg-gray-100 text-gray-800' :
+                                                                    'bg-slate-100 text-slate-800'
+                                                    }`}>
                                                     {task.status === 'pending' ? 'Pendiente' :
-                                                     task.status === 'in_progress' ? 'En progreso' :
-                                                     task.status === 'paused' ? 'Pausada' :
-                                                     task.status === 'completed' ? 'Completada' :
-                                                     task.status === 'archived' ? 'Archivada' : task.status}
+                                                        task.status === 'in_progress' ? 'En progreso' :
+                                                            task.status === 'paused' ? 'Pausada' :
+                                                                task.status === 'completed' ? 'Completada' :
+                                                                    task.status === 'archived' ? 'Archivada' : task.status}
                                                 </span>
-                                                <span className={`px-2 py-1 rounded-full text-xs font-medium ${
-                                                    task.priority === 'urgent' ? 'bg-red-100 text-red-800' :
-                                                    task.priority === 'high' ? 'bg-orange-100 text-orange-800' :
-                                                    task.priority === 'medium' ? 'bg-blue-100 text-blue-800' :
-                                                    'bg-gray-100 text-gray-800'
-                                                }`}>
+                                                <span className={`px-2 py-1 rounded-full text-xs font-medium ${task.priority === 'urgent' ? 'bg-red-100 text-red-800' :
+                                                        task.priority === 'high' ? 'bg-orange-100 text-orange-800' :
+                                                            task.priority === 'medium' ? 'bg-blue-100 text-blue-800' :
+                                                                'bg-gray-100 text-gray-800'
+                                                    }`}>
                                                     {task.priority === 'urgent' ? '🔥 Urgente' :
-                                                     task.priority === 'high' ? '⚠️ Alta' :
-                                                     task.priority === 'medium' ? '📋 Media' :
-                                                     '📝 Baja'}
+                                                        task.priority === 'high' ? '⚠️ Alta' :
+                                                            task.priority === 'medium' ? '📋 Media' :
+                                                                '📝 Baja'}
                                                 </span>
                                             </div>
                                             {task.description && (
@@ -628,8 +563,8 @@ export default function TasksPageClient({ userEmail }: TasksPageClientProps) {
                                                     <span className="text-sm font-mono text-blue-600 bg-blue-50 px-2 py-1 rounded">
                                                         {formatTime(elapsedTime)}
                                                     </span>
-                                                    <Button 
-                                                        size="sm" 
+                                                    <Button
+                                                        size="sm"
                                                         variant="outline"
                                                         onClick={pauseTimer}
                                                         className="text-orange-600 border-orange-300 hover:bg-orange-50"
@@ -638,8 +573,8 @@ export default function TasksPageClient({ userEmail }: TasksPageClientProps) {
                                                     </Button>
                                                 </div>
                                             ) : (
-                                                <Button 
-                                                    size="sm" 
+                                                <Button
+                                                    size="sm"
                                                     variant="outline"
                                                     onClick={() => startTimer(task.id)}
                                                     className="text-green-600 border-green-300 hover:bg-green-50"
@@ -655,7 +590,7 @@ export default function TasksPageClient({ userEmail }: TasksPageClientProps) {
                                                     <MoreVertical className="h-4 w-4" />
                                                 </Button>
                                                 <div className="absolute right-0 top-8 bg-white rounded-lg shadow-lg border py-1 min-w-[150px] opacity-0 group-hover:opacity-100 transition-opacity z-10">
-                                                    <button 
+                                                    <button
                                                         onClick={() => {
                                                             setEditingTask(task);
                                                             setShowEditTaskModal(true);
@@ -665,7 +600,7 @@ export default function TasksPageClient({ userEmail }: TasksPageClientProps) {
                                                         <Edit3 className="h-4 w-4" />
                                                         Editar
                                                     </button>
-                                                    <button 
+                                                    <button
                                                         onClick={() => {
                                                             setSelectedTask(task);
                                                             setShowTaskDetails(true);
@@ -676,7 +611,7 @@ export default function TasksPageClient({ userEmail }: TasksPageClientProps) {
                                                         Ver detalles
                                                     </button>
                                                     {task.status !== 'completed' && (
-                                                        <button 
+                                                        <button
                                                             onClick={() => updateTaskStatus(task.id, 'completed')}
                                                             className="w-full text-left px-3 py-2 text-sm text-green-600 hover:bg-green-50 flex items-center gap-2"
                                                         >
@@ -685,7 +620,7 @@ export default function TasksPageClient({ userEmail }: TasksPageClientProps) {
                                                         </button>
                                                     )}
                                                     {task.status !== 'archived' && (
-                                                        <button 
+                                                        <button
                                                             onClick={() => updateTaskStatus(task.id, 'archived')}
                                                             className="w-full text-left px-3 py-2 text-sm text-slate-600 hover:bg-slate-50 flex items-center gap-2"
                                                         >
@@ -694,7 +629,7 @@ export default function TasksPageClient({ userEmail }: TasksPageClientProps) {
                                                         </button>
                                                     )}
                                                     <hr className="my-1" />
-                                                    <button 
+                                                    <button
                                                         onClick={() => deleteTask(task.id)}
                                                         className="w-full text-left px-3 py-2 text-sm text-red-600 hover:bg-red-50 flex items-center gap-2"
                                                     >
@@ -712,181 +647,100 @@ export default function TasksPageClient({ userEmail }: TasksPageClientProps) {
                 </div>
             </div>
 
-            {/* Modal Nueva Tarea - Premium Design */}
+            {/* Modal Nueva Tarea */}
             {showNewTaskModal && (
-                <div className="fixed inset-0 bg-black/40 backdrop-blur-md flex items-center justify-center z-50 p-4">
-                    <div className="bg-white/95 backdrop-blur-lg rounded-2xl p-8 w-full max-w-2xl mx-4 shadow-2xl border border-white/20 relative overflow-hidden">
-                        {/* Background gradient */}
-                        <div className="absolute inset-0 bg-gradient-to-br from-blue-50/50 via-indigo-50/30 to-purple-50/50 rounded-2xl"></div>
-                        
-                        {/* Content */}
-                        <div className="relative z-10">
-                            <div className="flex items-center justify-between mb-8">
-                                <div className="flex items-center gap-3">
-                                    <div className="w-10 h-10 bg-gradient-to-r from-blue-600 to-indigo-600 rounded-xl flex items-center justify-center shadow-lg">
-                                        <Plus className="w-5 h-5 text-white" />
-                                    </div>
-                                    <div>
-                                        <h2 className="text-2xl font-bold bg-gradient-to-r from-slate-800 to-slate-600 bg-clip-text text-transparent">
-                                            Nueva Tarea
-                                        </h2>
-                                        <p className="text-slate-600 text-sm">Crea una nueva tarea para tu proyecto</p>
-                                    </div>
-                                </div>
-                                <button
-                                    onClick={() => {
-                                        setShowNewTaskModal(false);
-                                        resetNewTaskForm();
-                                    }}
-                                    className="w-8 h-8 rounded-full bg-slate-100/80 hover:bg-slate-200/80 flex items-center justify-center transition-all duration-200"
-                                >
-                                    ×
-                                </button>
+                <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-50">
+                    <div className="bg-white rounded-xl p-6 w-full max-w-md mx-4 shadow-2xl">
+                        <h2 className="text-xl font-bold text-slate-800 mb-4">Nueva Tarea</h2>
+                        <div className="space-y-4">
+                            <div>
+                                <label className="block text-sm font-medium text-slate-700 mb-1">Título *</label>
+                                <input
+                                    type="text"
+                                    className="w-full px-3 py-2 border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                                    value={newTask.title}
+                                    onChange={(e) => setNewTask({ ...newTask, title: e.target.value })}
+                                    placeholder="Escribe el título de la tarea..."
+                                />
                             </div>
-
-                            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                                {/* Título */}
-                                <div className="md:col-span-2">
-                                    <label className="block text-sm font-semibold text-slate-700 mb-2 flex items-center gap-2">
-                                        <Tag className="w-4 h-4" />
-                                        Título *
-                                    </label>
-                                    <input
-                                        type="text"
-                                        className="w-full px-4 py-3 bg-white/70 backdrop-blur-sm border border-slate-200/60 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500/50 focus:border-blue-300 transition-all duration-200 text-slate-800 placeholder:text-slate-400"
-                                        value={newTask.title}
-                                        onChange={(e) => setNewTask({ ...newTask, title: e.target.value })}
-                                        placeholder="Ej: Implementar autenticación de usuarios"
-                                    />
-                                </div>
-
-                                {/* Descripción */}
-                                <div className="md:col-span-2">
-                                    <label className="block text-sm font-semibold text-slate-700 mb-2 flex items-center gap-2">
-                                        <Edit className="w-4 h-4" />
-                                        Descripción
-                                    </label>
-                                    <textarea
-                                        className="w-full px-4 py-3 bg-white/70 backdrop-blur-sm border border-slate-200/60 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500/50 focus:border-blue-300 transition-all duration-200 text-slate-800 placeholder:text-slate-400 h-24 resize-none"
-                                        value={newTask.description}
-                                        onChange={(e) => setNewTask({ ...newTask, description: e.target.value })}
-                                        placeholder="Describe los detalles de la tarea, objetivos y requisitos..."
-                                    />
-                                </div>
-
-                                {/* Prioridad */}
+                            <div>
+                                <label className="block text-sm font-medium text-slate-700 mb-1">Descripción</label>
+                                <textarea
+                                    className="w-full px-3 py-2 border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 h-20 resize-none"
+                                    value={newTask.description}
+                                    onChange={(e) => setNewTask({ ...newTask, description: e.target.value })}
+                                    placeholder="Describe la tarea..."
+                                />
+                            </div>
+                            <div className="grid grid-cols-2 gap-4">
                                 <div>
-                                    <label className="block text-sm font-semibold text-slate-700 mb-2 flex items-center gap-2">
-                                        <AlertTriangle className="w-4 h-4" />
-                                        Prioridad
-                                    </label>
-                                    <div className="relative">
-                                        <select
-                                            className="w-full px-4 py-3 bg-white/70 backdrop-blur-sm border border-slate-200/60 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500/50 focus:border-blue-300 transition-all duration-200 text-slate-800 appearance-none cursor-pointer"
-                                            value={newTask.priority}
-                                            onChange={(e) => setNewTask({ ...newTask, priority: e.target.value as TaskPriority })}
-                                        >
-                                            <option value="low">🟢 Baja</option>
-                                            <option value="medium">🟡 Media</option>
-                                            <option value="high">🟠 Alta</option>
-                                            <option value="urgent">🔴 Urgente</option>
-                                        </select>
-                                        <div className="absolute right-3 top-1/2 transform -translate-y-1/2 pointer-events-none">
-                                            <svg className="w-5 h-5 text-slate-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
-                                            </svg>
-                                        </div>
-                                    </div>
+                                    <label className="block text-sm font-medium text-slate-700 mb-1">Prioridad</label>
+                                    <select
+                                        className="w-full px-3 py-2 border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                                        value={newTask.priority}
+                                        onChange={(e) => setNewTask({ ...newTask, priority: e.target.value as TaskPriority })}
+                                    >
+                                        <option value="low">Baja</option>
+                                        <option value="medium">Media</option>
+                                        <option value="high">Alta</option>
+                                        <option value="urgent">Urgente</option>
+                                    </select>
                                 </div>
-
-                                {/* Estado */}
                                 <div>
-                                    <label className="block text-sm font-semibold text-slate-700 mb-2 flex items-center gap-2">
-                                        <Activity className="w-4 h-4" />
-                                        Estado
-                                    </label>
-                                    <div className="relative">
-                                        <select
-                                            className="w-full px-4 py-3 bg-white/70 backdrop-blur-sm border border-slate-200/60 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500/50 focus:border-blue-300 transition-all duration-200 text-slate-800 appearance-none cursor-pointer"
-                                            value={newTask.status}
-                                            onChange={(e) => setNewTask({ ...newTask, status: e.target.value as TaskStatus })}
-                                        >
-                                            <option value="pending">⏳ Pendiente</option>
-                                            <option value="in_progress">🚀 En progreso</option>
-                                            <option value="paused">⏸️ Pausada</option>
-                                            <option value="completed">✅ Completada</option>
-                                        </select>
-                                        <div className="absolute right-3 top-1/2 transform -translate-y-1/2 pointer-events-none">
-                                            <svg className="w-5 h-5 text-slate-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
-                                            </svg>
-                                        </div>
-                                    </div>
-                                </div>
-
-                                {/* Proyecto */}
-                                <div>
-                                    <label className="block text-sm font-semibold text-slate-700 mb-2 flex items-center gap-2">
-                                        <User className="w-4 h-4" />
-                                        Proyecto *
-                                    </label>
-                                    <div className="relative">
-                                        <select
-                                            className="w-full px-4 py-3 bg-white/70 backdrop-blur-sm border border-slate-200/60 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500/50 focus:border-blue-300 transition-all duration-200 text-slate-800 appearance-none cursor-pointer"
-                                            value={newTask.project_id}
-                                            onChange={(e) => setNewTask({ ...newTask, project_id: e.target.value })}
-                                        >
-                                            <option value="">📁 Selecciona un proyecto...</option>
-                                            {projects.map(project => (
-                                                <option key={project.id} value={project.id}>
-                                                    🎯 {project.name}
-                                                </option>
-                                            ))}
-                                        </select>
-                                        <div className="absolute right-3 top-1/2 transform -translate-y-1/2 pointer-events-none">
-                                            <svg className="w-5 h-5 text-slate-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
-                                            </svg>
-                                        </div>
-                                    </div>
-                                </div>
-
-                                {/* Fecha límite */}
-                                <div>
-                                    <label className="block text-sm font-semibold text-slate-700 mb-2 flex items-center gap-2">
-                                        <Calendar className="w-4 h-4" />
-                                        Fecha límite
-                                    </label>
-                                    <input
-                                        type="date"
-                                        className="w-full px-4 py-3 bg-white/70 backdrop-blur-sm border border-slate-200/60 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500/50 focus:border-blue-300 transition-all duration-200 text-slate-800"
-                                        value={newTask.due_date}
-                                        onChange={(e) => setNewTask({ ...newTask, due_date: e.target.value })}
-                                        min={new Date().toISOString().split('T')[0]}
-                                    />
+                                    <label className="block text-sm font-medium text-slate-700 mb-1">Estado</label>
+                                    <select
+                                        className="w-full px-3 py-2 border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                                        value={newTask.status}
+                                        onChange={(e) => setNewTask({ ...newTask, status: e.target.value as TaskStatus })}
+                                    >
+                                        <option value="pending">Pendiente</option>
+                                        <option value="in_progress">En progreso</option>
+                                        <option value="paused">Pausada</option>
+                                        <option value="completed">Completada</option>
+                                    </select>
                                 </div>
                             </div>
-
-                            {/* Botones */}
-                            <div className="flex justify-end gap-4 mt-8 pt-6 border-t border-slate-200/50">
-                                <button
-                                    onClick={() => {
-                                        setShowNewTaskModal(false);
-                                        resetNewTaskForm();
-                                    }}
-                                    className="px-6 py-3 text-slate-600 hover:text-slate-800 font-medium transition-colors duration-200 hover:bg-slate-100/80 rounded-xl"
+                            <div>
+                                <label className="block text-sm font-medium text-slate-700 mb-1">Proyecto *</label>
+                                <select
+                                    className="w-full px-3 py-2 border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                                    value={newTask.project_id}
+                                    onChange={(e) => setNewTask({ ...newTask, project_id: e.target.value })}
                                 >
-                                    Cancelar
-                                </button>
-                                <button
-                                    onClick={createTask}
-                                    disabled={!newTask.title.trim() || !newTask.project_id}
-                                    className="px-8 py-3 bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 disabled:from-slate-400 disabled:to-slate-500 text-white font-semibold rounded-xl shadow-lg hover:shadow-xl transition-all duration-200 flex items-center gap-2 disabled:cursor-not-allowed"
-                                >
-                                    <Plus className="w-4 h-4" />
-                                    Crear Tarea
-                                </button>
+                                    <option value="">Selecciona un proyecto...</option>
+                                    {projects.map(project => (
+                                        <option key={project.id} value={project.id}>
+                                            {project.name}
+                                        </option>
+                                    ))}
+                                </select>
                             </div>
+                            <div>
+                                <label className="block text-sm font-medium text-slate-700 mb-1">Fecha límite</label>
+                                <input
+                                    type="date"
+                                    className="w-full px-3 py-2 border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                                    value={newTask.due_date}
+                                    onChange={(e) => setNewTask({ ...newTask, due_date: e.target.value })}
+                                />
+                            </div>
+                        </div>
+                        <div className="flex justify-end gap-3 mt-6">
+                            <Button
+                                variant="outline"
+                                onClick={() => {
+                                    setShowNewTaskModal(false);
+                                    resetNewTaskForm();
+                                }}
+                            >
+                                Cancelar
+                            </Button>
+                            <Button
+                                onClick={createTask}
+                                className="bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 text-white"
+                            >
+                                Crear Tarea
+                            </Button>
                         </div>
                     </div>
                 </div>
@@ -970,8 +824,8 @@ export default function TasksPageClient({ userEmail }: TasksPageClientProps) {
                             </div>
                         </div>
                         <div className="flex justify-end gap-3 mt-6">
-                            <Button 
-                                variant="outline" 
+                            <Button
+                                variant="outline"
                                 onClick={() => {
                                     setShowEditTaskModal(false);
                                     setEditingTask(null);
@@ -979,7 +833,7 @@ export default function TasksPageClient({ userEmail }: TasksPageClientProps) {
                             >
                                 Cancelar
                             </Button>
-                            <Button 
+                            <Button
                                 onClick={updateTask}
                                 className="bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 text-white"
                             >
@@ -996,15 +850,15 @@ export default function TasksPageClient({ userEmail }: TasksPageClientProps) {
                     <div className="bg-white rounded-xl p-6 w-full max-w-lg mx-4 shadow-2xl">
                         <div className="flex justify-between items-start mb-4">
                             <h2 className="text-xl font-bold text-slate-800">📋 {selectedTask.title}</h2>
-                            <Button 
-                                variant="outline" 
+                            <Button
+                                variant="outline"
                                 size="sm"
                                 onClick={() => setShowTaskDetails(false)}
                             >
                                 ✕
                             </Button>
                         </div>
-                        
+
                         <div className="space-y-4">
                             {selectedTask.description && (
                                 <div>
@@ -1012,47 +866,45 @@ export default function TasksPageClient({ userEmail }: TasksPageClientProps) {
                                     <p className="text-slate-600 bg-slate-50 p-3 rounded-lg">{selectedTask.description}</p>
                                 </div>
                             )}
-                            
+
                             <div className="grid grid-cols-2 gap-4">
                                 <div>
                                     <h4 className="font-medium text-slate-700 mb-2">Estado</h4>
-                                    <span className={`inline-flex items-center px-3 py-1 rounded-full text-sm font-medium ${
-                                        selectedTask.status === 'completed' ? 'bg-green-100 text-green-800' :
-                                        selectedTask.status === 'in_progress' ? 'bg-blue-100 text-blue-800' :
-                                        selectedTask.status === 'paused' ? 'bg-yellow-100 text-yellow-800' :
-                                        selectedTask.status === 'archived' ? 'bg-gray-100 text-gray-800' :
-                                        'bg-slate-100 text-slate-800'
-                                    }`}>
+                                    <span className={`inline-flex items-center px-3 py-1 rounded-full text-sm font-medium ${selectedTask.status === 'completed' ? 'bg-green-100 text-green-800' :
+                                            selectedTask.status === 'in_progress' ? 'bg-blue-100 text-blue-800' :
+                                                selectedTask.status === 'paused' ? 'bg-yellow-100 text-yellow-800' :
+                                                    selectedTask.status === 'archived' ? 'bg-gray-100 text-gray-800' :
+                                                        'bg-slate-100 text-slate-800'
+                                        }`}>
                                         {selectedTask.status === 'pending' ? 'Pendiente' :
-                                         selectedTask.status === 'in_progress' ? 'En progreso' :
-                                         selectedTask.status === 'paused' ? 'Pausada' :
-                                         selectedTask.status === 'completed' ? 'Completada' :
-                                         selectedTask.status === 'archived' ? 'Archivada' : selectedTask.status}
+                                            selectedTask.status === 'in_progress' ? 'En progreso' :
+                                                selectedTask.status === 'paused' ? 'Pausada' :
+                                                    selectedTask.status === 'completed' ? 'Completada' :
+                                                        selectedTask.status === 'archived' ? 'Archivada' : selectedTask.status}
                                     </span>
                                 </div>
                                 <div>
                                     <h4 className="font-medium text-slate-700 mb-2">Prioridad</h4>
-                                    <span className={`inline-flex items-center px-3 py-1 rounded-full text-sm font-medium ${
-                                        selectedTask.priority === 'urgent' ? 'bg-red-100 text-red-800' :
-                                        selectedTask.priority === 'high' ? 'bg-orange-100 text-orange-800' :
-                                        selectedTask.priority === 'medium' ? 'bg-blue-100 text-blue-800' :
-                                        'bg-gray-100 text-gray-800'
-                                    }`}>
+                                    <span className={`inline-flex items-center px-3 py-1 rounded-full text-sm font-medium ${selectedTask.priority === 'urgent' ? 'bg-red-100 text-red-800' :
+                                            selectedTask.priority === 'high' ? 'bg-orange-100 text-orange-800' :
+                                                selectedTask.priority === 'medium' ? 'bg-blue-100 text-blue-800' :
+                                                    'bg-gray-100 text-gray-800'
+                                        }`}>
                                         {selectedTask.priority === 'urgent' ? '🔥 Urgente' :
-                                         selectedTask.priority === 'high' ? '⚠️ Alta' :
-                                         selectedTask.priority === 'medium' ? '📋 Media' :
-                                         '📝 Baja'}
+                                            selectedTask.priority === 'high' ? '⚠️ Alta' :
+                                                selectedTask.priority === 'medium' ? '📋 Media' :
+                                                    '📝 Baja'}
                                     </span>
                                 </div>
                             </div>
-                            
+
                             {selectedTask.project_id && (
                                 <div>
                                     <h4 className="font-medium text-slate-700 mb-2">Proyecto</h4>
                                     <p className="text-slate-600">{projects.find(p => p.id === selectedTask.project_id)?.name || 'Proyecto no encontrado'}</p>
                                 </div>
                             )}
-                            
+
                             {selectedTask.due_date && (
                                 <div>
                                     <h4 className="font-medium text-slate-700 mb-2">Fecha límite</h4>
@@ -1062,7 +914,7 @@ export default function TasksPageClient({ userEmail }: TasksPageClientProps) {
                                     </p>
                                 </div>
                             )}
-                            
+
                             <div className="grid grid-cols-2 gap-4 text-sm text-slate-500 border-t pt-4">
                                 <div>
                                     <p>Creada el:</p>
@@ -1074,9 +926,9 @@ export default function TasksPageClient({ userEmail }: TasksPageClientProps) {
                                 </div>
                             </div>
                         </div>
-                        
+
                         <div className="flex justify-end gap-3 mt-6">
-                            <Button 
+                            <Button
                                 variant="outline"
                                 onClick={() => {
                                     setEditingTask(selectedTask);
@@ -1087,8 +939,8 @@ export default function TasksPageClient({ userEmail }: TasksPageClientProps) {
                                 <Edit3 className="mr-2 h-4 w-4" />
                                 Editar
                             </Button>
-                            <Button 
-                                variant="outline" 
+                            <Button
+                                variant="outline"
                                 onClick={() => setShowTaskDetails(false)}
                             >
                                 Cerrar
