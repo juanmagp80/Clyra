@@ -4,7 +4,7 @@ import { redirect } from 'next/navigation';
 import UpgradePageClient from './UpgradePageClient';
 
 export const metadata: Metadata = {
-    title: 'Actualizar Plan | Taskelia CRM',
+    title: 'Actualizar Plan | Taskelio CRM',
     description: 'Elige el plan perfecto para tu negocio',
 };
 

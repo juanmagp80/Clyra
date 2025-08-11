@@ -20,33 +20,33 @@ export default function Home() {
   const features = [
     {
       icon: Users,
-      title: "Gestión de Clientes",
-      description: "Mantén toda la información de tus clientes organizada y accesible.",
-      highlight: "Fácil de usar"
+      title: "Gestión de Clientes Intuitiva",
+      description: "Mantén toda la información de tus clientes organizada de forma visual y accesible.",
+      highlight: "Sin complejidad"
     },
     {
       icon: Calendar,
-      title: "Calendario de Proyectos",
-      description: "Planifica deadlines y no vuelvas a perder una fecha importante.",
-      highlight: "Organizativo"
+      title: "Organización Simplificada",
+      description: "Planifica deadlines y proyectos sin herramientas pesadas.",
+      highlight: "Ligero y rápido"
     },
     {
       icon: DollarSign,
-      title: "Facturación Rápida",
-      description: "Crea facturas profesionales y haz seguimiento de pagos.",
-      highlight: "Profesional"
+      title: "Facturación en Minutos",
+      description: "Crea facturas profesionales y haz seguimiento de pagos de forma ágil.",
+      highlight: "Ahorra tiempo"
     },
     {
       icon: BarChart3,
-      title: "Métricas Claras",
-      description: "Visualiza el progreso de tus proyectos y ingresos de forma simple.",
-      highlight: "Visual"
+      title: "Métricas Visuales",
+      description: "Visualiza el progreso de tus proyectos e ingresos de forma clara y directa.",
+      highlight: "Diseño pensado para freelancers"
     },
     {
       icon: Zap,
-      title: "Flujo Simplificado",
-      description: "Automatiza tareas repetitivas para ahorrar tiempo valioso.",
-      highlight: "Eficiente"
+      title: "Flujo Optimizado",
+      description: "Automatiza tareas repetitivas y enfócate en lo que realmente genera valor.",
+      highlight: "Más productivo"
     },
     {
       icon: Globe,
@@ -61,22 +61,22 @@ export default function Home() {
       name: "Ana García",
       role: "Diseñadora Freelance",
       company: "Madrid",
-      content: "Taskelia me ayudó a organizar mejor mis proyectos. Ahora puedo enfocarme más en diseñar y menos en administrar.",
-      growth: "Más organizada"
+      content: "Olvídate de las herramientas pesadas: con Taskelio gestiono clientes y tareas en minutos. Perfecto para creativos.",
+      growth: "Más tiempo para crear"
     },
     {
       name: "Carlos Ruiz",
-      role: "Desarrollador Web",
+      role: "Desarrollador Independiente",
       company: "Barcelona",
-      content: "Las facturas automáticas me ahorran horas cada semana. Es exactamente lo que necesitaba.",
+      content: "Finalmente un CRM que no me complica la vida. Es visual, rápido y entiende cómo trabajo como freelancer.",
       growth: "5h/semana ahorradas"
     },
     {
       name: "María López",
-      role: "Consultora Marketing",
+      role: "Coach Profesional",
       company: "Valencia",
-      content: "Simple pero potente. Me permite gestionar mis clientes sin complicaciones innecesarias.",
-      growth: "Más eficiente"
+      content: "Más que tareas: gestiono todo mi negocio freelance. Sin complejidad corporativa, solo lo que necesito.",
+      growth: "Negocio más ordenado"
     }
   ];
 
@@ -104,7 +104,7 @@ export default function Home() {
             {/* Texto como logo principal - tipografía llamativa */}
             <h1 className="text-2xl font-black tracking-tight relative">
               <span className="relative text-white">
-                Taskelia
+                Taskelio
                 {/* Punto decorativo sutil */}
                 <div className="absolute -top-1 -right-1 w-1.5 h-1.5 bg-gradient-to-r from-cyan-400 to-purple-400 rounded-full opacity-80 animate-pulse"></div>
               </span>
@@ -131,41 +131,46 @@ export default function Home() {
         <div className="container mx-auto text-center max-w-6xl">
           {/* Badge */}
           <div className="inline-flex items-center gap-2 bg-gradient-to-r from-purple-500/10 to-cyan-500/10 border border-purple-500/20 rounded-full px-4 py-2 mb-8">
-            <TrendingUp className="w-4 h-4 text-green-400" />
+            <Zap className="w-4 h-4 text-cyan-400" />
             <span className="text-sm text-gray-300">
-              Gestión de proyectos freelance simplificada
+              Tu CRM ligero para freelancers
             </span>
           </div>
 
           {/* Main Headline */}
           <h1 className="text-5xl md:text-6xl lg:text-7xl font-bold tracking-tight mb-8 leading-none">
             <span className="bg-gradient-to-r from-white via-gray-200 to-gray-400 bg-clip-text text-transparent">
-              Organiza Tu
+              Organiza clientes,
             </span>
             <br />
             <span className="bg-gradient-to-r from-purple-400 via-pink-400 to-cyan-400 bg-clip-text text-transparent">
-              Negocio
+              tareas y proyectos.
+            </span>
+            <br />
+            <span className="bg-gradient-to-r from-cyan-400 to-purple-400 bg-clip-text text-transparent text-4xl md:text-5xl lg:text-6xl">
+              Todo en uno.
             </span>
           </h1>
 
           {/* Subheadline */}
           <p className="text-xl md:text-2xl text-gray-300 mb-12 max-w-3xl mx-auto leading-relaxed">
-            Gestiona clientes, proyectos y facturas en un solo lugar.
-            <span className="text-purple-400 font-semibold">Dedica más tiempo a lo que realmente importa</span>: crear.
+            <span className="text-white font-semibold">Un CRM rápido, visual y sin complejidad corporativa,</span> pensado para autónomos que necesitan orden sin perder tiempo.
+            <br />
+            <span className="text-purple-400 font-medium">El CRM que entiende tu forma de trabajar.</span>
           </p>
 
           {/* CTA Buttons */}
           <div className="flex gap-6 justify-center flex-wrap mb-8">
             <Link href="/register">
               <Button size="lg" className="bg-gradient-to-r from-purple-600 to-cyan-600 hover:from-purple-700 hover:to-cyan-700 text-lg px-12 py-4 rounded-full border-0 shadow-2xl shadow-purple-500/25 group">
-                Comenzar Gratis
+                Probarlo Gratis
                 <ArrowRight className="ml-2 h-5 w-5 group-hover:translate-x-1 transition-transform" />
               </Button>
             </Link>
             <Link href="/demo">
               <Button size="lg" className="bg-gradient-to-r from-purple-600 to-cyan-600 hover:from-purple-700 hover:to-cyan-700 text-lg px-12 py-4 rounded-full border-0 shadow-2xl shadow-purple-500/25 group">
                 <Play className="mr-2 h-5 w-5 group-hover:scale-110 transition-transform" />
-                Ver Demo
+                Ver en Acción
               </Button>
             </Link>
           </div>
@@ -216,15 +221,15 @@ export default function Home() {
             </div>
             <h2 className="text-4xl md:text-5xl font-bold mb-6">
               <span className="bg-gradient-to-r from-white to-gray-300 bg-clip-text text-transparent">
-                Todo lo que necesitas
+                Olvídate de las herramientas pesadas
               </span>
               <br />
               <span className="bg-gradient-to-r from-purple-400 to-cyan-400 bg-clip-text text-transparent">
-                en un solo lugar
+                Gestiona en minutos
               </span>
             </h2>
             <p className="text-xl text-gray-300 max-w-3xl mx-auto">
-              Simplifica tu flujo de trabajo y enfócate en lo que mejor sabes hacer.
+              Un CRM rápido, visual y sin complejidad corporativa. Pensado para autónomos que necesitan orden sin perder tiempo.
             </p>
           </div>
 
@@ -276,7 +281,7 @@ export default function Home() {
               </span>
             </h2>
             <p className="text-xl text-gray-300 max-w-3xl mx-auto">
-              Experiencias auténticas de profesionales que usan Taskelia a diario.
+              Freelancers creativos, consultores independientes, diseñadores, desarrolladores y coaches que transformaron su forma de trabajar.
             </p>
           </div>
 
@@ -366,14 +371,14 @@ export default function Home() {
               {/* Texto tipográfico para footer */}
               <h2 className="text-xl font-black tracking-tight relative">
                 <span className="relative text-white">
-                  Taskelia
+                  Taskelio
                   {/* Punto decorativo sutil */}
                   <div className="absolute -top-0.5 -right-0.5 w-1 h-1 bg-gradient-to-r from-cyan-400 to-purple-400 rounded-full opacity-70"></div>
                 </span>
               </h2>
             </div>
             <p className="text-gray-400 text-center">
-              &copy; 2025 Taskelia. Herramientas simples para freelancers organizados.
+              &copy; 2025 Taskelio. CRM ligero para freelancers que valoran su tiempo.
             </p>
           </div>
         </div>

@@ -4,7 +4,7 @@ import { redirect } from 'next/navigation';
 import EmailsPageClient from './EmailsPageClient';
 
 export const metadata: Metadata = {
-    title: 'Emails | Taskelia CRM',
+    title: 'Emails | Taskelio CRM',
     description: 'Centro de comunicaciones y email marketing',
 };
 

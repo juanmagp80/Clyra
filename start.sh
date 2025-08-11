@@ -1,6 +1,6 @@
 #!/bin/bash
 
-echo "🚀 Iniciando Taskelia..."
+echo "🚀 Iniciando Taskelio..."
 echo ""
 
 # Verificar si existen las variables de entorno de Supabase

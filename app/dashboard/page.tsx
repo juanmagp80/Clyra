@@ -80,7 +80,7 @@ export default async function DashboardPage() {
                         
                         {/* Dashboard Demo */}
                         <DashboardClient 
-                            userEmail="demo@taskelia.com" 
+                            userEmail="demo@taskelio.com" 
                             isDemo={true}
                         />
                     </div>

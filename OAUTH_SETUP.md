@@ -21,7 +21,7 @@
 1. Ve a: https://github.com/settings/applications/new
 2. Llena el formulario:
    ```
-   Application name: Taskelia App
+   Application name: Taskelio App
    Homepage URL: http://localhost:3000
    Authorization callback URL: https://joyhaxtpmrmndmifsihn.supabase.co/auth/v1/callback
    ```
@@ -47,13 +47,13 @@
 4. Haz clic en **"Create Credentials"** > **"OAuth 2.0 Client IDs"**
 5. Si es tu primera vez, configura la "OAuth consent screen":
    - **User Type**: External
-   - **App name**: Taskelia
+   - **App name**: Taskelio
    - **User support email**: tu email
    - **Developer contact**: tu email
 6. Vuelve a **Credentials** y crea el OAuth 2.0 Client ID:
    ```
    Application type: Web application
-   Name: Taskelia App
+   Name: Taskelio App
    Authorized redirect URIs: https://joyhaxtpmrmndmifsihn.supabase.co/auth/v1/callback
    ```
 7. **Copia el Client ID y Client Secret**
@@ -78,7 +78,7 @@
 4. Haz clic en **Create Credentials** > **OAuth 2.0 Client IDs**
 5. Configura:
    - **Application type**: Web application
-   - **Name**: `Taskelia App`
+   - **Name**: `Taskelio App`
    - **Authorized redirect URIs**: `https://joyhaxtpmrmndmifsihn.supabase.co/auth/v1/callback`
 6. Copia el **Client ID** y **Client Secret**
 

@@ -1,5 +1,5 @@
 -- =============================================
--- TASKELIA CALENDAR AI - SCHEMA COMPLETO V2.0
+-- TASKELIO CALENDAR AI - SCHEMA COMPLETO V2.0
 -- Centro neurálgico del SaaS con IA avanzada
 -- =============================================
 

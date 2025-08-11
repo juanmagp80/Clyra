@@ -63,7 +63,7 @@ export default function TrialBanner({ userEmail }: TrialBannerProps) {
                 bgSecondary: 'from-blue-50 to-indigo-50',
                 textColor: 'text-white',
                 icon: Crown,
-                title: `Probando Taskelia PRO - ${daysRemaining} días restantes`,
+                title: `Probando Taskelio PRO - ${daysRemaining} días restantes`,
                 message: 'Tienes acceso completo durante tu trial gratuito',
                 buttonText: 'Ver Planes',
                 buttonVariant: 'secondary' as const,

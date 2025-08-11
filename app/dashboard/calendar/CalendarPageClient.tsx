@@ -241,7 +241,7 @@ export default function CalendarPageClient({ userEmail }: CalendarPageClientProp
             // Si no tiene eventos y las tablas existen, crear datos de ejemplo
             if (!existingEvents || existingEvents.length === 0) {
                 const shouldCreateSample = confirm(
-                    '¡Bienvenido a Taskelia! 🎉\n\n' +
+                    '¡Bienvenido a Taskelio! 🎉\n\n' +
                     'Parece que es tu primera vez usando el calendario.\n' +
                     '¿Te gustaría que creemos algunos datos de ejemplo para empezar?\n\n' +
                     '✨ Incluye: cliente demo, proyecto y eventos de muestra'

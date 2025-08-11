@@ -1,8 +1,8 @@
-# 🧠 Sistema de IA del Calendario de Taskelia
+# 🧠 Sistema de IA del Calendario de Taskelio
 
 ## 📋 **Resumen Ejecutivo**
 
-El sistema de IA del calendario de Taskelia funciona **completamente offline** sin necesidad de APIs externas como ChatGPT o Claude. Utiliza algoritmos de machine learning local y análisis estadístico para proporcionar insights inteligentes, sugerencias personalizadas y optimización automática.
+El sistema de IA del calendario de Taskelio funciona **completamente offline** sin necesidad de APIs externas como ChatGPT o Claude. Utiliza algoritmos de machine learning local y análisis estadístico para proporcionar insights inteligentes, sugerencias personalizadas y optimización automática.
 
 ## 🔧 **Arquitectura del Sistema**
 
@@ -306,7 +306,7 @@ class HybridCalendarAI {
 
 ## 💡 **Conclusión**
 
-El sistema de IA de Taskelia representa un **enfoque único en el mercado**:
+El sistema de IA de Taskelio representa un **enfoque único en el mercado**:
 
 1. **Privacy-First**: Tus datos nunca dejan tu control
 2. **Cost-Effective**: Sin costos recurrentes de APIs

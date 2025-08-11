@@ -1,6 +1,6 @@
 #!/bin/bash
 
-# Script para iniciar el proyecto Taskelia con la versión correcta de Node.js
+# Script para iniciar el proyecto Taskelio con la versión correcta de Node.js
 
 # Cargar nvm
 export NVM_DIR="$HOME/.nvm"
@@ -14,7 +14,7 @@ nvm use 20
 echo "✅ Node.js: $(node --version)"
 echo "✅ npm: $(npm --version)"
 echo ""
-echo "🚀 Iniciando Taskelia en modo desarrollo..."
+echo "🚀 Iniciando Taskelio en modo desarrollo..."
 echo ""
 
 # Iniciar el proyecto

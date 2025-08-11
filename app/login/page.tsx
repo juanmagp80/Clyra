@@ -210,7 +210,7 @@ function LoginPageContent() {
                 <Link href="/" className="inline-flex items-center gap-3 group">
                     <h1 className="text-xl font-black tracking-tight relative">
                         <span className="relative text-slate-900">
-                            Taskelia
+                            Taskelio
                             <div className="absolute -top-0.5 -right-0.5 w-1 h-1 bg-gradient-to-r from-indigo-500 to-violet-500 rounded-full opacity-80"></div>
                         </span>
                     </h1>

@@ -26,7 +26,7 @@ import {
     ChevronRight
 } from 'lucide-react';
 import { useRouter } from 'next/navigation';
-import { executeAutomationAction, ActionPayload, AutomationAction, ActionResult } from '@/src/lib/automation-actions';
+import { executeAutomationAction } from '@/src/lib/automation-actions';
 
 interface Automation {
     id: string;
@@ -35,7 +35,7 @@ interface Automation {
     trigger_type: string;
     actions: any[];
     is_active: boolean;
-    updated_at: string | null;
+    last_executed: string | null;
     execution_count: number;
     created_at: string;
     user_id: string;
@@ -99,7 +99,7 @@ export default function AutomationsPageClient({ userEmail }: AutomationsPageClie
             if (!user) return;
 
             const { data, error } = await supabase
-                .from('automations')
+                .from('freelancer_automations')
                 .select('*')
                 .eq('user_id', user.id)
                 .order('created_at', { ascending: false });
@@ -286,71 +286,25 @@ export default function AutomationsPageClient({ userEmail }: AutomationsPageClie
 
             setExecutionLogs(prev => [...prev, '⚙️ Ejecutando acciones de automatización...']);
 
-            // Asegurar que actions sea un array
-            let actions = modalAutomation.actions;
-            if (typeof actions === 'string') {
-                try {
-                    actions = JSON.parse(actions);
-                } catch (parseError) {
-                    console.error('Error parsing actions:', parseError);
-                    setExecutionLogs(prev => [...prev, '❌ Error: Las acciones de la automatización no tienen el formato correcto']);
-                    return;
-                }
-            }
-
-            if (!Array.isArray(actions)) {
-                setExecutionLogs(prev => [...prev, '❌ Error: Las acciones de la automatización deben ser un array']);
-                return;
-            }
-
-            // Preparar payload para las acciones de automatización
-            const actionPayload: ActionPayload = {
-                client: {
-                    id: selected.id,
-                    name: selected.name,
-                    email: selected.email,
-                    company: selected.company,
-                    phone: selected.phone
-                },
-                automation: modalAutomation,
-                user: userData.user!,
-                supabase,
-                executionId: Math.random().toString(36).substring(7)
-            };
-
             // Ejecutar cada acción de la automatización
-            for (const [index, action] of actions.entries()) {
-                setExecutionLogs(prev => [...prev, `🔄 Ejecutando acción ${index + 1}/${actions.length}: ${action.type}`]);
+            for (const [index, action] of modalAutomation.actions.entries()) {
+                setExecutionLogs(prev => [...prev, `🔄 Ejecutando acción ${index + 1}/${modalAutomation.actions.length}: ${action.name}`]);
                 
                 try {
-                    const result: ActionResult = await executeAutomationAction(action, actionPayload);
-                    
-                    if (result.success) {
-                        setExecutionLogs(prev => [...prev, `✅ ${result.message}`]);
-                        if (result.data) {
-                            setExecutionLogs(prev => [...prev, `📊 Datos: ${JSON.stringify(result.data, null, 2)}`]);
-                        }
-                    } else {
-                        setExecutionLogs(prev => [...prev, `❌ Error: ${result.message}`]);
-                        if (result.error) {
-                            setExecutionLogs(prev => [...prev, `🔍 Detalles: ${result.error}`]);
-                        }
-                    }
+                    await executeAutomationAction(action, payload);
+                    setExecutionLogs(prev => [...prev, `✅ Acción completada: ${action.name}`]);
                 } catch (actionError) {
                     console.error('Error en acción:', actionError);
-                    setExecutionLogs(prev => [...prev, `💥 Error crítico en acción ${action.type}: ${actionError}`]);
+                    setExecutionLogs(prev => [...prev, `❌ Error en acción ${action.name}: ${actionError}`]);
                 }
-                
-                // Pausa entre acciones para mejor UX
-                await new Promise(resolve => setTimeout(resolve, 1500));
             }
 
             // Actualizar contador de ejecución
             const { error: updateError } = await supabase
-                .from('automations')
+                .from('freelancer_automations')
                 .update({ 
                     execution_count: modalAutomation.execution_count + 1,
-                    updated_at: new Date().toISOString()
+                    last_executed: new Date().toISOString()
                 })
                 .eq('id', modalAutomation.id);
 
@@ -366,7 +320,7 @@ export default function AutomationsPageClient({ userEmail }: AutomationsPageClie
                     ? { 
                         ...auto, 
                         execution_count: auto.execution_count + 1,
-                        updated_at: new Date().toISOString() 
+                        last_executed: new Date().toISOString() 
                     }
                     : auto
             ));
@@ -384,7 +338,7 @@ export default function AutomationsPageClient({ userEmail }: AutomationsPageClie
             if (!supabase) return;
 
             const { error } = await supabase
-                .from('automations')
+                .from('freelancer_automations')
                 .update({ is_active: !isActive })
                 .eq('id', automationId);
 
@@ -405,184 +359,6 @@ export default function AutomationsPageClient({ userEmail }: AutomationsPageClie
         }
     };
 
-    const createSampleAutomations = async () => {
-        try {
-            if (!supabase) return;
-
-            const { data: { user } } = await supabase.auth.getUser();
-            if (!user) return;
-
-            // Primero intentar agregar la columna description si no existe
-            try {
-                await supabase.rpc('exec_sql', {
-                    sql: 'ALTER TABLE automations ADD COLUMN IF NOT EXISTS description TEXT;'
-                });
-            } catch (migrationError) {
-                console.log('Migration might have already run:', migrationError);
-            }
-
-            const sampleAutomations = [
-                {
-                    user_id: user.id,
-                    name: 'Email de Bienvenida para Nuevos Clientes',
-                    description: 'Envía un email de bienvenida personalizado cuando se registra un nuevo cliente',
-                    trigger_type: 'client_onboarding',
-                    trigger_conditions: {"trigger": "new_client_created"},
-                    actions: [
-                        {
-                            "type": "send_email",
-                            "parameters": {
-                                "subject": "¡Bienvenido/a a nuestro equipo, {{client_name}}!",
-                                "template": `
-                                <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px; background-color: #f8f9fa;">
-                                    <div style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); padding: 30px; text-align: center; color: white; border-radius: 10px 10px 0 0;">
-                                        <h1 style="margin: 0; font-size: 28px;">¡Bienvenido/a!</h1>
-                                    </div>
-                                    <div style="background: white; padding: 30px; border-radius: 0 0 10px 10px; box-shadow: 0 4px 6px rgba(0,0,0,0.1);">
-                                        <p style="font-size: 18px; color: #333; margin-bottom: 20px;">Hola <strong>{{client_name}}</strong>,</p>
-                                        
-                                        <p style="color: #666; line-height: 1.6;">
-                                            ¡Nos emociona tenerte como nuevo cliente! En <strong>{{client_company}}</strong> nos especializamos en brindarte un servicio excepcional.
-                                        </p>
-                                        
-                                        <div style="background: #f8f9fa; padding: 20px; border-radius: 8px; margin: 20px 0; border-left: 4px solid #667eea;">
-                                            <p style="margin: 0; color: #333; font-weight: bold;">🎉 Como nuevo cliente, tienes:</p>
-                                            <p style="margin: 5px 0 0 0; color: #666;">• Consulta inicial gratuita</p>
-                                            <p style="margin: 5px 0 0 0; color: #666;">• Soporte prioritario</p>
-                                            <p style="margin: 5px 0 0 0; color: #666;">• Acceso a nuestro portal exclusivo</p>
-                                        </div>
-                                        
-                                        <p style="color: #666; line-height: 1.6;">
-                                            Pronto nos pondremos en contacto contigo para iniciar nuestro trabajo juntos y conocer mejor tus necesidades.
-                                        </p>
-                                        
-                                        <p style="color: #333; margin-top: 30px;">
-                                            ¡Gracias por confiar en nosotros!<br>
-                                            <strong>{{user_name}}</strong>
-                                        </p>
-                                    </div>
-                                    <div style="text-align: center; padding: 20px; color: #999; font-size: 12px;">
-                                        Este email fue enviado automáticamente por Clyra
-                                    </div>
-                                </div>
-                                `,
-                                "variables": {
-                                    "welcome_bonus": "Consulta inicial gratuita"
-                                }
-                            }
-                        }
-                    ],
-                    is_active: true,
-                    execution_count: 0
-                },
-                {
-                    user_id: user.id,
-                    name: 'Seguimiento Post-Proyecto',
-                    description: 'Crea una tarea de seguimiento y envía email después de completar un proyecto',
-                    trigger_type: 'project_delivery',
-                    trigger_conditions: {"trigger": "project_completed"},
-                    actions: [
-                        {
-                            "type": "send_email",
-                            "parameters": {
-                                "subject": "✅ Proyecto completado - {{client_name}}",
-                                "template": `
-                                <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px; background-color: #f8f9fa;">
-                                    <div style="background: linear-gradient(135deg, #28a745 0%, #20c997 100%); padding: 30px; text-align: center; color: white; border-radius: 10px 10px 0 0;">
-                                        <h1 style="margin: 0; font-size: 28px;">🎉 ¡Proyecto Completado!</h1>
-                                    </div>
-                                    <div style="background: white; padding: 30px; border-radius: 0 0 10px 10px; box-shadow: 0 4px 6px rgba(0,0,0,0.1);">
-                                        <p style="font-size: 18px; color: #333; margin-bottom: 20px;">Estimado/a <strong>{{client_name}}</strong>,</p>
-                                        
-                                        <div style="background: #d4edda; padding: 20px; border-radius: 8px; margin: 20px 0; border-left: 4px solid #28a745;">
-                                            <p style="margin: 0; color: #155724; font-weight: bold; font-size: 16px;">
-                                                ✅ Nos complace informarte que tu proyecto ha sido completado exitosamente.
-                                            </p>
-                                        </div>
-                                        
-                                        <p style="color: #666; line-height: 1.6;">
-                                            Ha sido un placer trabajar contigo en este proyecto. Esperamos que el resultado supere tus expectativas.
-                                        </p>
-                                        
-                                        <div style="background: #f8f9fa; padding: 20px; border-radius: 8px; margin: 20px 0;">
-                                            <p style="margin: 0; color: #333; font-weight: bold;">📞 ¿Necesitas algo más?</p>
-                                            <p style="margin: 10px 0 0 0; color: #666;">
-                                                Estaremos disponibles para cualquier consulta, soporte adicional o futuras colaboraciones.
-                                            </p>
-                                        </div>
-                                        
-                                        <p style="color: #333; margin-top: 30px;">
-                                            ¡Gracias por trabajar con nosotros!<br>
-                                            <strong>{{user_name}}</strong>
-                                        </p>
-                                    </div>
-                                    <div style="text-align: center; padding: 20px; color: #999; font-size: 12px;">
-                                        Este email fue enviado automáticamente por Clyra
-                                    </div>
-                                </div>
-                                `
-                            }
-                        },
-                        {
-                            "type": "assign_task",
-                            "parameters": {
-                                "title": "Seguimiento post-proyecto - {{client_name}}",
-                                "description": "Hacer seguimiento con el cliente después de la entrega del proyecto",
-                                "priority": "medium",
-                                "due_in_days": 7
-                            }
-                        }
-                    ],
-                    is_active: true,
-                    execution_count: 0
-                },
-                {
-                    user_id: user.id,
-                    name: 'Actualización Semanal de Proyectos',
-                    description: 'Actualiza el estado de proyectos activos y notifica al cliente',
-                    trigger_type: 'project_milestone',
-                    trigger_conditions: {"frequency": "weekly"},
-                    actions: [
-                        {
-                            "type": "update_project_status",
-                            "parameters": {
-                                "project_id": "will-be-dynamic",
-                                "status": "in_progress"
-                            }
-                        },
-                        {
-                            "type": "send_email",
-                            "parameters": {
-                                "subject": "Actualización semanal - {{client_name}}",
-                                "template": "Hola {{client_name}},\n\nQueremos mantenerte informado sobre el progreso de tu proyecto.\n\nEsta semana hemos avanzado significativamente y todo va según lo planificado.\n\nTe mantendremos informado de cualquier novedad.\n\nSaludos,\n{{user_name}}"
-                            }
-                        }
-                    ],
-                    is_active: false,
-                    execution_count: 0
-                }
-            ];
-
-            const { data, error } = await supabase
-                .from('automations')
-                .insert(sampleAutomations)
-                .select();
-
-            if (error) {
-                console.error('Error creating sample automations:', error);
-                alert('Error al crear automatizaciones de ejemplo: ' + error.message);
-                return;
-            }
-
-            alert('¡Automatizaciones de ejemplo creadas exitosamente!');
-            await loadAutomations(); // Recargar la lista
-
-        } catch (error) {
-            console.error('Error creating sample automations:', error);
-            alert('Error al crear automatizaciones de ejemplo.');
-        }
-    };
-
     useEffect(() => {
         loadAutomations();
     }, []);
@@ -590,25 +366,6 @@ export default function AutomationsPageClient({ userEmail }: AutomationsPageClie
     useEffect(() => {
         filterAutomations();
     }, [searchQuery, automations]);
-
-    const getActionsCount = (actions: any): number => {
-        if (!actions) return 0;
-        
-        if (Array.isArray(actions)) {
-            return actions.length;
-        }
-        
-        if (typeof actions === 'string') {
-            try {
-                const parsed = JSON.parse(actions);
-                return Array.isArray(parsed) ? parsed.length : 0;
-            } catch {
-                return 0;
-            }
-        }
-        
-        return 0;
-    };
 
     const getAutomationIcon = (triggerType: string) => {
         const iconMap: { [key: string]: any } = {
@@ -775,7 +532,7 @@ export default function AutomationsPageClient({ userEmail }: AutomationsPageClie
                                                     <div className="flex items-center justify-between text-sm">
                                                         <span className="text-slate-600">Acciones:</span>
                                                         <span className="font-semibold text-slate-900">
-                                                            {getActionsCount(automation.actions)}
+                                                            {automation.actions?.length || 0}
                                                         </span>
                                                     </div>
                                                     <div className="flex items-center justify-between text-sm">
@@ -784,11 +541,11 @@ export default function AutomationsPageClient({ userEmail }: AutomationsPageClie
                                                             {automation.execution_count || 0}
                                                         </span>
                                                     </div>
-                                                    {automation.updated_at && automation.execution_count > 0 && (
+                                                    {automation.last_executed && (
                                                         <div className="flex items-center justify-between text-sm">
                                                             <span className="text-slate-600">Última ejecución:</span>
                                                             <span className="font-semibold text-slate-900">
-                                                                {new Date(automation.updated_at).toLocaleDateString('es-ES')}
+                                                                {new Date(automation.last_executed).toLocaleDateString('es-ES')}
                                                             </span>
                                                         </div>
                                                     )}
@@ -837,23 +594,13 @@ export default function AutomationsPageClient({ userEmail }: AutomationsPageClie
                                             : 'Comienza creando tu primera automatización para optimizar tu flujo de trabajo'
                                         }
                                     </p>
-                                    <div className="flex items-center gap-3 justify-center">
-                                        <Button
-                                            onClick={() => router.push('/dashboard/automations/create')}
-                                            className="bg-gradient-to-r from-blue-600 to-indigo-600 text-white"
-                                        >
-                                            <Plus className="w-5 h-5 mr-2" />
-                                            Crear Primera Automatización
-                                        </Button>
-                                        <Button
-                                            onClick={createSampleAutomations}
-                                            variant="outline"
-                                            className="border-slate-200 hover:bg-slate-50"
-                                        >
-                                            <Zap className="w-5 h-5 mr-2" />
-                                            Crear Ejemplos
-                                        </Button>
-                                    </div>
+                                    <Button
+                                        onClick={() => router.push('/dashboard/automations/create')}
+                                        className="bg-gradient-to-r from-blue-600 to-indigo-600 text-white"
+                                    >
+                                        <Plus className="w-5 h-5 mr-2" />
+                                        Crear Primera Automatización
+                                    </Button>
                                 </div>
                             )}
                         </div>

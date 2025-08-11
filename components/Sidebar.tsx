@@ -104,7 +104,7 @@ export default function Sidebar({ userEmail, onLogout }: SidebarProps) {
       <div className="flex h-12 items-center border-b border-slate-200/60 px-4 bg-gradient-to-r from-indigo-50/50 to-violet-50/50">
         <h1 className="text-lg font-black tracking-tight relative">
           <span className="relative bg-gradient-to-r from-slate-900 via-indigo-900 to-violet-900 bg-clip-text text-transparent">
-            Taskelia
+            Taskelio
             <div className="absolute -top-0.5 -right-0.5 w-1 h-1 bg-gradient-to-r from-indigo-500 to-violet-500 rounded-full opacity-80"></div>
           </span>
         </h1>

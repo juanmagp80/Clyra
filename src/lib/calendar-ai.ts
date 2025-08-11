@@ -1,5 +1,5 @@
 /**
- * TASKELIA CALENDAR AI SERVICE V2.0
+ * TASKELIO CALENDAR AI SERVICE V2.0
  * Servicio central de inteligencia artificial para el calendario
  * Maneja análisis, insights, optimización y automatizaciones
  */

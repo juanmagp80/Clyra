@@ -4,7 +4,7 @@ import { redirect } from 'next/navigation';
 import InvoicesPageClient from './InvoicesPageClient';
 
 export const metadata: Metadata = {
-    title: 'Facturas | Taskelia CRM',
+    title: 'Facturas | Taskelio CRM',
     description: 'Gestiona tus facturas y pagos',
 };
 

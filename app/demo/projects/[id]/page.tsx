@@ -310,7 +310,7 @@ export default async function DemoProjectDetailsPage({ params }: Props) {
                             ¿Te gusta este nivel de detalle?
                         </h2>
                         <p className="text-primary-foreground/80 mb-6 max-w-2xl mx-auto">
-                            Con Taskelia puedes gestionar todos tus proyectos con este nivel de detalle y mucho más.
+                            Con Taskelio puedes gestionar todos tus proyectos con este nivel de detalle y mucho más.
                             Crea tu cuenta gratuita y empezar a organizar tu negocio.
                         </p>
                         <div className="flex flex-col sm:flex-row gap-4 justify-center">

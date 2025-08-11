@@ -86,7 +86,7 @@ export default function ReportsPageClient({ userEmail }: ReportsPageClientProps)
 
             const today = new Date();
             const dateStr = `${today.getFullYear()}-${String(today.getMonth() + 1).padStart(2, '0')}-${String(today.getDate()).padStart(2, '0')}`;
-            const fileName = `Reporte_Taskelia_${dateStr}.${format === 'pdf' ? 'pdf' : 'csv'}`;
+            const fileName = `Reporte_Taskelio_${dateStr}.${format === 'pdf' ? 'pdf' : 'csv'}`;
 
             alert(`✅ Reporte exportado: ${fileName}`);
 

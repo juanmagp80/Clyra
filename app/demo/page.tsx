@@ -38,7 +38,7 @@ export default function DemoPage() {
 
     const tourSteps = [
         {
-            title: "¡Bienvenido al Demo de Taskelia! ✨",
+            title: "¡Bienvenido al Demo de Taskelio! ✨",
             description: "Explora todas las funcionalidades sin registrarte. Navega libremente o sigue este tour guiado.",
             target: null
         },
@@ -187,7 +187,7 @@ export default function DemoPage() {
                         <Rocket className="w-4 h-4" />
                     </div>
                     <h1 className="text-5xl font-bold bg-gradient-to-r from-slate-900 via-blue-900 to-purple-900 bg-clip-text text-transparent mb-4">
-                        Dashboard Taskelia
+                        Dashboard Taskelio
                     </h1>
                     <p className="text-xl text-slate-600 max-w-2xl mx-auto mb-8">
                         Bienvenido al futuro de la gestión empresarial. Explora todas las funcionalidades sin límites.

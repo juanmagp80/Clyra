@@ -1026,7 +1026,7 @@ export default function ReportsPageClient({ userEmail }: ReportsPageClientProps)
             
             // Simular descarga de archivo
             const reportData = {
-                title: `Reporte_Taskelia_${selectedTimeRange.label.replace(/\s+/g, '_')}_${new Date().toISOString().split('T')[0]}`,
+                title: `Reporte_Taskelio_${selectedTimeRange.label.replace(/\s+/g, '_')}_${new Date().toISOString().split('T')[0]}`,
                 period: selectedTimeRange.label,
                 generatedAt: new Date().toLocaleString('es-ES'),
                 metrics: metrics,
@@ -1068,7 +1068,7 @@ export default function ReportsPageClient({ userEmail }: ReportsPageClientProps)
         try {
             if (navigator.share) {
                 await navigator.share({
-                    title: 'Reporte Taskelia',
+                    title: 'Reporte Taskelio',
                     text: `Reporte de freelancer para ${selectedTimeRange.label}`,
                     url: window.location.href
                 });

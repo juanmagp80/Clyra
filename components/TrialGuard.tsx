@@ -54,7 +54,7 @@ export default function TrialGuard({ children, userEmail, allowExpired = false }
                     </div>
                     <h2 className="text-2xl font-bold text-slate-900 mb-4">Trial Expirado</h2>
                     <p className="text-slate-600 mb-6">
-                        Tu período de prueba de 14 días ha terminado. Actualiza tu plan para continuar usando todas las funciones de Taskelia.
+                        Tu período de prueba de 14 días ha terminado. Actualiza tu plan para continuar usando todas las funciones de Taskelio.
                     </p>
                     <button
                         onClick={() => router.push('/dashboard/upgrade')}

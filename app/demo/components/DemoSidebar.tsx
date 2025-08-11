@@ -81,7 +81,7 @@ export default function DemoSidebar() {
         <div className="flex items-center gap-2">
           <h1 className="text-xl font-black tracking-tight relative">
             <span className="relative text-foreground">
-              Taskelia
+              Taskelio
               {/* Punto decorativo sutil */}
               <div className="absolute -top-0.5 -right-0.5 w-1 h-1 bg-gradient-to-r from-cyan-500 to-purple-500 rounded-full opacity-70"></div>
             </span>
@@ -136,7 +136,7 @@ export default function DemoSidebar() {
               Usuario Demo
             </p>
             <p className="text-xs text-muted-foreground truncate">
-              demo@taskelia.com
+              demo@taskelio.com
             </p>
           </div>
         </div>

@@ -117,7 +117,7 @@ export default function ClientsPageClientSimple({ userEmail }: ClientsPageClient
                     color: '#3b82f6',
                     marginBottom: '2rem'
                 }}>
-                    Taskelia
+                    Taskelio
                 </div>
                 
                 <nav style={{ marginBottom: '2rem' }}>

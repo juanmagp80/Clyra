@@ -206,7 +206,7 @@ export default function RegisterPage() {
                 <Link href="/" className="inline-flex items-center gap-3 group">
                     <h1 className="text-xl font-black tracking-tight relative">
                         <span className="relative text-slate-900">
-                            Taskelia
+                            Taskelio
                             <div className="absolute -top-0.5 -right-0.5 w-1 h-1 bg-gradient-to-r from-indigo-500 to-violet-500 rounded-full opacity-80"></div>
                         </span>
                     </h1>
@@ -236,7 +236,7 @@ export default function RegisterPage() {
                             
                             <h1 className="text-3xl font-black mb-3 tracking-tight">
                                 <span className="bg-gradient-to-r from-slate-900 via-indigo-900 to-violet-900 bg-clip-text text-transparent">
-                                    Únete a Taskelia
+                                    Únete a Taskelio
                                 </span>
                             </h1>
                             <p className="text-slate-600 text-base leading-relaxed">

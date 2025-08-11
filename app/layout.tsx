@@ -3,8 +3,8 @@ import './globals.css';
 import './fallback.css';
 
 export const metadata: Metadata = {
-  title: 'Taskelia - Gestión de Clientes',
-  description: 'Sistema de gestión de clientes con Supabase y Next.js',
+  title: 'Taskelio — Tu CRM ligero para freelancers',
+  description: 'Organiza clientes, tareas y proyectos. Todo en uno. El CRM que entiende tu forma de trabajar.',
 };
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {

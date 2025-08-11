@@ -123,7 +123,7 @@ export default function MiPagina({ userEmail }) {
 ### 14-8 días restantes:
 - 🟦 **Color**: Azul
 - 👑 **Icono**: Corona
-- 📝 **Mensaje**: "Probando Taskelia PRO"
+- 📝 **Mensaje**: "Probando Taskelio PRO"
 
 ### 7-4 días restantes:
 - 🟨 **Color**: Amarillo

@@ -1,5 +1,5 @@
 /**
- * TASKELIA CALENDAR AI SERVICE - Local Version
+ * TASKELIO CALENDAR AI SERVICE - Local Version
  * Sistema de IA simplificado que funciona completamente local
  */
 

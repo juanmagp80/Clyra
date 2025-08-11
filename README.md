@@ -1,4 +1,4 @@
-# Taskelia - CRM para Freelancers
+# Taskelio - CRM para Freelancers
 
 Una aplicación SaaS moderna diseñada específicamente para freelancers que buscan organizar su negocio de manera simple y eficiente.
 
