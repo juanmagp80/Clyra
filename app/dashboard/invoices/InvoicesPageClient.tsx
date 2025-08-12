@@ -11,6 +11,7 @@ import {
     FileText,
     MoreHorizontal,
     Plus,
+    Receipt,
     Search,
     Send
 } from 'lucide-react';
@@ -33,6 +34,13 @@ interface Invoice {
     due_date: string;
     created_at: string;
     description?: string;
+    client?: {
+        id: string;
+        name: string;
+        email: string;
+        company?: string;
+        nif?: string;
+    };
 }
 
 export default function InvoicesPageClient({ userEmail }: ClientsPageClientProps) {
@@ -54,7 +62,16 @@ export default function InvoicesPageClient({ userEmail }: ClientsPageClientProps
             
             const { data, error } = await supabase
                 .from('invoices')
-                .select('*')
+                .select(`
+                    *,
+                    client:clients(
+                        id,
+                        name,
+                        email,
+                        company,
+                        nif
+                    )
+                `)
                 .order('created_at', { ascending: false });
 
             if (error) {
@@ -105,7 +122,7 @@ export default function InvoicesPageClient({ userEmail }: ClientsPageClientProps
     };
 
     const filteredInvoices = invoices.filter(invoice => {
-        const matchesSearch = (invoice.client_name?.toLowerCase() || '').includes(searchTerm.toLowerCase()) ||
+        const matchesSearch = (invoice.client?.name?.toLowerCase() || invoice.client_name?.toLowerCase() || '').includes(searchTerm.toLowerCase()) ||
             (invoice.invoice_number?.toLowerCase() || '').includes(searchTerm.toLowerCase());
         const matchesStatus = statusFilter === 'all' || invoice.status === statusFilter;
         return matchesSearch && matchesStatus;
@@ -182,9 +199,14 @@ export default function InvoicesPageClient({ userEmail }: ClientsPageClientProps
                                 <div className="bg-white/40 backdrop-blur-2xl rounded-3xl border border-white/60 shadow-2xl shadow-indigo-500/10 p-8">
                                     <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-6">
                                         <div>
-                                            <h1 className="text-4xl font-bold bg-gradient-to-r from-slate-900 via-blue-900 to-indigo-900 bg-clip-text text-transparent mb-3">
-                                                Gestión de Facturas
-                                            </h1>
+                                            <div className="flex items-center gap-3 mb-3">
+                                                <div className="p-2 bg-gradient-to-r from-blue-600 to-indigo-600 rounded-xl shadow-lg">
+                                                    <Receipt className="w-6 h-6 text-white" />
+                                                </div>
+                                                <h1 className="text-4xl font-bold bg-gradient-to-r from-slate-900 via-blue-900 to-indigo-900 bg-clip-text text-transparent">
+                                                    Gestión de Facturas
+                                                </h1>
+                                            </div>
                                             <p className="text-slate-600 text-lg font-medium">
                                                 Controla y gestiona todas tus facturas desde un solo lugar
                                             </p>
@@ -334,10 +356,10 @@ export default function InvoicesPageClient({ userEmail }: ClientsPageClientProps
                                                                 </span>
                                                             </div>
                                                             <p className="text-slate-600 mb-1">
-                                                                <strong>Cliente:</strong> {invoice.client_name || 'Sin cliente'}
+                                                                <strong>Cliente:</strong> {invoice.client?.name || invoice.client_name || 'Sin cliente'}
                                                             </p>
                                                             <p className="text-slate-500 text-sm">
-                                                                <strong>Email:</strong> {invoice.client_email || 'Sin email'}
+                                                                <strong>Email:</strong> {invoice.client?.email || invoice.client_email || 'Sin email'}
                                                             </p>
                                                             <div className="flex items-center gap-4 mt-3 text-sm text-slate-500">
                                                                 <span>Creada: {formatDate(invoice.created_at)}</span>
@@ -347,22 +369,40 @@ export default function InvoicesPageClient({ userEmail }: ClientsPageClientProps
                                                                 </span>
                                                             </div>
                                                         </div>
-                                                        <div className="flex gap-2">
+                                                        <div className="flex flex-wrap gap-2">
                                                             {invoice.status !== 'paid' && (
                                                                 <button
                                                                     onClick={() => updateInvoiceStatus(invoice.id, 'paid')}
-                                                                    className="px-4 py-2 text-sm bg-white/70 backdrop-blur-xl border border-white/60 rounded-xl hover:bg-green-50 hover:border-green-200 text-slate-700 hover:text-green-700 flex items-center gap-2 transition-all duration-200 shadow-lg hover:shadow-xl"
+                                                                    className="px-3 py-2 text-sm bg-white/70 backdrop-blur-xl border border-white/60 rounded-xl hover:bg-green-50 hover:border-green-200 text-slate-700 hover:text-green-700 flex items-center gap-2 transition-all duration-200 shadow-lg hover:shadow-xl"
                                                                 >
                                                                     <CheckCircle className="w-4 h-4" />
                                                                     Marcar Pagada
                                                                 </button>
                                                             )}
+                                                            
+                                                            {/* Botón Descargar PDF */}
+                                                            <button
+                                                                onClick={async () => {
+                                                                    try {
+                                                                        window.open(`/api/invoices/${invoice.id}/spanish-pdf`, '_blank');
+                                                                    } catch (error) {
+                                                                        console.error('Error descargando PDF:', error);
+                                                                    }
+                                                                }}
+                                                                className="px-3 py-2 text-sm bg-gradient-to-r from-red-500 to-red-600 hover:from-red-600 hover:to-red-700 text-white rounded-xl flex items-center gap-1 transition-all duration-200 shadow-lg hover:shadow-xl hover:scale-105"
+                                                                title="Descargar factura en PDF"
+                                                            >
+                                                                <Download className="w-4 h-4" />
+                                                                <span className="hidden sm:inline">Descargar PDF</span>
+                                                                <span className="sm:hidden">PDF</span>
+                                                            </button>
+                                                            
                                                             <button
                                                                 onClick={() => router.push(`/dashboard/invoices/${invoice.id}`)}
-                                                                className="px-4 py-2 text-sm bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 text-white rounded-xl flex items-center gap-2 transition-all duration-200 shadow-lg hover:shadow-xl hover:scale-105"
+                                                                className="px-3 py-2 text-sm bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 text-white rounded-xl flex items-center gap-1 transition-all duration-200 shadow-lg hover:shadow-xl hover:scale-105"
                                                             >
                                                                 <Eye className="w-4 h-4" />
-                                                                Ver Detalle
+                                                                <span className="hidden sm:inline">Ver Detalle</span>
                                                             </button>
                                                         </div>
                                                     </div>

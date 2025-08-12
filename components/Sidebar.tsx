@@ -17,10 +17,15 @@ import {
   Users,
   Zap,
   Bot,
-  Presentation
+  Presentation,
+  Building2,
+  Receipt,
+  ChevronDown,
+  ChevronRight
 } from 'lucide-react';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
+import { useState } from 'react';
 
 interface SidebarProps {
   userEmail?: string;
@@ -93,10 +98,36 @@ const navigation = [
     href: '/dashboard/client-communications',
     icon: MessageCircle,
   },
+  {
+    name: 'Configuración',
+    href: '/dashboard/settings',
+    icon: Settings,
+    submenu: [
+      {
+        name: 'General',
+        href: '/dashboard/settings',
+      },
+      {
+        name: 'Datos Fiscales 🏢',
+        href: '/dashboard/settings/company',
+        icon: Building2,
+        highlight: true,
+      }
+    ]
+  },
 ];
 
 export default function Sidebar({ userEmail, onLogout }: SidebarProps) {
   const pathname = usePathname();
+  const [expandedMenus, setExpandedMenus] = useState<string[]>([]);
+
+  const toggleMenu = (menuName: string) => {
+    setExpandedMenus(prev => 
+      prev.includes(menuName) 
+        ? prev.filter(name => name !== menuName)
+        : [...prev, menuName]
+    );
+  };
 
   return (
     <div className="flex h-full w-56 flex-col fixed inset-y-0 z-50 bg-white/95 backdrop-blur-2xl border-r border-slate-200/60 shadow-2xl shadow-slate-900/5">
@@ -113,36 +144,112 @@ export default function Sidebar({ userEmail, onLogout }: SidebarProps) {
         </span>
       </div>
 
-      {/* Premium Navigation - Más compacto */}
+      {/* Premium Navigation - Con submenús */}
       <nav className="flex-1 space-y-1 px-3 py-4">
         {navigation.map((item) => {
           const isActive = pathname === item.href || pathname.startsWith(item.href + '/');
           const IconComponent = item.icon;
+          const hasSubmenu = item.submenu && item.submenu.length > 0;
+          const isExpanded = expandedMenus.includes(item.name);
+          const hasActiveSubmenu = hasSubmenu && item.submenu?.some(sub => 
+            pathname === sub.href || pathname.startsWith(sub.href + '/')
+          );
 
           return (
-            <Link
-              key={item.name}
-              href={item.href}
-              className={cn(
-                'group flex items-center px-3 py-2 text-sm font-semibold rounded-lg transition-all duration-300 relative',
-                isActive
-                  ? 'bg-gradient-to-r from-indigo-600 via-blue-600 to-violet-600 text-white shadow-lg shadow-indigo-500/25'
-                  : 'text-slate-700 hover:text-indigo-900 hover:bg-white/80 hover:shadow-md hover:shadow-slate-900/5'
+            <div key={item.name}>
+              {hasSubmenu ? (
+                <button
+                  onClick={() => toggleMenu(item.name)}
+                  className={cn(
+                    'group flex items-center justify-between w-full px-3 py-2 text-sm font-semibold rounded-lg transition-all duration-300 relative',
+                    isActive || hasActiveSubmenu
+                      ? 'bg-gradient-to-r from-indigo-600 via-blue-600 to-violet-600 text-white shadow-lg shadow-indigo-500/25'
+                      : 'text-slate-700 hover:text-indigo-900 hover:bg-white/80 hover:shadow-md hover:shadow-slate-900/5'
+                  )}
+                >
+                  {(isActive || hasActiveSubmenu) && (
+                    <div className="absolute inset-0 bg-gradient-to-r from-indigo-400 to-violet-400 opacity-20 rounded-lg"></div>
+                  )}
+                  <div className="flex items-center">
+                    <IconComponent
+                      className={cn(
+                        'mr-3 h-4 w-4 flex-shrink-0 transition-transform duration-300',
+                        isActive || hasActiveSubmenu
+                          ? 'text-white group-hover:scale-110'
+                          : 'text-slate-600 group-hover:text-indigo-600 group-hover:scale-110'
+                      )}
+                    />
+                    <span className="relative z-10">{item.name}</span>
+                  </div>
+                  {isExpanded ? (
+                    <ChevronDown className="w-4 h-4 text-current" />
+                  ) : (
+                    <ChevronRight className="w-4 h-4 text-current" />
+                  )}
+                </button>
+              ) : (
+                <Link
+                  href={item.href}
+                  className={cn(
+                    'group flex items-center px-3 py-2 text-sm font-semibold rounded-lg transition-all duration-300 relative',
+                    isActive
+                      ? 'bg-gradient-to-r from-indigo-600 via-blue-600 to-violet-600 text-white shadow-lg shadow-indigo-500/25'
+                      : 'text-slate-700 hover:text-indigo-900 hover:bg-white/80 hover:shadow-md hover:shadow-slate-900/5'
+                  )}
+                >
+                  {isActive && (
+                    <div className="absolute inset-0 bg-gradient-to-r from-indigo-400 to-violet-400 opacity-20 rounded-lg"></div>
+                  )}
+                  <IconComponent
+                    className={cn(
+                      'mr-3 h-4 w-4 flex-shrink-0 transition-transform duration-300',
+                      isActive
+                        ? 'text-white group-hover:scale-110'
+                        : 'text-slate-600 group-hover:text-indigo-600 group-hover:scale-110'
+                    )}
+                  />
+                  <span className="relative z-10">{item.name}</span>
+                </Link>
               )}
-            >
-              {isActive && (
-                <div className="absolute inset-0 bg-gradient-to-r from-indigo-400 to-violet-400 opacity-20 rounded-lg"></div>
+
+              {/* Submenú */}
+              {hasSubmenu && isExpanded && (
+                <div className="ml-6 mt-1 space-y-1">
+                  {item.submenu?.map((subItem) => {
+                    const isSubActive = pathname === subItem.href || pathname.startsWith(subItem.href + '/');
+                    const SubIcon = subItem.icon;
+                    
+                    return (
+                      <Link
+                        key={subItem.name}
+                        href={subItem.href}
+                        className={cn(
+                          'group flex items-center px-3 py-2 text-xs font-medium rounded-lg transition-all duration-200',
+                          isSubActive
+                            ? 'bg-gradient-to-r from-blue-100 to-indigo-100 text-indigo-900 shadow-sm'
+                            : subItem.highlight
+                            ? 'text-indigo-700 hover:bg-gradient-to-r hover:from-indigo-50 hover:to-blue-50 border border-indigo-200/50'
+                            : 'text-slate-600 hover:text-slate-900 hover:bg-slate-50'
+                        )}
+                      >
+                        {SubIcon && (
+                          <SubIcon
+                            className={cn(
+                              'mr-2 h-3 w-3 flex-shrink-0',
+                              isSubActive ? 'text-indigo-600' : 'text-current'
+                            )}
+                          />
+                        )}
+                        {subItem.name}
+                        {subItem.highlight && (
+                          <div className="ml-auto w-1.5 h-1.5 bg-indigo-400 rounded-full"></div>
+                        )}
+                      </Link>
+                    );
+                  })}
+                </div>
               )}
-              <IconComponent
-                className={cn(
-                  'mr-3 h-4 w-4 flex-shrink-0 transition-transform duration-300',
-                  isActive
-                    ? 'text-white group-hover:scale-110'
-                    : 'text-slate-600 group-hover:text-indigo-600 group-hover:scale-110'
-                )}
-              />
-              <span className="relative z-10">{item.name}</span>
-            </Link>
+            </div>
           );
         })}
       </nav>

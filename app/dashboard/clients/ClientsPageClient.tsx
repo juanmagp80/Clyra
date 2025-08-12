@@ -26,6 +26,9 @@ type Client = {
     phone?: string;
     company?: string;
     address?: string;
+    city?: string;
+    province?: string;
+    nif?: string; // NIF/CIF
     created_at: string;
 };
 
@@ -48,6 +51,9 @@ export default function ClientsPageClient({ userEmail }: ClientsPageClientProps)
         phone: '',
         company: '',
         address: '',
+        city: '',
+        province: '',
+        nif: '', // Campo obligatorio para CIF/NIF
         tag: ''
     });
 
@@ -60,6 +66,9 @@ export default function ClientsPageClient({ userEmail }: ClientsPageClientProps)
         phone: '',
         company: '',
         address: '',
+        city: '',
+        province: '',
+        nif: '', // Campo obligatorio para CIF/NIF
         tag: ''
     });
 
@@ -99,7 +108,11 @@ export default function ClientsPageClient({ userEmail }: ClientsPageClientProps)
 
     const addClient = async () => {
         try {
-            if (!formData.name.trim() || !supabase) return;
+            // Validar campos obligatorios
+            if (!formData.name.trim() || !formData.nif.trim() || !formData.city.trim() || !formData.province.trim() || !supabase) {
+                alert('Por favor, complete todos los campos obligatorios: Nombre, NIF/CIF, Ciudad y Provincia');
+                return;
+            }
 
             setLoading(true);
             
@@ -119,6 +132,9 @@ export default function ClientsPageClient({ userEmail }: ClientsPageClientProps)
                     phone: formData.phone,
                     company: formData.company,
                     address: formData.address,
+                    city: formData.city,
+                    province: formData.province,
+                    nif: formData.nif,
                     tag: formData.tag
                 }])
                 .select();
@@ -136,6 +152,9 @@ export default function ClientsPageClient({ userEmail }: ClientsPageClientProps)
                     phone: '',
                     company: '',
                     address: '',
+                    city: '',
+                    province: '',
+                    nif: '',
                     tag: ''
                 });
                 setShowForm(false);
@@ -153,8 +172,9 @@ export default function ClientsPageClient({ userEmail }: ClientsPageClientProps)
             console.log('Cliente a editar:', editingClient);
             console.log('Datos del formulario:', editFormData);
             
-            if (!editingClient || !editFormData.name.trim() || !supabase) {
+            if (!editingClient || !editFormData.name.trim() || !editFormData.nif.trim() || !editFormData.city.trim() || !editFormData.province.trim() || !supabase) {
                 console.error('❌ Faltan datos necesarios para la actualización');
+                alert('Por favor, complete todos los campos obligatorios: Nombre, NIF/CIF, Ciudad y Provincia');
                 return;
             }
 
@@ -177,6 +197,9 @@ export default function ClientsPageClient({ userEmail }: ClientsPageClientProps)
                     phone: editFormData.phone,
                     company: editFormData.company,
                     address: editFormData.address,
+                    city: editFormData.city,
+                    province: editFormData.province,
+                    nif: editFormData.nif,
                     tag: editFormData.tag
                 })
                 .eq('id', editingClient.id)
@@ -200,6 +223,9 @@ export default function ClientsPageClient({ userEmail }: ClientsPageClientProps)
                     phone: '',
                     company: '',
                     address: '',
+                    city: '',
+                    province: '',
+                    nif: '',
                     tag: ''
                 });
                 setShowEditForm(false);
@@ -257,6 +283,9 @@ export default function ClientsPageClient({ userEmail }: ClientsPageClientProps)
             phone: client.phone || '',
             company: client.company || '',
             address: client.address || '',
+            city: client.city || '',
+            province: client.province || '',
+            nif: client.nif || '',
             tag: client.tag
         });
         setShowEditForm(true);
@@ -272,6 +301,9 @@ export default function ClientsPageClient({ userEmail }: ClientsPageClientProps)
             phone: '',
             company: '',
             address: '',
+            city: '',
+            province: '',
+            nif: '',
             tag: ''
         });
     };
@@ -469,10 +501,43 @@ export default function ClientsPageClient({ userEmail }: ClientsPageClientProps)
                                                     <label className="text-sm font-semibold text-slate-700 mb-2 block">Dirección</label>
                                                     <input
                                                         type="text"
-                                                        placeholder="Calle, número, ciudad..."
+                                                        placeholder="Calle, número..."
                                                         value={formData.address}
                                                         onChange={(e) => setFormData({ ...formData, address: e.target.value })}
                                                         className="w-full px-4 py-3 bg-white/50 backdrop-blur-xl border border-white/60 rounded-xl focus:border-indigo-500 focus:ring-2 focus:ring-indigo-500/20 transition-all duration-200 placeholder-slate-400"
+                                                    />
+                                                </div>
+                                                <div>
+                                                    <label className="text-sm font-semibold text-slate-700 mb-2 block">Ciudad *</label>
+                                                    <input
+                                                        type="text"
+                                                        placeholder="Madrid, Barcelona..."
+                                                        value={formData.city}
+                                                        onChange={(e) => setFormData({ ...formData, city: e.target.value })}
+                                                        className="w-full px-4 py-3 bg-white/50 backdrop-blur-xl border border-white/60 rounded-xl focus:border-indigo-500 focus:ring-2 focus:ring-indigo-500/20 transition-all duration-200 placeholder-slate-400"
+                                                        required
+                                                    />
+                                                </div>
+                                                <div>
+                                                    <label className="text-sm font-semibold text-slate-700 mb-2 block">Provincia *</label>
+                                                    <input
+                                                        type="text"
+                                                        placeholder="Madrid, Cataluña..."
+                                                        value={formData.province}
+                                                        onChange={(e) => setFormData({ ...formData, province: e.target.value })}
+                                                        className="w-full px-4 py-3 bg-white/50 backdrop-blur-xl border border-white/60 rounded-xl focus:border-indigo-500 focus:ring-2 focus:ring-indigo-500/20 transition-all duration-200 placeholder-slate-400"
+                                                        required
+                                                    />
+                                                </div>
+                                                <div>
+                                                    <label className="text-sm font-semibold text-slate-700 mb-2 block">NIF/CIF *</label>
+                                                    <input
+                                                        type="text"
+                                                        placeholder="12345678A o B12345678"
+                                                        value={formData.nif}
+                                                        onChange={(e) => setFormData({ ...formData, nif: e.target.value.toUpperCase() })}
+                                                        className="w-full px-4 py-3 bg-white/50 backdrop-blur-xl border border-white/60 rounded-xl focus:border-indigo-500 focus:ring-2 focus:ring-indigo-500/20 transition-all duration-200 placeholder-slate-400"
+                                                        required
                                                     />
                                                 </div>
                                                 <div>
@@ -561,10 +626,43 @@ export default function ClientsPageClient({ userEmail }: ClientsPageClientProps)
                                                     <label className="text-sm font-semibold text-slate-700 mb-2 block">Dirección</label>
                                                     <input
                                                         type="text"
-                                                        placeholder="Calle, número, ciudad..."
+                                                        placeholder="Calle, número..."
                                                         value={editFormData.address}
                                                         onChange={(e) => setEditFormData({ ...editFormData, address: e.target.value })}
                                                         className="w-full px-4 py-3 bg-white/50 backdrop-blur-xl border border-white/60 rounded-xl focus:border-indigo-500 focus:ring-2 focus:ring-indigo-500/20 transition-all duration-200 placeholder-slate-400"
+                                                    />
+                                                </div>
+                                                <div>
+                                                    <label className="text-sm font-semibold text-slate-700 mb-2 block">Ciudad *</label>
+                                                    <input
+                                                        type="text"
+                                                        placeholder="Madrid, Barcelona..."
+                                                        value={editFormData.city}
+                                                        onChange={(e) => setEditFormData({ ...editFormData, city: e.target.value })}
+                                                        className="w-full px-4 py-3 bg-white/50 backdrop-blur-xl border border-white/60 rounded-xl focus:border-indigo-500 focus:ring-2 focus:ring-indigo-500/20 transition-all duration-200 placeholder-slate-400"
+                                                        required
+                                                    />
+                                                </div>
+                                                <div>
+                                                    <label className="text-sm font-semibold text-slate-700 mb-2 block">Provincia *</label>
+                                                    <input
+                                                        type="text"
+                                                        placeholder="Madrid, Cataluña..."
+                                                        value={editFormData.province}
+                                                        onChange={(e) => setEditFormData({ ...editFormData, province: e.target.value })}
+                                                        className="w-full px-4 py-3 bg-white/50 backdrop-blur-xl border border-white/60 rounded-xl focus:border-indigo-500 focus:ring-2 focus:ring-indigo-500/20 transition-all duration-200 placeholder-slate-400"
+                                                        required
+                                                    />
+                                                </div>
+                                                <div>
+                                                    <label className="text-sm font-semibold text-slate-700 mb-2 block">NIF/CIF *</label>
+                                                    <input
+                                                        type="text"
+                                                        placeholder="12345678A o B12345678"
+                                                        value={editFormData.nif}
+                                                        onChange={(e) => setEditFormData({ ...editFormData, nif: e.target.value.toUpperCase() })}
+                                                        className="w-full px-4 py-3 bg-white/50 backdrop-blur-xl border border-white/60 rounded-xl focus:border-indigo-500 focus:ring-2 focus:ring-indigo-500/20 transition-all duration-200 placeholder-slate-400"
+                                                        required
                                                     />
                                                 </div>
                                                 <div>

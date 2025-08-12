@@ -273,7 +273,7 @@ export default function InvoiceDetails({ invoiceId, userEmail }: InvoiceDetailsP
                                 </Button>
                                 <Button
                                     onClick={() => {
-                                        window.open(`/api/invoices/${invoice.id}/pdf`, '_blank');
+                                        window.open(`/api/invoices/${invoice.id}/spanish-pdf`, '_blank');
                                     }}
                                     className="bg-gradient-to-r from-purple-600 to-purple-700 text-white rounded-xl hover:from-purple-700 hover:to-purple-800"
                                 >

@@ -1,6 +1,6 @@
 import { createServerSupabaseClient } from '@/src/lib/supabase-server';
 import { redirect } from 'next/navigation';
-import CreateInvoicePage from './CreateInvoicePage';
+import CreateSpanishInvoice from './CreateSpanishInvoice';
 
 export default async function NewInvoice() {
     const supabase = await createServerSupabaseClient();
@@ -13,5 +13,5 @@ export default async function NewInvoice() {
         redirect('/login');
     }
 
-    return <CreateInvoicePage userEmail={session.user.email || ''} />;
+    return <CreateSpanishInvoice userEmail={session.user.email || ''} />;
 }

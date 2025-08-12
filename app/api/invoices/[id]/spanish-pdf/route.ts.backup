@@ -1,0 +1,646 @@
+import { NextRequest, NextResponse } from 'next/server';
+import { createServerSupabaseClient } from '@/src/lib/supabase-server';
+import puppeteer from 'puppeteer';
+import { generateSpanishFiscalQR } from '@/lib/spanish-invoice-utils';
+
+export async function GET(
+    request: NextRequest,
+    { params }: { params: { id: string } }
+) {
+    try {
+        const supabase = await createServerSupabaseClient();
+
+        // Verificar autenticación
+        const { data: { user }, error: authError } = await supabase.auth.getUser();
+        if (authError || !user) {
+            return NextResponse.json({ error: 'No autorizado' }, { status: 401 });
+        }
+
+        const invoiceId = params.id;
+
+        // Obtener datos de la factura
+        const { data: invoice, error: invoiceError } = await supabase
+            .from('invoices')
+            .select(`
+                *,
+                clients (
+                    name,
+                    nif,
+                    address,
+                    postal_code,
+                    city,
+                    country
+                )
+            `)
+            .eq('id', invoiceId)
+            .eq('user_id', user.id)
+            .single();
+
+        if (invoiceError || !invoice) {
+            return NextResponse.json({ error: 'Factura no encontrada' }, { status: 404 });
+        }
+
+        // Obtener configuración de la empresa
+        const { data: companyConfig, error: companyError } = await supabase
+            .from('company_settings')
+            .select('*')
+            .eq('user_id', user.id)
+            .single();
+
+        if (companyError || !companyConfig) {
+            return NextResponse.json({
+                error: 'Configuración de empresa no encontrada. Configure los datos fiscales primero.'
+            }, { status: 400 });
+        }
+
+        // Generar HTML para el PDF
+        const htmlContent = generateSpanishInvoiceHTML(invoice, companyConfig);
+
+        // Generar PDF con Puppeteer (fallback a HTML si no está disponible)
+        let pdfBuffer: Buffer;
+
+        try {
+            const browser = await puppeteer.launch({
+                headless: true,
+                args: ['--no-sandbox', '--disable-setuid-sandbox']
+            });
+
+            const page = await browser.newPage();
+            await page.setContent(htmlContent, { waitUntil: 'networkidle0' });
+
+            // Configurar formato A4
+            pdfBuffer = await page.pdf({
+                format: 'A4',
+                printBackground: true,
+                margin: {
+                    top: '20mm',
+                    right: '15mm',
+                    bottom: '20mm',
+                    left: '15mm'
+                }
+            });
+
+            await browser.close();
+        } catch (puppeteerError) {
+            console.warn('Puppeteer not available, returning HTML:', puppeteerError);
+            // Fallback: retornar HTML si Puppeteer no está disponible
+            return new NextResponse(htmlContent, {
+                headers: {
+                    'Content-Type': 'text/html; charset=utf-8',
+                    'Content-Disposition': `attachment; filename="Factura_${invoice.invoice_number?.replace('/', '_') || invoice.id}.html"`
+                }
+            });
+        }
+
+        // Establecer headers para descarga PDF
+        const headers = new Headers();
+        headers.set('Content-Type', 'application/pdf');
+        headers.set('Content-Disposition', `attachment; filename="Factura_${invoice.invoice_number?.replace('/', '_') || invoice.id}.pdf"`);
+        headers.set('Content-Length', pdfBuffer.length.toString());
+
+        return new NextResponse(pdfBuffer, { headers });
+
+    } catch (error) {
+        console.error('Error generando PDF español:', error);
+        return NextResponse.json({ error: 'Error interno del servidor' }, { status: 500 });
+    }
+}
+
+function generateSpanishInvoiceHTML(invoice: any, company: any): string {
+    const client = invoice.clients;
+
+    // Generar datos del QR
+    const companyData = {
+        companyName: company.company_name,
+        nif: company.nif,
+        address: company.address,
+        postalCode: company.postal_code,
+        city: company.city,
+        province: company.province,
+        country: company.country || 'España',
+        phone: company.phone,
+        email: company.email,
+        website: company.website,
+        registrationNumber: company.registration_number,
+        socialCapital: parseFloat(company.social_capital || '0'),
+    };
+    
+    const invoiceData = {
+        invoiceNumber: invoice.invoice_number || `FAC-${invoice.id}`,
+        date: invoice.created_at,
+        dueDate: invoice.due_date,
+        clientName: client?.name || 'Cliente',
+        clientNIF: client?.nif || '',
+        clientAddress: client?.address || '',
+        clientCity: client?.city || '',
+        clientPostalCode: client?.postal_code || '',
+        clientProvince: '',
+        items: [{
+            description: invoice.description || 'Servicios profesionales',
+            quantity: 1,
+            unitPrice: parseFloat(invoice.amount || '0'),
+            vatRate: parseFloat(invoice.tax_rate || '21'),
+            vatAmount: parseFloat(invoice.tax_amount || '0'),
+            total: parseFloat(invoice.total_amount || '0')
+        }],
+        subtotal: parseFloat(invoice.amount || '0'),
+        totalVAT: parseFloat(invoice.tax_amount || '0'),
+        total: parseFloat(invoice.total_amount || '0'),
+        notes: '',
+        paymentTerms: 'Transferencia bancaria'
+    };
+    
+    const qrData = generateSpanishFiscalQR(companyData, invoiceData);
+
+    return `
+    <!DOCTYPE html>
+    <html lang="es">
+    <head>
+        <meta charset="UTF-8">
+        <meta name="viewport" content="width=device-width, initial-scale=1.0">
+        <title>Factura ${invoice.invoice_number || invoice.id}</title>
+        <style>
+            * {
+                margin: 0;
+                padding: 0;
+                box-sizing: border-box;
+            }
+            
+            body {
+                font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+                line-height: 1.6;
+                color: #333;
+                background: white;
+                font-size: 12px;
+            }
+            
+            .invoice-container {
+                max-width: 800px;
+                margin: 0 auto;
+                padding: 30px;
+                min-height: 100vh;
+            }
+            
+            .header {
+                border-bottom: 3px solid #1e40af;
+                padding-bottom: 20px;
+                margin-bottom: 30px;
+                display: flex;
+                justify-content: space-between;
+                align-items: flex-start;
+            }
+            
+            .company-info h1 {
+                color: #1e3a8a;
+                font-size: 28px;
+                font-weight: bold;
+                margin-bottom: 10px;
+            }
+            
+            .company-details {
+                font-size: 13px;
+                color: #666;
+                line-height: 1.5;
+            }
+            
+            .invoice-title {
+                text-align: right;
+            }
+            
+            .invoice-badge {
+                background: #1e40af;
+                color: white;
+                padding: 10px 20px;
+                border-radius: 8px;
+                margin-bottom: 15px;
+                display: inline-block;
+            }
+            
+            .invoice-badge h2 {
+                font-size: 20px;
+                margin-bottom: 5px;
+            }
+            
+            .invoice-number {
+                font-family: 'Courier New', monospace;
+                font-size: 16px;
+                font-weight: bold;
+            }
+            
+            .qr-placeholder {
+                width: 80px;
+                height: 80px;
+                background: #f3f4f6;
+                border: 2px solid #d1d5db;
+                display: flex;
+                align-items: center;
+                justify-content: center;
+                font-size: 10px;
+                color: #6b7280;
+                text-align: center;
+                line-height: 1.2;
+                margin-top: 10px;
+                border-radius: 4px;
+            }
+            
+            .invoice-details {
+                display: grid;
+                grid-template-columns: 1fr 1fr;
+                gap: 40px;
+                margin-bottom: 40px;
+            }
+            
+            .section-title {
+                font-size: 16px;
+                font-weight: 600;
+                color: #374151;
+                margin-bottom: 15px;
+                border-bottom: 1px solid #d1d5db;
+                padding-bottom: 8px;
+            }
+            
+            .detail-row {
+                display: flex;
+                justify-content: space-between;
+                margin-bottom: 8px;
+                font-size: 14px;
+            }
+            
+            .detail-label {
+                font-weight: 500;
+                min-width: 140px;
+            }
+            
+            .detail-value {
+                font-family: 'Courier New', monospace;
+                flex: 1;
+                text-align: right;
+            }
+            
+            .client-name {
+                font-weight: 600;
+                font-size: 16px;
+                margin-bottom: 8px;
+                color: #1e40af;
+            }
+            
+            .client-details {
+                font-size: 13px;
+                line-height: 1.5;
+                color: #555;
+            }
+            
+            .description-section {
+                margin-bottom: 30px;
+            }
+            
+            .description-text {
+                background: #f9fafb;
+                padding: 20px;
+                border-radius: 8px;
+                font-size: 14px;
+                line-height: 1.6;
+                border: 1px solid #e5e7eb;
+            }
+            
+            .items-table {
+                width: 100%;
+                border-collapse: collapse;
+                margin-bottom: 30px;
+                box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+            }
+            
+            .items-table th,
+            .items-table td {
+                border: 1px solid #d1d5db;
+                padding: 12px;
+                text-align: left;
+                font-size: 14px;
+            }
+            
+            .items-table th {
+                background: #f3f4f6;
+                font-weight: 600;
+                color: #374151;
+            }
+            
+            .items-table tbody tr:nth-child(even) {
+                background: #f9fafb;
+            }
+            
+            .items-table .text-center {
+                text-align: center;
+            }
+            
+            .items-table .text-right {
+                text-align: right;
+                font-family: 'Courier New', monospace;
+            }
+            
+            .totals-section {
+                display: flex;
+                justify-content: flex-end;
+                margin-bottom: 40px;
+            }
+            
+            .totals-table {
+                width: 320px;
+                border: 1px solid #d1d5db;
+                border-radius: 8px;
+                overflow: hidden;
+            }
+            
+            .totals-table td {
+                padding: 12px 15px;
+                border-bottom: 1px solid #e5e7eb;
+            }
+            
+            .totals-table tr:last-child td {
+                border-bottom: none;
+            }
+            
+            .totals-table .label {
+                text-align: right;
+                font-weight: 500;
+                padding-right: 20px;
+                color: #374151;
+            }
+            
+            .totals-table .amount {
+                text-align: right;
+                font-family: 'Courier New', monospace;
+                font-weight: 600;
+                width: 120px;
+            }
+            
+            .total-row {
+                background: #1e40af !important;
+                color: white !important;
+                font-size: 16px;
+                font-weight: bold;
+            }
+            
+            .total-row td {
+                border-bottom: none !important;
+            }
+            
+            .retention {
+                color: #dc2626;
+                background: #fef2f2;
+            }
+            
+            .legal-info {
+                border-top: 1px solid #d1d5db;
+                padding-top: 20px;
+                font-size: 11px;
+                color: #6b7280;
+                line-height: 1.5;
+            }
+            
+            .legal-row {
+                margin-bottom: 10px;
+            }
+            
+            .qr-section {
+                background: #eff6ff;
+                padding: 20px;
+                border-radius: 8px;
+                border: 1px solid #bfdbfe;
+                margin: 20px 0;
+            }
+            
+            .qr-title {
+                color: #1e40af;
+                font-weight: 600;
+                font-size: 14px;
+                margin-bottom: 10px;
+            }
+            
+            .qr-description {
+                color: #1d4ed8;
+                font-size: 12px;
+                margin-bottom: 15px;
+                line-height: 1.5;
+            }
+            
+            .qr-data {
+                font-family: 'Courier New', monospace;
+                font-size: 9px;
+                background: white;
+                padding: 15px;
+                border-radius: 4px;
+                border: 1px solid #d1d5db;
+                word-break: break-all;
+                line-height: 1.4;
+            }
+            
+            .legal-notice {
+                background: #f8fafc;
+                padding: 20px;
+                border-radius: 8px;
+                border: 1px solid #e2e8f0;
+                text-align: center;
+                margin: 30px 0;
+            }
+            
+            .legal-notice-title {
+                font-weight: 600;
+                margin-bottom: 10px;
+                color: #1e40af;
+                font-size: 14px;
+            }
+            
+            .legal-notice-text {
+                max-width: 600px;
+                margin: 0 auto;
+                line-height: 1.6;
+                color: #475569;
+            }
+            
+            .footer {
+                text-align: center;
+                margin-top: 40px;
+                padding-top: 20px;
+                border-top: 1px solid #e5e7eb;
+                font-size: 11px;
+                color: #9ca3af;
+            }
+            
+            @media print {
+                body {
+                    -webkit-print-color-adjust: exact;
+                    color-adjust: exact;
+                }
+                
+                .invoice-container {
+                    padding: 0;
+                    max-width: none;
+                }
+                
+                .page-break {
+                    page-break-before: always;
+                }
+            }
+        </style>
+    </head>
+    <body>
+        <div class="invoice-container">
+            <!-- Header -->
+            <div class="header">
+                <div class="company-info">
+                    <h1>${company.company_name}</h1>
+                    <div class="company-details">
+                        <div><strong>NIF:</strong> ${company.nif}</div>
+                        <div>${company.address}</div>
+                        <div>${company.postal_code} ${company.city}</div>
+                        <div>${company.province}, ${company.country || 'España'}</div>
+                        ${company.phone ? `<div><strong>Tel:</strong> ${company.phone}</div>` : ''}
+                        ${company.email ? `<div><strong>Email:</strong> ${company.email}</div>` : ''}
+                        ${company.website ? `<div><strong>Web:</strong> ${company.website}</div>` : ''}
+                    </div>
+                </div>
+                <div class="invoice-title">
+                    <div class="invoice-badge">
+                        <h2>FACTURA</h2>
+                        <div class="invoice-number">${invoice.invoice_number || `FAC-${invoice.id}`}</div>
+                    </div>
+                    <div class="qr-placeholder">
+                        Código QR<br/>
+                        Verificación<br/>
+                        Fiscal
+                    </div>
+                </div>
+            </div>
+
+            <!-- Invoice and Client Details -->
+            <div class="invoice-details">
+                <div>
+                    <div class="section-title">Datos de la Factura</div>
+                    <div class="detail-row">
+                        <span class="detail-label">Número:</span>
+                        <span class="detail-value">${invoice.invoice_number || `FAC-${invoice.id}`}</span>
+                    </div>
+                    <div class="detail-row">
+                        <span class="detail-label">Serie:</span>
+                        <span class="detail-value">${invoice.series || 'FAC'}</span>
+                    </div>
+                    <div class="detail-row">
+                        <span class="detail-label">Fecha emisión:</span>
+                        <span class="detail-value">${new Date(invoice.created_at).toLocaleDateString('es-ES')}</span>
+                    </div>
+                    ${invoice.due_date ? `
+                    <div class="detail-row">
+                        <span class="detail-label">Vencimiento:</span>
+                        <span class="detail-value">${new Date(invoice.due_date).toLocaleDateString('es-ES')}</span>
+                    </div>
+                    ` : ''}
+                    ${invoice.service_date ? `
+                    <div class="detail-row">
+                        <span class="detail-label">Fecha servicio:</span>
+                        <span class="detail-value">${new Date(invoice.service_date).toLocaleDateString('es-ES')}</span>
+                    </div>
+                    ` : ''}
+                    <div class="detail-row">
+                        <span class="detail-label">Forma de pago:</span>
+                        <span class="detail-value">${invoice.payment_method || 'Transferencia'}</span>
+                    </div>
+                </div>
+
+                <div>
+                    <div class="section-title">Facturar a</div>
+                    <div class="client-name">${client?.name || 'Cliente'}</div>
+                    <div class="client-details">
+                        ${client?.nif ? `<div><strong>NIF:</strong> ${client.nif}</div>` : ''}
+                        ${client?.address ? `<div>${client.address}</div>` : ''}
+                        ${client?.postal_code || client?.city ? `<div>${client?.postal_code || ''} ${client?.city || ''}</div>` : ''}
+                        <div>${client?.country || 'España'}</div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Description -->
+            <div class="description-section">
+                <div class="section-title">Descripción de la Operación</div>
+                <div class="description-text">${invoice.description || 'Servicios profesionales prestados según acuerdo comercial.'}</div>
+            </div>
+
+            <!-- Items Table -->
+            <table class="items-table">
+                <thead>
+                    <tr>
+                        <th style="width: 50%;">Concepto</th>
+                        <th class="text-center" style="width: 10%;">Cant.</th>
+                        <th class="text-right" style="width: 20%;">Precio Unitario</th>
+                        <th class="text-right" style="width: 20%;">Importe</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr>
+                        <td><strong>${invoice.description || 'Servicios profesionales'}</strong></td>
+                        <td class="text-center">1</td>
+                        <td class="text-right">${parseFloat(invoice.amount || '0').toFixed(2)} €</td>
+                        <td class="text-right" style="font-weight: 600;">${parseFloat(invoice.amount || '0').toFixed(2)} €</td>
+                    </tr>
+                </tbody>
+            </table>
+
+            <!-- Totals -->
+            <div class="totals-section">
+                <table class="totals-table">
+                    <tbody>
+                        <tr>
+                            <td class="label">Base imponible:</td>
+                            <td class="amount">${parseFloat(invoice.amount || '0').toFixed(2)} €</td>
+                        </tr>
+                        <tr>
+                            <td class="label">IVA (${parseFloat(invoice.tax_rate || '21').toFixed(0)}%):</td>
+                            <td class="amount">${parseFloat(invoice.tax_amount || '0').toFixed(2)} €</td>
+                        </tr>
+                        <tr class="total-row">
+                            <td class="label">TOTAL A PAGAR:</td>
+                            <td class="amount">${parseFloat(invoice.total_amount || '0').toFixed(2)} €</td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+
+            <!-- Legal Info -->
+            <div class="legal-info">
+                ${company.registration_number ? `<div class="legal-row"><strong>Registro Mercantil:</strong> ${company.registration_number}</div>` : ''}
+                ${company.social_capital ? `<div class="legal-row"><strong>Capital Social:</strong> ${parseFloat(company.social_capital).toLocaleString('es-ES', { style: 'currency', currency: 'EUR' })}</div>` : ''}
+
+                <div class="qr-section">
+                    <div class="qr-title">🔒 Verificación Digital - Código QR</div>
+                    <div class="qr-description">
+                        Esta factura incluye un código QR que permite verificar su autenticidad 
+                        y validar el cumplimiento de la normativa fiscal española.
+                    </div>
+                    <div class="qr-data">${qrData}</div>
+                </div>
+
+                <div class="legal-notice">
+                    <div class="legal-notice-title">⚖️ Marco Legal y Normativo</div>
+                    <div class="legal-notice-text">
+                        Esta factura se emite conforme al <strong>Real Decreto 1619/2012</strong> de 30 de noviembre, 
+                        por el que se aprueba el Reglamento por el que se regulan las obligaciones de facturación, 
+                        y cumple con la <strong>Ley 37/1992 del Impuesto sobre el Valor Añadido</strong>. 
+                        Su emisión constituye el derecho a la deducción del IVA soportado según la legislación vigente.
+                    </div>
+                </div>
+            </div>
+
+            <!-- Footer -->
+            <div class="footer">
+                📄 Factura generada electrónicamente el ${new Date().toLocaleDateString('es-ES', {
+        year: 'numeric',
+        month: 'long',
+        day: 'numeric',
+        hour: '2-digit',
+        minute: '2-digit'
+    })} | Sistema certificado de facturación
+            </div>
+        </div>
+    </body>
+    </html>
+    `;
+}
