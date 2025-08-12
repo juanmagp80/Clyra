@@ -431,7 +431,7 @@ export default function ProposalsPageClient({ userEmail }: ProposalsPageClientPr
         }
     };
 
-    const useTemplate = async (template: any) => {
+    const applyTemplate = async (template: any) => {
         try {
             if (!supabase) return;
 
@@ -670,6 +670,10 @@ Características principales:
             console.error('Error using template:', error);
             alert('Error al usar el template');
         }
+    };
+
+    const handleUseTemplate = (template: any) => {
+        applyTemplate(template);
     };
 
     const editProposal = (proposal: Proposal) => {
@@ -1276,7 +1280,7 @@ Características principales:
                                                     
                                                     <CardContent className="pt-0">
                                                         <Button
-                                                            onClick={() => useTemplate(template)}
+                                                            onClick={() => handleUseTemplate(template)}
                                                             className="w-full bg-gradient-to-r from-emerald-600 to-teal-600 text-white hover:from-emerald-700 hover:to-teal-700 shadow-lg hover:shadow-xl transition-all duration-200"
                                                             size="sm"
                                                         >

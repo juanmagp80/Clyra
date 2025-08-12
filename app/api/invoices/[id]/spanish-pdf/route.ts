@@ -606,36 +606,4 @@ function extractConceptsFromNotes(notes: string): string {
     return result;
 }
 
-// Función para limpiar la descripción del concepto y extraer solo el texto descriptivo
-function cleanConceptDescription(description: string): string {
-    if (!description) return 'Servicios profesionales';
-    
-    console.log('Descripción original:', description);
-    
-    let cleaned = description.trim();
-    
-    // Remover el guión inicial si existe
-    if (cleaned.startsWith('- ')) {
-        cleaned = cleaned.substring(2);
-    }
-    
-    // Remover todo lo que esté después de " (" hasta el final
-    // Esto captura patrones como "concepto (1 x 120€ = 145.2€)"
-    const parenIndex = cleaned.indexOf(' (');
-    if (parenIndex > 0) {
-        cleaned = cleaned.substring(0, parenIndex);
-    }
-    
-    // También remover patrones que empiecen directamente con paréntesis
-    cleaned = cleaned.replace(/\s*\([^)]*\)\s*$/g, '');
-    
-    // Remover patrones específicos con cálculos
-    cleaned = cleaned.replace(/\s*\d+\s*x\s*\d+[€$]?\s*=\s*[\d.,]+[€$]?\s*$/gi, '');
-    
-    // Remover espacios extra y caracteres de control
-    cleaned = cleaned.trim().replace(/\s+/g, ' ');
-    
-    console.log('Descripción limpia:', cleaned);
-    
-    return cleaned || 'Servicios profesionales';
-}
+

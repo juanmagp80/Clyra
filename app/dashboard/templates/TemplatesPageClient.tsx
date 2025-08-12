@@ -190,7 +190,7 @@ export default function TemplatesPageClient({ userEmail }: TemplatesPageClientPr
         }
     };
 
-    const useTemplate = (template: ProjectTemplate) => {
+    const applyTemplate = (template: ProjectTemplate) => {
         setSelectedTemplate(template);
         setProjectForm({
             name: `Proyecto desde ${template.name}`,
@@ -552,7 +552,7 @@ export default function TemplatesPageClient({ userEmail }: TemplatesPageClientPr
     };
 
     const handleUseTemplate = (template: ProjectTemplate) => {
-        useTemplate(template);
+        applyTemplate(template);
     };
 
     useEffect(() => {
