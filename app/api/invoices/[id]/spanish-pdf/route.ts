@@ -7,9 +7,10 @@ import crypto from 'crypto';
 
 export async function GET(
     request: NextRequest,
-    { params }: { params: { id: string } }
+    { params }: { params: Promise<{ id: string }> }
 ) {
     try {
+        const resolvedParams = await params;
         const supabase = await createServerSupabaseClient();
 
         // Verificar autenticación
@@ -18,7 +19,7 @@ export async function GET(
             return NextResponse.json({ error: 'No autorizado' }, { status: 401 });
         }
 
-        const invoiceId = params.id;
+        const invoiceId = resolvedParams.id;
 
         // Obtener datos de la factura
         const { data: invoice, error: invoiceError } = await supabase
