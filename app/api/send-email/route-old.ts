@@ -180,30 +180,6 @@ export async function POST(request: NextRequest) {
             });
         }
 
-        if (error) {
-            console.error('❌ API send-email: Error enviando email con Resend:', error);
-            return NextResponse.json(
-                { 
-                    success: false, 
-                    message: 'Error al enviar email',
-                    error: error.message || JSON.stringify(error)
-                },
-                { status: 500 }
-            );
-        }
-
-        console.log('✅ API send-email: Email enviado exitosamente via API:', data);
-        return NextResponse.json({
-            success: true,
-            message: `Email de prueba enviado correctamente a ${testEmail} (originalmente para: ${originalTo})`,
-            data: {
-                ...data,
-                originalRecipient: originalTo,
-                testRecipient: testEmail,
-                mode: 'sandbox'
-            }
-        });
-
     } catch (error) {
         console.error('Error crítico en API send-email:', error);
         return NextResponse.json(

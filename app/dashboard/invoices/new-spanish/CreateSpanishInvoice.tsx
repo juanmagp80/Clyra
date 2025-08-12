@@ -134,7 +134,7 @@ export default function CreateSpanishInvoice({ userEmail }: CreateSpanishInvoice
             }
         } catch (error) {
             console.error('💥 DEBUG: Error en loadCompanyData:', error);
-            console.error('💥 DEBUG: Stack trace:', error.stack);
+            console.error('💥 DEBUG: Stack trace:', error instanceof Error ? error.stack : 'No stack available');
         } finally {
             console.log('🏁 DEBUG: Finalizando loadCompanyData, setLoadingCompany(false)');
             setLoadingCompany(false);

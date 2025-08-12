@@ -43,7 +43,9 @@ export default function ReportsPageClient({ userEmail }: ReportsPageClientProps)
 
     const handleLogout = async () => {
         const supabase = createSupabaseClient();
-        await supabase.auth.signOut();
+        if (supabase) {
+            await supabase.auth.signOut();
+        }
         router.push('/login');
     };
 

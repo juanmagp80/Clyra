@@ -1,5 +1,5 @@
 import React from 'react';
-import { SpanishCompanyData, SpanishInvoiceData, generateSpanishQRData } from '@/lib/spanish-invoice-utils';
+import { SpanishCompanyData, SpanishInvoiceData, generateSpanishFiscalQR } from '@/lib/spanish-invoice-utils';
 
 interface SpanishInvoicePDFProps {
     invoice: SpanishInvoiceData;
@@ -13,7 +13,7 @@ interface SpanishInvoicePDFProps {
 }
 
 export function SpanishInvoicePDF({ invoice, company, items }: SpanishInvoicePDFProps) {
-    const qrData = generateSpanishQRData(invoice, company);
+    const qrData = generateSpanishFiscalQR(company, invoice);
 
     return (
         <div className="max-w-4xl mx-auto bg-white p-8 shadow-lg" style={{ minHeight: '297mm' }}>
@@ -60,12 +60,8 @@ export function SpanishInvoicePDF({ invoice, company, items }: SpanishInvoicePDF
                             <span className="font-mono">{invoice.invoiceNumber}</span>
                         </div>
                         <div className="flex justify-between">
-                            <span className="font-medium">Serie:</span>
-                            <span>{invoice.series}</span>
-                        </div>
-                        <div className="flex justify-between">
                             <span className="font-medium">Fecha de emisión:</span>
-                            <span>{new Date(invoice.issueDate).toLocaleDateString('es-ES')}</span>
+                            <span>{new Date(invoice.date).toLocaleDateString('es-ES')}</span>
                         </div>
                         {invoice.dueDate && (
                             <div className="flex justify-between">
@@ -73,16 +69,10 @@ export function SpanishInvoicePDF({ invoice, company, items }: SpanishInvoicePDF
                                 <span>{new Date(invoice.dueDate).toLocaleDateString('es-ES')}</span>
                             </div>
                         )}
-                        {invoice.serviceDate && (
-                            <div className="flex justify-between">
-                                <span className="font-medium">Fecha del servicio:</span>
-                                <span>{new Date(invoice.serviceDate).toLocaleDateString('es-ES')}</span>
-                            </div>
-                        )}
-                        {invoice.paymentMethod && (
+                        {invoice.paymentTerms && (
                             <div className="flex justify-between">
                                 <span className="font-medium">Forma de pago:</span>
-                                <span>{invoice.paymentMethod}</span>
+                                <span>{invoice.paymentTerms}</span>
                             </div>
                         )}
                     </div>
@@ -95,23 +85,25 @@ export function SpanishInvoicePDF({ invoice, company, items }: SpanishInvoicePDF
                     </h3>
                     <div className="space-y-1 text-sm">
                         <div className="font-semibold text-base">{invoice.clientName}</div>
-                        {invoice.clientNif && (
-                            <div><strong>NIF:</strong> {invoice.clientNif}</div>
+                        {invoice.clientNIF && (
+                            <div><strong>NIF:</strong> {invoice.clientNIF}</div>
                         )}
                         <div>{invoice.clientAddress}</div>
                         <div>{invoice.clientPostalCode} {invoice.clientCity}</div>
-                        <div>{invoice.clientCountry}</div>
+                        <div>España</div>
                     </div>
                 </div>
             </div>
 
             {/* Descripción de la operación */}
+            {invoice.notes && (
             <div className="mb-8">
                 <h3 className="text-lg font-semibold text-gray-800 mb-4 border-b border-gray-300 pb-2">
                     Descripción de la Operación
                 </h3>
-                <p className="text-sm text-gray-700 leading-relaxed">{invoice.description}</p>
+                <p className="text-sm text-gray-700 leading-relaxed">{invoice.notes}</p>
             </div>
+            )}
 
             {/* Tabla de conceptos */}
             <div className="mb-8">
@@ -166,22 +158,12 @@ export function SpanishInvoicePDF({ invoice, company, items }: SpanishInvoicePDF
                             </tr>
                             <tr>
                                 <td className="py-2 text-right font-medium">
-                                    IVA ({invoice.taxRate}%):
+                                    IVA:
                                 </td>
                                 <td className="py-2 text-right font-mono font-semibold pl-4">
-                                    {invoice.taxAmount.toFixed(2)} €
+                                    {invoice.totalVAT.toFixed(2)} €
                                 </td>
                             </tr>
-                            {invoice.retentionRate > 0 && (
-                                <tr>
-                                    <td className="py-2 text-right font-medium text-red-700">
-                                        Retención IRPF ({invoice.retentionRate}%):
-                                    </td>
-                                    <td className="py-2 text-right font-mono font-semibold pl-4 text-red-700">
-                                        -{invoice.retentionAmount?.toFixed(2)} €
-                                    </td>
-                                </tr>
-                            )}
                             <tr className="border-t-2 border-gray-400">
                                 <td className="py-3 text-right text-lg font-bold">TOTAL:</td>
                                 <td className="py-3 text-right text-xl font-mono font-bold pl-4 bg-blue-50 px-4 rounded">

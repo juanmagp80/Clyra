@@ -104,6 +104,11 @@ const TasksPageClient: React.FC = () => {
 
     const router = useRouter();
 
+    // Función de logout para componente público
+    const handleLogout = () => {
+        router.push('/login');
+    };
+
     // Función para obtener tareas del usuario principal
     const fetchTasks = async () => {
         setLoading(true);
@@ -366,7 +371,7 @@ const TasksPageClient: React.FC = () => {
 
     return (
         <div className="flex h-screen bg-gradient-to-br from-slate-900 via-purple-900 to-slate-900">
-            <Sidebar />
+            <Sidebar userEmail="demo@clyra.com" onLogout={handleLogout} />
             
             <div className="flex-1 flex flex-col overflow-hidden">
                 {/* Header */}

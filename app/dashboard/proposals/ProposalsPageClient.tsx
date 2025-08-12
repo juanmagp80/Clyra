@@ -834,18 +834,20 @@ Características principales:
             }
 
             // Actualizar estado de la propuesta a 'sent'
-            const { error } = await supabase
-                .from('proposals')
-                .update({
-                    status: 'sent',
-                    sent_at: new Date().toISOString(),
-                    prospect_name: recipientName,
-                    prospect_email: recipientEmail
-                })
-                .eq('id', sendingProposal.id);
+            if (supabase) {
+                const { error } = await supabase
+                    .from('proposals')
+                    .update({
+                        status: 'sent',
+                        sent_at: new Date().toISOString(),
+                        prospect_name: recipientName,
+                        prospect_email: recipientEmail
+                    })
+                    .eq('id', sendingProposal.id);
 
-            if (error) {
-                console.error('Error updating proposal status:', error);
+                if (error) {
+                    console.error('Error updating proposal status:', error);
+                }
             }
 
             alert('¡Propuesta enviada exitosamente!');
