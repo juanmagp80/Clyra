@@ -2,8 +2,6 @@ import { NextRequest, NextResponse } from 'next/server';
 import { Resend } from 'resend';
 import { createServerClient } from '@supabase/ssr';
 
-const resend = new Resend(process.env.RESEND_API_KEY);
-
 export async function POST(request: NextRequest) {
     try {
         console.log('🔧 API send-email: Iniciando procesamiento...');
@@ -80,6 +78,9 @@ export async function POST(request: NextRequest) {
 
         // Envío real con Resend
         console.log('🚀 API send-email: Enviando email real con Resend...');
+        
+        // Inicializar Resend con la clave API
+        const resend = new Resend(process.env.RESEND_API_KEY);
         
         // Verificar si tenemos un dominio configurado O si forzamos el modo producción
         const hasCustomDomain = process.env.RESEND_DOMAIN && process.env.RESEND_DOMAIN !== 'onboarding@resend.dev';
