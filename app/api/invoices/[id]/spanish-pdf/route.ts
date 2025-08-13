@@ -1,9 +1,9 @@
-import { NextRequest, NextResponse } from 'next/server';
-import { createServerSupabaseClient } from '@/src/lib/supabase-server';
 import { generateSpanishFiscalQR } from '@/lib/spanish-invoice-utils';
+import { createServerSupabaseClient } from '@/src/lib/supabase-server';
+import crypto from 'crypto';
+import { NextRequest, NextResponse } from 'next/server';
 import puppeteer from 'puppeteer';
 import QRCode from 'qrcode';
-import crypto from 'crypto';
 
 export async function GET(
     request: NextRequest,
@@ -42,7 +42,7 @@ export async function GET(
             console.error('Error obteniendo factura:', invoiceError);
             console.log('Invoice ID buscado:', invoiceId);
             console.log('User ID:', user.id);
-            return NextResponse.json({ 
+            return NextResponse.json({
                 error: 'Factura no encontrada',
                 debug: {
                     invoiceId,
@@ -82,26 +82,26 @@ export async function GET(
             headless: true,
             args: ['--no-sandbox', '--disable-setuid-sandbox', '--disable-dev-shm-usage']
         });
-        
+
         const page = await browser.newPage();
-        
+
         // Configurar viewport para una página A4
         await page.setViewport({ width: 794, height: 1123, deviceScaleFactor: 1 });
-        
-        await page.setContent(htmlContent, { 
+
+        await page.setContent(htmlContent, {
             waitUntil: ['load', 'networkidle0'],
-            timeout: 30000 
+            timeout: 30000
         });
 
         // Generar PDF configurado para una sola página con escalado dinámico
         const pdfBuffer = await page.pdf({
             format: 'A4',
             printBackground: true,
-            margin: { 
-                top: '12mm', 
-                right: '12mm', 
-                bottom: '12mm', 
-                left: '12mm' 
+            margin: {
+                top: '12mm',
+                right: '12mm',
+                bottom: '12mm',
+                left: '12mm'
             },
             scale: 0.75, // Escalado más agresivo para asegurar que quepa en una página
             preferCSSPageSize: false,
@@ -143,7 +143,7 @@ async function generateSpanishInvoiceHTML(invoice: any, company: any): Promise<s
         registrationNumber: company.registration_number,
         socialCapital: parseFloat(company.social_capital || '0'),
     };
-    
+
     const invoiceData = {
         invoiceNumber: invoice.invoice_number || `FAC-${invoice.id}`,
         date: invoice.created_at,
@@ -168,10 +168,10 @@ async function generateSpanishInvoiceHTML(invoice: any, company: any): Promise<s
         notes: '',
         paymentTerms: 'Transferencia bancaria'
     };
-    
+
     // Generar QR fiscal español
     const qrData = generateSpanishFiscalQR(companyData, invoiceData);
-    
+
     // Generar QR visual como imagen base64
     const qrImageBase64 = await QRCode.toDataURL(qrData, {
         errorCorrectionLevel: 'M',
@@ -185,7 +185,7 @@ async function generateSpanishInvoiceHTML(invoice: any, company: any): Promise<s
 
     // Generar VerifacTU (código de verificación español)
     const verifactuCode = generateVerifacTU(invoice, company);
-    
+
     // Generar QR para VerifacTU
     const verifactuQR = await QRCode.toDataURL(`https://prewww.aeat.es/wlpl/TIKE-CONT/ValidarQR?nif=${company.nif}&num=${encodeURIComponent(invoice.invoice_number || invoice.id)}&fecha=${encodeURIComponent(new Date(invoice.created_at).toISOString().split('T')[0])}&importe=${invoice.total_amount}`, {
         errorCorrectionLevel: 'M',
@@ -548,14 +548,14 @@ function generateVerifacTU(invoice: any, company: any): string {
     const date = new Date(invoice.created_at).toISOString().split('T')[0].replace(/-/g, '');
     const amount = parseFloat(invoice.total_amount || '0').toFixed(2).replace('.', '');
     const nif = company.nif || '';
-    
+
     // Crear string base para el hash
     const baseString = `${nif}${invoiceNumber}${date}${amount}`;
-    
+
     // Generar hash SHA-256 truncado (primeros 8 caracteres)
     const hash = crypto.createHash('sha256').update(baseString).digest('hex');
     const shortHash = hash.substring(0, 8).toUpperCase();
-    
+
     // Formato VerifacTU: VF-XXXXXXXX
     return `VF-${shortHash}`;
 }
@@ -563,47 +563,47 @@ function generateVerifacTU(invoice: any, company: any): string {
 // Función para extraer conceptos del campo notes
 function extractConceptsFromNotes(notes: string): string {
     if (!notes) return 'Servicios profesionales';
-    
+
     console.log('Notes original:', notes);
-    
+
     // Buscar líneas que empiecen con "- " después de "Conceptos:"
     const lines = notes.split('\n');
     const concepts: string[] = [];
-    
+
     let foundConceptsSection = false;
-    
+
     for (const line of lines) {
         const trimmedLine = line.trim();
-        
+
         // Detectar la sección de conceptos
         if (trimmedLine.toLowerCase().includes('conceptos:')) {
             foundConceptsSection = true;
             continue;
         }
-        
+
         // Si estamos en la sección de conceptos y la línea empieza con "-"
         if (foundConceptsSection && trimmedLine.startsWith('- ')) {
             let concept = trimmedLine.substring(2).trim(); // Remover "- "
-            
+
             // Remover todo lo que esté después de " (" hasta el final
             const parenIndex = concept.indexOf(' (');
             if (parenIndex > 0) {
                 concept = concept.substring(0, parenIndex);
             }
-            
+
             // Limpiar patrones de cálculo restantes
             concept = concept.replace(/\s*\([^)]*\)\s*$/g, '');
             concept = concept.replace(/\s*\d+\s*x\s*\d+[€$]?\s*=\s*[\d.,]+[€$]?\s*$/gi, '');
-            
+
             if (concept.trim()) {
                 concepts.push(concept.trim());
             }
         }
     }
-    
+
     const result = concepts.length > 0 ? concepts.join(', ') : 'Servicios profesionales';
     console.log('Conceptos extraídos:', result);
-    
+
     return result;
 }
 
