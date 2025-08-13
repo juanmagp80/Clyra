@@ -221,6 +221,15 @@ export default function AutomationsPageClient({ userEmail }: AutomationsPageClie
         e.preventDefault();
         if (!modalAutomation || !selectedEntity || !supabase) return;
 
+        // Mostrar el alert ANTES de cualquier lógica asíncrona
+        const selected = entityOptions.find(opt => String(opt.id) === selectedEntity);
+        if (selected && selected.email) {
+            alert(`Se va a enviar el correo al cliente:\n${selected.name}\nEmail: ${selected.email}`);
+            console.log('Ejecutando automatización para cliente:', selected);
+        } else if (selected) {
+            alert('No se ha seleccionado email de cliente.');
+        }
+
         setExecuting(true);
         setExecutionLogs(prev => [...prev, '', '🚀 Iniciando ejecución de automatización...']);
 
@@ -228,7 +237,6 @@ export default function AutomationsPageClient({ userEmail }: AutomationsPageClie
             const { data: userData } = await supabase.auth.getUser();
             const userEmail = userData?.user?.email || '';
 
-            const selected = entityOptions.find(opt => String(opt.id) === selectedEntity);
             if (!selected) {
                 setExecutionLogs(prev => [...prev, '❌ No se encontró la entidad seleccionada']);
                 return;

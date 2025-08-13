@@ -1,12 +1,13 @@
+console.log('🟢 API /api/send-email cargada y lista');
+import { createServerClient } from '@supabase/ssr';
 import { NextRequest, NextResponse } from 'next/server';
 import { Resend } from 'resend';
-import { createServerClient } from '@supabase/ssr';
 
 export async function POST(request: NextRequest) {
     try {
         console.log('🔧 API send-email: Iniciando procesamiento...');
         const { to, subject, html, from, userId } = await request.json();
-        
+
         console.log('📧 API send-email: Datos recibidos:', {
             to,
             subject,
@@ -40,7 +41,7 @@ export async function POST(request: NextRequest) {
                             })
                             : [];
                     },
-                    setAll: () => {}, // No-op for server context
+                    setAll: () => { }, // No-op for server context
                 }
             }
         );
@@ -69,36 +70,45 @@ export async function POST(request: NextRequest) {
             return NextResponse.json({
                 success: true,
                 message: `Email simulado enviado a ${to}`,
-                data: { 
+                data: {
                     id: 'simulated-' + Math.random().toString(36).substring(7),
-                    simulated: true 
+                    simulated: true
                 }
             });
         }
 
         // Envío real con Resend
         console.log('🚀 API send-email: Enviando email real con Resend...');
-        
         // Inicializar Resend con la clave API
         const resend = new Resend(process.env.RESEND_API_KEY);
-        
         // Verificar si tenemos un dominio configurado O si forzamos el modo producción
         const hasCustomDomain = process.env.RESEND_DOMAIN && process.env.RESEND_DOMAIN !== 'onboarding@resend.dev';
         const forceProduction = process.env.RESEND_FORCE_PRODUCTION === 'true';
-        const fromEmail = hasCustomDomain ? `Taskelio <noreply@${process.env.RESEND_DOMAIN}>` : 'Taskelio <onboarding@resend.dev>';
-        
+        const fromEmail = process.env.FROM_EMAIL || (hasCustomDomain ? `Taskelio <noreply@${process.env.RESEND_DOMAIN}>` : 'Taskelio <onboarding@resend.dev>');
+        // LOG DETALLADO DE ENVÍO
+        console.log('📧 API send-email: PREPARANDO ENVÍO REAL', {
+            to,
+            subject,
+            fromEmail,
+            hasCustomDomain,
+            forceProduction,
+            domain: process.env.RESEND_DOMAIN || 'ninguno',
+            FROM_EMAIL_ENV: process.env.FROM_EMAIL,
+            modo: (!hasCustomDomain && !forceProduction) ? 'sandbox' : 'production'
+        });
         console.log('📧 API send-email: Configuración de dominio:', {
             hasCustomDomain,
             forceProduction,
             domain: process.env.RESEND_DOMAIN || 'ninguno',
-            fromEmail: fromEmail
+            fromEmail: fromEmail,
+            FROM_EMAIL_ENV: process.env.FROM_EMAIL
         });
 
         if (!hasCustomDomain && !forceProduction) {
             // Modo sandbox: solo enviar a email de prueba
             const testEmail = 'clyracrm@gmail.com';
             const originalTo = to;
-            
+
             console.log('⚠️ API send-email: Modo sandbox activo - enviando a email de prueba', {
                 originalTo: originalTo,
                 actualTo: testEmail,
@@ -111,6 +121,7 @@ export async function POST(request: NextRequest) {
             const modifiedHtml = `
                 <div style="background: #f0f8ff; border: 1px solid #007acc; border-radius: 5px; padding: 15px; margin-bottom: 20px; font-family: Arial, sans-serif;">
                     <h3 style="color: #007acc; margin: 0 0 10px 0;">🧪 Email de Prueba - Taskelio</h3>
+        console.log('🔎 API send-email: Destinatario final (to):', to);
                     <p style="margin: 0; font-size: 14px; line-height: 1.4;">
                         <strong>Email original destinado a:</strong> ${originalTo}<br>
                         <strong>Fecha:</strong> ${new Date().toLocaleString()}<br>
@@ -130,8 +141,8 @@ export async function POST(request: NextRequest) {
             if (error) {
                 console.error('❌ API send-email: Error enviando email de prueba:', error);
                 return NextResponse.json(
-                    { 
-                        success: false, 
+                    {
+                        success: false,
                         message: 'Error al enviar email de prueba',
                         error: error.message || JSON.stringify(error)
                     },
@@ -172,8 +183,8 @@ export async function POST(request: NextRequest) {
             if (error) {
                 console.error('❌ API send-email: Error enviando email real:', error);
                 return NextResponse.json(
-                    { 
-                        success: false, 
+                    {
+                        success: false,
                         message: 'Error al enviar email',
                         error: error.message || JSON.stringify(error)
                     },
@@ -196,8 +207,8 @@ export async function POST(request: NextRequest) {
     } catch (error) {
         console.error('Error crítico en API send-email:', error);
         return NextResponse.json(
-            { 
-                success: false, 
+            {
+                success: false,
                 message: 'Error crítico al enviar email',
                 error: error instanceof Error ? error.message : String(error)
             },

@@ -364,64 +364,73 @@ export default function TemplatesPageClient({ userEmail }: TemplatesPageClientPr
             const { data: { user } } = await supabase.auth.getUser();
             if (!user) return;
 
-            const templateData = {
+        try {
+            if (!supabase || !selectedTemplate) return;
+
+            const { data: { user } } = await supabase.auth.getUser();
+            if (!user) return;
+
+            // Mostrar email del cliente seleccionado antes de ejecutar automatización
+            const selectedClient = clients.find(c => c.id === projectForm.client_id);
+            if (selectedClient) {
+                alert(`Se va a enviar el correo al cliente:\n${selectedClient.name}\nEmail: ${selectedClient.email}`);
+                console.log('Ejecutando automatización para cliente:', selectedClient);
+            } else {
+                alert('No se ha seleccionado cliente. El proyecto se creará sin cliente asignado.');
+            }
+
+            // Crear proyecto con los datos del formulario
+            const projectData = {
                 user_id: user.id,
-                name: templateForm.name,
-                category: templateForm.category,
-                description: templateForm.description,
-                template_data: templateForm.template_data,
-                is_public: false,
-                usage_count: 0
+                name: projectForm.name,
+                description: projectForm.description,
+                client_id: projectForm.client_id || null,
+                budget: projectForm.budget ? parseFloat(projectForm.budget) : null,
+                start_date: projectForm.start_date || null,
+                end_date: projectForm.end_date || null,
+                status: 'Activo'
             };
 
-            const { data, error } = await supabase
-                .from('project_templates')
-                .insert([templateData])
+            const { data: newProject, error: projectError } = await supabase
+                .from('projects')
+                .insert([projectData])
                 .select()
                 .single();
 
-            if (error) {
-                console.error('Error creating template:', error);
-                alert('Error al crear el template. Por favor, inténtalo de nuevo.');
+            if (projectError) {
+                console.error('Error creating project:', projectError);
+                alert('Error al crear el proyecto. Por favor, inténtalo de nuevo.');
                 return;
             }
 
-            // Actualizar la lista de templates
-            setTemplates(prev => [data, ...prev]);
-            setFilteredTemplates(prev => [data, ...prev]);
+            // Incrementar contador de uso del template
+            const { error: updateError } = await supabase
+                .from('project_templates')
+                .update({ usage_count: selectedTemplate.usage_count + 1 })
+                .eq('id', selectedTemplate.id);
 
-            // Cerrar modal y resetear formulario
-            setShowNewTemplateModal(false);
-            setTemplateForm({
-                name: '',
-                category: 'web_development',
-                description: '',
-                template_data: {}
-            });
-
-            alert('Template creado exitosamente!');
-
-        } catch (error) {
-            console.error('Error creating template:', error);
-            alert('Error al crear el template. Por favor, inténtalo de nuevo.');
-        }
-    };
-
-    // --- FUNCIONES DE EDICIÓN Y BORRADO DE TEMPLATE ---
-    const handleEditTemplate = (template: ProjectTemplate) => {
-        setEditTemplateId(template.id);
-        setTemplateForm({
-            name: template.name || '',
-            category: template.category || 'web_development',
-            description: template.description || '',
-            template_data: {
-                phases: Array.isArray(template.template_data?.phases) ? template.template_data.phases.length : (typeof template.template_data?.phases === 'number' ? template.template_data.phases : ''),
-                deliverables: Array.isArray(template.template_data?.deliverables) ? template.template_data.deliverables.length : (typeof template.template_data?.deliverables === 'number' ? template.template_data.deliverables : ''),
-                pricing: template.template_data?.pricing || {}
+            if (updateError) {
+                console.error('Error updating template usage count:', updateError);
             }
-        });
-        setShowEditTemplateModal(true);
-    };
+
+            // Crear tareas y entregables automáticos...
+
+            alert(`¡Proyecto "${newProject.name}" creado exitosamente con ${selectedTemplate.name}!`);
+            setShowProjectModal(false);
+            setSelectedTemplate(null);
+            setProjectForm({
+                name: '',
+                description: '',
+                client_id: '',
+                budget: '',
+                start_date: '',
+                end_date: ''
+            });
+            loadTemplates();
+        } catch (error) {
+            console.error('Error creating project:', error);
+            alert('Error al crear el proyecto. Por favor, inténtalo de nuevo.');
+        }
 
     const updateTemplate = async () => {
         try {
@@ -932,7 +941,14 @@ export default function TemplatesPageClient({ userEmail }: TemplatesPageClientPr
                                     </label>
                                     <select
                                         value={projectForm.client_id}
-                                        onChange={(e) => setProjectForm(prev => ({ ...prev, client_id: e.target.value }))}
+                                        onChange={(e) => {
+                                            setProjectForm(prev => ({ ...prev, client_id: e.target.value }));
+                                            const selected = clients.find(c => c.id === e.target.value);
+                                            if (selected) {
+                                                alert(`Cliente seleccionado: ${selected.name}\nEmail: ${selected.email}`);
+                                                console.log('Cliente seleccionado:', selected);
+                                            }
+                                        }}
                                         className="w-full px-4 py-3 rounded-lg border border-slate-300 focus:ring-2 focus:ring-indigo-500 focus:border-transparent transition-all duration-200"
                                     >
                                         <option value="">Sin cliente asignado</option>

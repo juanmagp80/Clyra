@@ -34,7 +34,7 @@ class EmailService {
                     to: options.to,
                     subject: options.subject,
                     html: options.html,
-                    from: options.from || 'Clyra <onboarding@resend.dev>',
+                    from: options.from || `Taskelio <noreply@${process.env.NEXT_PUBLIC_RESEND_DOMAIN || 'taskelio.app'}>`,
                     userId: options.userId
                 }),
             });
