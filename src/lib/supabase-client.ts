@@ -1,9 +1,8 @@
-
+// src/lib/supabase-client.ts
 import { createBrowserClient } from '@supabase/ssr';
-import { createClient } from '@supabase/supabase-js';
-export const runtime = 'nodejs';
 
-// Variables de entorno con validación
+// Nota: Estas variables se acceden directamente en el navegador.
+// Asegúrate de que estén prefijadas con NEXT_PUBLIC_ en tu archivo .env.local
 const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
 const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
 
@@ -16,16 +15,28 @@ export const isSupabaseConfigured = () => {
               supabaseUrl.startsWith('https://'));
 };
 
-// Cliente básico de Supabase (solo si está configurado)
-export const supabase = isSupabaseConfigured() 
-    ? createClient(supabaseUrl!, supabaseAnonKey!)
-    : null;
-
 // Cliente de Supabase para componentes de cliente (navegador)
 export const createSupabaseClient = () => {
     if (!isSupabaseConfigured()) {
-        console.warn('⚠️ Supabase no está configurado. Los botones de autenticación no funcionarán.');
-        return null;
+        console.warn('⚠️ Supabase no está configurado. La funcionalidad estará limitada.');
+        // Devolvemos un objeto mock para evitar errores de 'null'
+        return {
+            from: () => ({
+                select: async () => ({ data: [], error: { message: 'Supabase not configured' } }),
+                insert: async () => ({ data: [], error: { message: 'Supabase not configured' } }),
+                update: async () => ({ data: [], error: { message: 'Supabase not configured' } }),
+                delete: async () => ({ data: [], error: { message: 'Supabase not configured' } }),
+            }),
+            auth: {
+                getUser: async () => ({ data: { user: null }, error: null }),
+                signInWithPassword: async () => ({ data: { user: null }, error: { message: 'Supabase not configured' } }),
+                signOut: async () => ({ error: null }),
+            },
+        } as any; // Usamos 'as any' para el mock
     }
     return createBrowserClient(supabaseUrl!, supabaseAnonKey!);
 };
+
+// Exportamos una instancia singleton para uso general si es necesario,
+// pero se prefiere usar createSupabaseClient() en componentes.
+export const supabase = createSupabaseClient();

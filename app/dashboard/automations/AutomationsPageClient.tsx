@@ -4,7 +4,7 @@ import Sidebar from '@/components/Sidebar';
 import { Button } from '@/components/ui/Button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/Card';
 import { Input } from '@/components/ui/Input';
-import { executeAutomationAction } from '@/src/lib/automation-actions';
+import { executeAutomationAction, type ActionPayload } from '@/src/lib/automation-actions';
 import { createSupabaseClient } from '@/src/lib/supabase-client';
 import {
     AlertCircle,
@@ -73,9 +73,22 @@ export default function AutomationsPageClient({ userEmail }: AutomationsPageClie
     const [loading, setLoading] = useState(true);
     const [searchQuery, setSearchQuery] = useState('');
     const [filteredAutomations, setFilteredAutomations] = useState<Automation[]>([]);
+    const [connectionError, setConnectionError] = useState<string | null>(null);
 
     const router = useRouter();
     const supabase = createSupabaseClient();
+
+    // Verificar si Supabase está disponible
+    useEffect(() => {
+        if (!supabase) {
+            console.log('⚠️ Supabase client not available - showing error state');
+            setConnectionError('No se pudo conectar con la base de datos. Verifica la configuración.');
+            setLoading(false);
+            return;
+        }
+        console.log('✅ Supabase client initialized');
+        setConnectionError(null);
+    }, [supabase]);
 
     const handleLogout = async () => {
         try {
@@ -89,13 +102,30 @@ export default function AutomationsPageClient({ userEmail }: AutomationsPageClie
 
     const loadAutomations = async () => {
         try {
+            console.log('📋 Loading automations...');
             setLoading(true);
 
-            if (!supabase) return;
+            if (!supabase) {
+                console.log('⚠️ No Supabase client available');
+                setAutomations([]);
+                setFilteredAutomations([]);
+                return;
+            }
 
-            const { data: { user } } = await supabase.auth.getUser();
-            if (!user) return;
+            console.log('👤 Getting user...');
+            const { data: { user }, error: userError } = await supabase.auth.getUser();
+            
+            if (userError) {
+                console.error('❌ Error getting user:', userError);
+                return;
+            }
+            
+            if (!user) {
+                console.log('⚠️ No user found');
+                return;
+            }
 
+            console.log('📊 Loading automations for user:', user.id);
             const { data, error } = await supabase
                 .from('automations')
                 .select('*')
@@ -103,15 +133,19 @@ export default function AutomationsPageClient({ userEmail }: AutomationsPageClie
                 .order('created_at', { ascending: false });
 
             if (error) {
-                console.error('Error loading automations:', error);
+                console.error('❌ Error loading automations:', error);
                 return;
             }
 
+            console.log('✅ Loaded automations:', data?.length || 0);
             setAutomations(data || []);
             setFilteredAutomations(data || []);
 
         } catch (error) {
-            console.error('Error loading automations:', error);
+            console.error('❌ Error in loadAutomations:', error);
+            // En caso de error, mostrar datos vacíos en lugar de fallar
+            setAutomations([]);
+            setFilteredAutomations([]);
         } finally {
             setLoading(false);
         }
@@ -232,87 +266,108 @@ export default function AutomationsPageClient({ userEmail }: AutomationsPageClie
         setExecutionLogs(prev => [...prev, '', '🚀 Iniciando ejecución de automatización...']);
 
         try {
-            const { data: userData } = await supabase.auth.getUser();
-            const userEmail = userData?.user?.email || '';
+            const { data: { user } } = await supabase.auth.getUser();
+
+            if (!user) {
+                setExecutionLogs(prev => [...prev, '❌ Usuario no autenticado.']);
+                setExecuting(false);
+                return;
+            }
 
             if (!selected) {
                 setExecutionLogs(prev => [...prev, '❌ No se encontró la entidad seleccionada']);
+                setExecuting(false);
                 return;
             }
 
             setExecutionLogs(prev => [...prev, `📊 Entidad seleccionada: ${selected.name || selected.invoice_number || selected.title}`]);
 
-            const payload: any = { userEmail };
-
-            // Preparar payload según el tipo de automatización
-            // Siempre incluir el objeto client en el payload
-            payload.client = {
-                id: selected.id,
-                name: selected.name,
-                email: selected.email,
-                company: selected.company,
-                phone: selected.phone
-            };
-
-            // Mantener los datos extra según el tipo de automatización
-            switch (modalAutomation.trigger_type) {
-                case 'invoice_followup':
-                    payload.invoiceId = selected.id;
-                    payload.invoiceNumber = selected.invoice_number;
-                    payload.amount = selected.amount;
-                    payload.dueDate = selected.due_date;
-                    payload.clientId = selected.client_id;
-                    break;
-
-                case 'project_milestone':
-                case 'project_delivery':
-                case 'time_tracking':
-                case 'budget_exceeded':
-                case 'task_assigned':
-                    payload.projectId = selected.id;
-                    payload.projectName = selected.name;
-                    payload.clientId = selected.client_id;
-                    payload.budget = selected.budget;
-                    break;
-
-                case 'meeting_reminder':
-                    payload.eventId = selected.id;
-                    payload.eventTitle = selected.title;
-                    payload.eventDate = selected.date;
-                    payload.clientId = selected.client_id;
-                    break;
-
-                // Para los tipos de cliente, ya está el objeto client
-                default:
-                    break;
+            // 🔍 DEBUG: Verificar estructura de la automatización
+            console.log('🔍 DEBUG: Automatización completa:', modalAutomation);
+            console.log('🔍 DEBUG: Actions raw:', modalAutomation.actions);
+            console.log('🔍 DEBUG: Actions type:', typeof modalAutomation.actions);
+            console.log('🔍 DEBUG: Actions length:', modalAutomation.actions?.length);
+            
+            // Parsear las acciones si están como string
+            let actions = modalAutomation.actions;
+            if (typeof actions === 'string') {
+                console.log('🔄 DEBUG: Parseando actions string...');
+                try {
+                    actions = JSON.parse(actions);
+                    console.log('✅ DEBUG: Actions parseadas:', actions);
+                    console.log('✅ DEBUG: Actions parseadas length:', actions.length);
+                } catch (parseError) {
+                    console.error('❌ DEBUG: Error parseando actions:', parseError);
+                    setExecutionLogs(prev => [...prev, '❌ Error: Las acciones de la automatización están mal formateadas']);
+                    setExecuting(false);
+                    return;
+                }
             }
+
+            // 🔍 DEBUG ADICIONAL: Verificar si las acciones están realmente vacías
+            if (!actions || actions.length === 0) {
+                console.error('❌ DEBUG: No hay acciones definidas para esta automatización');
+                setExecutionLogs(prev => [...prev, '❌ Error: Esta automatización no tiene acciones configuradas']);
+                setExecuting(false);
+                return;
+            } else {
+                console.log('✅ DEBUG: Automatización tiene', actions.length, 'acciones configuradas');
+            }
+
+            const executionId = crypto.randomUUID();
+
+            const payload: ActionPayload = {
+                client: {
+                    id: selected.id,
+                    name: selected.name,
+                    email: selected.email,
+                    company: selected.company,
+                    phone: selected.phone,
+                    ...selected
+                },
+                automation: {
+                    ...modalAutomation,
+                    actions: actions // Usar las acciones parseadas
+                },
+                user: user,
+                supabase: supabase,
+                executionId: executionId
+            };
 
             setExecutionLogs(prev => [...prev, '⚙️ Ejecutando acciones de automatización...']);
 
+            // Convertir actions a array si es un objeto único
+            const actionsArray = Array.isArray(actions) ? actions : [actions];
+            console.log('🔄 DEBUG: Actions como array:', actionsArray);
+
             // Ejecutar cada acción de la automatización
-            for (let index = 0; index < modalAutomation.actions.length; index++) {
-                const action = modalAutomation.actions[index];
-                setExecutionLogs(prev => [...prev, `🔄 Ejecutando acción ${index + 1}/${modalAutomation.actions.length}: ${action.name}`]);
+            for (const action of actionsArray) {
+                setExecutionLogs(prev => [...prev, `🔄 Ejecutando acción: ${action.name || action.type}`]);
+                console.log('🔄 DEBUG: Ejecutando acción:', action);
+                console.log('🔄 DEBUG: Payload completo:', payload);
 
                 try {
+                    console.log('🚀 DEBUG: Llamando executeAutomationAction...');
                     const result = await executeAutomationAction(action, payload);
+                    console.log('📊 DEBUG: Resultado de executeAutomationAction:', result);
+                    
                     if (result.success) {
                         setExecutionLogs(prev => [
                             ...prev,
-                            `✅ Acción completada: ${action.name}`,
+                            `✅ Acción completada: ${action.name || action.type}`,
                             result.message ? `🟢 Detalle: ${result.message}` : ''
                         ]);
                     } else {
                         setExecutionLogs(prev => [
                             ...prev,
-                            `❌ Error en acción ${action.name}:`,
+                            `❌ Error en acción ${action.name || action.type}:`,
                             result.message ? `🔴 Detalle: ${result.message}` : '',
                             result.error ? `🔴 Error: ${result.error}` : ''
                         ]);
                     }
                 } catch (actionError) {
-                    console.error('Error en acción:', actionError);
-                    setExecutionLogs(prev => [...prev, `❌ Error en acción ${action.name}: ${actionError}`]);
+                    console.error('❌ ERROR CRÍTICO en acción:', actionError);
+                    setExecutionLogs(prev => [...prev, `❌ Error en acción ${action.name || action.type}: ${actionError}`]);
                 }
             }
 
@@ -419,6 +474,31 @@ export default function AutomationsPageClient({ userEmail }: AutomationsPageClie
 
         return colorMap[triggerType] || 'text-slate-600';
     };
+
+    if (connectionError) {
+        return (
+            <div className="flex h-screen overflow-hidden bg-gradient-to-br from-slate-50 via-blue-50 to-indigo-100">
+                <Sidebar userEmail={userEmail} onLogout={handleLogout} />
+                <div className="flex-1 ml-56 overflow-hidden">
+                    <div className="h-full overflow-y-auto">
+                        <div className="flex items-center justify-center h-96">
+                            <div className="text-center bg-white p-8 rounded-xl shadow-lg max-w-md">
+                                <div className="text-red-500 text-6xl mb-4">⚠️</div>
+                                <h2 className="text-2xl font-bold text-red-800 mb-4">Error de Conexión</h2>
+                                <p className="text-red-600 mb-4">{connectionError}</p>
+                                <button 
+                                    onClick={() => window.location.reload()} 
+                                    className="bg-red-600 text-white px-4 py-2 rounded hover:bg-red-700"
+                                >
+                                    Reintentar
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        );
+    }
 
     if (loading) {
         return (

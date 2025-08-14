@@ -73,52 +73,89 @@ const sendEmailAction: ActionExecutor = async (action, payload) => {
             };
         }
 
+        // Obtener información de la empresa del usuario
+        let userCompany = 'Mi Empresa';
+        try {
+            const { data: userProfile, error: profileError } = await payload.supabase
+                .from('profiles')
+                .select('company_name')
+                .eq('id', payload.user.id)
+                .single();
+            
+            if (!profileError && userProfile?.company_name) {
+                userCompany = userProfile.company_name;
+            }
+        } catch (error) {
+            console.warn('⚠️ No se pudo obtener empresa del usuario, usando valor por defecto');
+        }
+
         // Preparar variables para el template
         const variables = {
             client_name: payload.client.name,
             client_email: payload.client.email,
             client_company: payload.client.company || payload.client.name,
-            user_name: payload.user?.user_metadata?.full_name || 'Equipo Taskelio',
+            user_name: payload.user?.user_metadata?.full_name || payload.user?.email?.split('@')[0] || 'Equipo Taskelio',
+            user_email: payload.user?.email || 'noreply@taskelio.app',
+            user_company: userCompany,
+            // Variables de presupuesto
+            project_name: (payload as any).project_name || '',
+            budget_total: (payload as any).budget_total || '',
+            budget_spent: (payload as any).budget_spent || '',
+            budget_percentage: (payload as any).budget_percentage || '',
+            budget_remaining: (payload as any).budget_remaining || '',
+            // Variables de reunión
+            meeting_title: (payload as any).meeting_title || '',
+            meeting_date: (payload as any).meeting_date || '',
+            meeting_time: (payload as any).meeting_time || '',
+            meeting_location: (payload as any).meeting_location || '',
             ...emailData.variables
         };
 
         // Reemplazar variables en el template
         let emailContent = emailData.template;
+        let emailSubject = emailData.subject;
+        
         Object.entries(variables).forEach(([key, value]) => {
             const regex = new RegExp(`{{${key}}}`, 'g');
             emailContent = emailContent.replace(regex, String(value));
+            emailSubject = emailSubject.replace(regex, String(value));
         });
 
-        // Registrar comunicación en la base de datos
-        const { data: communicationData, error: commError } = await payload.supabase
-            .from('client_communications')
-            .insert({
-                user_id: payload.user.id,
-                client_id: payload.client.id,
-                type: 'email',
-                subject: emailData.subject,
-                content: emailContent,
-                status: 'sent',
-                created_at: new Date().toISOString()
-            })
-            .select()
-            .single();
+        // Registrar comunicación en la base de datos (opcional)
+        let communicationData = null;
+        try {
+            const { data: commData, error: commError } = await payload.supabase
+                .from('client_communications')
+                .insert({
+                    user_id: payload.user.id,
+                    client_id: payload.client.id,
+                    type: 'email',
+                    subject: emailSubject, // Usar el asunto con variables reemplazadas
+                    content: emailContent,
+                    status: 'sent',
+                    created_at: new Date().toISOString()
+                })
+                .select()
+                .single();
 
-        if (commError) {
-            console.error('Error guardando comunicación:', commError);
-            return {
-                success: false,
-                message: "Error al registrar la comunicación",
-                error: commError.message
-            };
+            if (commError) {
+                console.warn('⚠️ No se pudo registrar la comunicación (tabla no existe):', commError.message);
+                // Continuar sin registrar la comunicación
+            } else {
+                communicationData = commData;
+                console.log('✅ Comunicación registrada exitosamente');
+            }
+        } catch (commError) {
+            console.warn('⚠️ Error registrando comunicación, continuando sin registrar:', commError);
+            // Continuar sin fallar
         }
 
         // Enviar email usando el servicio real
         const emailResult = await emailService.sendEmail({
             to: payload.client.email,
-            subject: emailData.subject,
+            subject: emailSubject, // Usar el asunto con variables reemplazadas
             html: emailContent, // Ya viene como HTML del template
-            from: `${payload.user?.user_metadata?.full_name || 'Clyra'} <onboarding@resend.dev>`,
+            from: `${variables.user_name} <noreply@taskelio.app>`, // Usar dominio verificado
             userId: payload.user.id
         });
 
@@ -132,11 +169,11 @@ const sendEmailAction: ActionExecutor = async (action, payload) => {
 
         return {
             success: true,
-            message: `Email "${emailData.subject}" enviado correctamente a ${payload.client.email}`,
+            message: `Email "${emailSubject}" enviado correctamente a ${payload.client.email}`,
             data: {
-                communicationId: communicationData.id,
+                communicationId: communicationData?.id || null,
                 recipient: payload.client.email,
-                subject: emailData.subject,
+                subject: emailSubject, // Usar el asunto con variables reemplazadas
                 emailResult: emailResult.data
             }
         };

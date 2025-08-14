@@ -6,12 +6,13 @@ import { Resend } from 'resend';
 export async function POST(request: NextRequest) {
     try {
         console.log('🔧 API send-email: Iniciando procesamiento...');
-        const { to, subject, html, from, userId } = await request.json();
+        const { to, subject, html, from, reply_to, userId } = await request.json();
 
         console.log('📧 API send-email: Datos recibidos:', {
             to,
             subject,
             from,
+            reply_to,
             userId,
             htmlLength: html?.length,
             hasResendKey: !!process.env.RESEND_API_KEY
@@ -136,6 +137,7 @@ export async function POST(request: NextRequest) {
                 to: [testEmail],
                 subject: `[PRUEBA] ${subject} (para: ${originalTo})`,
                 html: modifiedHtml,
+                replyTo: reply_to || from,
             });
 
             if (error) {
@@ -178,6 +180,7 @@ export async function POST(request: NextRequest) {
                 to: [to],
                 subject: subject,
                 html: html,
+                replyTo: reply_to || from,
             });
 
             if (error) {

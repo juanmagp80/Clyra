@@ -25,6 +25,33 @@ class EmailService {
                 htmlLength: options.html.length
             });
 
+            // Configurar el remitente y replyTo correctamente
+            const defaultFrom = `Taskelio <noreply@${process.env.NEXT_PUBLIC_RESEND_DOMAIN || 'taskelio.app'}>`;
+            let fromEmail = options.from || defaultFrom;
+            
+            // Extraer el email personal para replyTo
+            let replyToEmail = undefined;
+            if (options.from) {
+                // Si tiene formato "Nombre <email@domain.com>", extraer el email
+                const emailMatch = options.from.match(/<(.+)>/);
+                if (emailMatch) {
+                    replyToEmail = emailMatch[1];
+                } else {
+                    // Si es solo el email
+                    replyToEmail = options.from;
+                }
+                
+                // Si el email personal es gmail, usarlo solo como replyTo
+                if (replyToEmail.includes('@gmail.com')) {
+                    replyToEmail = replyToEmail; // Mantener para replyTo
+                    // Usar el from por defecto del dominio verificado
+                    // pero extraer el nombre si existe
+                    const nameMatch = options.from.match(/^([^<]+)</);
+                    const userName = nameMatch ? nameMatch[1].trim() : 'Taskelio';
+                    fromEmail = `${userName} <noreply@taskelio.app>`;
+                }
+            }
+
             const response = await fetch('/api/send-email', {
                 method: 'POST',
                 headers: {
@@ -34,7 +61,8 @@ class EmailService {
                     to: options.to,
                     subject: options.subject,
                     html: options.html,
-                    from: options.from || `Taskelio <noreply@${process.env.NEXT_PUBLIC_RESEND_DOMAIN || 'taskelio.app'}>`,
+                    from: fromEmail,
+                    reply_to: replyToEmail,
                     userId: options.userId
                 }),
             });
