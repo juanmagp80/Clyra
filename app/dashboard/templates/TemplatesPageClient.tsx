@@ -1237,4 +1237,3 @@ export default function TemplatesPageClient({ userEmail }: TemplatesPageClientPr
         </div>
     );
 }
-                
