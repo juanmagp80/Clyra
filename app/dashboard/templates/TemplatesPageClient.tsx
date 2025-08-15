@@ -160,6 +160,7 @@ export default function TemplatesPageClient({ userEmail }: TemplatesPageClientPr
                 template.description?.toLowerCase().includes(searchQuery.toLowerCase()) ||
                 template.category.toLowerCase().includes(searchQuery.toLowerCase())
             );
+}
         }
 
         // Filtrar por categoría
