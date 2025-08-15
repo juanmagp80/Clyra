@@ -3,6 +3,15 @@
 
 import { createServerSupabaseClient } from '@/src/lib/supabase-server';
 import { executeAutomationAction } from '@/src/lib/automation-actions';
+import { createClient } from '@supabase/supabase-js';
+
+// Función para crear cliente Supabase con service role key para bypass RLS
+function createServiceSupabaseClient() {
+  return createClient(
+    process.env.NEXT_PUBLIC_SUPABASE_URL!,
+    process.env.SUPABASE_SERVICE_ROLE_KEY!
+  );
+}
 
 interface MeetingReminderData {
   meeting_id: string;
@@ -21,30 +30,32 @@ export async function checkUpcomingMeetings(): Promise<void> {
   try {
     console.log('🔍 Iniciando monitoreo de reuniones próximas...');
     
-    const supabase = await createServerSupabaseClient();
+    // Usar service role key para bypass RLS
+    const supabase = createServiceSupabaseClient();
     
-    // Calcular ventana de tiempo: 1 hora antes de la reunión
+    // Calcular ventana de tiempo: expandida para incluir reuniones hasta 3 horas
     const now = new Date();
     const oneHourFromNow = new Date(now.getTime() + 60 * 60 * 1000);
-    const twoHoursFromNow = new Date(now.getTime() + 2 * 60 * 60 * 1000);
+    const threeHoursFromNow = new Date(now.getTime() + 3 * 60 * 60 * 1000);
     
-    console.log(`⏰ Buscando reuniones entre ${oneHourFromNow.toLocaleString('es-ES')} y ${twoHoursFromNow.toLocaleString('es-ES')}`);
+    console.log(`⏰ Buscando reuniones entre ${oneHourFromNow.toLocaleString('es-ES')} y ${threeHoursFromNow.toLocaleString('es-ES')}`);
     
-    // 1. Buscar reuniones en la próxima hora
-    // Nota: Adaptaremos esto según la estructura real de tu tabla de reuniones
+    // 1. Buscar reuniones en calendar_events (donde type = 'meeting')
     const { data: meetings, error: meetingsError } = await supabase
-      .from('meetings') // O la tabla que uses para reuniones
+      .from('calendar_events')
       .select(`
         id,
         title,
         description,
-        meeting_date,
-        meeting_time,
+        start_time,
+        end_time,
         location,
+        meeting_url,
         client_id,
         user_id,
         status,
         project_id,
+        type,
         clients (
           id,
           name,
@@ -55,32 +66,39 @@ export async function checkUpcomingMeetings(): Promise<void> {
           name
         )
       `)
+      .eq('type', 'meeting')
       .eq('status', 'scheduled')
-      .gte('meeting_date', oneHourFromNow.toISOString().split('T')[0])
-      .lte('meeting_date', twoHoursFromNow.toISOString().split('T')[0]);
+      .gte('start_time', oneHourFromNow.toISOString())
+      .lte('start_time', threeHoursFromNow.toISOString());
     
     if (meetingsError) {
       console.error('❌ Error obteniendo reuniones:', meetingsError);
-      
-      // Si la tabla meetings no existe, crear datos simulados para demostración
-      console.log('⚠️ Tabla meetings no encontrada. Creando datos simulados...');
-      await createSampleMeetings(supabase);
+      console.log('⚠️ No se pudieron obtener las reuniones del calendario');
       return;
     }
     
     console.log(`📊 Reuniones encontradas: ${meetings?.length || 0}`);
     
+    // Debug: mostrar todas las reuniones encontradas
+    if (meetings && meetings.length > 0) {
+      console.log('📋 Detalles de reuniones encontradas:');
+      meetings.forEach((meeting, index) => {
+        const client = Array.isArray(meeting.clients) ? meeting.clients[0] : meeting.clients;
+        console.log(`${index + 1}. ${meeting.title} - ${meeting.start_time} - Cliente: ${client?.name || 'Sin cliente'}`);
+      });
+    }
+    
     // 2. Filtrar reuniones que requieren recordatorio
     const meetingReminders: MeetingReminderData[] = [];
     
     for (const meeting of meetings || []) {
-      // Combinar fecha y hora para verificar si está en la ventana de 1 hora
-      const meetingDateTime = new Date(`${meeting.meeting_date}T${meeting.meeting_time || '09:00'}`);
+      // start_time ya es un timestamp completo
+      const meetingDateTime = new Date(meeting.start_time);
       const timeDiffMs = meetingDateTime.getTime() - now.getTime();
       const timeDiffHours = timeDiffMs / (1000 * 60 * 60);
       
-      // Si la reunión es entre 1 y 2 horas desde ahora
-      if (timeDiffHours >= 1 && timeDiffHours <= 2) {
+      // Si la reunión es entre 1 y 3 horas desde ahora (expandido para incluir más reuniones)
+      if (timeDiffHours >= 1 && timeDiffHours <= 3) {
         console.log(`⏰ Reunión próxima: ${meeting.title} en ${timeDiffHours.toFixed(1)} horas`);
         
         const client = Array.isArray(meeting.clients) ? meeting.clients[0] : meeting.clients;
@@ -89,9 +107,9 @@ export async function checkUpcomingMeetings(): Promise<void> {
         meetingReminders.push({
           meeting_id: meeting.id,
           meeting_title: meeting.title,
-          meeting_date: new Date(meeting.meeting_date).toLocaleDateString('es-ES'),
-          meeting_time: meeting.meeting_time || '09:00',
-          meeting_location: meeting.location || 'Por determinar',
+          meeting_date: meetingDateTime.toLocaleDateString('es-ES'),
+          meeting_time: meetingDateTime.toLocaleTimeString('es-ES', { hour: '2-digit', minute: '2-digit' }),
+          meeting_location: meeting.location || meeting.meeting_url || 'Por determinar',
           client_id: meeting.client_id,
           client_name: client?.name || 'Cliente',
           client_email: client?.email || '',
@@ -105,12 +123,14 @@ export async function checkUpcomingMeetings(): Promise<void> {
     if (meetingReminders.length > 0) {
       console.log(`📧 Enviando ${meetingReminders.length} recordatorios de reunión...`);
       
-      // Obtener la automatización de recordatorio de reunión
+      // Obtener la automatización de recordatorio de reunión (usar la más reciente)
       const { data: automation, error: autoError } = await supabase
         .from('automations')
         .select('*')
-        .ilike('name', '%recordatorio%reunión%')
+        .eq('trigger_type', 'meeting_reminder')
         .eq('is_active', true)
+        .order('created_at', { ascending: false })
+        .limit(1)
         .single();
       
       if (autoError || !automation) {
@@ -407,29 +427,52 @@ async function createMeetingReminderAutomation(supabase: any): Promise<void> {
 }
 
 // Función para crear reuniones de ejemplo si no existen
-async function createSampleMeetings(supabase: any): Promise<void> {
-  console.log('🔧 Creando tabla de reuniones y datos de ejemplo...');
+async function createSampleCalendarMeeting(supabase: any): Promise<void> {
+  console.log('🔧 Creando reunión de ejemplo en calendar_events...');
   
-  // Crear reunión de ejemplo para 1.5 horas desde ahora
-  const futureDate = new Date(Date.now() + 1.5 * 60 * 60 * 1000);
-  const meetingDate = futureDate.toISOString().split('T')[0];
-  const meetingTime = futureDate.toTimeString().split(' ')[0].substring(0, 5);
+  // Obtener un cliente existente
+  const { data: existingClient } = await supabase
+    .from('clients')
+    .select('*')
+    .eq('user_id', 'e7ed7c8d-229a-42d1-8a44-37bcc64c440c')
+    .limit(1);
   
-  // Esta función se ejecutaría después de crear la tabla meetings
-  console.log(`📅 Reunión de ejemplo programada para: ${meetingDate} ${meetingTime}`);
-  console.log('💡 Crea la tabla "meetings" en Supabase con las siguientes columnas:');
-  console.log('   - id (uuid, primary key)');
-  console.log('   - title (text)');
-  console.log('   - description (text)');
-  console.log('   - meeting_date (date)');
-  console.log('   - meeting_time (time)');
-  console.log('   - location (text)');
-  console.log('   - client_id (uuid, foreign key to clients)');
-  console.log('   - user_id (uuid, foreign key to profiles)');
-  console.log('   - project_id (uuid, foreign key to projects)');
-  console.log('   - status (text, default: "scheduled")');
-  console.log('   - created_at (timestamp)');
-  console.log('   - updated_at (timestamp)');
+  if (existingClient && existingClient.length > 0) {
+    const client = existingClient[0];
+    
+    // Crear reunión de ejemplo para 1.5 horas desde ahora
+    const futureDate = new Date(Date.now() + 1.5 * 60 * 60 * 1000);
+    const endDate = new Date(futureDate.getTime() + 60 * 60 * 1000); // 1 hora de duración
+    
+    const { data: newMeeting, error: meetingError } = await supabase
+      .from('calendar_events')
+      .insert({
+        title: 'Reunión de Seguimiento - Test Automatización',
+        description: 'Reunión de prueba para el sistema de recordatorios automáticos',
+        start_time: futureDate.toISOString(),
+        end_time: endDate.toISOString(),
+        type: 'meeting',
+        location: 'Oficina principal / Video llamada',
+        client_id: client.id,
+        user_id: 'e7ed7c8d-229a-42d1-8a44-37bcc64c440c',
+        status: 'scheduled'
+      })
+      .select()
+      .single();
+    
+    if (meetingError) {
+      console.error('❌ Error creando reunión de prueba:', meetingError);
+    } else {
+      console.log('✅ Reunión de prueba creada en calendar_events:');
+      console.log(`   📋 Título: ${newMeeting.title}`);
+      console.log(`   📅 Fecha: ${new Date(newMeeting.start_time).toLocaleDateString('es-ES')}`);
+      console.log(`   ⏰ Hora: ${new Date(newMeeting.start_time).toLocaleTimeString('es-ES')}`);
+      console.log(`   👤 Cliente: ${client.name}`);
+    }
+  } else {
+    console.log('⚠️ No hay clientes disponibles. Las reuniones requieren clientes asociados.');
+    console.log('💡 Primero agrega algunos clientes en el sistema CRM.');
+  }
 }
 
 // Función principal para ejecutar manualmente o por cron job

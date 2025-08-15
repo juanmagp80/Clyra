@@ -1,0 +1,5 @@
+vie 15 ago 2025 12:00:01 CEST: Iniciando monitoreo automático de reuniones...
+vie 15 ago 2025 12:00:05 CEST: ✅ Monitoreo completado exitosamente
+vie 15 ago 2025 12:00:05 CEST: Respuesta: {"success":true,"message":"Monitoreo de recordatorios de reunión completado","remindersSent":0,"timestamp":"2025-08-15T10:00:05.565Z","service":"Meeting Reminder Monitoring"}
+vie 15 ago 2025 12:00:05 CEST: Monitoreo automático finalizado
+---

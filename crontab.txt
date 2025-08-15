@@ -1,0 +1,9 @@
+# Cron job para monitoreo automático de reuniones
+# Se ejecuta cada hora en el minuto 0
+# Formato: minuto hora día mes día_semana comando
+
+# Ejecutar monitoreo de reuniones cada hora
+0 * * * * /home/juan/Documentos/clyra/run-meeting-monitoring.sh >> /home/juan/Documentos/clyra/logs/meeting-monitor.log 2>&1
+
+# Opcional: Ejecutar cada 30 minutos (más frecuente)
+# 0,30 * * * * /home/juan/Documentos/clyra/run-meeting-monitoring.sh >> /home/juan/Documentos/clyra/logs/meeting-monitor.log 2>&1

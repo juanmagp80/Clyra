@@ -52,7 +52,7 @@ class EmailService {
                 }
             }
 
-            const response = await fetch('/api/send-email', {
+            const response = await fetch(`${process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000'}/api/send-email`, {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json',

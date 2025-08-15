@@ -7,12 +7,10 @@ export default async function DashboardPage() {
         console.log('🚀 Dashboard page loading...');
         
         // ✅ MODO DE DESARROLLO - Acceso directo sin autenticación
-        // Línea temporal para acceso inmediato en desarrollo
+        // Descomenta la siguiente línea para acceso inmediato en desarrollo
         console.log('🔧 Dashboard in development mode - bypassing authentication');
         return <DashboardClient userEmail="dev@clyra.com" isDemo={true} />;
         
-        /*
-        // Código original comentado temporalmente
         // ✅ Verificar si Supabase está configurado
         const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
         const supabaseKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
@@ -28,12 +26,14 @@ export default async function DashboardPage() {
             console.log('🚧 Dashboard in demo mode - Supabase not configured');
             return (
                 <div className="min-h-screen bg-gradient-to-br from-slate-50 via-gray-50 to-zinc-100 text-slate-900 relative overflow-hidden">
+                    {/* Premium Silicon Valley Background */}
                     <div className="fixed inset-0 z-0">
                         <div className="absolute inset-0 bg-gradient-to-br from-slate-50 via-gray-50 to-zinc-50" />
                         <div className="absolute inset-0 bg-[radial-gradient(circle_at_25%_25%,rgba(99,102,241,0.08),transparent_50%)]" />
                         <div className="absolute inset-0 bg-[radial-gradient(circle_at_75%_75%,rgba(139,92,246,0.06),transparent_50%)]" />
                         <div className="absolute inset-0 bg-grid-slate-900/[0.02] bg-[size:32px_32px]" />
                         
+                        {/* Elegant Floating Orbs */}
                         <div className="absolute top-24 left-16 w-40 h-40 bg-gradient-to-br from-indigo-100/40 to-violet-100/40 rounded-full blur-3xl animate-pulse"></div>
                         <div className="absolute bottom-40 right-24 w-56 h-56 bg-gradient-to-br from-violet-100/40 to-indigo-100/40 rounded-full blur-3xl animate-pulse" style={{animationDelay: '1.5s'}}></div>
                         <div className="absolute top-1/3 left-8 w-28 h-28 bg-gradient-to-br from-blue-100/40 to-indigo-100/40 rounded-full blur-3xl animate-pulse" style={{animationDelay: '3s'}}></div>
@@ -41,8 +41,12 @@ export default async function DashboardPage() {
 
                     <div className="relative z-10 p-8">
                         <div className="max-w-4xl mx-auto">
+                            {/* Premium Header de Demo */}
                             <div className="relative bg-white/95 backdrop-blur-2xl border border-amber-200/60 rounded-3xl p-8 mb-8 shadow-2xl shadow-amber-500/10">
+                                {/* Premium Border Glow */}
                                 <div className="absolute inset-0 bg-gradient-to-br from-amber-50/80 via-transparent to-orange-50/80 rounded-3xl blur-sm -z-10"></div>
+                                
+                                {/* Inner Premium Glow */}
                                 <div className="absolute inset-0 bg-gradient-to-br from-amber-50/30 to-orange-50/30 rounded-3xl"></div>
                                 
                                 <div className="relative">
@@ -88,6 +92,7 @@ export default async function DashboardPage() {
                                 </div>
                             </div>
                             
+                            {/* Dashboard Demo */}
                             <DashboardClient 
                                 userEmail="demo@taskelio.com" 
                                 isDemo={true}
@@ -119,10 +124,27 @@ export default async function DashboardPage() {
 
         console.log('✅ Valid session found - rendering dashboard');
         return <DashboardClient userEmail={session.user.email} />;
-        */
     } catch (error) {
         console.error('❌ Error in dashboard page:', error);
-        // En modo desarrollo, mostrar dashboard de todas formas
-        return <DashboardClient userEmail="dev@clyra.com" isDemo={true} />;
+        // En lugar de redirigir a login, mostrar error en la página
+        return (
+            <div className="min-h-screen flex items-center justify-center bg-red-50">
+                <div className="bg-white p-8 rounded-xl shadow-lg max-w-md text-center">
+                    <h1 className="text-2xl font-bold text-red-800 mb-4">Error de Configuración</h1>
+                    <p className="text-red-600 mb-4">
+                        Hubo un problema al cargar el dashboard. Revisa la configuración de Supabase.
+                    </p>
+                    <pre className="bg-red-100 p-4 rounded text-xs text-left overflow-auto">
+                        {error instanceof Error ? error.message : String(error)}
+                    </pre>
+                    <a 
+                        href="/login" 
+                        className="mt-4 inline-block bg-red-600 text-white px-4 py-2 rounded hover:bg-red-700"
+                    >
+                        Ir a Login
+                    </a>
+                </div>
+            </div>
+        );
     }
 }
