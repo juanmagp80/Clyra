@@ -174,7 +174,7 @@ export default function AutomationsPageClient({ userEmail }: AutomationsPageClie
             } else {
                 // Obtener información adicional para cada cliente
                 const clientsWithInfo = await Promise.all(
-                    (clientsData || []).map(async (client) => {
+                    (clientsData || []).map(async (client: any) => {
                         const { count: projectCount } = await supabase
                             .from('projects')
                             .select('*', { count: 'exact', head: true })
