@@ -1,8 +1,7 @@
 {
-  "crons": [
-    {
-      "path": "/api/meeting-reminder",
-      "schedule": "0 9 * * *"
+  "functions": {
+    "app/api/meeting-reminder/route.ts": {
+      "maxDuration": 60
     }
-  ]
+  }
 }
