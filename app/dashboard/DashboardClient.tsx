@@ -140,7 +140,7 @@ export default function DashboardClient({
                 .eq('status', 'completed')
                 .gte('created_at', `${currentYear}-${String(currentMonth + 1).padStart(2, '0')}-01`);
 
-            const monthlyRevenue = monthlyData?.reduce((sum, project) => sum + (project.budget || 0), 0) || 0;
+            const monthlyRevenue = monthlyData?.reduce((sum: number, project: any) => sum + (project.budget || 0), 0) || 0;
 
             // Calcular horas de esta semana
             const startOfWeek = new Date();
@@ -153,8 +153,8 @@ export default function DashboardClient({
                 .eq('user_id', user.id)
                 .gte('created_at', startOfWeek.toISOString());
 
-            const totalMinutesThisWeek = weeklyTimeData?.reduce((sum, entry) => sum + entry.duration_minutes, 0) || 0;
-            const billableMinutesThisWeek = weeklyTimeData?.reduce((sum, entry) =>
+            const totalMinutesThisWeek = weeklyTimeData?.reduce((sum: number, entry: any) => sum + entry.duration_minutes, 0) || 0;
+            const billableMinutesThisWeek = weeklyTimeData?.reduce((sum: number, entry: any) =>
                 sum + (entry.is_billable ? entry.duration_minutes : 0), 0) || 0;
 
             // Calcular horas de este mes
@@ -165,7 +165,7 @@ export default function DashboardClient({
                 .eq('user_id', user.id)
                 .gte('created_at', startOfMonth.toISOString());
 
-            const totalMinutesThisMonth = monthlyTimeData?.reduce((sum, entry) => sum + entry.duration_minutes, 0) || 0;
+            const totalMinutesThisMonth = monthlyTimeData?.reduce((sum: number, entry: any) => sum + entry.duration_minutes, 0) || 0;
 
             // Actualizar todas las métricas
             setMetrics({
