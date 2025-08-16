@@ -22,7 +22,7 @@ export default async function DashboardPage() {
         });
         
         // Si Supabase no está configurado, usar modo demo
-        if (!supabaseUrl || !supabaseKey || supabaseUrl.includes('your_supabase_project_url_here')) {
+        if (!supabaseUrl || !supabaseKey || supabaseUrl?.includes('your_supabase_project_url_here')) {
             console.log('🚧 Dashboard in demo mode - Supabase not configured');
             return (
                 <div className="min-h-screen bg-gradient-to-br from-slate-50 via-gray-50 to-zinc-100 text-slate-900 relative overflow-hidden">
