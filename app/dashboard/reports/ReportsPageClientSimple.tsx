@@ -463,7 +463,7 @@ export default function ReportsPageClient({ userEmail }: ReportsPageClientProps)
                 datasets: [
                     {
                         label: 'Estado de Proyectos',
-                        data,
+                        data: data as number[],
                         backgroundColor: colors.slice(0, labels.length)
                     }
                 ]
@@ -874,9 +874,9 @@ export default function ReportsPageClient({ userEmail }: ReportsPageClientProps)
             const alerts: Alert[] = [];
 
             // Alerta de facturas pendientes
-            const pendingInvoices = invoicesData?.filter(inv => inv.status === 'sent' || inv.status === 'overdue') || [];
+            const pendingInvoices = invoicesData?.filter((inv: any) => inv.status === 'sent' || inv.status === 'overdue') || [];
             if (pendingInvoices.length > 0) {
-                const totalPending = pendingInvoices.reduce((sum, inv) => sum + inv.total_amount, 0);
+                const totalPending = pendingInvoices.reduce((sum: any, inv: any) => sum + inv.total_amount, 0);
                 alerts.push({
                     id: 'pending-invoices',
                     type: 'warning',
@@ -889,7 +889,7 @@ export default function ReportsPageClient({ userEmail }: ReportsPageClientProps)
             }
 
             // Alerta de facturas vencidas
-            const overdueInvoices = invoicesData?.filter(inv => inv.status === 'overdue') || [];
+            const overdueInvoices = invoicesData?.filter((inv: any) => inv.status === 'overdue') || [];
             if (overdueInvoices.length > 0) {
                 alerts.push({
                     id: 'overdue-invoices',
@@ -903,7 +903,7 @@ export default function ReportsPageClient({ userEmail }: ReportsPageClientProps)
             }
 
             // Alerta de proyectos activos
-            const activeProjects = projectsData?.filter(p => p.status === 'active') || [];
+            const activeProjects = projectsData?.filter((p: any) => p.status === 'active') || [];
             if (activeProjects.length > 0) {
                 alerts.push({
                     id: 'active-projects',
@@ -917,7 +917,7 @@ export default function ReportsPageClient({ userEmail }: ReportsPageClientProps)
             }
 
             // Alerta de nuevos clientes
-            const recentClients = clientsData?.filter(client => {
+            const recentClients = clientsData?.filter((client: any) => {
                 const createdDate = new Date(client.created_at);
                 const weekAgo = new Date(Date.now() - 7 * 24 * 60 * 60 * 1000);
                 return createdDate > weekAgo;
