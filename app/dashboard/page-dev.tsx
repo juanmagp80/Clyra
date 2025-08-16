@@ -117,13 +117,21 @@ export default async function DashboardPage() {
             hasEmail: !!session?.user?.email,
         });
 
-        if (!session || !session?.user?.email) {
+        // Verificar que la sesión y el email existen
+        if (!session?.user?.email) {
             console.log('🚫 No valid session - redirecting to login');
             redirect('/login');
+            return; // Esto nunca se ejecutará, pero ayuda a TypeScript
         }
 
-        // Después de la verificación, sabemos que session y email existen
-        const userEmail = session?.user?.email!;
+        // Usar fallback seguro para TypeScript
+        const userEmail = session?.user?.email || '';
+        if (!userEmail) {
+            console.log('🚫 No email found - redirecting to login');
+            redirect('/login');
+            return;
+        }
+        
         console.log('✅ Valid session found - rendering dashboard');
         return <DashboardClient userEmail={userEmail} />;
     } catch (error) {
