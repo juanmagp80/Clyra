@@ -219,25 +219,25 @@ export default function ReportsPageClient({ userEmail }: ReportsPageClientProps)
             ]);
 
             // Calcular métricas reales
-            const totalRevenue = invoicesData?.filter(inv => inv.status === 'paid')
-                .reduce((sum, inv) => sum + inv.total_amount, 0) || 0;
+            const totalRevenue = invoicesData?.filter((inv: any) => inv.status === 'paid')
+                .reduce((sum: number, inv: any) => sum + inv.total_amount, 0) || 0;
             
-            const totalHours = timeEntriesData?.reduce((sum, entry) => sum + (entry.duration_minutes / 60), 0) || 0;
+            const totalHours = timeEntriesData?.reduce((sum: number, entry: any) => sum + (entry.duration_minutes / 60), 0) || 0;
             
-            const billableHours = timeEntriesData?.filter(entry => entry.is_billable)
-                .reduce((sum, entry) => sum + (entry.duration_minutes / 60), 0) || 0;
+            const billableHours = timeEntriesData?.filter((entry: any) => entry.is_billable)
+                .reduce((sum: number, entry: any) => sum + (entry.duration_minutes / 60), 0) || 0;
             
             const nonBillableHours = totalHours - billableHours;
             
             const avgHourlyRate = (timeEntriesData?.length || 0) > 0 
-                ? (timeEntriesData || []).reduce((sum, entry) => sum + (entry.hourly_rate || 0), 0) / (timeEntriesData?.length || 1)
+                ? (timeEntriesData || []).reduce((sum: number, entry: any) => sum + (entry.hourly_rate || 0), 0) / (timeEntriesData?.length || 1)
                 : 0;
             
             const totalProjects = projectsData?.length || 0;
-            const completedProjects = projectsData?.filter(p => p.status === 'completed').length || 0;
+            const completedProjects = projectsData?.filter((p: any) => p.status === 'completed').length || 0;
             const activeClients = clientsData?.length || 0;
             
-            const pendingInvoices = invoicesData?.filter(inv => inv.status === 'sent' || inv.status === 'draft').length || 0;
+            const pendingInvoices = invoicesData?.filter((inv: any) => inv.status === 'sent' || inv.status === 'draft').length || 0;
             
             // Para datos del período anterior, usamos un cálculo aproximado
             const previousMetrics = {
