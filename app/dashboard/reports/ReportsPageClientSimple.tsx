@@ -404,18 +404,18 @@ export default function ReportsPageClient({ userEmail }: ReportsPageClientProps)
                     name: client.name,
                     revenue: totalRevenue
                 };
-            }).filter(client => client.revenue > 0)
-              .sort((a, b) => b.revenue - a.revenue)
+            }).filter((client: any) => client.revenue > 0)
+              .sort((a: any, b: any) => b.revenue - a.revenue)
               .slice(0, 6); // Top 6 clientes
 
             const colors = ['#8B5CF6', '#06B6D4', '#10B981', '#F59E0B', '#EF4444', '#6366F1'];
 
             const realClientData: ChartData = {
-                labels: clientRevenue.map(c => c.name),
+                labels: clientRevenue.map((c: any) => c.name),
                 datasets: [
                     {
                         label: 'Ingresos por Cliente',
-                        data: clientRevenue.map(c => c.revenue),
+                        data: clientRevenue.map((c: any) => c.revenue),
                         backgroundColor: colors.slice(0, clientRevenue.length)
                     }
                 ]
