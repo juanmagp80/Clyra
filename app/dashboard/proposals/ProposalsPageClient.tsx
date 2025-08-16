@@ -198,11 +198,11 @@ export default function ProposalsPageClient({ userEmail }: ProposalsPageClientPr
             
             // Calcular estadísticas
             const total = data?.length || 0;
-            const sent = data?.filter(p => ['sent', 'viewed', 'accepted', 'rejected'].includes(p.status)).length || 0;
-            const accepted = data?.filter(p => p.status === 'accepted').length || 0;
-            const pending = data?.filter(p => ['sent', 'viewed'].includes(p.status)).length || 0;
-            const total_value = data?.reduce((sum, p) => sum + (p.total_amount || 0), 0) || 0;
-            const won_value = data?.filter(p => p.status === 'accepted').reduce((sum, p) => sum + (p.total_amount || 0), 0) || 0;
+            const sent = data?.filter((p: Proposal) => ['sent', 'viewed', 'accepted', 'rejected'].includes(p.status)).length || 0;
+            const accepted = data?.filter((p: Proposal) => p.status === 'accepted').length || 0;
+            const pending = data?.filter((p: Proposal) => ['sent', 'viewed'].includes(p.status)).length || 0;
+            const total_value = data?.reduce((sum: number, p: Proposal) => sum + (p.total_amount || 0), 0) || 0;
+            const won_value = data?.filter((p: Proposal) => p.status === 'accepted').reduce((sum: number, p: Proposal) => sum + (p.total_amount || 0), 0) || 0;
             const conversion_rate = sent > 0 ? Math.round((accepted / sent) * 100) : 0;
             
             // Calcular tiempo promedio de respuesta (simulado)
