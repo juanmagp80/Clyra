@@ -122,8 +122,10 @@ export default async function DashboardPage() {
             redirect('/login');
         }
 
+        // Después de la verificación, sabemos que session y email existen
+        const userEmail = session?.user?.email!;
         console.log('✅ Valid session found - rendering dashboard');
-        return <DashboardClient userEmail={session.user?.email || ''} />;
+        return <DashboardClient userEmail={userEmail} />;
     } catch (error) {
         console.error('❌ Error in dashboard page:', error);
         // En lugar de redirigir a login, mostrar error en la página
