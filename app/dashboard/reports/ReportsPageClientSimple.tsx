@@ -287,7 +287,7 @@ export default function ReportsPageClient({ userEmail }: ReportsPageClientProps)
             if (!invoicesData) return;
 
             // Agrupar por mes
-            const monthlyRevenue = invoicesData.reduce((acc: { [key: string]: number }, invoice) => {
+            const monthlyRevenue = invoicesData.reduce((acc: { [key: string]: number }, invoice: any) => {
                 const date = new Date(invoice.issue_date);
                 const monthKey = date.toLocaleDateString('es-ES', { month: 'short', year: 'numeric' });
                 
@@ -333,7 +333,7 @@ export default function ReportsPageClient({ userEmail }: ReportsPageClientProps)
             if (!timeEntriesData) return;
 
             // Agrupar por día de la semana
-            const weeklyData = timeEntriesData.reduce((acc: any, entry) => {
+            const weeklyData = timeEntriesData.reduce((acc: any, entry: any) => {
                 const date = new Date(entry.date);
                 const dayOfWeek = date.getDay(); // 0 = domingo, 1 = lunes, etc.
                 const dayNames = ['Dom', 'Lun', 'Mar', 'Mié', 'Jue', 'Vie', 'Sáb'];
@@ -397,9 +397,9 @@ export default function ReportsPageClient({ userEmail }: ReportsPageClientProps)
             if (!clientsData || !invoicesData) return;
 
             // Calcular ingresos por cliente
-            const clientRevenue = clientsData.map(client => {
-                const clientInvoices = invoicesData.filter(inv => inv.client_id === client.id);
-                const totalRevenue = clientInvoices.reduce((sum, inv) => sum + inv.total_amount, 0);
+            const clientRevenue = clientsData.map((client: any) => {
+                const clientInvoices = invoicesData.filter((inv: any) => inv.client_id === client.id);
+                const totalRevenue = clientInvoices.reduce((sum: number, inv: any) => sum + inv.total_amount, 0);
                 return {
                     name: client.name,
                     revenue: totalRevenue
@@ -439,7 +439,7 @@ export default function ReportsPageClient({ userEmail }: ReportsPageClientProps)
             if (!projectsData) return;
 
             // Contar proyectos por estado
-            const statusCounts = projectsData.reduce((acc: { [key: string]: number }, project) => {
+            const statusCounts = projectsData.reduce((acc: { [key: string]: number }, project: any) => {
                 const status = project.status || 'planning';
                 acc[status] = (acc[status] || 0) + 1;
                 return acc;
