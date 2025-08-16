@@ -31,11 +31,11 @@ export async function ensurePredefinedAutomationsForUser(user_id: string) {
   console.log('📊 Automatizaciones existentes del usuario:', existing?.length || 0);
   if (existing && existing.length > 0) {
     console.log('📋 Existentes:');
-    existing.forEach(a => console.log(`  - ${a.name} (${a.trigger_type}) - Público: ${a.is_public}`));
+    existing.forEach((a: any) => console.log(`  - ${a.name} (${a.trigger_type}) - Público: ${a.is_public}`));
   }
 
   // Determinar qué automatizaciones necesitan ser insertadas (TODAS las que falten)
-  const existingTriggerTypes = existing?.map(a => a.trigger_type) || [];
+  const existingTriggerTypes = existing?.map((a: any) => a.trigger_type) || [];
   const automationsToInsert = predefinedAutomations
     .filter(a => !existingTriggerTypes.includes(a.trigger_type))
     .map(a => ({
