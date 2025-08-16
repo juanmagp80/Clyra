@@ -12,5 +12,5 @@ export default async function TemplatesPage() {
         redirect('/login');
     }
 
-    return <TemplatesPageClient userEmail={user.email!} />;
+    return <TemplatesPageClient />;
 }
