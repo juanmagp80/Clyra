@@ -1493,7 +1493,7 @@ export class CalendarAI {
       // Agrupar por hora del día y día de la semana
       const hourlyProductivity: { [key: string]: number[] } = {};
       
-      sessions.forEach(session => {
+      sessions.forEach((session: any) => {
         const startTime = new Date(session.start_time);
         const hour = startTime.getHours();
         const day = startTime.getDay();
@@ -1582,7 +1582,7 @@ export class CalendarAI {
           
           const endTime = new Date(startTime.getTime() + duration * 60 * 1000);
           
-          const hasConflict = existingEvents?.some(event => {
+          const hasConflict = existingEvents?.some((event: any) => {
             const eventStart = new Date(event.start_time);
             const eventEnd = new Date(event.end_time);
             return (startTime < eventEnd && endTime > eventStart);
@@ -1621,8 +1621,8 @@ export class CalendarAI {
         .gte('start_time', new Date(Date.now() - 7 * 24 * 60 * 60 * 1000).toISOString());
 
       if (weeklyData && weeklyData.length > 0) {
-        const avgProductivity = weeklyData.reduce((sum, session) => sum + (session.productivity_rating || 3), 0) / weeklyData.length;
-        const totalHours = weeklyData.reduce((sum, session) => sum + (session.duration_minutes || 0), 0) / 60;
+        const avgProductivity = weeklyData.reduce((sum: any, session: any) => sum + (session.productivity_rating || 3), 0) / weeklyData.length;
+        const totalHours = weeklyData.reduce((sum: any, session: any) => sum + (session.duration_minutes || 0), 0) / 60;
         
         if (avgProductivity < 3) {
           insights.push({
@@ -1670,7 +1670,7 @@ export class CalendarAI {
         .gte('start_time', new Date(Date.now() - 30 * 24 * 60 * 60 * 1000).toISOString());
 
       if (revenueData && revenueData.length > 0) {
-        const totalRevenue = revenueData.reduce((sum, event) => {
+        const totalRevenue = revenueData.reduce((sum: any, event: any) => {
           return sum + ((event.time_tracked || 0) / 60 * (event.hourly_rate || 0));
         }, 0);
 
@@ -1710,7 +1710,7 @@ export class CalendarAI {
       if (clientEvents) {
         const clientActivity: { [key: string]: { name: string; lastContact: Date; eventCount: number } } = {};
         
-        clientEvents.forEach(event => {
+        clientEvents.forEach((event: any) => {
           if (event.client_id && event.clients) {
             const clientId = event.client_id;
             const clientName = (event.clients as any).name;
@@ -1834,14 +1834,14 @@ export class CalendarAI {
 
       // Análisis detallado
       const analysis = {
-        totalHours: sessions.reduce((sum, s) => sum + (s.duration_minutes || 0), 0) / 60,
-        avgProductivity: sessions.reduce((sum, s) => sum + (s.productivity_rating || 3), 0) / sessions.length,
+        totalHours: sessions.reduce((sum: any, s: any) => sum + (s.duration_minutes || 0), 0) / 60,
+        avgProductivity: sessions.reduce((sum: any, s: any) => sum + (s.productivity_rating || 3), 0) / sessions.length,
         billableHours: events
-          .filter(e => e.is_billable)
-          .reduce((sum, e) => sum + (e.time_tracked || 0), 0) / 60,
+          .filter((e: any) => e.is_billable)
+          .reduce((sum: any, e: any) => sum + (e.time_tracked || 0), 0) / 60,
         revenue: events
-          .filter(e => e.is_billable)
-          .reduce((sum, e) => sum + ((e.time_tracked || 0) / 60 * (e.hourly_rate || 0)), 0),
+          .filter((e: any) => e.is_billable)
+          .reduce((sum: any, e: any) => sum + ((e.time_tracked || 0) / 60 * (e.hourly_rate || 0)), 0),
         clientDistribution: this.calculateClientDistribution(events),
         bestTimeSlots: await this.analyzeProductivityPatterns(userId),
         recommendations: await this.generateRecommendations(sessions, events)
