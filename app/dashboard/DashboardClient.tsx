@@ -233,7 +233,7 @@ export default function DashboardClient({
 
             // Combinar y ordenar actividad
             const activity = [
-                ...(recentProjects?.map(project => ({
+                ...(recentProjects?.map((project: any) => ({
                     id: project.id,
                     type: 'project',
                     title: `Nuevo proyecto: ${project.name}`,
@@ -241,7 +241,7 @@ export default function DashboardClient({
                     date: project.created_at,
                     icon: 'briefcase'
                 })) || []),
-                ...(recentClients?.map(client => ({
+                ...(recentClients?.map((client: any) => ({
                     id: client.id,
                     type: 'client',
                     title: `Nuevo cliente: ${client.name}`,
@@ -249,7 +249,7 @@ export default function DashboardClient({
                     date: client.created_at,
                     icon: 'user'
                 })) || []),
-                ...(recentTimeEntries?.map(entry => ({
+                ...(recentTimeEntries?.map((entry: any) => ({
                     id: entry.id,
                     type: 'time',
                     title: entry.description,
