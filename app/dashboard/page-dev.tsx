@@ -123,7 +123,7 @@ export default async function DashboardPage() {
         }
 
         console.log('✅ Valid session found - rendering dashboard');
-        return <DashboardClient userEmail={session.user.email} />;
+        return <DashboardClient userEmail={session.user?.email || ''} />;
     } catch (error) {
         console.error('❌ Error in dashboard page:', error);
         // En lugar de redirigir a login, mostrar error en la página
