@@ -84,6 +84,11 @@ const navigation = [
     icon: Calendar,
   },
   {
+    name: 'Google Calendar',
+    href: '/dashboard/google-calendar',
+    icon: Calendar,
+  },
+  {
     name: 'Reportes',
     href: '/dashboard/reports',
     icon: BarChart3,
