@@ -138,7 +138,7 @@ export default function EditInvoicePage({ invoiceId, userEmail }: EditInvoicePag
             if (itemsError) {
                 console.error('Error fetching invoice items:', itemsError);
             } else {
-                const formattedItems = (itemsData || []).map(item => ({
+                const formattedItems = (itemsData || []).map((item: any) => ({
                     id: item.id,
                     description: item.description,
                     quantity: item.quantity,
