@@ -107,3 +107,4 @@ NEXT_PUBLIC_SITE_URL=http://localhost:3000
 ## 📝 Licencia
 
 MIT License - ve el archivo LICENSE para más detalles.
+// Updated sáb 16 ago 2025 11:21:24 CEST
