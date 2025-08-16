@@ -117,7 +117,7 @@ export default async function DashboardPage() {
             hasEmail: !!session?.user?.email,
         });
 
-        if (!session || !session.user?.email) {
+        if (!session || !session?.user?.email) {
             console.log('🚫 No valid session - redirecting to login');
             redirect('/login');
         }
