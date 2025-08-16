@@ -46,12 +46,55 @@ export default function GoogleCalendarIntegrationPage() {
   const [upcomingMeetings, setUpcomingMeetings] = useState<Meeting[]>([]);
   const [automationStats, setAutomationStats] = useState<AutomationStats | null>(null);
   const [message, setMessage] = useState<{ type: 'success' | 'error'; text: string } | null>(null);
+  const [googleConnected, setGoogleConnected] = useState(false);
 
   useEffect(() => {
     checkConnection();
     loadUpcomingMeetings();
     loadAutomationStats();
+    checkGoogleConnection();
+    
+    // Verificar mensajes de URL (success/error de OAuth)
+    const urlParams = new URLSearchParams(window.location.search);
+    const success = urlParams.get('success');
+    const error = urlParams.get('error');
+    
+    if (success === 'connected') {
+      showMessage('success', '¡Google Calendar conectado exitosamente!');
+      setGoogleConnected(true);
+      // Limpiar URL
+      window.history.replaceState({}, document.title, window.location.pathname);
+    }
+    
+    if (error) {
+      const errorMessages: { [key: string]: string } = {
+        oauth_error: 'Error en la autenticación con Google',
+        no_code: 'No se recibió código de autorización',
+        invalid_state: 'Estado de OAuth inválido',
+        callback_failed: 'Error en el callback de Google'
+      };
+      showMessage('error', errorMessages[error] || 'Error conectando con Google Calendar');
+      // Limpiar URL
+      window.history.replaceState({}, document.title, window.location.pathname);
+    }
   }, []);
+
+  const checkGoogleConnection = async () => {
+    try {
+      const response = await fetch('/api/google-calendar/status');
+      if (response.ok) {
+        const data = await response.json();
+        setGoogleConnected(data.connected);
+      }
+    } catch (error) {
+      console.error('Error verificando conexión Google:', error);
+      setGoogleConnected(false);
+    }
+  };
+
+  const handleConnectGoogle = () => {
+    window.location.href = '/api/auth/google';
+  };
 
   const showMessage = (type: 'success' | 'error', text: string) => {
     setMessage({ type, text });
@@ -205,12 +248,26 @@ export default function GoogleCalendarIntegrationPage() {
             {isConnected ? (
               <>
                 <CheckCircle className="w-4 h-4 mr-1" />
-                Conectado
+                MCP Conectado
               </>
             ) : (
               <>
                 <AlertCircle className="w-4 h-4 mr-1" />
-                Desconectado
+                MCP Desconectado
+              </>
+            )}
+          </Badge>
+
+          <Badge variant={googleConnected ? 'default' : 'secondary'}>
+            {googleConnected ? (
+              <>
+                <CheckCircle className="w-4 h-4 mr-1" />
+                Google Conectado
+              </>
+            ) : (
+              <>
+                <AlertCircle className="w-4 h-4 mr-1" />
+                Google Pendiente
               </>
             )}
           </Badge>
@@ -324,12 +381,24 @@ export default function GoogleCalendarIntegrationPage() {
               <CardContent className="space-y-2">
                 <Button 
                   onClick={handleSyncCalendar}
-                  disabled={isLoading}
+                  disabled={isLoading || !googleConnected}
                   className="w-full"
                 >
                   <RefreshCcw className="w-4 h-4 mr-2" />
                   Sincronizar Calendario
                 </Button>
+
+                {!googleConnected && (
+                  <Button 
+                    onClick={handleConnectGoogle}
+                    disabled={isLoading}
+                    variant="outline"
+                    className="w-full"
+                  >
+                    <ExternalLink className="w-4 h-4 mr-2" />
+                    Conectar Google Calendar
+                  </Button>
+                )}
                 
                 <Button 
                   onClick={handleRunManualCheck}

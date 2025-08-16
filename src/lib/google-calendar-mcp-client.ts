@@ -18,10 +18,10 @@ export class GoogleCalendarMCPClient {
   constructor(serverUrl: string = 'http://localhost:3001') {
     this.serverUrl = serverUrl;
 
-    // Usar la misma configuración de Supabase que la app principal
+    // Usar la configuración de Supabase para el cliente (lado browser)
     this.supabase = createClient(
       process.env.NEXT_PUBLIC_SUPABASE_URL!,
-      process.env.SUPABASE_SERVICE_ROLE_KEY!
+      process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
     );
   }
 
