@@ -300,7 +300,7 @@ export default function ReportsPageClient({ userEmail }: ReportsPageClientProps)
 
             // Convertir a formato de gráfico
             const labels = Object.keys(monthlyRevenue);
-            const data = Object.values(monthlyRevenue);
+            const data = Object.values(monthlyRevenue) as number[];
 
             const realRevenueData: ChartData = {
                 labels,
