@@ -126,8 +126,8 @@ export default function DashboardClient({
                 .select('status')
                 .eq('user_id', user.id);
 
-            const activeProjects = projectsData?.filter(p => p.status === 'active').length || 0;
-            const completedProjects = projectsData?.filter(p => p.status === 'completed').length || 0;
+            const activeProjects = projectsData?.filter((p: any) => p.status === 'active').length || 0;
+            const completedProjects = projectsData?.filter((p: any) => p.status === 'completed').length || 0;
 
             // Calcular ingresos del mes (proyectos completados)
             const currentMonth = new Date().getMonth();
