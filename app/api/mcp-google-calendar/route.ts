@@ -123,7 +123,7 @@ async function getAutomationStats() {
 
     const { data: reminders, error } = await supabase
       .from('meeting_reminders')
-      .select('status')
+      .select('success')
       .gte('sent_at', today.toISOString())
       .lt('sent_at', tomorrow.toISOString());
 
@@ -134,8 +134,8 @@ async function getAutomationStats() {
 
     const stats = {
       date: today.toISOString().split('T')[0],
-      sent: reminders?.filter(r => r.status === 'sent').length || 0,
-      errors: reminders?.filter(r => r.status === 'failed').length || 0,
+      sent: reminders?.filter(r => r.success === true).length || 0,
+      errors: reminders?.filter(r => r.success === false).length || 0,
       total: reminders?.length || 0
     };
 

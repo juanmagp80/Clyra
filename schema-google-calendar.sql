@@ -41,6 +41,7 @@ CREATE TABLE IF NOT EXISTS meeting_reminders (
     reminder_type TEXT NOT NULL CHECK (reminder_type IN ('1_hour', '3_hours', '24_hours')),
     recipient_email TEXT NOT NULL,
     sent_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
+    success BOOLEAN DEFAULT true,
     status TEXT DEFAULT 'sent' CHECK (status IN ('sent', 'failed', 'pending')),
     email_response JSONB DEFAULT '{}'::jsonb
 );
