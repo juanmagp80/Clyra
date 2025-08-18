@@ -35,3 +35,32 @@ sáb 16 ago 2025 18:00:01 CEST: Iniciando monitoreo automático de reuniones...
 sáb 16 ago 2025 18:00:01 CEST: ❌ Error en monitoreo: 
 sáb 16 ago 2025 18:00:01 CEST: Monitoreo automático finalizado
 ---
+lun 18 ago 2025 18:00:01 CEST: Iniciando monitoreo automático de reuniones...
+lun 18 ago 2025 18:00:04 CEST: ✅ Monitoreo completado exitosamente
+lun 18 ago 2025 18:00:04 CEST: Respuesta: {"success":true,"message":"Monitoreo de recordatorios de reunión completado","remindersSent":0,"timestamp":"2025-08-18T16:00:03.999Z","service":"Meeting Reminder Monitoring"}
+lun 18 ago 2025 18:00:04 CEST: Monitoreo automático finalizado
+---
+lun 18 ago 2025 19:00:01 CEST: Iniciando monitoreo automático de reuniones...
+lun 18 ago 2025 19:00:01 CEST: ❌ Error en monitoreo: 
+lun 18 ago 2025 19:00:01 CEST: Monitoreo automático finalizado
+---
+lun 18 ago 2025 20:00:01 CEST: Iniciando monitoreo automático de reuniones...
+lun 18 ago 2025 20:00:03 CEST: ✅ Monitoreo completado exitosamente
+lun 18 ago 2025 20:00:03 CEST: Respuesta: <!DOCTYPE html><html><head><meta charSet="utf-8" data-next-head=""/><meta name="viewport" content="width=device-width" data-next-head=""/><style data-next-hide-fouc="true">body{display:none}</style><noscript data-next-hide-fouc="true"><style>body{display:block}</style></noscript><noscript data-n-css=""></noscript><script defer="" noModule="" src="/_next/static/chunks/polyfills.js"></script><script src="/_next/static/chunks/fallback/webpack.js" defer=""></script><script src="/_next/static/chunks/fallback/main.js" defer=""></script><script src="/_next/static/chunks/fallback/pages/_app.js" defer=""></script><script src="/_next/static/chunks/fallback/pages/_error.js" defer=""></script><noscript id="__next_css__DO_NOT_USE__"></noscript></head><body><div id="__next"></div><script src="/_next/static/chunks/fallback/react-refresh.js"></script><script id="__NEXT_DATA__" type="application/json">{"props":{"pageProps":{"statusCode":500,"hostname":"localhost"}},"page":"/_error","query":{},"buildId":"development","isFallback":false,"err":{"name":"ModuleBuildError","source":"server","message":"Module build failed (from ./node_modules/next/dist/build/webpack/loaders/next-swc-loader.js):\nError:   × Expected '\u003c/', got 'jsx text (\n  │                 )'\n     ╭─[/home/juan/Documentos/clyra/app/dashboard/projects/ProjectsPageClient.tsx:870:1]\n 867 │                                     \u003c/div\u003e\n 868 │                                 \u003c/div\u003e\n 869 │                             \u003c/div\u003e\n 870 │ ╭─▶                     \u003c/div\u003e\n 871 │ ╰─▶                 \u003c/div\u003e\n 872 │                 \u003c/div\u003e\n 873 │             \u003c/div\u003e\n 874 │         );\n     ╰────\n\n\nCaused by:\n    Syntax Error","stack":"ModuleBuildError: Module build failed (from ./node_modules/next/dist/build/webpack/loaders/next-swc-loader.js):\nError:   \u001b[31m×\u001b[0m Expected '\u003c/', got 'jsx text (\n  \u001b[31m│\u001b[0m                 )'\n     ╭─[\u001b[36;1;4m/home/juan/Documentos/clyra/app/dashboard/projects/ProjectsPageClient.tsx\u001b[0m:870:1]\n \u001b[2m867\u001b[0m │                                     \u003c/div\u003e\n \u001b[2m868\u001b[0m │                                 \u003c/div\u003e\n \u001b[2m869\u001b[0m │                             \u003c/div\u003e\n \u001b[2m870\u001b[0m │ \u001b[35;1m╭\u001b[0m\u001b[35;1m─\u001b[0m\u001b[35;1m▶\u001b[0m                     \u003c/div\u003e\n \u001b[2m871\u001b[0m │ \u001b[35;1m╰\u001b[0m\u001b[35;1m─\u001b[0m\u001b[35;1m▶\u001b[0m                 \u003c/div\u003e\n \u001b[2m872\u001b[0m │                 \u003c/div\u003e\n \u001b[2m873\u001b[0m │             \u003c/div\u003e\n \u001b[2m874\u001b[0m │         );\n     ╰────\n\n\nCaused by:\n    Syntax Error\n    at processResult (/home/juan/Documentos/clyra/node_modules/next/dist/compiled/webpack/bundle5.js:29:407086)\n    at /home/juan/Documentos/clyra/node_modules/next/dist/compiled/webpack/bundle5.js:29:408881\n    at /home/juan/Documentos/clyra/node_modules/next/dist/compiled/loader-runner/LoaderRunner.js:1:8645\n    at /home/juan/Documentos/clyra/node_modules/next/dist/compiled/loader-runner/LoaderRunner.js:1:5019\n    at r.callback (/home/juan/Documentos/clyra/node_modules/next/dist/compiled/loader-runner/LoaderRunner.js:1:4039)"},"gip":true,"scriptLoader":[]}</script></body></html>
+lun 18 ago 2025 20:00:03 CEST: Monitoreo automático finalizado
+---
+lun 18 ago 2025 21:00:02 CEST: Iniciando monitoreo automático de reuniones...
+lun 18 ago 2025 21:00:02 CEST: ✅ Monitoreo completado exitosamente
+lun 18 ago 2025 21:00:02 CEST: Respuesta: {"success":true,"message":"Monitoreo de recordatorios de reunión completado","remindersSent":0,"timestamp":"2025-08-18T19:00:02.376Z","service":"Meeting Reminder Monitoring"}
+lun 18 ago 2025 21:00:02 CEST: Monitoreo automático finalizado
+---
+lun 18 ago 2025 22:00:01 CEST: Iniciando monitoreo automático de reuniones...
+lun 18 ago 2025 22:00:03 CEST: ✅ Monitoreo completado exitosamente
+lun 18 ago 2025 22:00:03 CEST: Respuesta: {"success":true,"message":"Monitoreo de recordatorios de reunión completado","remindersSent":0,"timestamp":"2025-08-18T20:00:03.568Z","service":"Meeting Reminder Monitoring"}
+lun 18 ago 2025 22:00:03 CEST: Monitoreo automático finalizado
+---
+lun 18 ago 2025 23:00:01 CEST: Iniciando monitoreo automático de reuniones...
+lun 18 ago 2025 23:00:04 CEST: ✅ Monitoreo completado exitosamente
+lun 18 ago 2025 23:00:04 CEST: Respuesta: {"success":true,"message":"Monitoreo de recordatorios de reunión completado","remindersSent":0,"timestamp":"2025-08-18T21:00:04.019Z","service":"Meeting Reminder Monitoring"}
+lun 18 ago 2025 23:00:04 CEST: Monitoreo automático finalizado
+---
