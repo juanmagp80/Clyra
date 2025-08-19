@@ -123,9 +123,11 @@ export default function ProjectDetails({ projectId, userEmail }: ProjectDetailsP
 
             if (error) {
                 console.error('Error fetching project:', error);
-                // Si no se encuentra el proyecto, redirigir
+                // Si no se encuentra el proyecto, redirigir después de un breve delay
                 if (error.code === 'PGRST116') {
-                    router.push('/dashboard/projects');
+                    setTimeout(() => {
+                        router.push('/dashboard/projects');
+                    }, 2000);
                 }
             } else {
                 setProject(projectData);
@@ -466,13 +468,22 @@ export default function ProjectDetails({ projectId, userEmail }: ProjectDetailsP
                 <div className="flex-1 overflow-auto p-6">
                     <div className="flex justify-center items-center h-64">
                         <div className="text-center">
-                            <h2 className="text-xl font-semibold text-gray-900 mb-2">
+                            <div className="w-16 h-16 bg-gradient-to-br from-red-100 to-red-200 rounded-2xl flex items-center justify-center mx-auto mb-4">
+                                <div className="text-2xl">🔍</div>
+                            </div>
+                            <h2 className="text-xl font-semibold text-slate-900 mb-2">
                                 Proyecto no encontrado
                             </h2>
-                            <p className="text-gray-600 mb-4">
+                            <p className="text-slate-600 mb-4">
                                 El proyecto que buscas no existe o no tienes permisos para verlo.
                             </p>
-                            <Button onClick={() => router.push('/dashboard/projects')}>
+                            <p className="text-sm text-slate-500 mb-4">
+                                Redirigiendo automáticamente en 2 segundos...
+                            </p>
+                            <Button 
+                                onClick={() => router.push('/dashboard/projects')}
+                                className="bg-gradient-to-r from-blue-600 to-blue-700 text-white rounded-xl hover:from-blue-700 hover:to-blue-800"
+                            >
                                 <ArrowLeft className="h-4 w-4 mr-2" />
                                 Volver a Proyectos
                             </Button>

@@ -336,13 +336,13 @@ export default function ProjectsPageClient({ userEmail }: ProjectsPageClientProp
 
     // Render
     return (
-        <div className={"min-h-screen bg-gradient-to-br from-slate-50 to-blue-50 dark:from-slate-900 dark:to-slate-800"}>
+        <div className={"min-h-screen bg-gradient-to-br from-slate-50/80 via-blue-50/40 to-indigo-50/60 dark:from-slate-900 dark:to-slate-800"}>
             {/* Elementos decorativos animados de fondo */}
             <div className="absolute inset-0 overflow-hidden pointer-events-none">
-                <div className="absolute top-0 left-0 w-96 h-96 bg-gradient-to-br from-blue-500/5 via-purple-500/5 to-indigo-500/5 rounded-full blur-3xl animate-pulse"></div>
-                <div className="absolute top-20 right-20 w-64 h-64 bg-gradient-to-br from-purple-500/5 via-pink-500/5 to-indigo-500/5 rounded-full blur-3xl animate-pulse" style={{ animationDelay: '2s' }}></div>
-                <div className="absolute bottom-20 left-20 w-80 h-80 bg-gradient-to-br from-indigo-500/5 via-blue-500/5 to-purple-500/5 rounded-full blur-3xl animate-pulse" style={{ animationDelay: '4s' }}></div>
-                <div className="absolute bottom-0 right-0 w-72 h-72 bg-gradient-to-br from-pink-500/5 via-purple-500/5 to-blue-500/5 rounded-full blur-3xl animate-pulse" style={{ animationDelay: '1s' }}></div>
+                <div className="absolute top-0 left-0 w-96 h-96 bg-gradient-to-br from-blue-500/3 via-purple-500/3 to-indigo-500/3 rounded-full blur-3xl animate-pulse"></div>
+                <div className="absolute top-20 right-20 w-64 h-64 bg-gradient-to-br from-purple-500/3 via-pink-500/3 to-indigo-500/3 rounded-full blur-3xl animate-pulse" style={{ animationDelay: '2s' }}></div>
+                <div className="absolute bottom-20 left-20 w-80 h-80 bg-gradient-to-br from-indigo-500/3 via-blue-500/3 to-purple-500/3 rounded-full blur-3xl animate-pulse" style={{ animationDelay: '4s' }}></div>
+                <div className="absolute bottom-0 right-0 w-72 h-72 bg-gradient-to-br from-pink-500/3 via-purple-500/3 to-blue-500/3 rounded-full blur-3xl animate-pulse" style={{ animationDelay: '1s' }}></div>
             </div>
 
             {/* Sidebar */}

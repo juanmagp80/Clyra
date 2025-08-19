@@ -64,3 +64,5 @@ lun 18 ago 2025 23:00:04 CEST: ✅ Monitoreo completado exitosamente
 lun 18 ago 2025 23:00:04 CEST: Respuesta: {"success":true,"message":"Monitoreo de recordatorios de reunión completado","remindersSent":0,"timestamp":"2025-08-18T21:00:04.019Z","service":"Meeting Reminder Monitoring"}
 lun 18 ago 2025 23:00:04 CEST: Monitoreo automático finalizado
 ---
+/bin/sh: 1: /home/juan/Documentos/clyra/run-meeting-monitoring.sh: not found
+/bin/sh: 1: /home/juan/Documentos/clyra/run-meeting-monitoring.sh: Permission denied

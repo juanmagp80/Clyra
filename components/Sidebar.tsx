@@ -135,7 +135,7 @@ export default function Sidebar({ userEmail, onLogout }: SidebarProps) {
   };
 
   return (
-    <div className="flex h-full w-56 flex-col fixed inset-y-0 z-50 bg-white/95 dark:bg-slate-950/95 backdrop-blur-3xl border-r border-slate-200/60 dark:border-slate-700/60 shadow-2xl shadow-slate-900/5 dark:shadow-black/40 transition-all duration-300">
+    <div className="flex h-full w-56 flex-col fixed inset-y-0 z-50 bg-slate-50/95 dark:bg-slate-900/95 backdrop-blur-3xl border-r border-slate-200/60 dark:border-slate-700/60 shadow-2xl shadow-slate-900/3 dark:shadow-black/40 transition-all duration-300">
       {/* Premium Logo - Más compacto */}
       <div className="flex h-12 items-center border-b border-slate-200/60 dark:border-slate-700/60 px-4 bg-gradient-to-r from-indigo-50/50 to-violet-50/50 dark:from-slate-900/50 dark:to-slate-800/50 transition-all duration-300">
         <h1 className="text-lg font-black tracking-tight relative">
@@ -169,7 +169,7 @@ export default function Sidebar({ userEmail, onLogout }: SidebarProps) {
                     'group flex items-center justify-between w-full px-3 py-2 text-sm font-semibold rounded-lg transition-all duration-300 relative',
                     isActive || hasActiveSubmenu
                       ? 'bg-gradient-to-r from-indigo-600 via-blue-600 to-violet-600 text-white shadow-lg shadow-indigo-500/25'
-                      : 'text-slate-700 dark:text-slate-300 hover:text-indigo-900 dark:hover:text-indigo-400 hover:bg-white/80 dark:hover:bg-slate-700/60 hover:shadow-md hover:shadow-slate-900/5'
+                      : 'text-slate-700 dark:text-slate-300 hover:text-indigo-900 dark:hover:text-indigo-400 hover:bg-slate-100/80 dark:hover:bg-slate-700/60 hover:shadow-md hover:shadow-slate-900/3'
                   )}
                 >
                   {(isActive || hasActiveSubmenu) && (
@@ -199,7 +199,7 @@ export default function Sidebar({ userEmail, onLogout }: SidebarProps) {
                     'group flex items-center px-3 py-2 text-sm font-semibold rounded-lg transition-all duration-300 relative',
                     isActive
                       ? 'bg-gradient-to-r from-indigo-600 via-blue-600 to-violet-600 text-white shadow-lg shadow-indigo-500/25'
-                      : 'text-slate-700 dark:text-slate-300 hover:text-indigo-900 dark:hover:text-indigo-400 hover:bg-white/80 dark:hover:bg-slate-700/60 hover:shadow-md hover:shadow-slate-900/5'
+                      : 'text-slate-700 dark:text-slate-300 hover:text-indigo-900 dark:hover:text-indigo-400 hover:bg-slate-100/80 dark:hover:bg-slate-700/60 hover:shadow-md hover:shadow-slate-900/3'
                   )}
                 >
                   {isActive && (
@@ -261,7 +261,7 @@ export default function Sidebar({ userEmail, onLogout }: SidebarProps) {
 
       {/* Premium User section - Más compacto */}
       <div className="border-t border-slate-200/60 dark:border-slate-700/60 p-3 bg-gradient-to-r from-slate-50/50 to-indigo-50/30 dark:from-slate-900/50 dark:to-indigo-900/30 transition-all duration-300">
-        <div className="flex items-center mb-3 p-2 rounded-lg bg-white/80 dark:bg-slate-800/80 backdrop-blur-sm border border-slate-200/60 dark:border-slate-700/60 shadow-md shadow-slate-900/5 dark:shadow-black/10 transition-all duration-300">
+        <div className="flex items-center mb-3 p-2 rounded-lg bg-slate-100/80 dark:bg-slate-800/80 backdrop-blur-sm border border-slate-200/60 dark:border-slate-700/60 shadow-md shadow-slate-900/3 dark:shadow-black/10 transition-all duration-300">
           <div className="flex-shrink-0">
             <div className="h-8 w-8 rounded-lg bg-gradient-to-br from-indigo-600 via-blue-600 to-violet-600 flex items-center justify-center shadow-lg shadow-indigo-500/25 dark:shadow-indigo-400/30">
               <span className="text-xs font-bold text-white">
@@ -282,7 +282,7 @@ export default function Sidebar({ userEmail, onLogout }: SidebarProps) {
         <div className="space-y-1">
           <div className="flex items-center gap-2 mb-2">
             <Link href="/dashboard/settings" className="flex-1">
-              <Button variant="ghost" className="w-full justify-start text-slate-700 dark:text-slate-300 hover:text-indigo-900 dark:hover:text-indigo-400 hover:bg-white/80 dark:hover:bg-slate-700/60 rounded-lg font-semibold transition-all duration-300 hover:shadow-md hover:shadow-slate-900/5" size="sm">
+              <Button variant="ghost" className="w-full justify-start text-slate-700 dark:text-slate-300 hover:text-indigo-900 dark:hover:text-indigo-400 hover:bg-slate-100/80 dark:hover:bg-slate-700/60 rounded-lg font-semibold transition-all duration-300 hover:shadow-md hover:shadow-slate-900/3" size="sm">
                 <Settings className="mr-2 h-3 w-3" />
                 <span className="text-xs">Configuración</span>
               </Button>

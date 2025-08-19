@@ -40,7 +40,8 @@
 
 @layer base {
   :root {
-    --background: 0 0% 100%;
+    /* Colores de fondo más suaves y cálidos */
+    --background: 210 20% 98%; /* Fondo muy suave con un toque gris-azul */
     --foreground: 222.2 84% 4.9%;
     --card: 0 0% 100%;
     --card-foreground: 222.2 84% 4.9%;
@@ -63,11 +64,12 @@
   }
 
   .dark {
-    --background: 222.2 84% 4.9%;
+    /* Modo oscuro con colores más cálidos */
+    --background: 222.2 47% 11%; /* Fondo oscuro más cálido */
     --foreground: 210 40% 98%;
-    --card: 222.2 84% 4.9%;
+    --card: 222.2 47% 11%;
     --card-foreground: 210 40% 98%;
-    --popover: 222.2 84% 4.9%;
+    --popover: 222.2 47% 11%;
     --popover-foreground: 210 40% 98%;
     --primary: 217.2 91.2% 59.8%;
     --primary-foreground: 222.2 84% 4.9%;
@@ -95,9 +97,42 @@
   }
 }
 
+/* Mejoras de contraste y legibilidad */
 @layer utilities {
   .bg-grid-white\/\[0\.02\] {
     background-image: linear-gradient(rgba(255, 255, 255, 0.02) 1px, transparent 1px),
                       linear-gradient(90deg, rgba(255, 255, 255, 0.02) 1px, transparent 1px);
+  }
+  
+  /* Fondos más suaves para contenido */
+  .bg-soft-white {
+    background-color: rgba(248, 250, 252, 0.8);
+  }
+  
+  .bg-soft-card {
+    background-color: rgba(255, 255, 255, 0.9);
+  }
+  
+  /* Mejoras para modo oscuro */
+  .dark .bg-soft-white {
+    background-color: rgba(15, 23, 42, 0.8);
+  }
+  
+  .dark .bg-soft-card {
+    background-color: rgba(30, 41, 59, 0.9);
+  }
+  
+  /* Sombras más suaves */
+  .shadow-soft {
+    box-shadow: 0 2px 15px -3px rgba(0, 0, 0, 0.05), 0 4px 6px -2px rgba(0, 0, 0, 0.02);
+  }
+  
+  /* Gradientes mejorados */
+  .bg-gradient-soft {
+    background: linear-gradient(135deg, rgba(248, 250, 252, 0.8) 0%, rgba(241, 245, 249, 0.9) 50%, rgba(226, 232, 240, 0.8) 100%);
+  }
+  
+  .dark .bg-gradient-soft {
+    background: linear-gradient(135deg, rgba(15, 23, 42, 0.8) 0%, rgba(30, 41, 59, 0.9) 50%, rgba(51, 65, 85, 0.8) 100%);
   }
 }

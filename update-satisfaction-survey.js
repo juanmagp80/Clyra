@@ -1,4 +1,4 @@
-require('dotenv').config({ path: '.env.local' });
+yo lo vigualrequire('dotenv').config({ path: '.env.local' });
 const { createClient } = require('@supabase/supabase-js');
 
 const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;

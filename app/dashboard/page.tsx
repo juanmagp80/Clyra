@@ -6,13 +6,6 @@ export default async function DashboardPage() {
     try {
         console.log('🚀 Dashboard page loading...');
         
-        // ✅ MODO DE DESARROLLO - Acceso directo sin autenticación
-        // Línea temporal para acceso inmediato en desarrollo
-        console.log('🔧 Dashboard in development mode - bypassing authentication');
-        return <DashboardClient userEmail="dev@clyra.com" isDemo={true} />;
-        
-        /*
-        // Código original comentado temporalmente
         // ✅ Verificar si Supabase está configurado
         const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
         const supabaseKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
@@ -119,10 +112,8 @@ export default async function DashboardPage() {
 
         console.log('✅ Valid session found - rendering dashboard');
         return <DashboardClient userEmail={session.user.email} />;
-        */
     } catch (error) {
         console.error('❌ Error in dashboard page:', error);
-        // En modo desarrollo, mostrar dashboard de todas formas
-        return <DashboardClient userEmail="dev@clyra.com" isDemo={true} />;
+        redirect('/login');
     }
 }
