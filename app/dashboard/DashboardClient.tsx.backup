@@ -1,0 +1,898 @@
+// src/app/dashboard/DashboardClient.tsx
+'use client';
+
+import Sidebar from '@/components/Sidebar';
+import TrialBanner from '@/components/TrialBanner';
+import { darkModeClasses, presets, combineClasses } from '@/utils/darkMode';
+import { createSupabaseClient } from '@/src/lib/supabase-client';
+import Link from 'next/link';
+import {
+    Activity,
+    BarChart3,
+    Briefcase,
+    Calendar,
+    CheckCircle2,
+    Clock,
+    DollarSign,
+    FileText,
+    Mail,
+    Sparkles,
+    Target,
+    TrendingDown,
+    TrendingUp,
+    User,
+    Users,
+    Zap
+} from 'lucide-react';
+import { useRouter } from 'next/navigation';
+import { useEffect, useState } from 'react';
+
+export default function DashboardClient({
+    userEmail,
+    isDemo = false
+}: {
+    userEmail: string;
+    isDemo?: boolean;
+}) {
+    const supabase = createSupabaseClient();
+    const router = useRouter();
+
+    // Estados para las métricas ampliadas
+    const [metrics, setMetrics] = useState({
+        totalClients: 0,
+        activeProjects: 0,
+        completedProjects: 0,
+        pendingProjects: 0,
+        monthlyRevenue: 0,
+        hoursThisWeek: 0,
+        hoursThisMonth: 0,
+        billableHoursThisWeek: 0,
+        averageProjectValue: 0,
+        clientsThisMonth: 0,
+        productivityScore: 85,
+        overdueProjects: 0,
+        totalInvoices: 0,
+        pendingInvoices: 0,
+        totalTasks: 0,
+        completedTasks: 0
+    });
+
+    const [weeklyStats, setWeeklyStats] = useState([
+        { day: 'Lun', hours: 0, revenue: 0 },
+        { day: 'Mar', hours: 0, revenue: 0 },
+        { day: 'Mié', hours: 0, revenue: 0 },
+        { day: 'Jue', hours: 0, revenue: 0 },
+        { day: 'Vie', hours: 0, revenue: 0 },
+        { day: 'Sáb', hours: 0, revenue: 0 },
+        { day: 'Dom', hours: 0, revenue: 0 }
+    ]);
+
+    const [recentActivity, setRecentActivity] = useState<Array<{
+        id: string;
+        type: string;
+        title: string;
+        subtitle: string;
+        date: string;
+        icon: string;
+        priority?: 'high' | 'medium' | 'low';
+    }>>([]);
+    
+    const [loading, setLoading] = useState(true);
+
+    const handleLogout = async () => {
+        if (isDemo) {
+            router.push('/login');
+            return;
+        }
+        if (supabase) {
+            await supabase.auth.signOut();
+        }
+        router.push('/login');
+    };
+
+    // Cargar métricas del dashboard
+    const loadDashboardData = async () => {
+        try {
+            setLoading(true);
+
+            // ✅ Si está en modo demo, usar datos ficticios
+            if (isDemo) {
+                setMetrics({
+                    totalClients: 24,
+                    activeProjects: 8,
+                    completedProjects: 15,
+                    pendingProjects: 3,
+                    monthlyRevenue: 28750,
+                    hoursThisWeek: 32,
+                    hoursThisMonth: 156,
+                    billableHoursThisWeek: 29,
+                    averageProjectValue: 3200,
+                    clientsThisMonth: 5,
+                    productivityScore: 92,
+                    overdueProjects: 2,
+                    totalInvoices: 18,
+                    pendingInvoices: 4,
+                    totalTasks: 47,
+                    completedTasks: 38
+                });
+
+                setWeeklyStats([
+                    { day: 'Lun', hours: 8.5, revenue: 850 },
+                    { day: 'Mar', hours: 7.2, revenue: 720 },
+                    { day: 'Mié', hours: 9.1, revenue: 1100 },
+                    { day: 'Jue', hours: 6.8, revenue: 680 },
+                    { day: 'Vie', hours: 4.3, revenue: 430 },
+                    { day: 'Sáb', hours: 2.1, revenue: 210 },
+                    { day: 'Dom', hours: 1.5, revenue: 150 }
+                ]);
+
+                setRecentActivity([
+                    {
+                        id: '1',
+                        type: 'project',
+                        title: 'Proyecto completado',
+                        subtitle: 'E-commerce para TechStart - €4,500',
+                        date: '2024-08-19T10:30:00Z',
+                        icon: 'briefcase',
+                        priority: 'high'
+                    },
+                    {
+                        id: '2',
+                        type: 'client',
+                        title: 'Cliente premium agregado',
+                        subtitle: 'GlobalCorp S.A. - Contrato anual',
+                        date: '2024-08-19T08:15:00Z',
+                        icon: 'user',
+                        priority: 'high'
+                    },
+                    {
+                        id: '3',
+                        type: 'invoice',
+                        title: 'Factura enviada',
+                        subtitle: 'FAC-2024-089 - €2,300',
+                        date: '2024-08-18T16:45:00Z',
+                        icon: 'filetext',
+                        priority: 'medium'
+                    },
+                    {
+                        id: '4',
+                        type: 'task',
+                        title: '15 tareas completadas',
+                        subtitle: 'Desarrollo API REST - Sprint 3',
+                        date: '2024-08-18T14:20:00Z',
+                        icon: 'checkcircle',
+                        priority: 'medium'
+                    },
+                    {
+                        id: '5',
+                        type: 'time',
+                        title: 'Tiempo registrado',
+                        subtitle: '6.5 horas en desarrollo frontend',
+                        date: '2024-08-18T12:00:00Z',
+                        icon: 'clock',
+                        priority: 'low'
+                    }
+                ]);
+
+                setLoading(false);
+                return;
+            }
+
+            // Verificar que supabase esté disponible
+            if (!supabase) {
+                setLoading(false);
+                return;
+            }
+
+            const user = (await supabase.auth.getUser()).data.user;
+            if (!user) return;
+
+            // Contar clientes
+            const { count: clientsCount } = await supabase
+                .from('clients')
+                .select('*', { count: 'exact', head: true })
+                .eq('user_id', user.id);
+
+            // Contar proyectos por estado
+            const { data: projectsData } = await supabase
+                .from('projects')
+                .select('status')
+                .eq('user_id', user.id);
+
+            const activeProjects = projectsData?.filter((p: any) => p.status === 'active').length || 0;
+            const completedProjects = projectsData?.filter((p: any) => p.status === 'completed').length || 0;
+
+            // Calcular ingresos del mes (proyectos completados)
+            const currentMonth = new Date().getMonth();
+            const currentYear = new Date().getFullYear();
+
+            const { data: monthlyData } = await supabase
+                .from('projects')
+                .select('budget, created_at')
+                .eq('user_id', user.id)
+                .eq('status', 'completed')
+                .gte('created_at', `${currentYear}-${String(currentMonth + 1).padStart(2, '0')}-01`);
+
+            const monthlyRevenue = monthlyData?.reduce((sum: number, project: any) => sum + (project.budget || 0), 0) || 0;
+
+            // Calcular horas de esta semana
+            const startOfWeek = new Date();
+            startOfWeek.setDate(startOfWeek.getDate() - startOfWeek.getDay());
+            startOfWeek.setHours(0, 0, 0, 0);
+
+            const { data: weeklyTimeData } = await supabase
+                .from('time_entries')
+                .select('duration_minutes, is_billable')
+                .eq('user_id', user.id)
+                .gte('created_at', startOfWeek.toISOString());
+
+            const totalMinutesThisWeek = weeklyTimeData?.reduce((sum: number, entry: any) => sum + entry.duration_minutes, 0) || 0;
+            const billableMinutesThisWeek = weeklyTimeData?.reduce((sum: number, entry: any) =>
+                sum + (entry.is_billable ? entry.duration_minutes : 0), 0) || 0;
+
+            // Calcular horas de este mes
+            const startOfMonth = new Date(currentYear, currentMonth, 1);
+            const { data: monthlyTimeData } = await supabase
+                .from('time_entries')
+                .select('duration_minutes')
+                .eq('user_id', user.id)
+                .gte('created_at', startOfMonth.toISOString());
+
+            const totalMinutesThisMonth = monthlyTimeData?.reduce((sum: number, entry: any) => sum + entry.duration_minutes, 0) || 0;
+
+                        // Actualizar todas las métricas
+            setMetrics({
+                totalClients: clientsCount || 0,
+                activeProjects,
+                completedProjects,
+                pendingProjects: activeProjects, // Asumimos que activos = pendientes por simplicidad
+                monthlyRevenue,
+                hoursThisWeek: Math.round((totalMinutesThisWeek / 60) * 10) / 10,
+                hoursThisMonth: Math.round((totalMinutesThisMonth / 60) * 10) / 10,
+                billableHoursThisWeek: Math.round((billableMinutesThisWeek / 60) * 10) / 10,
+                averageProjectValue: activeProjects > 0 ? Math.round(monthlyRevenue / activeProjects) : 0,
+                clientsThisMonth: Math.floor(clientsCount * 0.3), // Estimación
+                productivityScore: Math.min(95, Math.round((totalMinutesThisWeek / (8 * 5 * 60)) * 100)), // % de 40h semanales
+                overdueProjects: Math.floor(activeProjects * 0.1), // Estimación del 10%
+                totalInvoices: completedProjects + activeProjects, // Estimación
+                pendingInvoices: Math.floor((completedProjects + activeProjects) * 0.2), // Estimación del 20%
+                totalTasks: activeProjects * 5, // Estimación de 5 tareas por proyecto
+                completedTasks: completedProjects * 5 // Estimación
+            });
+
+        } catch (error) {
+            console.error('Error loading dashboard data:', error);
+        } finally {
+            setLoading(false);
+        }
+    };
+
+
+    // Cargar actividad reciente
+    const loadRecentActivity = async () => {
+        try {
+            // Verificar que supabase esté disponible
+            if (!supabase) return;
+
+            const user = (await supabase.auth.getUser()).data.user;
+            if (!user) return;
+
+            // Últimos proyectos creados
+            const { data: recentProjects } = await supabase
+                .from('projects')
+                .select(`
+                id,
+                name,
+                created_at,
+                clients!inner(name)
+            `)
+                .eq('user_id', user.id)
+                .order('created_at', { ascending: false })
+                .limit(2);
+
+            // Últimos clientes añadidos
+            const { data: recentClients } = await supabase
+                .from('clients')
+                .select('id, name, created_at')
+                .eq('user_id', user.id)
+                .order('created_at', { ascending: false })
+                .limit(2);
+
+            // Últimas entradas de tiempo
+            const { data: recentTimeEntries } = await supabase
+                .from('time_entries')
+                .select(`
+                id,
+                description,
+                duration_minutes,
+                created_at,
+                projects!left(name),
+                clients!left(name)
+            `)
+                .eq('user_id', user.id)
+                .order('created_at', { ascending: false })
+                .limit(3);
+
+            // Combinar y ordenar actividad
+            const activity = [
+                ...(recentProjects?.map((project: any) => ({
+                    id: project.id,
+                    type: 'project',
+                    title: `Nuevo proyecto: ${project.name}`,
+                    subtitle: `Cliente: ${project.clients?.[0]?.name || 'Sin cliente'}`,
+                    date: project.created_at,
+                    icon: 'briefcase'
+                })) || []),
+                ...(recentClients?.map((client: any) => ({
+                    id: client.id,
+                    type: 'client',
+                    title: `Nuevo cliente: ${client.name}`,
+                    subtitle: 'Cliente añadido',
+                    date: client.created_at,
+                    icon: 'user'
+                })) || []),
+                ...(recentTimeEntries?.map((entry: any) => ({
+                    id: entry.id,
+                    type: 'time',
+                    title: entry.description,
+                    subtitle: `${Math.floor(entry.duration_minutes / 60)}h ${entry.duration_minutes % 60}m${(entry.projects as any)?.name ? ` • ${(entry.projects as any).name}` : ''}`,
+                    date: entry.created_at,
+                    icon: 'clock'
+                })) || [])
+            ].sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime())
+                .slice(0, 6);
+
+            setRecentActivity(activity);
+        } catch (error) {
+            console.error('Error loading recent activity:', error);
+        }
+    };
+    useEffect(() => {
+        loadDashboardData();
+        loadRecentActivity();
+    }, []);
+    return (
+        <div className={combineClasses(presets.page, "flex h-screen overflow-hidden")}>
+            {/* Elementos decorativos de fondo mejorados */}
+            <div className="absolute inset-0 overflow-hidden pointer-events-none">
+                <div className="absolute top-0 left-0 w-96 h-96 bg-gradient-to-br from-blue-500/8 via-purple-500/8 to-indigo-500/8 dark:from-blue-400/5 dark:via-purple-400/5 dark:to-indigo-400/5 rounded-full blur-3xl animate-pulse"></div>
+                <div className="absolute top-20 right-20 w-64 h-64 bg-gradient-to-br from-purple-500/8 via-pink-500/8 to-indigo-500/8 dark:from-purple-400/5 dark:via-pink-400/5 dark:to-indigo-400/5 rounded-full blur-3xl animate-pulse" style={{ animationDelay: '2s' }}></div>
+                <div className="absolute bottom-20 left-20 w-80 h-80 bg-gradient-to-br from-indigo-500/8 via-blue-500/8 to-purple-500/8 dark:from-indigo-400/5 dark:via-blue-400/5 dark:to-purple-400/5 rounded-full blur-3xl animate-pulse" style={{ animationDelay: '4s' }}></div>
+            </div>
+
+            {/* Sidebar */}
+            <Sidebar userEmail={userEmail} onLogout={handleLogout} />
+
+            {/* Main Content */}
+            <div className="flex-1 ml-56 overflow-hidden relative">
+                <div className="h-full overflow-y-auto">
+                    {/* Trial Banner - Solo si no es demo */}
+                    {!isDemo && <TrialBanner userEmail={userEmail} />}
+
+                    <div className={combineClasses(presets.page, "min-h-screen relative")}>
+                        <div className="container mx-auto px-6 py-8">
+                            {/* Header Premium con Animaciones */}
+                            <div className="mb-8 animate-slideInDown">
+                                <div className={combineClasses(presets.card, "group p-8 hover:scale-[1.01] transition-all duration-500 relative overflow-hidden")}>
+                                    {/* Animated Gradient Overlay */}
+                                    <div className="absolute inset-0 bg-gradient-to-r from-blue-600/10 via-purple-600/10 to-indigo-600/10 dark:from-purple-600/10 dark:via-pink-600/10 dark:to-indigo-600/10 opacity-0 group-hover:opacity-100 transition-opacity duration-500"></div>
+                                    
+                                    <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-6 relative z-10">
+                                        <div className="space-y-3">
+                                            <div className="flex items-center gap-4">
+                                                <div className="p-3 bg-gradient-to-r from-blue-600 to-indigo-600 dark:from-purple-600 dark:to-indigo-600 rounded-2xl shadow-lg group-hover:shadow-xl group-hover:scale-110 transition-all duration-300">
+                                                    <BarChart3 className="w-8 h-8 text-white" />
+                                                </div>
+                                                <div>
+                                                    <h1 className={combineClasses(darkModeClasses.gradient.text, "text-4xl font-black mb-2")}>
+                                                        Dashboard Ejecutivo
+                                                    </h1>
+                                                    <div className="flex items-center gap-2">
+                                                        <div className="w-2 h-2 bg-green-500 rounded-full animate-pulse"></div>
+                                                        <span className="text-green-700 dark:text-green-400 font-semibold text-sm">Sistema Activo</span>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                            <p className={combineClasses(darkModeClasses.text.muted, "text-lg font-medium max-w-2xl leading-relaxed")}>
+                                                Visualiza el rendimiento de tu negocio con métricas avanzadas y análisis en tiempo real
+                                            </p>
+                                        </div>
+                                        
+                                        <div className={combineClasses(darkModeClasses.background.glass, darkModeClasses.border.primary, "rounded-2xl px-4 py-3 shadow-lg")}>
+                                            <div className="flex items-center gap-2 text-sm">
+                                                <div className="w-2 h-2 bg-blue-500 rounded-full animate-pulse"></div>
+                                                <span className={combineClasses(darkModeClasses.text.secondary, "font-semibold")}>Actualizado ahora</span>
+                                            </div>
+                                        </div>
+                                    </div>
+                                            <div className={combineClasses("bg-gradient-to-r from-green-100 to-emerald-100 dark:from-green-900/30 dark:to-emerald-900/30 border border-green-200 dark:border-green-700", "rounded-2xl px-4 py-3 shadow-lg")}>
+                                                <div className="flex items-center gap-2 text-sm">
+                                                    <Zap className="w-4 h-4 text-green-600 dark:text-green-400" />
+                                                    <span className="text-green-800 dark:text-green-300 font-bold">Score: {metrics.productivityScore}%</span>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+
+                            {loading ? (
+                                <div className="flex flex-col items-center justify-center py-32 space-y-6">
+                                    <div className="relative">
+                                        <div className="w-20 h-20 border-4 border-slate-200 dark:border-slate-700 rounded-full"></div>
+                                        <div className="absolute top-0 left-0 w-20 h-20 border-4 border-transparent border-t-blue-600 rounded-full animate-spin"></div>
+                                        <div className="absolute top-2 left-2 w-16 h-16 border-4 border-transparent border-t-purple-500 rounded-full animate-spin" style={{animationDirection: 'reverse', animationDuration: '1.5s'}}></div>
+                                    </div>
+                                    <div className="space-y-3 text-center">
+                                        <h3 className={combineClasses(darkModeClasses.gradient.text, "text-2xl font-black")}>Cargando Dashboard</h3>
+                                        <p className={combineClasses(darkModeClasses.text.muted, "font-medium")}>Preparando tus métricas empresariales...</p>
+                                        <div className="flex items-center gap-2 justify-center">
+                                            <div className="w-2 h-2 bg-blue-500 rounded-full animate-bounce"></div>
+                                            <div className="w-2 h-2 bg-purple-500 rounded-full animate-bounce" style={{animationDelay: '0.1s'}}></div>
+                                            <div className="w-2 h-2 bg-indigo-500 rounded-full animate-bounce" style={{animationDelay: '0.2s'}}></div>
+                                        </div>
+                                    </div>
+                                </div>
+                            ) : (
+                                <>
+                                    {/* Stats Premium con Efectos 3D */}
+                                    <div className="mb-8 animate-slideInUp">
+                                        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+                                            {/* Total Clients */}
+                                            <Link href="/dashboard/clients">
+                                                <div className={combineClasses(presets.card, darkModeClasses.interactive.hover, "group p-6 delay-0 relative overflow-hidden cursor-pointer")}>
+                                                    <div className="absolute inset-0 bg-gradient-to-br from-blue-500/10 to-indigo-500/10 opacity-0 group-hover:opacity-100 transition-opacity duration-500"></div>
+                                                    <div className="flex items-center justify-between relative z-10">
+                                                        <div>
+                                                            <div className="flex items-center gap-2 mb-2">
+                                                                <div className="w-2 h-2 bg-blue-500 rounded-full animate-pulse"></div>
+                                                                <p className={combineClasses(darkModeClasses.text.secondary, "text-sm font-bold")}>Total Clientes</p>
+                                                            </div>
+                                                            <p className={combineClasses(darkModeClasses.gradient.text, "text-4xl font-black mb-2")}>
+                                                                {metrics.totalClients}
+                                                            </p>
+                                                            <div className="flex items-center text-sm">
+                                                                <div className="flex items-center gap-1 px-2 py-1 bg-blue-100 dark:bg-blue-900/30 rounded-full transition-colors duration-300">
+                                                                    <TrendingUp className="w-3 h-3 text-blue-600 dark:text-blue-400" />
+                                                                    <span className="text-blue-700 dark:text-blue-300 font-bold transition-colors duration-300">+{metrics.clientsThisMonth} este mes</span>
+                                                                </div>
+                                                            </div>
+                                                        </div>
+                                                        <div className="p-4 bg-gradient-to-br from-blue-500 to-blue-600 rounded-2xl shadow-2xl shadow-blue-500/30 group-hover:scale-110 group-hover:rotate-12 transition-all duration-500">
+                                                            <Users className="w-8 h-8 text-white" />
+                                                        </div>
+                                                    </div>
+                                                </div>
+                                            </Link>
+
+                                            {/* Active Projects */}
+                                            <Link href="/dashboard/projects">
+                                                <div className={combineClasses(presets.card, presets.cardInteractive, "group p-6 delay-100 relative overflow-hidden cursor-pointer")}>
+                                                    <div className="absolute inset-0 bg-gradient-to-br from-green-500/10 to-emerald-500/10 opacity-0 group-hover:opacity-100 transition-opacity duration-500"></div>
+                                                    <div className="flex items-center justify-between relative z-10">
+                                                        <div>
+                                                            <div className="flex items-center gap-2 mb-2">
+                                                                <div className="w-2 h-2 bg-green-500 rounded-full animate-pulse"></div>
+                                                                <p className={combineClasses(darkModeClasses.text.secondary, "text-sm font-bold")}>Proyectos Activos</p>
+                                                            </div>
+                                                            <p className="text-4xl font-black bg-gradient-to-r from-green-600 to-green-700 dark:from-green-400 dark:to-green-500 bg-clip-text text-transparent mb-2">
+                                                                {metrics.activeProjects}
+                                                            </p>
+                                                            <div className="flex items-center text-sm">
+                                                                <div className="flex items-center gap-1 px-2 py-1 bg-green-100 dark:bg-green-900/30 rounded-full transition-colors duration-300">
+                                                                    <Target className="w-3 h-3 text-green-600 dark:text-green-400" />
+                                                                    <span className="text-green-700 dark:text-green-300 font-bold transition-colors duration-300">En progreso</span>
+                                                                </div>
+                                                            </div>
+                                                        </div>
+                                                        <div className="p-4 bg-gradient-to-br from-green-500 to-green-600 rounded-2xl shadow-2xl shadow-green-500/30 group-hover:scale-110 group-hover:rotate-12 transition-all duration-500">
+                                                            <Target className="w-8 h-8 text-white" />
+                                                        </div>
+                                                    </div>
+                                                </div>
+                                            </Link>
+
+                                            {/* Monthly Revenue */}
+                                            <Link href="/dashboard/invoices">
+                                                <div className={combineClasses(presets.card, presets.cardInteractive, "group p-6 delay-200 relative overflow-hidden cursor-pointer")}>
+                                                    <div className="absolute inset-0 bg-gradient-to-br from-purple-500/10 to-pink-500/10 opacity-0 group-hover:opacity-100 transition-opacity duration-500"></div>
+                                                    <div className="flex items-center justify-between relative z-10">
+                                                        <div>
+                                                            <div className="flex items-center gap-2 mb-2">
+                                                                <div className="w-2 h-2 bg-purple-500 rounded-full animate-pulse"></div>
+                                                                <p className="text-sm font-bold text-slate-700">Ingresos Mensuales</p>
+                                                            </div>
+                                                            <p className="text-4xl font-black bg-gradient-to-r from-purple-600 to-purple-700 bg-clip-text text-transparent mb-2">
+                                                                €{metrics.monthlyRevenue.toLocaleString()}
+                                                            </p>
+                                                            <div className="flex items-center text-sm">
+                                                                <div className="flex items-center gap-1 px-2 py-1 bg-purple-100 rounded-full">
+                                                                    <DollarSign className="w-3 h-3 text-purple-600" />
+                                                                    <span className="text-purple-700 font-bold">Promedio: €{metrics.averageProjectValue.toLocaleString()}</span>
+                                                                </div>
+                                                            </div>
+                                                        </div>
+                                                        <div className="p-4 bg-gradient-to-br from-purple-500 to-purple-600 rounded-2xl shadow-2xl shadow-purple-500/30 group-hover:scale-110 group-hover:rotate-12 transition-all duration-500">
+                                                            <DollarSign className="w-8 h-8 text-white" />
+                                                        </div>
+                                                    </div>
+                                                </div>
+                                            </Link>
+
+                                            {/* Productivity Score */}
+                                            <Link href="/dashboard/time-tracking">
+                                                <div className="group bg-white/30 backdrop-blur-2xl rounded-2xl border border-white/50 shadow-xl shadow-orange-500/5 p-6 hover:shadow-2xl hover:scale-105 hover:-translate-y-2 transition-all duration-500 delay-300 relative overflow-hidden cursor-pointer">
+                                                    <div className="absolute inset-0 bg-gradient-to-br from-orange-500/10 to-red-500/10 opacity-0 group-hover:opacity-100 transition-opacity duration-500"></div>
+                                                    <div className="flex items-center justify-between relative z-10">
+                                                        <div>
+                                                            <div className="flex items-center gap-2 mb-2">
+                                                                <div className="w-2 h-2 bg-orange-500 rounded-full animate-pulse"></div>
+                                                                <p className="text-sm font-bold text-slate-700">Score Productividad</p>
+                                                            </div>
+                                                            <p className="text-4xl font-black bg-gradient-to-r from-orange-600 to-orange-700 bg-clip-text text-transparent mb-2">
+                                                                {metrics.productivityScore}%
+                                                            </p>
+                                                            <div className="flex items-center text-sm">
+                                                                <div className="flex items-center gap-1 px-2 py-1 bg-orange-100 rounded-full">
+                                                                    <Sparkles className="w-3 h-3 text-orange-600" />
+                                                                    <span className="text-orange-700 font-bold">{metrics.hoursThisWeek}h esta semana</span>
+                                                                </div>
+                                                            </div>
+                                                        </div>
+                                                        <div className="p-4 bg-gradient-to-br from-orange-500 to-orange-600 rounded-2xl shadow-2xl shadow-orange-500/30 group-hover:scale-110 group-hover:rotate-12 transition-all duration-500">
+                                                            <Zap className="w-8 h-8 text-white" />
+                                                        </div>
+                                                    </div>
+                                                </div>
+                                            </Link>
+                                        </div>
+                                    </div>
+
+                                    {/* Secondary Stats Row */}
+                                    <div className="mb-8 animate-slideInLeft">
+                                        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-6 gap-4">
+                                            <Link href="/dashboard/invoices">
+                                                <div className="bg-white/20 backdrop-blur-xl rounded-xl border border-white/40 p-4 hover:shadow-lg hover:scale-105 transition-all duration-300 cursor-pointer">
+                                                    <div className="flex items-center gap-3">
+                                                        <div className="p-2 bg-blue-100 rounded-lg">
+                                                            <FileText className="w-5 h-5 text-blue-600" />
+                                                        </div>
+                                                        <div>
+                                                            <p className="text-sm font-semibold text-slate-600">Facturas</p>
+                                                            <p className="text-xl font-black text-slate-900">{metrics.totalInvoices}</p>
+                                                        </div>
+                                                    </div>
+                                                </div>
+                                            </Link>
+
+                                            <Link href="/dashboard/invoices?status=pending">
+                                                <div className="bg-white/20 backdrop-blur-xl rounded-xl border border-white/40 p-4 hover:shadow-lg hover:scale-105 transition-all duration-300 cursor-pointer">
+                                                    <div className="flex items-center gap-3">
+                                                        <div className="p-2 bg-yellow-100 rounded-lg">
+                                                            <Clock className="w-5 h-5 text-yellow-600" />
+                                                        </div>
+                                                        <div>
+                                                            <p className="text-sm font-semibold text-slate-600">Pendientes</p>
+                                                            <p className="text-xl font-black text-slate-900">{metrics.pendingInvoices}</p>
+                                                        </div>
+                                                    </div>
+                                                </div>
+                                            </Link>
+
+                                            <Link href="/dashboard/tasks">
+                                                <div className="bg-white/20 backdrop-blur-xl rounded-xl border border-white/40 p-4 hover:shadow-lg hover:scale-105 transition-all duration-300 cursor-pointer">
+                                                    <div className="flex items-center gap-3">
+                                                        <div className="p-2 bg-green-100 rounded-lg">
+                                                            <CheckCircle2 className="w-5 h-5 text-green-600" />
+                                                        </div>
+                                                        <div>
+                                                            <p className="text-sm font-semibold text-slate-600">Tareas</p>
+                                                            <p className="text-xl font-black text-slate-900">{metrics.completedTasks}/{metrics.totalTasks}</p>
+                                                        </div>
+                                                    </div>
+                                                </div>
+                                            </Link>
+
+                                            <Link href="/dashboard/projects?status=completed">
+                                                <div className="bg-white/20 backdrop-blur-xl rounded-xl border border-white/40 p-4 hover:shadow-lg hover:scale-105 transition-all duration-300 cursor-pointer">
+                                                    <div className="flex items-center gap-3">
+                                                        <div className="p-2 bg-purple-100 rounded-lg">
+                                                            <Briefcase className="w-5 h-5 text-purple-600" />
+                                                        </div>
+                                                        <div>
+                                                            <p className="text-sm font-semibold text-slate-600">Completados</p>
+                                                            <p className="text-xl font-black text-slate-900">{metrics.completedProjects}</p>
+                                                        </div>
+                                                    </div>
+                                                </div>
+                                            </Link>
+
+                                            <Link href="/dashboard/projects?status=overdue">
+                                                <div className="bg-white/20 backdrop-blur-xl rounded-xl border border-white/40 p-4 hover:shadow-lg hover:scale-105 transition-all duration-300 cursor-pointer">
+                                                    <div className="flex items-center gap-3">
+                                                        <div className="p-2 bg-red-100 rounded-lg">
+                                                            <TrendingDown className="w-5 h-5 text-red-600" />
+                                                        </div>
+                                                        <div>
+                                                            <p className="text-sm font-semibold text-slate-600">Atrasados</p>
+                                                            <p className="text-xl font-black text-slate-900">{metrics.overdueProjects}</p>
+                                                        </div>
+                                                    </div>
+                                                </div>
+                                            </Link>
+
+                                            <Link href="/dashboard/time-tracking?period=current-month">
+                                                <div className="bg-white/20 backdrop-blur-xl rounded-xl border border-white/40 p-4 hover:shadow-lg hover:scale-105 transition-all duration-300 cursor-pointer">
+                                                    <div className="flex items-center gap-3">
+                                                        <div className="p-2 bg-indigo-100 rounded-lg">
+                                                            <Calendar className="w-5 h-5 text-indigo-600" />
+                                                        </div>
+                                                        <div>
+                                                            <p className="text-sm font-semibold text-slate-600">Este Mes</p>
+                                                            <p className="text-xl font-black text-slate-900">{metrics.hoursThisMonth}h</p>
+                                                        </div>
+                                                    </div>
+                                                </div>
+                                            </Link>
+                                        </div>
+                                    </div>
+                                        {/* Weekly Performance Chart */}
+                                    <div className="mb-8 animate-slideInRight">
+                                        <div className="bg-white/30 backdrop-blur-2xl rounded-3xl border border-white/50 shadow-2xl shadow-slate-500/5 p-8">
+                                            <div className="flex items-center justify-between mb-6">
+                                                <div className="flex items-center gap-4">
+                                                    <div className="p-3 bg-gradient-to-br from-indigo-500 to-purple-500 rounded-2xl shadow-lg">
+                                                        <BarChart3 className="w-6 h-6 text-white" />
+                                                    </div>
+                                                    <div>
+                                                        <h3 className="text-2xl font-black bg-gradient-to-r from-slate-900 to-indigo-900 bg-clip-text text-transparent">
+                                                            Rendimiento Semanal
+                                                        </h3>
+                                                        <p className="text-slate-600 font-semibold">Horas trabajadas por día</p>
+                                                    </div>
+                                                </div>
+                                                <div className="flex items-center gap-3">
+                                                    <Link href="/dashboard/time-tracking">
+                                                        <button className="px-4 py-2 bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 text-white rounded-xl font-semibold shadow-lg hover:shadow-xl hover:scale-105 transition-all duration-300">
+                                                            Ver Detalle
+                                                        </button>
+                                                    </Link>
+                                                </div>
+                                            </div>
+                                            
+                                            {/* Simple Bar Chart */}
+                                            <div className="flex items-end justify-between gap-4 h-40 mb-4">
+                                                {weeklyStats.map((day, index) => (
+                                                    <div key={day.day} className="flex-1 flex flex-col items-center gap-2">
+                                                        <div className="group relative w-full flex flex-col items-center">
+                                                            <div 
+                                                                className="w-full bg-gradient-to-t from-blue-500 to-indigo-500 rounded-t-lg shadow-lg group-hover:from-blue-600 group-hover:to-indigo-600 transition-all duration-300"
+                                                                style={{ 
+                                                                    height: `${Math.max((day.hours / 10) * 120, 8)}px`,
+                                                                    animationDelay: `${index * 100}ms`
+                                                                }}
+                                                            ></div>
+                                                            <div className="absolute -top-8 left-1/2 transform -translate-x-1/2 bg-slate-900 text-white text-xs font-bold px-2 py-1 rounded opacity-0 group-hover:opacity-100 transition-opacity duration-300">
+                                                                {day.hours}h
+                                                            </div>
+                                                        </div>
+                                                        <div className="text-sm font-semibold text-slate-700">{day.day}</div>
+                                                    </div>
+                                                ))}
+                                            </div>
+                                            <div className="text-center text-sm text-slate-600 font-medium">
+                                                Total esta semana: <span className="font-bold text-slate-900">{weeklyStats.reduce((sum, day) => sum + day.hours, 0).toFixed(1)} horas</span>
+                                            </div>
+                                        </div>
+                                    </div>
+
+                                    {/* Quick Actions Premium */}
+                                    <div className="mb-8 animate-slideInUp">
+                                        <div className="bg-white/30 backdrop-blur-2xl rounded-3xl border border-white/50 shadow-2xl shadow-slate-500/5 p-8">
+                                            <div className="flex items-center gap-4 mb-6">
+                                                <div className="p-3 bg-gradient-to-br from-green-500 to-emerald-500 rounded-2xl shadow-lg">
+                                                    <Sparkles className="w-6 h-6 text-white" />
+                                                </div>
+                                                <div>
+                                                    <h3 className="text-2xl font-black bg-gradient-to-r from-slate-900 to-green-900 bg-clip-text text-transparent">
+                                                        Acciones Rápidas
+                                                    </h3>
+                                                    <p className="text-slate-600 font-semibold">Administra tu negocio eficientemente</p>
+                                                </div>
+                                            </div>
+                                            
+                                            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+                                                <Link href="/dashboard/clients">
+                                                    <div className="group bg-white/40 backdrop-blur-xl border border-white/60 rounded-2xl p-6 hover:shadow-xl hover:scale-105 hover:-translate-y-1 transition-all duration-300 cursor-pointer">
+                                                        <div className="flex items-center gap-3 mb-3">
+                                                            <div className="p-2 bg-blue-100 rounded-xl group-hover:bg-blue-200 group-hover:scale-110 transition-all duration-300">
+                                                                <Users className="w-5 h-5 text-blue-600" />
+                                                            </div>
+                                                            <h4 className="font-bold text-slate-900">Clientes</h4>
+                                                        </div>
+                                                        <p className="text-sm text-slate-600 font-medium">Gestionar cartera de clientes</p>
+                                                    </div>
+                                                </Link>
+
+                                                <Link href="/dashboard/projects">
+                                                    <div className="group bg-white/40 backdrop-blur-xl border border-white/60 rounded-2xl p-6 hover:shadow-xl hover:scale-105 hover:-translate-y-1 transition-all duration-300 cursor-pointer">
+                                                        <div className="flex items-center gap-3 mb-3">
+                                                            <div className="p-2 bg-green-100 rounded-xl group-hover:bg-green-200 group-hover:scale-110 transition-all duration-300">
+                                                                <Target className="w-5 h-5 text-green-600" />
+                                                            </div>
+                                                            <h4 className="font-bold text-slate-900">Proyectos</h4>
+                                                        </div>
+                                                        <p className="text-sm text-slate-600 font-medium">Administrar proyectos activos</p>
+                                                    </div>
+                                                </Link>
+
+                                                <Link href="/dashboard/invoices">
+                                                    <div className="group bg-white/40 backdrop-blur-xl border border-white/60 rounded-2xl p-6 hover:shadow-xl hover:scale-105 hover:-translate-y-1 transition-all duration-300 cursor-pointer">
+                                                        <div className="flex items-center gap-3 mb-3">
+                                                            <div className="p-2 bg-purple-100 rounded-xl group-hover:bg-purple-200 group-hover:scale-110 transition-all duration-300">
+                                                                <FileText className="w-5 h-5 text-purple-600" />
+                                                            </div>
+                                                            <h4 className="font-bold text-slate-900">Facturas</h4>
+                                                        </div>
+                                                        <p className="text-sm text-slate-600 font-medium">Crear y enviar facturas</p>
+                                                    </div>
+                                                </Link>
+
+                                                <Link href="/dashboard/time-tracking">
+                                                    <div className="group bg-white/40 backdrop-blur-xl border border-white/60 rounded-2xl p-6 hover:shadow-xl hover:scale-105 hover:-translate-y-1 transition-all duration-300 cursor-pointer">
+                                                        <div className="flex items-center gap-3 mb-3">
+                                                            <div className="p-2 bg-orange-100 rounded-xl group-hover:bg-orange-200 group-hover:scale-110 transition-all duration-300">
+                                                                <Clock className="w-5 h-5 text-orange-600" />
+                                                            </div>
+                                                            <h4 className="font-bold text-slate-900">Tiempo</h4>
+                                                        </div>
+                                                        <p className="text-sm text-slate-600 font-medium">Registrar horas de trabajo</p>
+                                                    </div>
+                                                </Link>
+                                            </div>
+                                        </div>
+                                    </div>
+
+                                    {/* Modern Activity Feed */}
+                                    <div className="bg-white/30 backdrop-blur-2xl rounded-3xl border border-white/50 shadow-2xl shadow-slate-500/5 animate-slideInUp">
+                                        <div className="p-8 border-b border-white/30">
+                                            <div className="flex items-center justify-between">
+                                                <div className="flex items-center gap-4">
+                                                    <div className="p-3 bg-gradient-to-r from-indigo-500 to-purple-500 rounded-2xl shadow-2xl shadow-indigo-500/30">
+                                                        <Activity className="w-6 h-6 text-white" />
+                                                    </div>
+                                                    <div>
+                                                        <h3 className="text-2xl font-black bg-gradient-to-r from-slate-900 to-purple-900 bg-clip-text text-transparent">
+                                                            Actividad Reciente
+                                                        </h3>
+                                                        <p className="text-slate-600 font-semibold">Últimas acciones en tu workspace</p>
+                                                    </div>
+                                                </div>
+                                                <div className="flex items-center gap-2">
+                                                    <div className="w-2 h-2 bg-green-500 rounded-full animate-pulse"></div>
+                                                    <span className="text-sm font-bold text-green-700">ACTUALIZADO AHORA</span>
+                                                </div>
+                                            </div>
+                                        </div>
+
+                                        <div className="p-8">
+                                            {recentActivity.length === 0 ? (
+                                                <div className="text-center py-16">
+                                                    <div className="relative mb-8">
+                                                        <div className="w-20 h-20 bg-gradient-to-br from-slate-200 to-slate-300 rounded-3xl flex items-center justify-center mx-auto shadow-2xl shadow-slate-500/20 relative overflow-hidden">
+                                                            <Activity className="w-10 h-10 text-slate-500" />
+                                                            <div className="absolute -top-2 -right-2 w-6 h-6 bg-gradient-to-r from-red-500 to-red-600 rounded-full flex items-center justify-center shadow-lg">
+                                                                <span className="text-white text-xs font-bold">0</span>
+                                                            </div>
+                                                        </div>
+                                                    </div>
+                                                    <h4 className="text-2xl font-black text-slate-700 mb-3">Aún no hay actividad</h4>
+                                                    <p className="text-slate-600 font-medium max-w-md mx-auto mb-6">
+                                                        Cuando comiences a trabajar con clientes y proyectos, la actividad aparecerá aquí
+                                                    </p>
+                                                    <Link href="/dashboard/clients">
+                                                        <button className="px-8 py-4 bg-gradient-to-r from-blue-600 via-indigo-600 to-purple-600 hover:from-blue-700 hover:via-indigo-700 hover:to-purple-700 text-white font-bold rounded-2xl shadow-2xl shadow-blue-500/30 hover:shadow-blue-500/50 hover:scale-110 hover:-translate-y-2 transition-all duration-300 flex items-center gap-3 mx-auto">
+                                                            <Sparkles className="w-5 h-5" />
+                                                            Comenzar ahora
+                                                        </button>
+                                                    </Link>
+                                                </div>
+                                            ) : (
+                                                <div className="space-y-4">
+                                                    {recentActivity.map((activity, index) => {
+                                                        const getIcon = () => {
+                                                            switch(activity.icon) {
+                                                                case 'briefcase': return <Briefcase className="w-5 h-5" />;
+                                                                case 'clock': return <Clock className="w-5 h-5" />;
+                                                                case 'user': return <User className="w-5 h-5" />;
+                                                                case 'filetext': return <FileText className="w-5 h-5" />;
+                                                                case 'checkcircle': return <CheckCircle2 className="w-5 h-5" />;
+                                                                default: return <Activity className="w-5 h-5" />;
+                                                            }
+                                                        };
+
+                                                        const getIconColor = () => {
+                                                            switch(activity.icon) {
+                                                                case 'briefcase': return 'bg-blue-100 text-blue-600 group-hover:bg-blue-200';
+                                                                case 'clock': return 'bg-green-100 text-green-600 group-hover:bg-green-200';
+                                                                case 'user': return 'bg-purple-100 text-purple-600 group-hover:bg-purple-200';
+                                                                case 'filetext': return 'bg-orange-100 text-orange-600 group-hover:bg-orange-200';
+                                                                case 'checkcircle': return 'bg-emerald-100 text-emerald-600 group-hover:bg-emerald-200';
+                                                                default: return 'bg-gray-100 text-gray-600 group-hover:bg-gray-200';
+                                                            }
+                                                        };
+
+                                                        const getPriorityBadge = () => {
+                                                            if (!activity.priority) return null;
+                                                            const colors = {
+                                                                high: 'bg-red-100 text-red-700 border-red-200',
+                                                                medium: 'bg-yellow-100 text-yellow-700 border-yellow-200',
+                                                                low: 'bg-gray-100 text-gray-700 border-gray-200'
+                                                            };
+                                                            return (
+                                                                <div className={`px-2 py-1 text-xs font-bold rounded-lg border ${colors[activity.priority]}`}>
+                                                                    {activity.priority.toUpperCase()}
+                                                                </div>
+                                                            );
+                                                        };
+
+                                                        const timeAgo = (date: string) => {
+                                                            const now = new Date();
+                                                            const activityDate = new Date(date);
+                                                            const diffInHours = Math.floor((now.getTime() - activityDate.getTime()) / (1000 * 60 * 60));
+                                                            
+                                                            if (diffInHours < 1) return 'Hace menos de 1h';
+                                                            if (diffInHours < 24) return `Hace ${diffInHours}h`;
+                                                            const diffInDays = Math.floor(diffInHours / 24);
+                                                            return `Hace ${diffInDays}d`;
+                                                        };
+
+                                                        return (
+                                                            <div
+                                                                key={activity.id}
+                                                                className="group flex items-center gap-4 p-6 rounded-2xl hover:bg-white/40 hover:backdrop-blur-xl hover:border hover:border-white/60 hover:shadow-xl hover:scale-[1.02] transition-all duration-300"
+                                                                style={{
+                                                                    animationDelay: `${index * 100}ms`
+                                                                }}
+                                                            >
+                                                                <div className={`p-3 rounded-2xl shadow-lg group-hover:scale-110 group-hover:shadow-xl transition-all duration-300 ${getIconColor()}`}>
+                                                                    {getIcon()}
+                                                                </div>
+                                                                <div className="flex-1 min-w-0">
+                                                                    <div className="flex items-center gap-3 mb-1">
+                                                                        <h4 className="font-black text-slate-900 truncate group-hover:text-indigo-900 transition-colors duration-300">
+                                                                            {activity.title}
+                                                                        </h4>
+                                                                        {getPriorityBadge()}
+                                                                    </div>
+                                                                    <p className="text-slate-600 font-medium truncate group-hover:text-slate-700 transition-colors duration-300">
+                                                                        {activity.subtitle}
+                                                                    </p>
+                                                                </div>
+                                                                <div className="flex flex-col items-end gap-1">
+                                                                    <div className="text-sm font-bold text-slate-900 group-hover:text-indigo-900 transition-colors duration-300">
+                                                                        {timeAgo(activity.date)}
+                                                                    </div>
+                                                                    <div className="text-xs text-slate-500 font-medium">
+                                                                        {new Date(activity.date).toLocaleTimeString('es-ES', {
+                                                                            hour: '2-digit',
+                                                                            minute: '2-digit'
+                                                                        })}
+                                                                    </div>
+                                                                </div>
+                                                            </div>
+                                                        );
+                                                    })}
+                                                </div>
+                                            )}
+                                        </div>
+                                    </div>
+                                </>
+                            )}
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    );
+}

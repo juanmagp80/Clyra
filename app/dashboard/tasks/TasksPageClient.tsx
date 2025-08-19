@@ -412,7 +412,7 @@ export default function TasksPageClient({ userEmail }: TasksPageClientProps) {
     }
 
     return (
-        <div className="min-h-screen bg-gradient-to-br from-slate-50 via-blue-50 to-indigo-100">
+        <div className={"min-h-screen bg-gradient-to-br from-slate-50 to-blue-50 dark:from-slate-900 dark:to-slate-800"}>
             <div className="flex min-h-screen">
                 {/* Sidebar Premium */}
                 <Sidebar 
@@ -426,10 +426,10 @@ export default function TasksPageClient({ userEmail }: TasksPageClientProps) {
                     <div className="mb-8">
                         <div className="flex items-center justify-between mb-6">
                             <div>
-                                <h1 className="text-3xl font-black bg-gradient-to-r from-slate-900 via-blue-900 to-indigo-900 bg-clip-text text-transparent">
+                                <h1 className="text-3xl font-black bg-gradient-to-r from-slate-900 via-blue-900 to-indigo-900 dark:from-slate-100 dark:via-blue-200 dark:to-indigo-200 bg-clip-text text-transparent">
                                     ✅ Gestión de Tareas
                                 </h1>
-                                <p className="text-slate-600 mt-2">Organiza y controla tus tareas de forma eficiente</p>
+                                <p className={"mt-2 text-slate-500 dark:text-slate-500"}>Organiza y controla tus tareas de forma eficiente</p>
                             </div>
                             <Button 
                                 onClick={() => setShowNewTaskModal(true)}

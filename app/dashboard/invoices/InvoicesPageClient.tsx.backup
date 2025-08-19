@@ -1,5 +1,6 @@
 'use client'
 import { createSupabaseClient } from '@/src/lib/supabase-client';
+import { darkModeClasses, presets, combineClasses } from '@/utils/darkMode';
 import {
     AlertCircle,
     CheckCircle,
@@ -175,7 +176,7 @@ export default function InvoicesPageClient({ userEmail }: ClientsPageClientProps
 
     if (loading) {
         return (
-            <div className={"min-h-screen bg-gradient-to-br from-slate-50 to-blue-50 dark:from-slate-900 dark:to-slate-800"}>
+            <div className="min-h-screen bg-gradient-to-br from-slate-50 to-slate-100 flex items-center justify-center">
                 <div className="text-center">
                     <div className="w-16 h-16 border-4 border-blue-600 border-t-transparent rounded-full animate-spin mx-auto mb-4"></div>
                     <p className="text-slate-600 font-medium">Cargando facturas...</p>
@@ -185,14 +186,14 @@ export default function InvoicesPageClient({ userEmail }: ClientsPageClientProps
     }
 
     return (
-        <div className={"min-h-screen bg-gradient-to-br from-slate-50 to-blue-50 dark:from-slate-900 dark:to-slate-800"}>
+        <div className="flex h-screen overflow-hidden bg-gradient-to-br from-slate-50 via-blue-50 to-indigo-100">
             {/* Sidebar */}
             <SideBar userEmail={userEmail} onLogout={handleLogout} />
             
             {/* Main Content */}
             <div className="flex-1 ml-56 overflow-hidden">
                 <div className="h-full overflow-y-auto">
-                    <div className={"min-h-screen bg-gradient-to-br from-slate-50 to-blue-50 dark:from-slate-900 dark:to-slate-800"}>
+                    <div className="min-h-screen bg-gradient-to-br from-slate-50/80 via-blue-50/90 to-indigo-100/80 backdrop-blur-3xl">
                         <div className="container mx-auto px-6 py-8">
                             {/* Header Premium */}
                             <div className="mb-8">
@@ -203,7 +204,7 @@ export default function InvoicesPageClient({ userEmail }: ClientsPageClientProps
                                                 <div className="p-2 bg-gradient-to-r from-blue-600 to-indigo-600 rounded-xl shadow-lg">
                                                     <Receipt className="w-6 h-6 text-white" />
                                                 </div>
-                                                <h1 className="text-4xl font-bold bg-gradient-to-r from-slate-900 via-blue-900 to-indigo-900 dark:from-slate-100 dark:via-blue-200 dark:to-indigo-200 bg-clip-text text-transparent">
+                                                <h1 className="text-4xl font-bold bg-gradient-to-r from-slate-900 via-blue-900 to-indigo-900 bg-clip-text text-transparent">
                                                     Gestión de Facturas
                                                 </h1>
                                             </div>
@@ -232,7 +233,8 @@ export default function InvoicesPageClient({ userEmail }: ClientsPageClientProps
                                                 <p className="text-3xl font-bold bg-gradient-to-r from-slate-700 to-slate-900 bg-clip-text text-transparent">
                                                     {stats.total}
                                                 </p>
-                                            </div>
+                                            <ThemeToggleHeader />
+                                    </div>
                                             <div className="p-3 bg-gradient-to-br from-blue-500 to-blue-600 rounded-xl shadow-lg">
                                                 <FileText className="w-6 h-6 text-white" />
                                             </div>
@@ -342,7 +344,7 @@ export default function InvoicesPageClient({ userEmail }: ClientsPageClientProps
                                             {filteredInvoices.map((invoice) => (
                                                 <div
                                                     key={invoice.id}
-                                                    className={"p-6 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl shadow-sm"}
+                                                    className="bg-white/60 backdrop-blur-xl border border-white/70 rounded-xl p-6 hover:shadow-lg hover:scale-[1.02] transition-all duration-200"
                                                 >
                                                     <div className="flex flex-col sm:flex-row justify-between items-start gap-4">
                                                         <div className="flex-1">
@@ -373,7 +375,7 @@ export default function InvoicesPageClient({ userEmail }: ClientsPageClientProps
                                                             {invoice.status !== 'paid' && (
                                                                 <button
                                                                     onClick={() => updateInvoiceStatus(invoice.id, 'paid')}
-                                                                    className="px-3 py-2 text-sm bg-green-600 hover:bg-green-700 text-white rounded-md dark:bg-green-700 dark:hover:bg-green-600"
+                                                                    className="px-3 py-2 text-sm bg-white/70 backdrop-blur-xl border border-white/60 rounded-xl hover:bg-green-50 hover:border-green-200 text-slate-700 hover:text-green-700 flex items-center gap-2 transition-all duration-200 shadow-lg hover:shadow-xl"
                                                                 >
                                                                     <CheckCircle className="w-4 h-4" />
                                                                     Marcar Pagada

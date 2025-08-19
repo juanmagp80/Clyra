@@ -445,12 +445,12 @@ export default function ClientsPageClient({ userEmail }: ClientsPageClientProps)
     });
 
     return (
-        <div className="flex h-screen overflow-hidden bg-gradient-to-br from-slate-50 via-blue-50 to-indigo-100 relative">
-            {/* Animated Background */}
+        <div className={"min-h-screen bg-gradient-to-br from-slate-50 to-blue-50 dark:from-slate-900 dark:to-slate-800"}>
+            {/* Elementos decorativos de fondo mejorados */}
             <div className="absolute inset-0 overflow-hidden pointer-events-none">
-                <div className="absolute -top-40 -right-40 w-80 h-80 bg-purple-300 rounded-full mix-blend-multiply filter blur-xl opacity-20 animate-pulse"></div>
-                <div className="absolute -bottom-40 -left-40 w-80 h-80 bg-blue-300 rounded-full mix-blend-multiply filter blur-xl opacity-20 animate-pulse delay-1000"></div>
-                <div className="absolute top-40 left-40 w-60 h-60 bg-pink-300 rounded-full mix-blend-multiply filter blur-xl opacity-20 animate-pulse delay-2000"></div>
+                <div className="absolute top-0 left-0 w-96 h-96 bg-gradient-to-br from-blue-500/8 via-purple-500/8 to-indigo-500/8 dark:from-blue-400/5 dark:via-purple-400/5 dark:to-indigo-400/5 rounded-full blur-3xl animate-pulse"></div>
+                <div className="absolute top-20 right-20 w-64 h-64 bg-gradient-to-br from-purple-500/8 via-pink-500/8 to-indigo-500/8 dark:from-purple-400/5 dark:via-pink-400/5 dark:to-indigo-400/5 rounded-full blur-3xl animate-pulse" style={{ animationDelay: '2s' }}></div>
+                <div className="absolute bottom-20 left-20 w-80 h-80 bg-gradient-to-br from-indigo-500/8 via-blue-500/8 to-purple-500/8 dark:from-indigo-400/5 dark:via-blue-400/5 dark:to-purple-400/5 rounded-full blur-3xl animate-pulse" style={{ animationDelay: '4s' }}></div>
             </div>
 
             {/* Sidebar */}
@@ -459,11 +459,11 @@ export default function ClientsPageClient({ userEmail }: ClientsPageClientProps)
             {/* Main Content */}
             <div className="flex-1 ml-56 overflow-hidden relative">
                 <div className="h-full overflow-y-auto">
-                    <div className="min-h-screen bg-gradient-to-br from-slate-50/80 via-blue-50/90 to-indigo-100/80 backdrop-blur-3xl relative">
+                    <div className={"min-h-screen bg-gradient-to-br from-slate-50 to-blue-50 dark:from-slate-900 dark:to-slate-800"}>
                         <div className="container mx-auto px-6 py-8">
                             {/* Header Premium con Animaciones */}
                             <div className="mb-8 animate-slideInDown">
-                                <div className="group bg-white/30 backdrop-blur-2xl rounded-3xl border border-white/50 shadow-2xl shadow-indigo-500/10 p-8 hover:shadow-indigo-500/20 hover:scale-[1.01] transition-all duration-500 relative overflow-hidden">
+                                <div className={"group p-8 hover:scale-[1.01] transition-all duration-500 relative overflow-hidden bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl shadow-sm"}>
                                     {/* Animated Gradient Overlay */}
                                     <div className="absolute inset-0 bg-gradient-to-r from-blue-600/10 via-purple-600/10 to-indigo-600/10 opacity-0 group-hover:opacity-100 transition-opacity duration-500"></div>
                                     
@@ -474,16 +474,16 @@ export default function ClientsPageClient({ userEmail }: ClientsPageClientProps)
                                                     <Users className="w-8 h-8 text-white" />
                                                 </div>
                                                 <div>
-                                                    <h1 className="text-4xl font-black bg-gradient-to-r from-slate-900 via-blue-900 to-indigo-900 bg-clip-text text-transparent mb-2">
+                                                    <h1 className="text-4xl font-black bg-gradient-to-r from-slate-900 via-blue-900 to-indigo-900 dark:from-slate-100 dark:via-blue-200 dark:to-indigo-200 bg-clip-text text-transparent mb-2">
                                                         Gestión de Clientes
                                                     </h1>
                                                     <div className="flex items-center gap-2">
                                                         <div className="w-2 h-2 bg-green-500 rounded-full animate-pulse"></div>
-                                                        <span className="text-green-700 font-semibold text-sm">Sistema Activo</span>
+                                                        <span className="text-green-700 dark:text-green-400 font-semibold text-sm">Sistema Activo</span>
                                                     </div>
                                                 </div>
                                             </div>
-                                            <p className="text-slate-600 text-lg font-medium max-w-2xl leading-relaxed">
+                                            <p className={"text-lg font-medium max-w-2xl leading-relaxed text-slate-500 dark:text-slate-500"}>
                                                 Organiza tu cartera de clientes y visualiza su valor desde un panel centralizado con herramientas avanzadas
                                             </p>
                                         </div>
@@ -503,21 +503,21 @@ export default function ClientsPageClient({ userEmail }: ClientsPageClientProps)
                             {/* Stats Premium con Efectos 3D */}
                             <div className="mb-8 animate-slideInUp">
                                 <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-                                    <div className="group bg-white/30 backdrop-blur-2xl rounded-2xl border border-white/50 shadow-xl shadow-blue-500/5 p-6 hover:shadow-2xl hover:scale-105 hover:-translate-y-2 transition-all duration-500 relative overflow-hidden">
+                                    <div className={"group p-6 hover:scale-105 hover:-translate-y-2 transition-all duration-500 relative overflow-hidden bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl shadow-sm"}>
                                         <div className="absolute inset-0 bg-gradient-to-br from-blue-500/10 to-indigo-500/10 opacity-0 group-hover:opacity-100 transition-opacity duration-500"></div>
                                         <div className="flex items-center justify-between relative z-10">
                                             <div>
                                                 <div className="flex items-center gap-2 mb-2">
                                                     <div className="w-2 h-2 bg-blue-500 rounded-full animate-pulse"></div>
-                                                    <p className="text-sm font-bold text-slate-700">Total Clientes</p>
+                                                    <p className={"text-sm font-bold text-slate-600 dark:text-slate-400"}>Total Clientes</p>
                                                 </div>
-                                                <p className="text-4xl font-black bg-gradient-to-r from-slate-700 to-slate-900 bg-clip-text text-transparent mb-2">
+                                                <p className="text-4xl font-black bg-gradient-to-r from-slate-700 to-slate-900 dark:from-slate-100 dark:to-slate-300 bg-clip-text text-transparent mb-2">
                                                     {clients.length}
                                                 </p>
                                                 <div className="flex items-center text-sm">
-                                                    <div className="flex items-center gap-1 px-2 py-1 bg-green-100 rounded-full">
+                                                    <div className="flex items-center gap-1 px-2 py-1 bg-green-100 dark:bg-green-900/30 rounded-full">
                                                         <div className="w-2 h-2 bg-green-500 rounded-full animate-pulse"></div>
-                                                        <span className="text-green-700 font-bold">Cartera activa</span>
+                                                        <span className="text-green-700 dark:text-green-400 font-bold">Cartera activa</span>
                                                     </div>
                                                 </div>
                                             </div>
@@ -577,118 +577,131 @@ export default function ClientsPageClient({ userEmail }: ClientsPageClientProps)
                                 </div>
                             </div>
 
-                            {/* Search Premium con Microinteracciones */}
-                            <div className="mb-8 animate-slideInLeft">
-                                <div className="group bg-white/30 backdrop-blur-2xl rounded-2xl border border-white/50 shadow-xl shadow-slate-500/5 p-6 hover:shadow-2xl hover:border-indigo-300 transition-all duration-500">
-                                    <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-6">
-                                        <div className="space-y-3">
-                                            <div className="flex items-center gap-3">
-                                                <div className="p-2 bg-gradient-to-r from-indigo-500 to-purple-500 rounded-xl shadow-lg">
-                                                    <Search className="w-5 h-5 text-white" />
-                                                </div>
-                                                <h2 className="text-2xl font-black bg-gradient-to-r from-slate-700 to-slate-900 bg-clip-text text-transparent">
-                                                    Directorio de Clientes
-                                                </h2>
-                                                <div className="px-3 py-1 bg-gradient-to-r from-indigo-100 to-purple-100 rounded-full border border-indigo-200">
-                                                    <span className="text-sm font-bold text-indigo-700">{filteredClients.length} encontrados</span>
-                                                </div>
-                                            </div>
-                                            <p className="text-slate-600 font-medium">
+                            {/* Búsqueda y Filtros Ultra Premium */}
+                            <div className="bg-white/40 backdrop-blur-2xl rounded-3xl border border-white/60 shadow-2xl shadow-slate-500/10 p-8">
+                                <div className="flex flex-col space-y-6">
+                                    {/* Header con título y estadísticas */}
+                                    <div className="flex flex-col lg:flex-row justify-between items-start lg:items-center gap-4">
+                                        <div>
+                                            <h2 className="text-3xl font-black bg-gradient-to-r from-slate-700 to-slate-900 bg-clip-text text-transparent mb-2">
+                                                🎯 Directorio de Clientes ({filteredClients.length})
+                                            </h2>
+                                            <p className="text-slate-600 font-semibold flex items-center gap-2">
+                                                <span className="w-2 h-2 bg-purple-500 rounded-full animate-pulse block"></span>
                                                 Gestiona toda la información de tus clientes en un solo lugar
                                             </p>
                                         </div>
-                                        <div className="flex items-center gap-3 w-full sm:w-auto">
-                                            {/* Botones de Vista */}
-                                            <div className="flex items-center bg-white/50 backdrop-blur-xl border border-white/60 rounded-2xl p-1 shadow-lg">
-                                                <button
-                                                    onClick={() => setViewMode('cards')}
-                                                    className={`p-3 rounded-xl transition-all duration-300 flex items-center gap-2 ${
-                                                        viewMode === 'cards'
-                                                            ? 'bg-gradient-to-r from-indigo-500 to-purple-500 text-white shadow-lg scale-105'
-                                                            : 'text-slate-600 hover:bg-white/70 hover:text-indigo-600'
-                                                    }`}
-                                                    title="Vista de tarjetas"
-                                                >
-                                                    <Grid3X3 className="w-4 h-4" />
-                                                    <span className="text-sm font-semibold hidden sm:block">Cards</span>
-                                                </button>
-                                                <button
-                                                    onClick={() => setViewMode('list')}
-                                                    className={`p-3 rounded-xl transition-all duration-300 flex items-center gap-2 ${
-                                                        viewMode === 'list'
-                                                            ? 'bg-gradient-to-r from-indigo-500 to-purple-500 text-white shadow-lg scale-105'
-                                                            : 'text-slate-600 hover:bg-white/70 hover:text-indigo-600'
-                                                    }`}
-                                                    title="Vista de lista"
-                                                >
-                                                    <List className="w-4 h-4" />
-                                                    <span className="text-sm font-semibold hidden sm:block">Lista</span>
-                                                </button>
-                                            </div>
+                                        
+                                        {/* Botones de Vista */}
+                                        <div className="flex items-center gap-2 bg-white/60 backdrop-blur-xl rounded-2xl p-2 shadow-lg border border-white/80">
+                                            <button
+                                                onClick={() => setViewMode('cards')}
+                                                className={`group flex items-center gap-2 px-4 py-2 rounded-xl font-bold text-sm transition-all duration-300 ${
+                                                    viewMode === 'cards'
+                                                        ? 'bg-gradient-to-r from-blue-600 to-indigo-600 text-white shadow-lg shadow-blue-500/30'
+                                                        : 'text-slate-600 hover:text-blue-600 hover:bg-blue-50'
+                                                }`}
+                                            >
+                                                <Grid3X3 className="w-4 h-4 group-hover:scale-110 transition-transform duration-300" />
+                                                Tarjetas
+                                            </button>
+                                            <button
+                                                onClick={() => setViewMode('list')}
+                                                className={`group flex items-center gap-2 px-4 py-2 rounded-xl font-bold text-sm transition-all duration-300 ${
+                                                    viewMode === 'list'
+                                                        ? 'bg-gradient-to-r from-blue-600 to-indigo-600 text-white shadow-lg shadow-blue-500/30'
+                                                        : 'text-slate-600 hover:text-blue-600 hover:bg-blue-50'
+                                                }`}
+                                            >
+                                                <List className="w-4 h-4 group-hover:scale-110 transition-transform duration-300" />
+                                                Lista
+                                            </button>
+                                        </div>
+                                    </div>
 
-                                            {/* Barra de Búsqueda Premium h-16 (como proyectos) */}
-                                            <div className="relative flex-1 sm:flex-none max-w-2xl group/search">
-                                                {/* Fondo Decorativo con Gradientes Animados */}
-                                                <div className="absolute -inset-2 bg-gradient-to-r from-indigo-500 via-purple-500 to-pink-500 rounded-3xl opacity-0 group-focus-within/search:opacity-30 group-hover/search:opacity-20 blur-lg transition-all duration-700"></div>
+                                    {/* Barra de Búsqueda Ultra Premium - Más Grande */}
+                                    <div className="grid grid-cols-1 lg:grid-cols-3 gap-4 items-end">
+                                        {/* Cuadro de Búsqueda Premium Ultra Avanzado - MÁS GRANDE */}
+                                        <div className="lg:col-span-3 relative group/search">
+                                            {/* Fondo Decorativo con Gradientes Animados */}
+                                            <div className="absolute -inset-2 bg-gradient-to-r from-indigo-500 via-purple-500 to-pink-500 rounded-3xl opacity-0 group-focus-within/search:opacity-30 group-hover/search:opacity-20 blur-lg transition-all duration-700"></div>
+                                            
+                                            {/* Contenedor Principal MÁS GRANDE */}
+                                            <div className="relative bg-white/70 backdrop-blur-2xl border-2 border-white/80 rounded-3xl shadow-2xl shadow-slate-500/10 group-focus-within/search:shadow-indigo-500/25 group-focus-within/search:border-indigo-300 group-focus-within/search:scale-[1.02] group-hover/search:shadow-xl transition-all duration-700">
                                                 
-                                                {/* Contenedor Principal h-16 */}
-                                                <div className="relative bg-white/70 backdrop-blur-2xl border-2 border-white/80 rounded-3xl shadow-2xl shadow-slate-500/10 group-focus-within/search:shadow-indigo-500/25 group-focus-within/search:border-indigo-300 group-focus-within/search:scale-[1.02] group-hover/search:shadow-xl transition-all duration-700">
-                                                    
-                                                    {/* Icono de Búsqueda con Animaciones MEJORADO */}
-                                                    <div className="absolute left-6 top-1/2 transform -translate-y-1/2 z-10">
-                                                        <div className="relative">
-                                                            <div className="w-8 h-8 bg-gradient-to-br from-indigo-500 to-purple-600 rounded-2xl p-2 group-focus-within/search:scale-125 group-focus-within/search:rotate-12 group-hover/search:scale-110 transition-all duration-700 shadow-2xl shadow-indigo-500/40">
-                                                                <Search className="w-full h-full text-white" />
-                                                            </div>
-                                                            {/* Efecto de ondas al hacer focus */}
-                                                            <div className="absolute inset-0 bg-indigo-500/20 rounded-2xl opacity-0 group-focus-within/search:opacity-100 group-focus-within/search:animate-ping"></div>
+                                                {/* Icono de Búsqueda con Animaciones MEJORADO */}
+                                                <div className="absolute left-6 top-1/2 transform -translate-y-1/2 z-10">
+                                                    <div className="relative">
+                                                        <div className="w-8 h-8 bg-gradient-to-br from-indigo-500 to-purple-600 rounded-2xl p-2 group-focus-within/search:scale-125 group-focus-within/search:rotate-12 group-hover/search:scale-110 transition-all duration-700 shadow-2xl shadow-indigo-500/40">
+                                                            <Search className="w-full h-full text-white" />
                                                         </div>
-                                                    </div>
-
-                                                    {/* Campo de Input Premium h-16 */}
-                                                    <input
-                                                        ref={(el) => setSearchInputRef(el)}
-                                                        type="text"
-                                                        placeholder="🔍 Buscar clientes por nombre, email, empresa, teléfono o NIF... (Ctrl+K)"
-                                                        value={searchTerm}
-                                                        onChange={(e) => setSearchTerm(e.target.value)}
-                                                        className="w-full h-16 pl-16 pr-16 text-lg font-semibold text-slate-900 placeholder-slate-500 bg-transparent border-0 rounded-3xl focus:outline-none focus:ring-0 transition-all duration-500"
-                                                        autoComplete="off"
-                                                        spellCheck="false"
-                                                    />
-
-                                                    {/* Botón de Limpiar MEJORADO */}
-                                                    {searchTerm && (
-                                                        <button 
-                                                            onClick={() => setSearchTerm('')}
-                                                            className="absolute right-4 top-1/2 transform -translate-y-1/2 w-8 h-8 bg-gradient-to-br from-red-500 to-red-600 hover:from-red-600 hover:to-red-700 rounded-2xl shadow-2xl hover:shadow-xl hover:scale-110 transition-all duration-300 flex items-center justify-center group"
-                                                            title="Limpiar búsqueda (ESC)"
-                                                        >
-                                                            <X className="w-4 h-4 text-white group-hover:rotate-90 transition-transform duration-300" />
-                                                        </button>
-                                                    )}
-
-                                                    {/* Atajos de teclado visibles */}
-                                                    <div className="absolute right-4 bottom-1 text-xs text-slate-400 font-medium opacity-0 group-focus-within/search:opacity-100 transition-opacity duration-300">
-                                                        ESC para limpiar
+                                                        {/* Efecto de ondas al hacer focus */}
+                                                        <div className="absolute inset-0 bg-indigo-500/20 rounded-2xl opacity-0 group-focus-within/search:opacity-100 group-focus-within/search:animate-ping"></div>
                                                     </div>
                                                 </div>
 
-                                                {/* Sugerencias flotantes mejoradas */}
+                                                {/* Campo de Input Premium MÁS GRANDE */}
+                                                <input
+                                                    ref={(el) => setSearchInputRef(el)}
+                                                    type="text"
+                                                    placeholder="🔍 Buscar clientes por nombre, email, empresa, teléfono o NIF... (Ctrl+K)"
+                                                    value={searchTerm}
+                                                    onChange={(e) => setSearchTerm(e.target.value)}
+                                                    className="w-full h-16 pl-16 pr-16 text-lg font-semibold text-slate-900 placeholder-slate-500 bg-transparent border-0 rounded-3xl focus:outline-none focus:ring-0 transition-all duration-500"
+                                                    autoComplete="off"
+                                                    spellCheck="false"
+                                                />
+
+                                                {/* Botón de Limpiar MEJORADO */}
                                                 {searchTerm && (
-                                                    <div className="absolute top-full left-0 right-0 mt-2 bg-white/95 backdrop-blur-2xl rounded-2xl border border-white/60 shadow-2xl shadow-slate-500/20 p-4 z-50 animate-in slide-in-from-top-2 duration-300">
-                                                        <div className="text-xs font-bold text-slate-500 uppercase tracking-wider mb-2">Buscando en:</div>
-                                                        <div className="flex flex-wrap gap-2">
-                                                            <span className="px-3 py-1 bg-blue-100 text-blue-700 rounded-xl text-xs font-semibold">👤 Nombres</span>
-                                                            <span className="px-3 py-1 bg-purple-100 text-purple-700 rounded-xl text-xs font-semibold">📧 Emails</span>
-                                                            <span className="px-3 py-1 bg-green-100 text-green-700 rounded-xl text-xs font-semibold">🏢 Empresas</span>
-                                                            <span className="px-3 py-1 bg-orange-100 text-orange-700 rounded-xl text-xs font-semibold">📞 Teléfonos</span>
-                                                            <span className="px-3 py-1 bg-pink-100 text-pink-700 rounded-xl text-xs font-semibold">🆔 NIFs</span>
-                                                        </div>
-                                                    </div>
+                                                    <button 
+                                                        onClick={() => setSearchTerm('')}
+                                                        className="absolute right-4 top-1/2 transform -translate-y-1/2 w-8 h-8 bg-gradient-to-br from-red-500 to-red-600 hover:from-red-600 hover:to-red-700 rounded-2xl shadow-2xl hover:shadow-xl hover:scale-110 transition-all duration-300 flex items-center justify-center group"
+                                                        title="Limpiar búsqueda (ESC)"
+                                                    >
+                                                        <X className="w-4 h-4 text-white group-hover:rotate-90 transition-transform duration-300" />
+                                                    </button>
                                                 )}
+
+                                                {/* Atajos de teclado visibles */}
+                                                <div className="absolute right-4 bottom-1 text-xs text-slate-400 font-medium opacity-0 group-focus-within/search:opacity-100 transition-opacity duration-300">
+                                                    ESC para limpiar
+                                                </div>
                                             </div>
+
+                                            {/* Sugerencias flotantes mejoradas */}
+                                            {searchTerm && (
+                                                <div className="absolute top-full left-0 right-0 mt-2 bg-white/95 backdrop-blur-2xl rounded-2xl border border-white/60 shadow-2xl shadow-slate-500/20 p-4 z-50 animate-in slide-in-from-top-2 duration-300">
+                                                    <div className="text-xs font-bold text-slate-500 uppercase tracking-wider mb-2">Buscando en:</div>
+                                                    <div className="flex flex-wrap gap-2">
+                                                        <span className="px-3 py-1 bg-blue-100 text-blue-700 rounded-xl text-xs font-semibold">👤 Nombres</span>
+                                                        <span className="px-3 py-1 bg-purple-100 text-purple-700 rounded-xl text-xs font-semibold">📧 Emails</span>
+                                                        <span className="px-3 py-1 bg-green-100 text-green-700 rounded-xl text-xs font-semibold">🏢 Empresas</span>
+                                                        <span className="px-3 py-1 bg-orange-100 text-orange-700 rounded-xl text-xs font-semibold">📞 Teléfonos</span>
+                                                        <span className="px-3 py-1 bg-pink-100 text-pink-700 rounded-xl text-xs font-semibold">🆔 NIFs</span>
+                                                    </div>
+                                                </div>
+                                            )}
                                         </div>
+                                    </div>
+
+                                    {/* Botón Nuevo Cliente Premium */}
+                                    <div className="flex justify-center">
+                                        <button
+                                            onClick={() => setShowForm(true)}
+                                            className="group px-10 py-5 bg-gradient-to-r from-blue-600 via-indigo-600 to-purple-600 hover:from-blue-700 hover:via-indigo-700 hover:to-purple-700 text-white font-black rounded-3xl shadow-2xl shadow-blue-500/30 hover:shadow-blue-500/50 hover:scale-110 hover:-translate-y-2 transition-all duration-500 flex items-center gap-4 text-lg relative overflow-hidden"
+                                        >
+                                            {/* Efecto de brillo en hover */}
+                                            <div className="absolute inset-0 bg-gradient-to-r from-white/0 via-white/20 to-white/0 -translate-x-full group-hover:translate-x-full transition-transform duration-1000"></div>
+                                            
+                                            <div className="relative z-10 flex items-center gap-4">
+                                                <div className="p-2 bg-white/20 rounded-2xl group-hover:scale-125 group-hover:rotate-180 transition-all duration-500">
+                                                    <Plus className="w-6 h-6" />
+                                                </div>
+                                                <span>Crear Nuevo Cliente</span>
+                                                <UserPlus className="w-5 h-5 group-hover:rotate-45 group-hover:scale-125 transition-all duration-500" />
+                                            </div>
+                                        </button>
                                     </div>
                                 </div>
                             </div>

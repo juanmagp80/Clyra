@@ -47,14 +47,23 @@ export default function DashboardClient({
     const [loading, setLoading] = useState(true);
 
     const handleLogout = async () => {
-        if (isDemo) {
+        console.log('🔧 handleLogout called'); // Debug log
+        try {
+            if (isDemo) {
+                console.log('🔧 Demo mode - redirecting to login'); // Debug log
+                router.push('/login');
+                return;
+            }
+            console.log('🔧 Calling supabase signOut'); // Debug log
+            if (supabase) {
+                await supabase.auth.signOut();
+                console.log('🔧 Supabase signOut completed'); // Debug log
+            }
+            console.log('🔧 Redirecting to login'); // Debug log
             router.push('/login');
-            return;
+        } catch (error) {
+            console.error('🔧 Error in handleLogout:', error); // Debug log
         }
-        if (supabase) {
-            await supabase.auth.signOut();
-        }
-        router.push('/login');
     };
 
     // Cargar métricas del dashboard
@@ -270,28 +279,49 @@ export default function DashboardClient({
         loadRecentActivity();
     }, []);
     return (
-        <div className="flex h-screen overflow-hidden bg-gradient-to-br from-slate-50 via-blue-50 to-indigo-100">
+        <div className="flex h-screen overflow-hidden">
+            {/* Elementos decorativos de fondo mejorados */}
+            <div className="absolute inset-0 overflow-hidden pointer-events-none">
+                <div className="absolute top-0 left-0 w-96 h-96 bg-gradient-to-br from-blue-500/8 via-purple-500/8 to-indigo-500/8 dark:from-blue-400/5 dark:via-purple-400/5 dark:to-indigo-400/5 rounded-full blur-3xl animate-pulse"></div>
+                <div className="absolute top-20 right-20 w-64 h-64 bg-gradient-to-br from-purple-500/8 via-pink-500/8 to-indigo-500/8 dark:from-purple-400/5 dark:via-pink-400/5 dark:to-indigo-400/5 rounded-full blur-3xl animate-pulse" style={{ animationDelay: '2s' }}></div>
+                <div className="absolute bottom-20 left-20 w-80 h-80 bg-gradient-to-br from-indigo-500/8 via-blue-500/8 to-purple-500/8 dark:from-indigo-400/5 dark:via-blue-400/5 dark:to-purple-400/5 rounded-full blur-3xl animate-pulse" style={{ animationDelay: '4s' }}></div>
+            </div>
+
             {/* Sidebar */}
             <Sidebar userEmail={userEmail} onLogout={handleLogout} />
 
             {/* Main Content */}
-            <div className="flex-1 ml-56 overflow-hidden">
+            <div className="flex-1 ml-56 overflow-hidden relative">
                 <div className="h-full overflow-y-auto">
                     {/* Trial Banner - Solo si no es demo */}
                     {!isDemo && <TrialBanner userEmail={userEmail} />}
 
-                    <div className="min-h-screen bg-gradient-to-br from-gray-50 via-white to-gray-100 relative">
-                        {/* Subtle mesh background */}
-                        <div className="absolute inset-0 bg-[url('data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iNjAiIGhlaWdodD0iNjAiIHZpZXdCb3g9IjAgMCA2MCA2MCIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj48ZyBmaWxsPSJub25lIiBmaWxsLXJ1bGU9ImV2ZW5vZGQiPjxnIGZpbGw9IiMwMDAwMDAiIGZpbGwtb3BhY2l0eT0iMC4wMiI+PGNpcmNsZSBjeD0iNSIgY3k9IjUiIHI9IjEiLz48L2c+PC9nPjwvc3ZnPg==')] opacity-40"></div>
+                    <div className="min-h-screen relative">
+                        <div className="container mx-auto px-6 py-8">
+                            {/* Header Premium con Animaciones */}
+                            <div className="relative mb-8 overflow-hidden">
+                                <div className="absolute inset-0 bg-gradient-to-r from-blue-500/10 via-purple-500/10 to-pink-500/10 blur-3xl"></div>
+                                <div className="relative backdrop-blur-sm bg-white/60 dark:bg-slate-800/60 rounded-3xl p-8 border border-white/80 dark:border-slate-700/80 shadow-2xl shadow-blue-500/10 dark:shadow-purple-500/20 transition-all duration-300">
+                                    <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between">
+                                        <div className="space-y-2">
+                                            <h1 className="text-4xl lg:text-5xl font-black bg-gradient-to-r from-blue-600 via-purple-600 to-pink-600 bg-clip-text text-transparent">
+                                                ¡Hola {userEmail?.split('@')[0] || 'Usuario'}! 👋
+                                            </h1>
+                                            <p className="text-lg text-slate-600 dark:text-slate-300 font-medium">
+                                                Aquí tienes el resumen de tu actividad
+                                            </p>
+                                        </div>
+                                        <div className="mt-4 lg:mt-0 flex items-center gap-4">
+                                            <div className="flex items-center gap-2 px-4 py-2 bg-green-100 dark:bg-green-900/30 rounded-full">
+                                                <div className="w-2 h-2 bg-green-500 rounded-full animate-pulse"></div>
+                                                <span className="text-sm font-bold text-green-700 dark:text-green-300">En línea</span>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
 
-                        {/* Gradient overlay */}
-                        <div className="absolute inset-0 bg-gradient-to-tr from-blue-500/5 via-transparent to-purple-500/5"></div>
-
-                        <div className="flex h-screen relative z-10">
-
-                            <main className="flex-1 ml-56 overflow-auto">
-                                <div className="p-6 lg:p-8 max-w-7xl mx-auto">
-                                    {loading ? (
+                            {loading ? (
                                         <div className="flex flex-col items-center justify-center h-96 space-y-4">
                                             <div className="relative">
                                                 <div className="w-16 h-16 border-4 border-gray-200 rounded-full"></div>
@@ -466,12 +496,10 @@ export default function DashboardClient({
                                             </div>
                                         </>
                                     )}
+                                        </div>
+                                    </div>
                                 </div>
-                            </main>
+                            </div>
                         </div>
-                    </div>
-                </div>
-            </div>
-        </div>
     );
 }

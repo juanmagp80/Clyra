@@ -135,16 +135,16 @@ export default function Sidebar({ userEmail, onLogout }: SidebarProps) {
   };
 
   return (
-    <div className="flex h-full w-56 flex-col fixed inset-y-0 z-50 bg-white/95 backdrop-blur-2xl border-r border-slate-200/60 shadow-2xl shadow-slate-900/5">
+    <div className="flex h-full w-56 flex-col fixed inset-y-0 z-50 bg-white/95 dark:bg-slate-950/95 backdrop-blur-3xl border-r border-slate-200/60 dark:border-slate-700/60 shadow-2xl shadow-slate-900/5 dark:shadow-black/40 transition-all duration-300">
       {/* Premium Logo - Más compacto */}
-      <div className="flex h-12 items-center border-b border-slate-200/60 px-4 bg-gradient-to-r from-indigo-50/50 to-violet-50/50">
+      <div className="flex h-12 items-center border-b border-slate-200/60 dark:border-slate-700/60 px-4 bg-gradient-to-r from-indigo-50/50 to-violet-50/50 dark:from-slate-900/50 dark:to-slate-800/50 transition-all duration-300">
         <h1 className="text-lg font-black tracking-tight relative">
-          <span className="relative bg-gradient-to-r from-slate-900 via-indigo-900 to-violet-900 bg-clip-text text-transparent">
+          <span className="relative bg-gradient-to-r from-slate-900 via-indigo-900 to-violet-900 dark:from-slate-100 dark:via-indigo-300 dark:to-violet-300 bg-clip-text text-transparent">
             Taskelio
-            <div className="absolute -top-0.5 -right-0.5 w-1 h-1 bg-gradient-to-r from-indigo-500 to-violet-500 rounded-full opacity-80"></div>
+            <div className="absolute -top-0.5 -right-0.5 w-1 h-1 bg-gradient-to-r from-indigo-500 to-violet-500 dark:from-indigo-400 dark:to-violet-400 rounded-full opacity-80"></div>
           </span>
         </h1>
-        <span className="ml-2 text-xs bg-gradient-to-r from-indigo-50 to-violet-50 border border-indigo-200 text-indigo-700 px-1.5 py-0.5 rounded-full font-medium">
+        <span className="ml-2 text-xs bg-gradient-to-r from-indigo-50 to-violet-50 dark:from-indigo-900/30 dark:to-violet-900/30 border border-indigo-200 dark:border-indigo-700 text-indigo-700 dark:text-indigo-300 px-1.5 py-0.5 rounded-full font-medium transition-colors duration-300">
           PRO
         </span>
       </div>
@@ -169,7 +169,7 @@ export default function Sidebar({ userEmail, onLogout }: SidebarProps) {
                     'group flex items-center justify-between w-full px-3 py-2 text-sm font-semibold rounded-lg transition-all duration-300 relative',
                     isActive || hasActiveSubmenu
                       ? 'bg-gradient-to-r from-indigo-600 via-blue-600 to-violet-600 text-white shadow-lg shadow-indigo-500/25'
-                      : 'text-slate-700 hover:text-indigo-900 hover:bg-white/80 hover:shadow-md hover:shadow-slate-900/5'
+                      : 'text-slate-700 dark:text-slate-300 hover:text-indigo-900 dark:hover:text-indigo-400 hover:bg-white/80 dark:hover:bg-slate-700/60 hover:shadow-md hover:shadow-slate-900/5'
                   )}
                 >
                   {(isActive || hasActiveSubmenu) && (
@@ -199,7 +199,7 @@ export default function Sidebar({ userEmail, onLogout }: SidebarProps) {
                     'group flex items-center px-3 py-2 text-sm font-semibold rounded-lg transition-all duration-300 relative',
                     isActive
                       ? 'bg-gradient-to-r from-indigo-600 via-blue-600 to-violet-600 text-white shadow-lg shadow-indigo-500/25'
-                      : 'text-slate-700 hover:text-indigo-900 hover:bg-white/80 hover:shadow-md hover:shadow-slate-900/5'
+                      : 'text-slate-700 dark:text-slate-300 hover:text-indigo-900 dark:hover:text-indigo-400 hover:bg-white/80 dark:hover:bg-slate-700/60 hover:shadow-md hover:shadow-slate-900/5'
                   )}
                 >
                   {isActive && (
@@ -210,7 +210,7 @@ export default function Sidebar({ userEmail, onLogout }: SidebarProps) {
                       'mr-3 h-4 w-4 flex-shrink-0 transition-transform duration-300',
                       isActive
                         ? 'text-white group-hover:scale-110'
-                        : 'text-slate-600 group-hover:text-indigo-600 group-hover:scale-110'
+                        : 'text-slate-600 dark:text-slate-400 group-hover:text-indigo-600 dark:group-hover:text-indigo-400 group-hover:scale-110'
                     )}
                   />
                   <span className="relative z-10">{item.name}</span>
@@ -231,10 +231,10 @@ export default function Sidebar({ userEmail, onLogout }: SidebarProps) {
                         className={cn(
                           'group flex items-center px-3 py-2 text-xs font-medium rounded-lg transition-all duration-200',
                           isSubActive
-                            ? 'bg-gradient-to-r from-blue-100 to-indigo-100 text-indigo-900 shadow-sm'
+                            ? 'bg-gradient-to-r from-blue-100 to-indigo-100 dark:from-blue-900/30 dark:to-indigo-900/30 text-indigo-900 dark:text-indigo-300 shadow-sm'
                             : subItem.highlight
-                            ? 'text-indigo-700 hover:bg-gradient-to-r hover:from-indigo-50 hover:to-blue-50 border border-indigo-200/50'
-                            : 'text-slate-600 hover:text-slate-900 hover:bg-slate-50'
+                            ? 'text-indigo-700 dark:text-indigo-400 hover:bg-gradient-to-r hover:from-indigo-50 hover:to-blue-50 dark:hover:from-indigo-900/20 dark:hover:to-blue-900/20 border border-indigo-200/50 dark:border-indigo-700/50'
+                            : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-slate-200 hover:bg-slate-50 dark:hover:bg-slate-700/40'
                         )}
                       >
                         {SubIcon && (
@@ -260,37 +260,47 @@ export default function Sidebar({ userEmail, onLogout }: SidebarProps) {
       </nav>
 
       {/* Premium User section - Más compacto */}
-      <div className="border-t border-slate-200/60 p-3 bg-gradient-to-r from-slate-50/50 to-indigo-50/30">
-        <div className="flex items-center mb-3 p-2 rounded-lg bg-white/80 backdrop-blur-sm border border-slate-200/60 shadow-md shadow-slate-900/5">
+      <div className="border-t border-slate-200/60 dark:border-slate-700/60 p-3 bg-gradient-to-r from-slate-50/50 to-indigo-50/30 dark:from-slate-900/50 dark:to-indigo-900/30 transition-all duration-300">
+        <div className="flex items-center mb-3 p-2 rounded-lg bg-white/80 dark:bg-slate-800/80 backdrop-blur-sm border border-slate-200/60 dark:border-slate-700/60 shadow-md shadow-slate-900/5 dark:shadow-black/10 transition-all duration-300">
           <div className="flex-shrink-0">
-            <div className="h-8 w-8 rounded-lg bg-gradient-to-br from-indigo-600 via-blue-600 to-violet-600 flex items-center justify-center shadow-lg shadow-indigo-500/25">
+            <div className="h-8 w-8 rounded-lg bg-gradient-to-br from-indigo-600 via-blue-600 to-violet-600 flex items-center justify-center shadow-lg shadow-indigo-500/25 dark:shadow-indigo-400/30">
               <span className="text-xs font-bold text-white">
                 {userEmail?.charAt(0).toUpperCase() || 'U'}
               </span>
             </div>
           </div>
           <div className="ml-2 flex-1 min-w-0">
-            <p className="text-xs font-bold text-slate-900 truncate">
+            <p className="text-xs font-bold text-slate-900 dark:text-slate-100 truncate transition-colors duration-300">
               {userEmail?.split('@')[0] || 'Usuario'}
             </p>
-            <p className="text-xs text-slate-600 truncate font-medium">
+            <p className="text-xs text-slate-600 dark:text-slate-400 truncate font-medium transition-colors duration-300">
               {userEmail || 'Sin email'}
             </p>
           </div>
         </div>
 
         <div className="space-y-1">
-          <Link href="/dashboard/settings">
-            <Button variant="ghost" className="w-full justify-start text-slate-700 hover:text-indigo-900 hover:bg-white/80 rounded-lg font-semibold transition-all duration-300 hover:shadow-md hover:shadow-slate-900/5" size="sm">
-              <Settings className="mr-2 h-3 w-3" />
-              <span className="text-xs">Configuración</span>
-            </Button>
-          </Link>
+          <div className="flex items-center gap-2 mb-2">
+            <Link href="/dashboard/settings" className="flex-1">
+              <Button variant="ghost" className="w-full justify-start text-slate-700 dark:text-slate-300 hover:text-indigo-900 dark:hover:text-indigo-400 hover:bg-white/80 dark:hover:bg-slate-700/60 rounded-lg font-semibold transition-all duration-300 hover:shadow-md hover:shadow-slate-900/5" size="sm">
+                <Settings className="mr-2 h-3 w-3" />
+                <span className="text-xs">Configuración</span>
+              </Button>
+            </Link>
+          </div>
           <Button
             variant="ghost"
-            className="w-full justify-start text-red-600 hover:text-red-700 hover:bg-red-50/80 rounded-lg font-semibold transition-all duration-300 hover:shadow-md hover:shadow-red-500/10"
+            className="w-full justify-start text-red-600 hover:text-red-700 hover:bg-red-50/80 dark:hover:bg-red-900/20 rounded-lg font-semibold transition-all duration-300 hover:shadow-md hover:shadow-red-500/10"
             size="sm"
-            onClick={onLogout}
+            onClick={(e) => {
+              console.log('🔧 Logout button clicked', e); // Debug log
+              if (onLogout) {
+                console.log('🔧 Calling onLogout function'); // Debug log
+                onLogout();
+              } else {
+                console.error('🔧 onLogout function not provided'); // Debug log
+              }
+            }}
           >
             <LogOut className="mr-2 h-3 w-3" />
             <span className="text-xs">Cerrar sesión</span>

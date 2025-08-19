@@ -1137,13 +1137,13 @@ export default function CalendarPageClient({ userEmail }: CalendarPageClientProp
     };
 
     return (
-        <div className="min-h-screen bg-gradient-to-br from-slate-50 via-gray-50 to-zinc-100 text-slate-900 relative overflow-hidden">
+        <div className={"min-h-screen bg-gradient-to-br from-slate-50 to-blue-50 dark:from-slate-900 dark:to-slate-800"}>
             {/* Premium Silicon Valley Background */}
             <div className="fixed inset-0 z-0">
-                <div className="absolute inset-0 bg-gradient-to-br from-slate-50 via-gray-50 to-zinc-50" />
-                <div className="absolute inset-0 bg-[radial-gradient(circle_at_25%_25%,rgba(99,102,241,0.08),transparent_50%)]" />
-                <div className="absolute inset-0 bg-[radial-gradient(circle_at_75%_75%,rgba(139,92,246,0.06),transparent_50%)]" />
-                <div className="absolute inset-0 bg-grid-slate-900/[0.02] bg-[size:32px_32px]" />
+                <div className={"bg-white dark:bg-slate-900"} />
+                <div className="absolute inset-0 bg-[radial-gradient(circle_at_25%_25%,rgba(99,102,241,0.08),transparent_50%)] dark:bg-[radial-gradient(circle_at_25%_25%,rgba(99,102,241,0.04),transparent_50%)]" />
+                <div className="absolute inset-0 bg-[radial-gradient(circle_at_75%_75%,rgba(139,92,246,0.06),transparent_50%)] dark:bg-[radial-gradient(circle_at_75%_75%,rgba(139,92,246,0.03),transparent_50%)]" />
+                <div className="absolute inset-0 bg-grid-slate-900/[0.02] dark:bg-grid-slate-100/[0.02] bg-[size:32px_32px]" />
             </div>
 
             <div className="relative z-10 flex">
@@ -1152,17 +1152,17 @@ export default function CalendarPageClient({ userEmail }: CalendarPageClientProp
                 <main className="flex-1 ml-56 overflow-auto">
                     <div className="p-4">
                         {/* Header del Calendario */}
-                        <div className="bg-white/95 backdrop-blur-2xl border border-slate-200/60 rounded-xl p-4 shadow-xl shadow-slate-900/5 mb-4">
+                        <div className={"p-4 shadow-xl mb-4 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl shadow-sm"}>
                             <div className="flex items-center justify-between mb-4">
                                 <div className="flex items-center gap-3">
                                     <div className="w-10 h-10 bg-gradient-to-br from-indigo-600 to-violet-600 rounded-xl flex items-center justify-center shadow-lg shadow-indigo-500/25">
                                         <CalendarIcon className="w-5 h-5 text-white" />
                                     </div>
                                     <div>
-                                        <h1 className="text-2xl font-black bg-gradient-to-r from-slate-900 via-indigo-900 to-violet-900 bg-clip-text text-transparent">
+                                        <h1 className="text-2xl font-black bg-gradient-to-r from-slate-900 via-indigo-900 to-violet-900 dark:from-slate-100 dark:via-indigo-200 dark:to-violet-200 bg-clip-text text-transparent">
                                             Calendario Inteligente
                                         </h1>
-                                        <p className="text-slate-600 text-sm">Gestiona tu tiempo como un pro</p>
+                                        <p className={"text-sm text-slate-500 dark:text-slate-500"}>Gestiona tu tiempo como un pro</p>
                                     </div>
                                 </div>
 

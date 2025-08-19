@@ -1,10 +1,12 @@
 'use client';
 
 import Sidebar from '@/components/Sidebar';
+import ThemeToggleHeader from '@/components/ThemeToggleHeader';
 import { Button } from '@/components/ui/Button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/Card';
 import { Input } from '@/components/ui/Input';
 import { createSupabaseClient } from '@/src/lib/supabase-client';
+import { darkModeClasses, presets, combineClasses } from '@/utils/darkMode';
 import {
     Clock,
     Play,
@@ -243,7 +245,7 @@ export default function TimeTrackingClient({ userEmail }: TimeTrackingClientProp
     }, []);
 
     return (
-        <div className={"min-h-screen bg-gradient-to-br from-slate-50 to-blue-50 dark:from-slate-900 dark:to-slate-800"}>
+        <div className="flex h-screen bg-background">
             <Sidebar userEmail={userEmail} onLogout={handleLogout} />
 
             <main className="flex-1 ml-56 overflow-auto">
@@ -253,7 +255,8 @@ export default function TimeTrackingClient({ userEmail }: TimeTrackingClientProp
                         <div>
                             <h1 className="text-3xl font-bold text-gray-900">Seguimiento de Tiempo</h1>
                             <p className="text-gray-600 mt-1">Registra y gestiona tu tiempo de trabajo</p>
-                        </div>
+                        <ThemeToggleHeader />
+                                    </div>
                     </div>
 
                     {/* Timer Principal */}
