@@ -66,7 +66,7 @@ export default function StripeSetupPage() {
             </p>
             
             <div className="bg-slate-900 text-green-400 rounded-lg p-4 font-mono text-sm">
-              <div className="text-slate-400 mb-2">// En app/pricing/page.tsx</div>
+              <div className="text-slate-400 mb-2">{/* En app/pricing/page.tsx */}</div>
               <div>const STRIPE_PRICES = &#123;</div>
               <div className="ml-4">BASIC: 'price_TU_PRICE_ID_BASICO',</div>
               <div className="ml-4">BUSINESS: 'price_TU_PRICE_ID_EMPRESARIAL'</div>
