@@ -4,26 +4,11 @@ import { Moon, Sparkles, Sun } from 'lucide-react';
 import { useState } from 'react';
 
 export default function ThemeToggleHeader() {
-    // Usar try-catch para manejar errores de hydratación
-    let theme = 'light';
-    let toggleTheme = () => { };
-    let mounted = false;
 
-    try {
-        const themeContext = useTheme();
-        theme = themeContext.theme;
-        toggleTheme = themeContext.toggleTheme;
-        mounted = themeContext.mounted;
-    } catch (error) {
-        console.warn('ThemeProvider no disponible, usando modo claro por defecto');
-        return (
-            <div className="px-6 py-3 bg-white/90 backdrop-blur-xl border-2 border-white/70 rounded-2xl shadow-xl flex items-center gap-3">
-                <Sun className="w-6 h-6 text-yellow-500" />
-                <span className="text-sm font-bold text-slate-800">Modo Claro</span>
-                <Sparkles className="w-4 h-4 text-purple-500 opacity-70" />
-            </div>
-        );
-    }
+    const themeContext = useTheme();
+    const theme = themeContext?.theme || 'light';
+    const toggleTheme = themeContext?.toggleTheme || (() => {});
+    const mounted = themeContext?.mounted || false;
 
     const [isAnimating, setIsAnimating] = useState(false);
 
