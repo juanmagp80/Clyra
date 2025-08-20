@@ -12,9 +12,23 @@ import {
 } from 'lucide-react';
 import Link from 'next/link';
 import { notFound } from 'next/navigation';
+import { useState, useEffect } from 'react';
 // import { demoClients, demoProjects } from '../../demo-data';
-const demoClients = [];
-const demoProjects = [];
+interface DemoClient {
+    id: string;
+    name: string;
+    company?: string;
+    email?: string;
+    phone?: string;
+}
+interface DemoProject {
+    id: string;
+    title?: string;
+    description?: string;
+    client_id?: string;
+}
+const demoClients: DemoClient[] = [];
+const demoProjects: DemoProject[] = [];
 
 interface Props {
     params: Promise<{

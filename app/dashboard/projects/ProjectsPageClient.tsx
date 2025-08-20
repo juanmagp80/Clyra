@@ -147,7 +147,7 @@ export default function ProjectsPageClient({ userEmail }: ProjectsPageClientProp
         }
         
         if (hasReachedLimit('projects')) {
-            alert(`Has alcanzado el límite de ${trialInfo?.limits.projects || 5} proyectos en el plan de prueba. Actualiza tu plan para crear más proyectos.`);
+            alert(`Has alcanzado el límite de ${(trialInfo && trialInfo.limits && typeof trialInfo.limits.maxProjects === 'number') ? trialInfo.limits.maxProjects : 5} proyectos en el plan de prueba. Actualiza tu plan para crear más proyectos.`);
             return;
         }
         
@@ -947,7 +947,7 @@ export default function ProjectsPageClient({ userEmail }: ProjectsPageClientProp
                                                             }
                                                             
                                                             if (hasReachedLimit('projects')) {
-                                                                alert(`Has alcanzado el límite de ${trialInfo?.limits.projects || 5} proyectos en el plan de prueba. Actualiza tu plan para crear más proyectos.`);
+                                                                 alert(`Has alcanzado el límite de ${(trialInfo && trialInfo.limits && typeof trialInfo.limits.maxProjects === 'number') ? trialInfo.limits.maxProjects : 5} proyectos en el plan de prueba. Actualiza tu plan para crear más proyectos.`);
                                                                 return;
                                                             }
                                                             

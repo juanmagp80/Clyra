@@ -16,10 +16,36 @@ import {
 } from 'lucide-react';
 import Link from 'next/link';
 import { notFound } from 'next/navigation';
+import { useState, useEffect } from 'react';
 // import { demoClients, demoInvoices, demoProjects, demoUser } from '../../demo-data';
-const demoClients = [];
-const demoInvoices = [];
-const demoProjects = [];
+interface DemoClient {
+    id: string;
+    name: string;
+    company?: string;
+    email?: string;
+    phone?: string;
+}
+interface DemoInvoice {
+    id: string;
+    title?: string;
+    client_id?: string;
+    project_id?: string;
+    issue_date?: string;
+    due_date?: string;
+    paid_date?: string;
+    status?: string;
+    amount?: number;
+    tax_rate?: number;
+    tax_amount?: number;
+    total_amount?: number;
+}
+interface DemoProject {
+    id: string;
+    title?: string;
+}
+const demoClients: DemoClient[] = [];
+const demoInvoices: DemoInvoice[] = [];
+const demoProjects: DemoProject[] = [];
 const demoUser = { company: 'Demo Company', name: 'Demo User', email: 'demo@demo.com' };
 
 interface Props {
