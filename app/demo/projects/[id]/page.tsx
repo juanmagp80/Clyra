@@ -22,11 +22,12 @@ interface Props {
     }>;
 }
 
-export default async function DemoProjectDetailsPage({ params }: Props) {
+export default function DemoProjectDetailsPage({ params }: Props) {
     const [project, setProject] = useState<any>(null);
     const [client, setClient] = useState<any>(null);
     useEffect(() => {
-        params.then(({ id }) => {
+        (async () => {
+            const { id } = await params;
             const proj = demoProjects.find(p => p.id === id);
             if (!proj) {
                 notFound();
@@ -34,7 +35,7 @@ export default async function DemoProjectDetailsPage({ params }: Props) {
             }
             setProject(proj);
             setClient(demoClients.find(c => c.id === proj.client_id));
-        });
+        })();
     }, [params]);
 
     const formatDate = (dateString: string) => {

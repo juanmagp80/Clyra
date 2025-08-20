@@ -12,12 +12,14 @@ export default function ThemeToggleHeader() {
     try {
         themeContext = useTheme();
     } catch (error) {
-        console.warn('ThemeProvider no disponible, usando modo claro por defecto');
+        themeContext = null;
     }
     if (themeContext) {
         theme = themeContext.theme;
         toggleTheme = themeContext.toggleTheme;
         mounted = themeContext.mounted;
+    } else {
+        mounted = true;
     }
 
     const handleToggle = () => {

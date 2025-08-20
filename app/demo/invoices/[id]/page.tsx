@@ -28,12 +28,13 @@ interface Props {
     }>;
 }
 
-export default async function DemoInvoiceDetailsPage({ params }: Props) {
+export default function DemoInvoiceDetailsPage({ params }: Props) {
     const [invoice, setInvoice] = useState<any>(null);
     const [client, setClient] = useState<any>(null);
     const [project, setProject] = useState<any>(null);
     useEffect(() => {
-        params.then(({ id }) => {
+        (async () => {
+            const { id } = await params;
             const inv = demoInvoices.find(inv => inv.id === id);
             if (!inv) {
                 notFound();
@@ -42,7 +43,7 @@ export default async function DemoInvoiceDetailsPage({ params }: Props) {
             setInvoice(inv);
             setClient(demoClients.find(c => c.id === inv.client_id));
             setProject(demoProjects.find(p => p.id === inv.project_id));
-        });
+        })();
     }, [params]);
 
     const formatDate = (dateString: string) => {
