@@ -1,5 +1,8 @@
 'use client'
 import { getBaseUrl } from '@/lib/url';
+import Link from 'next/link';
+import { Input } from '@/components/ui/Input';
+import { UserPlus, Sparkles, ArrowRight, Github, Chrome, Users, TrendingUp } from 'lucide-react';
 import { createSupabaseClient } from '@/src/lib/supabase-client';
 import {
     AlertCircle,
@@ -273,7 +276,7 @@ export default function RegisterPage() {
 
                                         {/* Email */}
                                         <div className="group">
-                                            <label className="block text-sm font-semibold text-white/90 mb-3 flex items-center">
+                                            <label className="flex text-sm font-semibold text-white/90 mb-3 items-center">
                                                 <Mail size={16} className="mr-2 text-purple-400" />
                                                 Email *
                                             </label>

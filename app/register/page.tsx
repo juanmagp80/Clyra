@@ -14,6 +14,9 @@ import {
     Globe,
     MapPin
 } from 'lucide-react';
+import Link from 'next/link';
+import { Input } from '@/components/ui/Input';
+import { UserPlus, Sparkles, ArrowRight, Github, Chrome, Users, TrendingUp } from 'lucide-react';
 import { useRouter } from 'next/navigation';
 import { useState, useCallback } from 'react';
 
