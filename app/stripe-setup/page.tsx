@@ -22,22 +22,7 @@ export default function StripeSetupPage() {
     <div className="min-h-screen bg-gradient-to-br from-blue-50 via-indigo-50 to-purple-50">
       <div className="container mx-auto px-6 py-12">
         <div className="max-w-4xl mx-auto">
-          <div className="text-center mb-12">
-            <h1 className="text-4xl font-black text-slate-900 mb-4">
-              🧪 Configurar Stripe de Prueba
-            </h1>
-            <p className="text-xl text-slate-600">
-              Configura pagos de prueba <strong>100% GRATIS</strong> - Sin gastar dinero real
-            </p>
-          </div>
-
           {/* Paso 1: Estado actual */}
-          <div className="bg-green-50 border border-green-200 rounded-2xl p-6 mb-8">
-            <h2 className="text-2xl font-bold text-green-800 mb-4">✅ Paso 1: Claves Configuradas</h2>
-            <p className="text-green-700">
-              ¡Perfecto! Ya tienes las claves de Stripe en modo de prueba configuradas en tu `.env.local`
-            </p>
-          </div>
 
           {/* Paso 2: Crear productos */}
           <div className="bg-white/60 backdrop-blur-2xl border border-white/60 rounded-2xl p-6 mb-8">

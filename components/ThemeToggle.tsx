@@ -4,26 +4,21 @@ import { Moon, Sun } from 'lucide-react';
 import { useState } from 'react';
 
 export default function ThemeToggle() {
-    // Usar try-catch para manejar errores de hydratación
+    const [isAnimating, setIsAnimating] = useState(false);
     let theme = 'light';
     let toggleTheme = () => { };
     let mounted = false;
-
+    let themeContext: any = null;
     try {
-        const themeContext = useTheme();
+        themeContext = useTheme();
+    } catch (error) {
+        console.warn('ThemeProvider no disponible, usando modo claro por defecto');
+    }
+    if (themeContext) {
         theme = themeContext.theme;
         toggleTheme = themeContext.toggleTheme;
         mounted = themeContext.mounted;
-    } catch (error) {
-        console.warn('ThemeProvider no disponible, usando modo claro por defecto');
-        return (
-            <div className="p-3 bg-white/80 backdrop-blur-xl border-2 border-white/60 rounded-2xl shadow-xl w-12 h-12 flex items-center justify-center">
-                <Sun className="w-6 h-6 text-yellow-500" />
-            </div>
-        );
     }
-
-    const [isAnimating, setIsAnimating] = useState(false);
 
     const handleToggle = () => {
         setIsAnimating(true);
