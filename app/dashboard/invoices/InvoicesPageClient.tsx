@@ -2,6 +2,7 @@
 import { createSupabaseClient } from '@/src/lib/supabase-client';
 import {
     AlertCircle,
+    AlertTriangle,
     CheckCircle,
     Clock,
     DollarSign,
@@ -18,6 +19,8 @@ import {
 import { useRouter } from 'next/navigation';
 import { useEffect, useState } from 'react';
 import SideBar from '../../../components/Sidebar';
+import TrialBanner from '../../../components/TrialBanner';
+import { useTrialStatus } from '../../../src/lib/useTrialStatus';
 
 interface ClientsPageClientProps {
     userEmail: string;
@@ -44,6 +47,10 @@ interface Invoice {
 }
 
 export default function InvoicesPageClient({ userEmail }: ClientsPageClientProps) {
+    // Hook de trial status
+    const { trialInfo, loading: trialLoading, hasReachedLimit, canUseFeatures } = useTrialStatus(userEmail);
+    
+    // Estados
     const [invoices, setInvoices] = useState<Invoice[]>([]);
     const [loading, setLoading] = useState(true);
     const [searchTerm, setSearchTerm] = useState('');
@@ -85,6 +92,16 @@ export default function InvoicesPageClient({ userEmail }: ClientsPageClientProps
         } finally {
             setLoading(false);
         }
+    };
+
+    // Función para manejar la creación de nueva factura
+    const handleNewInvoiceClick = () => {
+        if (!canUseFeatures) {
+            alert('Tu periodo de prueba ha expirado. Actualiza tu plan para continuar creando facturas.');
+            return;
+        }
+        
+        router.push('/dashboard/invoices/new');
     };
 
     const updateInvoiceStatus = async (id: string, status: string) => {
@@ -194,6 +211,11 @@ export default function InvoicesPageClient({ userEmail }: ClientsPageClientProps
                 <div className="h-full overflow-y-auto">
                     <div className={"min-h-screen bg-gradient-to-br from-slate-50 to-blue-50 dark:from-slate-900 dark:to-slate-800"}>
                         <div className="container mx-auto px-6 py-8">
+                            {/* Trial Banner */}
+                            <div className="mb-8">
+                                <TrialBanner />
+                            </div>
+
                             {/* Header Premium */}
                             <div className="mb-8">
                                 <div className="bg-white/40 backdrop-blur-2xl rounded-3xl border border-white/60 shadow-2xl shadow-indigo-500/10 p-8">
@@ -212,11 +234,20 @@ export default function InvoicesPageClient({ userEmail }: ClientsPageClientProps
                                             </p>
                                         </div>
                                         <button
-                                            onClick={() => router.push('/dashboard/invoices/new')}
-                                            className="group relative px-8 py-4 bg-gradient-to-r from-blue-600 to-indigo-600 text-white rounded-2xl font-semibold shadow-2xl shadow-blue-500/25 hover:shadow-blue-500/40 hover:scale-105 transform transition-all duration-200 flex items-center gap-3"
+                                            onClick={handleNewInvoiceClick}
+                                            disabled={!canUseFeatures}
+                                            className={`group relative px-8 py-4 bg-gradient-to-r from-blue-600 to-indigo-600 text-white rounded-2xl font-semibold shadow-2xl shadow-blue-500/25 hover:shadow-blue-500/40 hover:scale-105 transform transition-all duration-200 flex items-center gap-3 ${
+                                                !canUseFeatures 
+                                                    ? 'opacity-50 cursor-not-allowed !bg-gray-400 hover:!bg-gray-400 !shadow-gray-400/25 hover:!shadow-gray-400/25 hover:!scale-100' 
+                                                    : ''
+                                            }`}
                                         >
-                                            <Plus className="w-5 h-5 group-hover:rotate-90 transition-transform duration-200" />
-                                            Nueva Factura
+                                            {!canUseFeatures ? (
+                                                <AlertTriangle className="w-5 h-5" />
+                                            ) : (
+                                                <Plus className="w-5 h-5 group-hover:rotate-90 transition-transform duration-200" />
+                                            )}
+                                            {!canUseFeatures ? 'Trial Expirado' : 'Nueva Factura'}
                                         </button>
                                     </div>
                                 </div>

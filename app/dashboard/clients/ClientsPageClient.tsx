@@ -1,9 +1,12 @@
 'use client';
 
 import Sidebar from '@/components/Sidebar';
+import TrialBanner from '@/components/TrialBanner';
 import { createSupabaseClient } from '@/src/lib/supabase-client';
+import { useTrialStatus } from '@/src/lib/useTrialStatus';
 import { SPANISH_PROVINCES, getCitiesByProvince, getProvinceNames } from '@/src/data/spanish-locations';
 import {
+    AlertTriangle,
     Building,
     Calendar,
     Edit3,
@@ -49,6 +52,7 @@ interface ClientsPageClientProps {
 export default function ClientsPageClient({ userEmail }: ClientsPageClientProps) {
     const supabase = createSupabaseClient();
     const router = useRouter();
+    const { trialInfo, loading: trialLoading, hasReachedLimit, canUseFeatures } = useTrialStatus(userEmail);
     const [clients, setClients] = useState<Client[]>([]);
     const [loading, setLoading] = useState(true);
     const [searchTerm, setSearchTerm] = useState('');
@@ -186,6 +190,17 @@ export default function ClientsPageClient({ userEmail }: ClientsPageClientProps)
 
     const addClient = async () => {
         try {
+            // VALIDACIÓN DE TRIAL: Verificar si puede crear clientes
+            if (!canUseFeatures) {
+                alert('❌ Tu trial ha expirado. Actualiza tu suscripción para continuar creando clientes.');
+                return;
+            }
+
+            if (hasReachedLimit('clients')) {
+                alert(`❌ Has alcanzado el límite de clientes de tu plan (${trialInfo?.limits.maxClients}). Actualiza tu suscripción para crear más clientes.`);
+                return;
+            }
+
             // Validar campos obligatorios
             if (!formData.name.trim() || !formData.nif.trim() || !formData.city.trim() || !formData.province.trim() || !supabase) {
                 alert('Por favor, complete todos los campos obligatorios: Nombre, NIF/CIF, Ciudad y Provincia');
@@ -413,6 +428,21 @@ export default function ClientsPageClient({ userEmail }: ClientsPageClientProps)
         }
     };
 
+    // Función para manejar la creación de nuevo cliente con validaciones de trial
+    const handleNewClientClick = () => {
+        if (!canUseFeatures) {
+            alert('❌ Tu trial ha expirado. Actualiza tu suscripción para continuar creando clientes.');
+            return;
+        }
+
+        if (hasReachedLimit('clients')) {
+            alert(`❌ Has alcanzado el límite de clientes de tu plan (${trialInfo?.limits.maxClients}). Actualiza tu suscripción para crear más clientes.`);
+            return;
+        }
+
+        setShowForm(true);
+    };
+
     // Función de búsqueda inteligente mejorada
     const filteredClients = clients.filter(client => {
         if (!searchTerm.trim()) return true;
@@ -446,6 +476,9 @@ export default function ClientsPageClient({ userEmail }: ClientsPageClientProps)
 
     return (
         <div className={"min-h-screen bg-gradient-to-br from-slate-50/80 via-blue-50/40 to-indigo-50/60 dark:from-slate-900 dark:to-slate-800"}>
+            {/* Trial Banner */}
+            <TrialBanner userEmail={userEmail} />
+            
             {/* Elementos decorativos de fondo mejorados */}
             <div className="absolute inset-0 overflow-hidden pointer-events-none">
                 <div className="absolute top-0 left-0 w-96 h-96 bg-gradient-to-br from-blue-500/4 via-purple-500/4 to-indigo-500/4 dark:from-blue-400/3 dark:via-purple-400/3 dark:to-indigo-400/3 rounded-full blur-3xl animate-pulse"></div>
@@ -488,13 +521,28 @@ export default function ClientsPageClient({ userEmail }: ClientsPageClientProps)
                                             </p>
                                         </div>
                                         <button
-                                            onClick={() => setShowForm(!showForm)}
-                                            className="group/btn relative px-8 py-4 bg-gradient-to-r from-blue-600 via-indigo-600 to-purple-600 text-white rounded-2xl font-bold shadow-2xl shadow-blue-500/25 hover:shadow-blue-500/40 hover:scale-110 hover:rotate-1 transform transition-all duration-300 flex items-center gap-3 overflow-hidden"
+                                            onClick={handleNewClientClick}
+                                            disabled={!canUseFeatures || hasReachedLimit('clients')}
+                                            className={`group/btn relative px-8 py-4 rounded-2xl font-bold shadow-2xl transform transition-all duration-300 flex items-center gap-3 overflow-hidden ${
+                                                !canUseFeatures || hasReachedLimit('clients')
+                                                    ? 'bg-gray-400 cursor-not-allowed opacity-50'
+                                                    : 'bg-gradient-to-r from-blue-600 via-indigo-600 to-purple-600 text-white shadow-blue-500/25 hover:shadow-blue-500/40 hover:scale-110 hover:rotate-1'
+                                            }`}
                                         >
-                                            <div className="absolute inset-0 bg-gradient-to-r from-purple-600 via-blue-600 to-indigo-600 opacity-0 group-hover/btn:opacity-100 transition-opacity duration-300"></div>
-                                            <Plus className="w-5 h-5 group-hover/btn:rotate-180 transition-transform duration-300 relative z-10" />
-                                            <span className="relative z-10">Nuevo Cliente</span>
-                                            <div className="absolute -top-2 -right-2 w-4 h-4 bg-yellow-400 rounded-full animate-ping"></div>
+                                            {!canUseFeatures || hasReachedLimit('clients') ? (
+                                                <>
+                                                    <div className="absolute inset-0 bg-gray-400"></div>
+                                                    <X className="w-5 h-5 relative z-10 text-white" />
+                                                    <span className="relative z-10 text-white">Trial Expirado</span>
+                                                </>
+                                            ) : (
+                                                <>
+                                                    <div className="absolute inset-0 bg-gradient-to-r from-purple-600 via-blue-600 to-indigo-600 opacity-0 group-hover/btn:opacity-100 transition-opacity duration-300"></div>
+                                                    <Plus className="w-5 h-5 group-hover/btn:rotate-180 transition-transform duration-300 relative z-10" />
+                                                    <span className="relative z-10">Nuevo Cliente</span>
+                                                    <div className="absolute -top-2 -right-2 w-4 h-4 bg-yellow-400 rounded-full animate-ping"></div>
+                                                </>
+                                            )}
                                         </button>
                                     </div>
                                 </div>
@@ -688,19 +736,40 @@ export default function ClientsPageClient({ userEmail }: ClientsPageClientProps)
                                     {/* Botón Nuevo Cliente Premium */}
                                     <div className="flex justify-center">
                                         <button
-                                            onClick={() => setShowForm(true)}
-                                            className="group px-10 py-5 bg-gradient-to-r from-blue-600 via-indigo-600 to-purple-600 hover:from-blue-700 hover:via-indigo-700 hover:to-purple-700 text-white font-black rounded-3xl shadow-2xl shadow-blue-500/30 hover:shadow-blue-500/50 hover:scale-110 hover:-translate-y-2 transition-all duration-500 flex items-center gap-4 text-lg relative overflow-hidden"
+                                            onClick={handleNewClientClick}
+                                            disabled={!canUseFeatures || hasReachedLimit('clients')}
+                                            className={`group px-10 py-5 font-black rounded-3xl shadow-2xl transition-all duration-500 flex items-center gap-4 text-lg relative overflow-hidden ${
+                                                !canUseFeatures || hasReachedLimit('clients')
+                                                    ? 'bg-gray-400 cursor-not-allowed opacity-50 text-white'
+                                                    : 'bg-gradient-to-r from-blue-600 via-indigo-600 to-purple-600 hover:from-blue-700 hover:via-indigo-700 hover:to-purple-700 text-white shadow-blue-500/30 hover:shadow-blue-500/50 hover:scale-110 hover:-translate-y-2'
+                                            }`}
                                         >
-                                            {/* Efecto de brillo en hover */}
-                                            <div className="absolute inset-0 bg-gradient-to-r from-white/0 via-white/20 to-white/0 -translate-x-full group-hover:translate-x-full transition-transform duration-1000"></div>
-                                            
-                                            <div className="relative z-10 flex items-center gap-4">
-                                                <div className="p-2 bg-white/20 rounded-2xl group-hover:scale-125 group-hover:rotate-180 transition-all duration-500">
-                                                    <Plus className="w-6 h-6" />
-                                                </div>
-                                                <span>Crear Nuevo Cliente</span>
-                                                <UserPlus className="w-5 h-5 group-hover:rotate-45 group-hover:scale-125 transition-all duration-500" />
-                                            </div>
+                                            {!canUseFeatures || hasReachedLimit('clients') ? (
+                                                <>
+                                                    {/* Estado bloqueado */}
+                                                    <div className="relative z-10 flex items-center gap-4">
+                                                        <div className="p-2 bg-white/20 rounded-2xl">
+                                                            <X className="w-6 h-6" />
+                                                        </div>
+                                                        <span>{!canUseFeatures ? 'Trial Expirado' : 'Límite Alcanzado'}</span>
+                                                        <AlertTriangle className="w-5 h-5" />
+                                                    </div>
+                                                </>
+                                            ) : (
+                                                <>
+                                                    {/* Estado normal */}
+                                                    {/* Efecto de brillo en hover */}
+                                                    <div className="absolute inset-0 bg-gradient-to-r from-white/0 via-white/20 to-white/0 -translate-x-full group-hover:translate-x-full transition-transform duration-1000"></div>
+                                                    
+                                                    <div className="relative z-10 flex items-center gap-4">
+                                                        <div className="p-2 bg-white/20 rounded-2xl group-hover:scale-125 group-hover:rotate-180 transition-all duration-500">
+                                                            <Plus className="w-6 h-6" />
+                                                        </div>
+                                                        <span>Crear Nuevo Cliente</span>
+                                                        <UserPlus className="w-5 h-5 group-hover:rotate-45 group-hover:scale-125 transition-all duration-500" />
+                                                    </div>
+                                                </>
+                                            )}
                                         </button>
                                     </div>
                                 </div>
@@ -1216,24 +1285,54 @@ export default function ClientsPageClient({ userEmail }: ClientsPageClientProps)
                                                                     
                                                                     <button
                                                                         onClick={() => {
-                                                                            setShowForm(true);
+                                                                            handleNewClientClick();
                                                                             setSearchTerm('');
                                                                         }}
-                                                                        className="group px-8 py-4 bg-gradient-to-r from-blue-600 via-indigo-600 to-purple-600 hover:from-blue-700 hover:via-indigo-700 hover:to-purple-700 text-white font-bold rounded-2xl shadow-2xl shadow-blue-500/30 hover:shadow-blue-500/50 hover:scale-105 hover:-translate-y-1 transition-all duration-300 flex items-center gap-3"
+                                                                        disabled={!canUseFeatures || hasReachedLimit('clients')}
+                                                                        className={`group px-8 py-4 font-bold rounded-2xl shadow-2xl transition-all duration-300 flex items-center gap-3 ${
+                                                                            !canUseFeatures || hasReachedLimit('clients')
+                                                                                ? 'bg-gray-400 cursor-not-allowed opacity-50 text-white'
+                                                                                : 'bg-gradient-to-r from-blue-600 via-indigo-600 to-purple-600 hover:from-blue-700 hover:via-indigo-700 hover:to-purple-700 text-white shadow-blue-500/30 hover:shadow-blue-500/50 hover:scale-105 hover:-translate-y-1'
+                                                                        }`}
                                                                     >
-                                                                        <UserPlus className="w-5 h-5 group-hover:scale-125 transition-transform duration-300" />
-                                                                        Crear cliente nuevo
-                                                                        <Sparkles className="w-4 h-4 group-hover:rotate-45 transition-transform duration-300" />
+                                                                        {!canUseFeatures || hasReachedLimit('clients') ? (
+                                                                            <>
+                                                                                <X className="w-5 h-5" />
+                                                                                <span>{!canUseFeatures ? 'Trial Expirado' : 'Límite Alcanzado'}</span>
+                                                                                <AlertTriangle className="w-4 h-4" />
+                                                                            </>
+                                                                        ) : (
+                                                                            <>
+                                                                                <UserPlus className="w-5 h-5 group-hover:scale-125 transition-transform duration-300" />
+                                                                                Crear cliente nuevo
+                                                                                <Sparkles className="w-4 h-4 group-hover:rotate-45 transition-transform duration-300" />
+                                                                            </>
+                                                                        )}
                                                                     </button>
                                                                 </>
                                                             ) : (
                                                                 <button
-                                                                    onClick={() => setShowForm(true)}
-                                                                    className="group px-10 py-5 bg-gradient-to-r from-blue-600 via-indigo-600 to-purple-600 hover:from-blue-700 hover:via-indigo-700 hover:to-purple-700 text-white font-bold rounded-2xl shadow-2xl shadow-blue-500/30 hover:shadow-blue-500/50 hover:scale-110 hover:-translate-y-2 transition-all duration-300 flex items-center gap-4 text-lg"
+                                                                    onClick={handleNewClientClick}
+                                                                    disabled={!canUseFeatures || hasReachedLimit('clients')}
+                                                                    className={`group px-10 py-5 font-bold rounded-2xl shadow-2xl transition-all duration-300 flex items-center gap-4 text-lg ${
+                                                                        !canUseFeatures || hasReachedLimit('clients')
+                                                                            ? 'bg-gray-400 cursor-not-allowed opacity-50 text-white'
+                                                                            : 'bg-gradient-to-r from-blue-600 via-indigo-600 to-purple-600 hover:from-blue-700 hover:via-indigo-700 hover:to-purple-700 text-white shadow-blue-500/30 hover:shadow-blue-500/50 hover:scale-110 hover:-translate-y-2'
+                                                                    }`}
                                                                 >
-                                                                    <UserPlus className="w-6 h-6 group-hover:scale-125 transition-transform duration-300" />
-                                                                    Crear tu primer cliente
-                                                                    <Sparkles className="w-5 h-5 group-hover:rotate-45 transition-transform duration-300" />
+                                                                    {!canUseFeatures || hasReachedLimit('clients') ? (
+                                                                        <>
+                                                                            <X className="w-6 h-6" />
+                                                                            <span>{!canUseFeatures ? 'Trial Expirado' : 'Límite Alcanzado'}</span>
+                                                                            <AlertTriangle className="w-5 h-5" />
+                                                                        </>
+                                                                    ) : (
+                                                                        <>
+                                                                            <UserPlus className="w-6 h-6 group-hover:scale-125 transition-transform duration-300" />
+                                                                            Crear tu primer cliente
+                                                                            <Sparkles className="w-5 h-5 group-hover:rotate-45 transition-transform duration-300" />
+                                                                        </>
+                                                                    )}
                                                                 </button>
                                                             )}
                                                         </div>

@@ -6,6 +6,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Input } from '@/components/ui/Input';
 import { createSupabaseClient } from '@/src/lib/supabase';
 import {
+    AlertTriangle,
     Building2,
     CheckCircle,
     Clock,
@@ -20,6 +21,8 @@ import {
 } from 'lucide-react';
 import { useRouter } from 'next/navigation';
 import { useEffect, useState } from 'react';
+import TrialBanner from '../../../components/TrialBanner';
+import { useTrialStatus } from '../../../src/lib/useTrialStatus';
 
 interface Client {
     id: string;
@@ -58,6 +61,9 @@ interface ClientCommunicationsProps {
 export default function ClientCommunications({ userEmail }: ClientCommunicationsProps) {
     const supabase = createSupabaseClient();
     const router = useRouter();
+
+    // Hook de trial status
+    const { trialInfo, loading: trialLoading, hasReachedLimit, canUseFeatures } = useTrialStatus(userEmail);
 
     // Estados principales
     const [clients, setClients] = useState<Client[]>([]);
@@ -393,6 +399,11 @@ export default function ClientCommunications({ userEmail }: ClientCommunications
 
                 <main className="flex-1 ml-56 overflow-auto">
                     <div className="p-4">
+                        {/* Trial Banner */}
+                        <div className="mb-4">
+                            <TrialBanner />
+                        </div>
+
                         {/* Header */}
                         <div className="bg-white/95 backdrop-blur-2xl border border-slate-200/60 rounded-xl p-4 shadow-xl shadow-slate-900/5 mb-4">
                             <div className="flex items-center justify-between">

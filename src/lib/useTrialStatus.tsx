@@ -52,7 +52,7 @@ export function useTrialStatus(userEmail?: string) {
                 return;
             }
 
-            // Obtener datos del perfil
+            // Obtener datos del perfil y suscripción
             const { data: profile, error: profileError } = await supabase
                 .from('profiles')
                 .select(`
@@ -64,6 +64,25 @@ export function useTrialStatus(userEmail?: string) {
                 `)
                 .eq('id', user.id)
                 .single();
+
+            if (profileError) {
+                console.error('Error obteniendo perfil:', profileError);
+                setError('Error al verificar estado de suscripción');
+                return;
+            }
+
+            // Verificar suscripción de Stripe
+            const { data: subscription, error: subError } = await supabase
+                .from('subscriptions')
+                .select('*')
+                .eq('user_id', user.id)
+                .eq('status', 'active')
+                .single();
+
+            // Si tiene suscripción activa en Stripe, activar características
+            const hasActiveSubscription = subscription && !subError && 
+                subscription.status === 'active' && 
+                new Date(subscription.current_period_end) > new Date();
 
             if (profileError) {
                 console.error('Error obteniendo perfil:', profileError);
@@ -98,7 +117,9 @@ export function useTrialStatus(userEmail?: string) {
             const daysRemaining = trialEnd ? Math.max(0, Math.ceil((trialEnd.getTime() - now.getTime()) / (1000 * 60 * 60 * 24))) : 0;
             
             const isExpired = profile?.subscription_status === 'trial' && daysRemaining <= 0;
-            const canUseFeatures = !isExpired && (profile?.subscription_status === 'active' || profile?.subscription_status === 'trial');
+            
+            // Actualizar lógica: permitir uso si tiene suscripción activa de Stripe O si el trial no ha expirado
+            const canUseFeatures = hasActiveSubscription || (!isExpired && (profile?.subscription_status === 'active' || profile?.subscription_status === 'trial'));
 
             const trialInfo: TrialInfo = {
                 status: (profile?.subscription_status as SubscriptionStatus) || 'trial',
@@ -163,7 +184,7 @@ export function useTrialStatus(userEmail?: string) {
     };
 
     const redirectToUpgrade = () => {
-        router.push('/dashboard/upgrade');
+        router.push('/subscription');
     };
 
     const hasReachedLimit = (type: 'clients' | 'projects' | 'storage' | 'emails'): boolean => {
