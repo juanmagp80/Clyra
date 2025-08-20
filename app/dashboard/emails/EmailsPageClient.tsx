@@ -233,7 +233,8 @@ export default function EmailsPageClient({ userEmail }: EmailsPageClientProps) {
         }
         
         if (hasReachedLimit('emails')) {
-            alert(`Has alcanzado el límite de ${trialInfo?.limits.emails || 100} emails mensuales en el plan de prueba. Actualiza tu plan para enviar más emails.`);
+            const emailLimit = trialInfo?.limits.emails ?? 100;
+            alert(`Has alcanzado el límite de ${emailLimit} emails mensuales en el plan de prueba. Actualiza tu plan para enviar más emails.`);
             return;
         }
         
