@@ -5,22 +5,10 @@ import { useState } from 'react';
 
 export default function ThemeToggleHeader() {
     const [isAnimating, setIsAnimating] = useState(false);
-    let theme = 'light';
-    let toggleTheme = () => { };
-    let mounted = false;
-    let themeContext: any = null;
-    try {
-        themeContext = useTheme();
-    } catch (error) {
-        themeContext = null;
-    }
-    if (themeContext) {
-        theme = themeContext.theme;
-        toggleTheme = themeContext.toggleTheme;
-        mounted = themeContext.mounted;
-    } else {
-        mounted = true;
-    }
+    const themeContext = useTheme();
+    let theme = themeContext?.theme || 'light';
+    let toggleTheme = themeContext?.toggleTheme || (() => {});
+    let mounted = themeContext?.mounted ?? true;
 
     const handleToggle = () => {
         setIsAnimating(true);
