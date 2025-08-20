@@ -20,7 +20,8 @@ import {
 } from 'lucide-react';
 import Link from 'next/link';
 import { useEffect, useState } from 'react';
-import { demoStats } from './demo-data';
+// import { demoStats } from './demo-data';
+const demoStats = { totalClients: 0, activeProjects: 0, totalRevenue: 0, hoursThisMonth: 0 };
 
 export default function DemoPage() {
     const [showTour, setShowTour] = useState(true);

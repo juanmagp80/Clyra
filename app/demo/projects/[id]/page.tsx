@@ -12,7 +12,9 @@ import {
 } from 'lucide-react';
 import Link from 'next/link';
 import { notFound } from 'next/navigation';
-import { demoClients, demoProjects } from '../../demo-data';
+// import { demoClients, demoProjects } from '../../demo-data';
+const demoClients = [];
+const demoProjects = [];
 
 interface Props {
     params: Promise<{

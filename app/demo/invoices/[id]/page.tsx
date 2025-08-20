@@ -16,7 +16,11 @@ import {
 } from 'lucide-react';
 import Link from 'next/link';
 import { notFound } from 'next/navigation';
-import { demoClients, demoInvoices, demoProjects, demoUser } from '../../demo-data';
+// import { demoClients, demoInvoices, demoProjects, demoUser } from '../../demo-data';
+const demoClients = [];
+const demoInvoices = [];
+const demoProjects = [];
+const demoUser = { company: 'Demo Company', name: 'Demo User', email: 'demo@demo.com' };
 
 interface Props {
     params: Promise<{
