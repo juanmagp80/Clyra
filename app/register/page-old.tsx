@@ -1,5 +1,8 @@
 'use client'
 import { Button } from '@/components/ui/Button';
+import Link from 'next/link';
+import { Input } from '@/components/ui/Input';
+import { UserPlus, Sparkles, ArrowRight, Github, Chrome, Users, TrendingUp } from 'lucide-react';
 import { createSupabaseClient } from '@/src/lib/supabase-client';
 import { getBaseUrl } from '@/lib/url';
 import { 
