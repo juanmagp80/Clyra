@@ -1,22 +1,24 @@
-'use client';
+"use client";
 import { Button } from '@/components/ui/Button';
 import { Input } from '@/components/ui/Input';
 import { getBaseUrl } from '@/lib/url';
 import { createSupabaseClient } from '@/src/lib/supabase-client';
-import { ArrowRight, Chrome, Eye, EyeOff, Github, Lock, Mail, Sparkles, TrendingUp } from 'lucide-react';
+import { ArrowRight, Chrome, Eye, EyeOff, Github, Lock, Mail, Sparkles, TrendingUp, X, CheckCircle, AlertCircle } from 'lucide-react';
 import Link from 'next/link';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { Suspense, useEffect, useState } from 'react';
 
 // Componente interno que usa useSearchParams
 function LoginPageContent() {
-    const [email, setEmail] = useState('');
-    const [password, setPassword] = useState('');
+    const [email, setEmail] = useState("");
+    const [password, setPassword] = useState("");
     const [showPassword, setShowPassword] = useState(false);
     const [loading, setLoading] = useState(false);
-    const [error, setError] = useState('');
+    const [error, setError] = useState("");
     const [resendLoading, setResendLoading] = useState(false);
     const [resendSuccess, setResendSuccess] = useState(false);
+    // Popup espectacular
+    const [popup, setPopup] = useState({ show: false, type: "success", message: "" });
     const router = useRouter();
     const searchParams = useSearchParams();
 
@@ -116,51 +118,44 @@ function LoginPageContent() {
         setResendLoading(false);
     };
 
-    // ✅ Función de login
+    // Función de login con popup espectacular
     const login = async (e?: React.FormEvent<HTMLFormElement>) => {
         if (e) {
             e.preventDefault();
             e.stopPropagation();
         }
-
         if (!supabase) {
-            setError('Para usar autenticación, configura Supabase en las variables de entorno.');
+            setPopup({ show: true, type: "error", message: "Para usar autenticación, configura Supabase en las variables de entorno." });
             return;
         }
-
         if (!email || !password) {
-            setError('Por favor ingresa email y contraseña');
+            setPopup({ show: true, type: "error", message: "Por favor ingresa email y contraseña" });
             return;
         }
-
-        setError('');
+        setError("");
         setLoading(true);
-
         try {
-            const { data, error } = await supabase.auth.signInWithPassword({
-                email,
-                password
-            });
-
+            const { data, error } = await supabase.auth.signInWithPassword({ email, password });
             if (error) {
-                if (error.message.includes('Email not confirmed') ||
-                    error.message.includes('email_not_confirmed') ||
-                    error.message.includes('not confirmed')) {
-                    setError('Por favor confirma tu email antes de iniciar sesión. Revisa tu bandeja de entrada y spam.');
-                } else if (error.message.includes('Invalid login credentials')) {
-                    setError('Email o contraseña incorrectos. Verifica tus datos.');
+                if (error.message.includes("Email not confirmed") || error.message.includes("email_not_confirmed") || error.message.includes("not confirmed")) {
+                    setPopup({ show: true, type: "error", message: "Por favor confirma tu email antes de iniciar sesión. Revisa tu bandeja de entrada y spam." });
+                } else if (error.message.includes("Invalid login credentials")) {
+                    setPopup({ show: true, type: "error", message: "Email o contraseña incorrectos. Verifica tus datos." });
                 } else {
-                    setError(error.message);
+                    setPopup({ show: true, type: "error", message: error.message });
                 }
             } else if (data.session) {
-                router.push('/dashboard');
+                setPopup({ show: true, type: "success", message: "¡Login exitoso! Redirigiendo..." });
+                setTimeout(() => {
+                    setPopup({ ...popup, show: false });
+                    router.push("/dashboard");
+                }, 2000);
             } else {
-                setError('Error inesperado durante el login');
+                setPopup({ show: true, type: "error", message: "Error inesperado durante el login" });
             }
         } catch (err) {
-            setError('Error de conexión. Verifica tu internet.');
+            setPopup({ show: true, type: "error", message: "Error de conexión. Verifica tu internet." });
         }
-
         setLoading(false);
     };
 
@@ -191,243 +186,272 @@ function LoginPageContent() {
     }, [searchParams]);
 
     return (
-        <div className="min-h-screen bg-gradient-to-br from-slate-50 via-gray-50 to-zinc-100 text-slate-900 relative overflow-hidden">
-            {/* Premium Silicon Valley Background */}
-            <div className="fixed inset-0 z-0">
-                <div className="absolute inset-0 bg-gradient-to-br from-slate-50 via-gray-50 to-zinc-50" />
-                <div className="absolute inset-0 bg-[radial-gradient(circle_at_25%_25%,rgba(99,102,241,0.08),transparent_50%)]" />
-                <div className="absolute inset-0 bg-[radial-gradient(circle_at_75%_75%,rgba(139,92,246,0.06),transparent_50%)]" />
-                <div className="absolute inset-0 bg-grid-slate-900/[0.02] bg-[size:32px_32px]" />
-
-                {/* Elegant Floating Orbs */}
-                <div className="absolute top-24 left-16 w-40 h-40 bg-gradient-to-br from-indigo-100/40 to-violet-100/40 rounded-full blur-3xl animate-pulse"></div>
-                <div className="absolute bottom-40 right-24 w-56 h-56 bg-gradient-to-br from-violet-100/40 to-indigo-100/40 rounded-full blur-3xl animate-pulse" style={{ animationDelay: '1.5s' }}></div>
-                <div className="absolute top-1/3 left-8 w-28 h-28 bg-gradient-to-br from-blue-100/40 to-indigo-100/40 rounded-full blur-3xl animate-pulse" style={{ animationDelay: '3s' }}></div>
-            </div>
-
-            {/* Header */}
-            <header className="relative z-10 p-6">
-                <Link href="/" className="inline-flex items-center gap-3 group">
-                    <h1 className="text-xl font-black tracking-tight relative">
-                        <span className="relative text-slate-900">
-                            Taskelio
-                            <div className="absolute -top-0.5 -right-0.5 w-1 h-1 bg-gradient-to-r from-indigo-500 to-violet-500 rounded-full opacity-80"></div>
-                        </span>
-                    </h1>
-                </Link>
-            </header>
-
-            <div className="relative z-10 flex items-center justify-center min-h-[calc(100vh-100px)] px-4">
-                <div className="w-full max-w-md">
-                    {/* Premium Silicon Valley Card */}
-                    <div className="relative bg-white/95 backdrop-blur-2xl border border-slate-200/60 rounded-3xl p-8 shadow-2xl shadow-slate-900/5">
-                        {/* Premium Border Glow */}
-                        <div className="absolute inset-0 bg-gradient-to-br from-indigo-50/80 via-transparent to-violet-50/80 rounded-3xl blur-sm -z-10"></div>
-
-                        {/* Inner Premium Glow */}
-                        <div className="absolute inset-0 bg-gradient-to-br from-indigo-50/30 to-violet-50/30 rounded-3xl"></div>
-
-                        {/* Professional Header */}
-                        <div className="text-center mb-8 relative">
-                            <div className="relative inline-flex items-center justify-center w-16 h-16 bg-gradient-to-br from-indigo-600 via-blue-600 to-violet-600 rounded-2xl mb-6 shadow-xl shadow-indigo-500/25 group">
-                                <Lock className="w-8 h-8 text-white group-hover:scale-110 transition-transform duration-300" />
-                                {/* Premium Ring Animation */}
-                                <div className="absolute inset-0 rounded-2xl bg-gradient-to-br from-indigo-400 to-violet-400 opacity-0 group-hover:opacity-20 transition-opacity duration-300"></div>
-                            </div>
-
-                            <h1 className="text-3xl font-black mb-3 tracking-tight">
-                                <span className="bg-gradient-to-r from-slate-900 via-indigo-900 to-violet-900 bg-clip-text text-transparent">
-                                    Bienvenido de vuelta
-                                </span>
-                            </h1>
-                            <p className="text-slate-600 text-base leading-relaxed">
-                                Accede a tu
-                                <span className="text-indigo-600 font-semibold"> workspace profesional</span>
+        <>
+            {/* Popup espectacular */}
+            {popup.show && (
+                <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm animate-in fade-in duration-300">
+                    <div className={`relative p-8 max-w-md mx-4 rounded-3xl shadow-2xl transform transition-all duration-500 
+                        ${popup.type === 'success'
+                            ? 'bg-gradient-to-br from-emerald-500 via-teal-500 to-green-600 text-white '
+                            : 'bg-gradient-to-br from-red-500 via-pink-500 to-rose-600 text-white '
+                        }border border-white/20 backdrop-blur-lg`}
+                        style={{ animation: 'fadeInScale 0.5s ease-out forwards' }}
+                    >
+                        <div className="absolute inset-0 bg-white/10 rounded-3xl"></div>
+                        <button
+                            onClick={() => setPopup({ ...popup, show: false })}
+                            className="absolute top-4 right-4 p-2 hover:bg-white/20 rounded-full transition-all duration-200 hover:scale-110"
+                            type="button"
+                        >
+                            <X size={18} />
+                        </button>
+                        <div className={`w-20 h-20 mx-auto mb-6 rounded-full flex items-center justify-center relative ${popup.type === 'success' ? 'bg-white/20' : 'bg-white/20'}`}
+                            style={{ animation: 'pulse 2s infinite' }}>
+                            {popup.type === 'success' ? (
+                                <CheckCircle size={32} />
+                            ) : (
+                                <AlertCircle size={32} />
+                            )}
+                            <div className="absolute inset-0 rounded-full border-2 border-white/30" style={{ animation: 'ping 1s infinite' }}></div>
+                            <div className="absolute inset-2 rounded-full border border-white/20" style={{ animation: 'ping 1s infinite', animationDelay: '0.5s' }}></div>
+                        </div>
+                        <div className="text-center relative z-10">
+                            <h3 className="text-2xl font-bold mb-4">
+                                {popup.type === 'success' ? '¡Bienvenido!' : '¡Ups!'}
+                            </h3>
+                            <p className="text-white/95 leading-relaxed text-lg whitespace-pre-line">
+                                {popup.message}
                             </p>
                         </div>
-
-                        {/* Professional Alerts */}
-                        {error && (
-                            <div className="bg-red-50/80 border border-red-200 rounded-xl p-4 mb-6 backdrop-blur-sm">
-                                <p className="text-red-700 text-sm font-medium">{error}</p>
+                        {popup.type === 'success' && (
+                            <div className="mt-6 bg-white/20 rounded-full h-2 overflow-hidden">
+                                <div
+                                    className="bg-white h-2 rounded-full transition-all ease-out"
+                                    style={{ width: '100%', animation: 'progressBar 2s ease-out forwards' }}
+                                ></div>
                             </div>
                         )}
-
-                        {resendSuccess && (
-                            <div className="bg-emerald-50/80 border border-emerald-200 rounded-xl p-4 mb-6 backdrop-blur-sm">
-                                <p className="text-emerald-700 text-sm font-medium">
-                                    Email de confirmación reenviado. Revisa tu bandeja de entrada.
+                        {popup.type === 'success' && (
+                            <>
+                                <div className="absolute top-8 left-8 w-2 h-2 bg-white/40 rounded-full" style={{ animation: 'bounce 2s infinite', animationDelay: '0.2s' }}></div>
+                                <div className="absolute top-12 right-12 w-1 h-1 bg-white/60 rounded-full" style={{ animation: 'bounce 2s infinite', animationDelay: '0.8s' }}></div>
+                                <div className="absolute bottom-8 left-12 w-1.5 h-1.5 bg-white/50 rounded-full" style={{ animation: 'bounce 2s infinite', animationDelay: '1.2s' }}></div>
+                            </>
+                        )}
+                    </div>
+                </div>
+            )}
+            {/* Fondo espectacular oscuro */}
+            <div className="min-h-screen bg-gradient-to-br from-slate-900 via-purple-900 to-slate-900 relative overflow-hidden">
+                <div className="absolute inset-0">
+                    <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_top,_var(--tw-gradient-stops))] from-purple-400/20 via-purple-900/10 to-slate-900"></div>
+                    <div className="absolute inset-0 opacity-20">
+                        <div className="h-full w-full bg-repeat" style={{
+                            backgroundImage: `url("data:image/svg+xml,%3Csvg width='60' height='60' viewBox='0 0 60 60' xmlns='http://www.w3.org/2000/svg'%3E%3Cg fill='none' fill-rule='evenodd'%3E%3Cg fill='%23ffffff' fill-opacity='0.03'%3E%3Ccircle cx='30' cy='30' r='1'/%3E%3C/g%3E%3C/g%3E%3C/svg%3E")`
+                        }}></div>
+                    </div>
+                    <div className="absolute top-1/4 left-1/4 w-64 h-64 bg-purple-500/20 rounded-full blur-3xl" style={{ animation: 'pulse 3s infinite' }}></div>
+                    <div className="absolute bottom-1/4 right-1/4 w-80 h-80 bg-pink-500/15 rounded-full blur-3xl" style={{ animation: 'pulse 3s infinite', animationDelay: '2s' }}></div>
+                    <div className="absolute top-3/4 left-1/6 w-48 h-48 bg-blue-500/20 rounded-full blur-3xl" style={{ animation: 'pulse 3s infinite', animationDelay: '4s' }}></div>
+                </div>
+                {/* Header espectacular */}
+                <header className="relative z-10 p-6">
+                    <Link href="/" className="inline-flex items-center gap-3 group">
+                        <h1 className="text-xl font-black tracking-tight relative">
+                            <span className="relative text-white">
+                                Taskelio
+                                <div className="absolute -top-0.5 -right-0.5 w-1 h-1 bg-gradient-to-r from-purple-500 to-pink-500 rounded-full opacity-80"></div>
+                            </span>
+                        </h1>
+                    </Link>
+                </header>
+                <div className="relative z-10 flex items-center justify-center min-h-[calc(100vh-100px)] px-4">
+                    <div className="w-full max-w-md">
+                        {/* Tarjeta espectacular */}
+                        <div className="relative bg-white/5 backdrop-blur-2xl border border-white/10 rounded-3xl p-8 shadow-2xl">
+                            <div className="absolute inset-0 bg-gradient-to-br from-purple-500/20 via-pink-500/10 to-purple-900/10 rounded-3xl blur-sm -z-10"></div>
+                            <div className="absolute inset-0 bg-gradient-to-br from-purple-500/10 to-pink-500/10 rounded-3xl"></div>
+                            {/* Header profesional */}
+                            <div className="text-center mb-8 relative">
+                                <div className="relative inline-flex items-center justify-center w-16 h-16 bg-gradient-to-br from-purple-600 via-pink-600 to-purple-700 rounded-2xl mb-6 shadow-xl shadow-purple-500/25 group">
+                                    <Lock className="w-8 h-8 text-white group-hover:scale-110 transition-transform duration-300" />
+                                    <div className="absolute inset-0 rounded-2xl bg-gradient-to-br from-purple-400 to-pink-400 opacity-0 group-hover:opacity-20 transition-opacity duration-300"></div>
+                                </div>
+                                <h1 className="text-3xl font-black mb-3 tracking-tight">
+                                    <span className="bg-gradient-to-r from-white via-purple-400 to-pink-400 bg-clip-text text-transparent">
+                                        Bienvenido de vuelta
+                                    </span>
+                                </h1>
+                                <p className="text-slate-200 text-base leading-relaxed">
+                                    Accede a tu
+                                    <span className="text-pink-300 font-semibold"> workspace profesional</span>
                                 </p>
                             </div>
-                        )}
-
-                        {/* Premium Form Design */}
-                        <form onSubmit={login} className="space-y-6">
-                            {/* Email Field - Silicon Valley Style */}
-                            <div className="space-y-3">
-                                <label className="text-sm font-semibold text-slate-700 flex items-center gap-2">
-                                    <div className="w-1 h-4 bg-gradient-to-b from-indigo-500 to-violet-500 rounded-full"></div>
-                                    Dirección de Email
-                                </label>
-                                <div className="relative group">
-                                    <Mail className="absolute left-4 top-1/2 transform -translate-y-1/2 w-5 h-5 text-slate-400 group-focus-within:text-indigo-500 transition-colors duration-300 pointer-events-none" />
-                                    <Input
-                                        type="email"
-                                        placeholder="tu@empresa.com"
-                                        value={email}
-                                        onChange={(e) => setEmail(e.target.value)}
-                                        className="pl-12 bg-slate-50/50 border-slate-200 text-slate-900 placeholder:text-slate-400 focus:border-indigo-500 focus:ring-indigo-100 h-12 text-base rounded-xl hover:bg-slate-50 transition-all duration-300 font-medium"
-                                    />
-                                    <div className="absolute inset-0 rounded-xl bg-gradient-to-r from-indigo-50/40 to-violet-50/40 opacity-0 group-focus-within:opacity-100 transition-opacity duration-300 pointer-events-none"></div>
+                            {/* Mensajes de error y éxito */}
+                            {error && (
+                                <div className="bg-red-500/20 border border-red-500 rounded-xl p-4 mb-6 backdrop-blur-sm">
+                                    <p className="text-red-200 text-sm font-medium">{error}</p>
                                 </div>
-                            </div>
-
-                            {/* Password Field - Silicon Valley Style */}
-                            <div className="space-y-3">
-                                <label className="text-sm font-semibold text-slate-700 flex items-center gap-2">
-                                    <div className="w-1 h-4 bg-gradient-to-b from-indigo-500 to-violet-500 rounded-full"></div>
-                                    Contraseña
-                                </label>
-                                <div className="relative group">
-                                    <Lock className="absolute left-4 top-1/2 transform -translate-y-1/2 w-5 h-5 text-slate-400 group-focus-within:text-indigo-500 transition-colors duration-300 pointer-events-none" />
-                                    <Input
-                                        type={showPassword ? "text" : "password"}
-                                        placeholder="Ingresa tu contraseña"
-                                        value={password}
-                                        onChange={(e) => setPassword(e.target.value)}
-                                        className="pl-12 pr-12 bg-slate-50/50 border-slate-200 text-slate-900 placeholder:text-slate-400 focus:border-indigo-500 focus:ring-indigo-100 h-12 text-base rounded-xl hover:bg-slate-50 transition-all duration-300 font-medium"
-                                    />
-                                    <button
+                            )}
+                            {resendSuccess && (
+                                <div className="bg-emerald-500/20 border border-emerald-500 rounded-xl p-4 mb-6 backdrop-blur-sm">
+                                    <p className="text-emerald-200 text-sm font-medium">
+                                        Email de confirmación reenviado. Revisa tu bandeja de entrada.
+                                    </p>
+                                </div>
+                            )}
+                            {/* Formulario espectacular */}
+                            <form onSubmit={login} className="space-y-6">
+                                <div className="space-y-3">
+                                    <label className="text-sm font-semibold text-white flex items-center gap-2">
+                                        <div className="w-1 h-4 bg-gradient-to-b from-purple-500 to-pink-500 rounded-full"></div>
+                                        Dirección de Email
+                                    </label>
+                                    <div className="relative group">
+                                        <Mail className="absolute left-4 top-1/2 transform -translate-y-1/2 w-5 h-5 text-pink-400 group-focus-within:text-purple-400 transition-colors duration-300 pointer-events-none" />
+                                        <Input
+                                            type="email"
+                                            placeholder="tu@empresa.com"
+                                            value={email}
+                                            onChange={(e) => setEmail(e.target.value)}
+                                            className="pl-12 bg-white/5 border-white/20 text-white placeholder:text-white/50 focus:border-pink-400 focus:ring-purple-100 h-12 text-base rounded-xl hover:bg-white/10 transition-all duration-300 font-medium"
+                                        />
+                                        <div className="absolute inset-0 rounded-xl bg-gradient-to-r from-purple-500/20 to-pink-500/20 opacity-0 group-focus-within:opacity-100 transition-opacity duration-300 pointer-events-none"></div>
+                                    </div>
+                                </div>
+                                <div className="space-y-3">
+                                    <label className="text-sm font-semibold text-white flex items-center gap-2">
+                                        <div className="w-1 h-4 bg-gradient-to-b from-purple-500 to-pink-500 rounded-full"></div>
+                                        Contraseña
+                                    </label>
+                                    <div className="relative group">
+                                        <Lock className="absolute left-4 top-1/2 transform -translate-y-1/2 w-5 h-5 text-pink-400 group-focus-within:text-purple-400 transition-colors duration-300 pointer-events-none" />
+                                        <Input
+                                            type={showPassword ? "text" : "password"}
+                                            placeholder="Ingresa tu contraseña"
+                                            value={password}
+                                            onChange={(e) => setPassword(e.target.value)}
+                                            className="pl-12 pr-12 bg-white/5 border-white/20 text-white placeholder:text-white/50 focus:border-pink-400 focus:ring-purple-100 h-12 text-base rounded-xl hover:bg-white/10 transition-all duration-300 font-medium"
+                                        />
+                                        <button
+                                            type="button"
+                                            onClick={(e) => {
+                                                e.preventDefault();
+                                                e.stopPropagation();
+                                                setShowPassword(!showPassword);
+                                            }}
+                                            className="absolute right-4 top-1/2 transform -translate-y-1/2 text-white/60 hover:text-white transition-colors p-2 rounded-lg hover:bg-white/10 z-10"
+                                        >
+                                            {showPassword ? <EyeOff className="w-5 h-5" /> : <Eye className="w-5 h-5" />}
+                                        </button>
+                                        <div className="absolute inset-0 rounded-xl bg-gradient-to-r from-purple-500/20 to-pink-500/20 opacity-0 group-focus-within:opacity-100 transition-opacity duration-300 pointer-events-none"></div>
+                                    </div>
+                                </div>
+                                <Button
+                                    type="submit"
+                                    disabled={loading}
+                                    className="w-full bg-gradient-to-r from-purple-600 via-pink-600 to-purple-700 hover:from-purple-700 hover:via-pink-700 hover:to-purple-800 text-white border-0 h-12 text-base font-bold rounded-xl shadow-xl shadow-purple-500/25 group relative overflow-hidden"
+                                >
+                                    <div className="absolute inset-0 bg-gradient-to-r from-purple-400 to-pink-400 opacity-0 group-hover:opacity-20 transition-opacity duration-300"></div>
+                                    {loading ? (
+                                        <div className="flex items-center gap-3 relative z-10">
+                                            <div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin"></div>
+                                            <span>Iniciando sesión...</span>
+                                        </div>
+                                    ) : (
+                                        <div className="flex items-center gap-3 relative z-10">
+                                            <span>Iniciar Sesión</span>
+                                            <ArrowRight className="w-4 h-4 group-hover:translate-x-1 transition-transform duration-300" />
+                                        </div>
+                                    )}
+                                </Button>
+                                {error && error.includes('confirma tu email') && (
+                                    <Button
                                         type="button"
-                                        onClick={(e) => {
-                                            e.preventDefault();
-                                            e.stopPropagation();
-                                            setShowPassword(!showPassword);
-                                        }}
-                                        className="absolute right-4 top-1/2 transform -translate-y-1/2 text-slate-400 hover:text-slate-600 transition-colors duration-300 p-1 rounded-lg hover:bg-slate-100 z-10"
+                                        onClick={resendConfirmation}
+                                        disabled={resendLoading}
+                                        variant="ghost"
+                                        className="w-full border border-white/20 text-white hover:bg-white/10 h-11 rounded-xl font-medium"
                                     >
-                                        {showPassword ? <EyeOff className="w-5 h-5" /> : <Eye className="w-5 h-5" />}
-                                    </button>
-                                    <div className="absolute inset-0 rounded-xl bg-gradient-to-r from-indigo-50/40 to-violet-50/40 opacity-0 group-focus-within:opacity-100 transition-opacity duration-300 pointer-events-none"></div>
-                                </div>
-                            </div>
-
-                            {/* Premium Login Button */}
-                            <Button
-                                type="submit"
-                                disabled={loading}
-                                className="w-full bg-gradient-to-r from-indigo-600 via-blue-600 to-violet-600 hover:from-indigo-700 hover:via-blue-700 hover:to-violet-700 text-white border-0 h-12 text-base font-bold rounded-xl shadow-xl shadow-indigo-500/25 group relative overflow-hidden"
-                            >
-                                {/* Premium Button Glow */}
-                                <div className="absolute inset-0 bg-gradient-to-r from-indigo-400 to-violet-400 opacity-0 group-hover:opacity-20 transition-opacity duration-300"></div>
-
-                                {loading ? (
-                                    <div className="flex items-center gap-3 relative z-10">
-                                        <div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin"></div>
-                                        <span>Iniciando sesión...</span>
-                                    </div>
-                                ) : (
-                                    <div className="flex items-center gap-3 relative z-10">
-                                        <span>Iniciar Sesión</span>
-                                        <ArrowRight className="w-4 h-4 group-hover:translate-x-1 transition-transform duration-300" />
-                                    </div>
+                                        {resendLoading ? 'Reenviando...' : 'Reenviar email de confirmación'}
+                                    </Button>
                                 )}
-                            </Button>
-
-                            {/* Professional Resend Button */}
-                            {error && error.includes('confirma tu email') && (
+                            </form>
+                            <div className="my-8 flex items-center">
+                                <div className="flex-1 h-px bg-gradient-to-r from-transparent via-white/30 to-transparent"></div>
+                                <div className="px-4 bg-white/10 border border-white/20 rounded-full shadow-sm">
+                                    <span className="text-sm text-white font-medium">O continúa con</span>
+                                </div>
+                                <div className="flex-1 h-px bg-gradient-to-r from-transparent via-white/30 to-transparent"></div>
+                            </div>
+                            <div className="grid grid-cols-2 gap-4 mb-8">
                                 <Button
                                     type="button"
-                                    onClick={resendConfirmation}
-                                    disabled={resendLoading}
+                                    onClick={loginWithGitHub}
+                                    disabled={true}
                                     variant="ghost"
-                                    className="w-full border border-slate-200 text-slate-700 hover:bg-slate-50 h-11 rounded-xl font-medium"
+                                    className="border border-white/20 text-white/40 bg-white/10 cursor-not-allowed h-11 rounded-xl group transition-all duration-300 font-medium relative z-10 opacity-50"
                                 >
-                                    {resendLoading ? 'Reenviando...' : 'Reenviar email de confirmación'}
+                                    <Github className="w-4 h-4 mr-2" />
+                                    GitHub
                                 </Button>
-                            )}
-                        </form>
-
-                        {/* Premium Divider */}
-                        <div className="my-8 flex items-center">
-                            <div className="flex-1 h-px bg-gradient-to-r from-transparent via-slate-300 to-transparent"></div>
-                            <div className="px-4 bg-white border border-slate-200 rounded-full shadow-sm">
-                                <span className="text-sm text-slate-600 font-medium">O continúa con</span>
-                            </div>
-                            <div className="flex-1 h-px bg-gradient-to-r from-transparent via-slate-300 to-transparent"></div>
-                        </div>
-
-                        {/* Premium Social Login - TEMPORALMENTE DESACTIVADO */}
-                        <div className="grid grid-cols-2 gap-4 mb-8">
-                            <Button
-                                type="button"
-                                onClick={loginWithGitHub}
-                                disabled={true}
-                                variant="ghost"
-                                className="border border-slate-200 text-slate-400 bg-slate-50 cursor-not-allowed h-11 rounded-xl group transition-all duration-300 font-medium relative z-10 opacity-50"
-                            >
-                                <Github className="w-4 h-4 mr-2" />
-                                GitHub
-                            </Button>
-                            <Button
-                                type="button"
-                                onClick={loginWithGoogle}
-                                disabled={true}
-                                variant="ghost"
-                                className="border border-slate-200 text-slate-400 bg-slate-50 cursor-not-allowed h-11 rounded-xl group transition-all duration-300 font-medium relative z-10 opacity-50"
-                            >
-                                <Chrome className="w-4 h-4 mr-2" />
-                                Google
-                            </Button>
-                        </div>
-
-                        {/* Professional Footer */}
-                        <div className="text-center relative z-10">
-                            <p className="text-slate-600">
-                                ¿No tienes cuenta?{' '}
-                                <Link
-                                    href="/register"
-                                    className="text-indigo-600 hover:text-indigo-700 font-semibold transition-colors relative z-10"
+                                <Button
+                                    type="button"
+                                    onClick={loginWithGoogle}
+                                    disabled={true}
+                                    variant="ghost"
+                                    className="border border-white/20 text-white/40 bg-white/10 cursor-not-allowed h-11 rounded-xl group transition-all duration-300 font-medium relative z-10 opacity-50"
                                 >
-                                    Crear cuenta
-                                </Link>
-                            </p>
-                        </div>
-                    </div>
-
-                    {/* Premium Dashboard Stats */}
-                    <div className="mt-8 grid grid-cols-3 gap-4 text-center">
-                        <div className="bg-white/90 backdrop-blur-2xl border border-slate-200/60 rounded-2xl p-4 group hover:scale-105 transition-all duration-300 shadow-lg shadow-slate-900/5">
-                            <div className="flex items-center justify-center mb-3">
-                                <div className="w-10 h-10 bg-gradient-to-br from-emerald-100 to-green-100 rounded-xl flex items-center justify-center group-hover:scale-110 transition-transform">
-                                    <TrendingUp className="w-5 h-5 text-emerald-600" />
-                                </div>
+                                    <Chrome className="w-4 h-4 mr-2" />
+                                    Google
+                                </Button>
                             </div>
-                            <p className="text-2xl font-black bg-gradient-to-r from-slate-900 to-emerald-700 bg-clip-text text-transparent">2K+</p>
-                            <p className="text-xs text-slate-600 font-medium">Freelancers activos</p>
-                        </div>
-                        <div className="bg-white/90 backdrop-blur-2xl border border-slate-200/60 rounded-2xl p-4 group hover:scale-105 transition-all duration-300 shadow-lg shadow-slate-900/5">
-                            <div className="flex items-center justify-center mb-3">
-                                <div className="w-10 h-10 bg-gradient-to-br from-indigo-100 to-violet-100 rounded-xl flex items-center justify-center group-hover:scale-110 transition-transform">
-                                    <Sparkles className="w-5 h-5 text-indigo-600" />
-                                </div>
+                            <div className="text-center relative z-10">
+                                <p className="text-white/80">
+                                    ¿No tienes cuenta?{' '}
+                                    <Link
+                                        href="/register"
+                                        className="text-pink-300 hover:text-pink-400 font-semibold transition-colors relative z-10"
+                                    >
+                                        Crear cuenta
+                                    </Link>
+                                </p>
                             </div>
-                            <p className="text-2xl font-black bg-gradient-to-r from-slate-900 to-indigo-700 bg-clip-text text-transparent">4.8★</p>
-                            <p className="text-xs text-slate-600 font-medium">Calificación</p>
                         </div>
-                        <div className="bg-white/90 backdrop-blur-2xl border border-slate-200/60 rounded-2xl p-4 group hover:scale-105 transition-all duration-300 shadow-lg shadow-slate-900/5">
-                            <div className="flex items-center justify-center mb-3">
-                                <div className="w-10 h-10 bg-gradient-to-br from-violet-100 to-indigo-100 rounded-xl flex items-center justify-center group-hover:scale-110 transition-transform">
-                                    <Mail className="w-5 h-5 text-violet-600" />
+                        {/* Stats espectaculares */}
+                        <div className="mt-8 grid grid-cols-3 gap-4 text-center">
+                            <div className="bg-white/10 backdrop-blur-2xl border border-white/20 rounded-2xl p-4 group hover:scale-105 transition-all duration-300 shadow-lg shadow-purple-900/10">
+                                <div className="flex items-center justify-center mb-3">
+                                    <div className="w-10 h-10 bg-gradient-to-br from-emerald-500/20 to-green-500/20 rounded-xl flex items-center justify-center group-hover:scale-110 transition-transform">
+                                        <TrendingUp className="w-5 h-5 text-emerald-300" />
+                                    </div>
                                 </div>
+                                <p className="text-2xl font-black bg-gradient-to-r from-white to-emerald-300 bg-clip-text text-transparent">2K+</p>
+                                <p className="text-xs text-white/80 font-medium">Freelancers activos</p>
                             </div>
-                            <p className="text-2xl font-black bg-gradient-to-r from-slate-900 to-violet-700 bg-clip-text text-transparent">15h</p>
-                            <p className="text-xs text-slate-600 font-medium">Tiempo ahorrado</p>
+                            <div className="bg-white/10 backdrop-blur-2xl border border-white/20 rounded-2xl p-4 group hover:scale-105 transition-all duration-300 shadow-lg shadow-purple-900/10">
+                                <div className="flex items-center justify-center mb-3">
+                                    <div className="w-10 h-10 bg-gradient-to-br from-purple-500/20 to-pink-500/20 rounded-xl flex items-center justify-center group-hover:scale-110 transition-transform">
+                                        <Sparkles className="w-5 h-5 text-purple-300" />
+                                    </div>
+                                </div>
+                                <p className="text-2xl font-black bg-gradient-to-r from-white to-purple-300 bg-clip-text text-transparent">4.8★</p>
+                                <p className="text-xs text-white/80 font-medium">Calificación</p>
+                            </div>
+                            <div className="bg-white/10 backdrop-blur-2xl border border-white/20 rounded-2xl p-4 group hover:scale-105 transition-all duration-300 shadow-lg shadow-purple-900/10">
+                                <div className="flex items-center justify-center mb-3">
+                                    <div className="w-10 h-10 bg-gradient-to-br from-pink-500/20 to-purple-500/20 rounded-xl flex items-center justify-center group-hover:scale-110 transition-transform">
+                                        <Mail className="w-5 h-5 text-pink-300" />
+                                    </div>
+                                </div>
+                                <p className="text-2xl font-black bg-gradient-to-r from-white to-pink-300 bg-clip-text text-transparent">15h</p>
+                                <p className="text-xs text-white/80 font-medium">Tiempo ahorrado</p>
+                            </div>
                         </div>
                     </div>
                 </div>
             </div>
-        </div>
+        </>
     );
 }
 

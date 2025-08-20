@@ -47,8 +47,7 @@ cd Clyra
 │   ├── login/             # Página de inicio de sesión
 │   ├── register/          # Página de registro
 │   ├── dashboard/         # Panel principal
-│   ├── demo/              # Modo demo sin autenticación
-│   └── auth/callback/     # Callback OAuth
+│   ├── auth/callback/     # Callback OAuth
 ├── components/            # Componentes reutilizables
 ├── src/lib/              # Configuración de Supabase
 └── .env.local            # Variables de entorno
@@ -60,7 +59,6 @@ cd Clyra
 - **Login**: `http://localhost:3000/login`  
 - **Registro**: `http://localhost:3000/register`
 - **Dashboard**: `http://localhost:3000/dashboard`
-- **Demo**: `http://localhost:3000/demo`
 
 ## 🔧 Configuración de Variables de Entorno
 
