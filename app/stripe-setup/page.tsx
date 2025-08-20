@@ -1,6 +1,6 @@
 "use client";
+import { ArrowRight, Check, Copy, ExternalLink } from 'lucide-react';
 import Link from 'next/link';
-import { ArrowRight, ExternalLink, Copy, Check } from 'lucide-react';
 import { useState } from 'react';
 
 export default function StripeSetupPage() {
@@ -22,18 +22,33 @@ export default function StripeSetupPage() {
     <div className="min-h-screen bg-gradient-to-br from-blue-50 via-indigo-50 to-purple-50">
       <div className="container mx-auto px-6 py-12">
         <div className="max-w-4xl mx-auto">
+          <div className="text-center mb-12">
+            <h1 className="text-4xl font-black text-slate-900 mb-4">
+              🧪 Configurar Stripe de Prueba
+            </h1>
+            <p className="text-xl text-slate-600">
+              Configura pagos de prueba <strong>100% GRATIS</strong> - Sin gastar dinero real
+            </p>
+          </div>
+
           {/* Paso 1: Estado actual */}
+          <div className="bg-green-50 border border-green-200 rounded-2xl p-6 mb-8">
+            <h2 className="text-2xl font-bold text-green-800 mb-4">✅ Paso 1: Claves Configuradas</h2>
+            <p className="text-green-700">
+              ¡Perfecto! Ya tienes las claves de Stripe en modo de prueba configuradas en tu `.env.local`
+            </p>
+          </div>
 
           {/* Paso 2: Crear productos */}
           <div className="bg-white/60 backdrop-blur-2xl border border-white/60 rounded-2xl p-6 mb-8">
             <h2 className="text-2xl font-bold text-slate-900 mb-4">📦 Paso 2: Crear Productos en Stripe</h2>
-            
+
             <div className="space-y-4">
               <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
                 <p className="font-semibold text-blue-800 mb-2">1. Ve a tu Dashboard de Stripe:</p>
-                <a 
-                  href="https://dashboard.stripe.com/products" 
-                  target="_blank" 
+                <a
+                  href="https://dashboard.stripe.com/products"
+                  target="_blank"
                   rel="noopener noreferrer"
                   className="inline-flex items-center gap-2 bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 transition-colors"
                 >
@@ -64,9 +79,9 @@ export default function StripeSetupPage() {
             <p className="text-slate-600 mb-4">
               Una vez que tengas los Price IDs, actualiza el archivo <code>app/pricing/page.tsx</code>:
             </p>
-            
+
             <div className="bg-slate-900 text-green-400 rounded-lg p-4 font-mono text-sm">
-              <div className="text-slate-400 mb-2">{/* En app/pricing/page.tsx */}</div>
+              <div className="text-slate-400 mb-2">// En app/pricing/page.tsx</div>
               <div>const STRIPE_PRICES = &#123;</div>
               <div className="ml-4">BASIC: 'price_TU_PRICE_ID_BASICO',</div>
               <div className="ml-4">BUSINESS: 'price_TU_PRICE_ID_EMPRESARIAL'</div>
@@ -80,7 +95,7 @@ export default function StripeSetupPage() {
             <p className="text-slate-600 mb-4">
               Usa estas tarjetas para probar - <strong>NO SE COBRA DINERO REAL</strong>:
             </p>
-            
+
             <div className="space-y-3">
               {testCards.map((card, index) => (
                 <div key={index} className="flex items-center justify-between bg-slate-50 rounded-lg p-4">
@@ -119,7 +134,7 @@ export default function StripeSetupPage() {
               Probar Stripe Ahora
               <ArrowRight className="w-5 h-5" />
             </Link>
-            
+
             <Link
               href="/dashboard"
               className="inline-flex items-center justify-center gap-3 py-4 px-8 bg-white/60 hover:bg-white/80 text-slate-700 hover:text-slate-900 rounded-2xl font-semibold border border-white/60 transition-all duration-300"

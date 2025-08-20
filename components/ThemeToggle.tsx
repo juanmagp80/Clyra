@@ -4,11 +4,26 @@ import { Moon, Sun } from 'lucide-react';
 import { useState } from 'react';
 
 export default function ThemeToggle() {
+    // Usar try-catch para manejar errores de hydratación
+    let theme = 'light';
+    let toggleTheme = () => { };
+    let mounted = false;
+
+    try {
+        const themeContext = useTheme();
+        theme = themeContext.theme;
+        toggleTheme = themeContext.toggleTheme;
+        mounted = themeContext.mounted;
+    } catch (error) {
+        console.warn('ThemeProvider no disponible, usando modo claro por defecto');
+        return (
+            <div className="p-3 bg-white/80 backdrop-blur-xl border-2 border-white/60 rounded-2xl shadow-xl w-12 h-12 flex items-center justify-center">
+                <Sun className="w-6 h-6 text-yellow-500" />
+            </div>
+        );
+    }
+
     const [isAnimating, setIsAnimating] = useState(false);
-    const themeContext = useTheme();
-    const theme = themeContext?.theme || 'light';
-    const toggleTheme = themeContext?.toggleTheme || (() => {});
-    const mounted = themeContext?.mounted ?? true;
 
     const handleToggle = () => {
         setIsAnimating(true);
@@ -40,16 +55,16 @@ export default function ThemeToggle() {
                 {/* Icono de Sol - Modo Claro */}
                 <Sun
                     className={`absolute w-6 h-6 text-yellow-500 dark:text-yellow-400 transition-all duration-500 transform ${theme === 'light'
-                            ? 'rotate-0 scale-100 opacity-100'
-                            : 'rotate-90 scale-0 opacity-0'
+                        ? 'rotate-0 scale-100 opacity-100'
+                        : 'rotate-90 scale-0 opacity-0'
                         }`}
                 />
 
                 {/* Icono de Luna - Modo Oscuro */}
                 <Moon
                     className={`absolute w-6 h-6 text-indigo-400 dark:text-indigo-300 transition-all duration-500 transform ${theme === 'dark'
-                            ? 'rotate-0 scale-100 opacity-100'
-                            : '-rotate-90 scale-0 opacity-0'
+                        ? 'rotate-0 scale-100 opacity-100'
+                        : '-rotate-90 scale-0 opacity-0'
                         }`}
                 />
             </div>
