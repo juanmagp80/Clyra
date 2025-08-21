@@ -148,18 +148,18 @@ export default function DashboardClient({
             const activeProjects = projectsData?.filter((p: any) => p.status === 'active').length || 0;
             const completedProjects = projectsData?.filter((p: any) => p.status === 'completed').length || 0;
 
-            // Calcular ingresos del mes (proyectos completados)
+            // Calcular ingresos del mes (facturas pagadas)
             const currentMonth = new Date().getMonth();
             const currentYear = new Date().getFullYear();
 
-            const { data: monthlyData } = await supabase
-                .from('projects')
-                .select('budget, created_at')
+            const { data: paidInvoicesData } = await supabase
+                .from('invoices')
+                .select('total_amount, issue_date, status')
                 .eq('user_id', user.id)
-                .eq('status', 'completed')
-                .gte('created_at', `${currentYear}-${String(currentMonth + 1).padStart(2, '0')}-01`);
+                .eq('status', 'paid')
+                .gte('issue_date', `${currentYear}-${String(currentMonth + 1).padStart(2, '0')}-01`);
 
-            const monthlyRevenue = monthlyData?.reduce((sum: number, project: any) => sum + (project.budget || 0), 0) || 0;
+            const monthlyRevenue = paidInvoicesData?.reduce((sum: number, invoice: any) => sum + (invoice.total_amount || 0), 0) || 0;
 
             // Calcular horas de esta semana
             const startOfWeek = new Date();
@@ -522,9 +522,9 @@ export default function DashboardClient({
                                                     </div>
                                                 </div>
                                                 
-                                                {/* Simulación de gráfico con barras */}
+                                                {/* Gráfico de barras mejorado */}
                                                 <div className="space-y-4">
-                                                    <div className="flex items-end justify-between h-32 gap-2">
+                                                    <div className="flex items-end justify-between h-40 gap-3 px-2">
                                                         {[
                                                             { month: 'Mar', value: 85, amount: 8500 },
                                                             { month: 'Abr', value: 70, amount: 7200 },
@@ -533,19 +533,30 @@ export default function DashboardClient({
                                                             { month: 'Jul', value: 60, amount: 6400 },
                                                             { month: 'Ago', value: 100, amount: metrics.monthlyRevenue }
                                                         ].map((bar, index) => (
-                                                            <div key={bar.month} className="flex flex-col items-center flex-1">
-                                                                <div className="relative w-full bg-slate-100 dark:bg-slate-700 rounded-t-lg overflow-hidden">
+                                                            <div key={bar.month} className="flex flex-col items-center flex-1 group">
+                                                                <div className="relative w-full h-32 mb-2">
+                                                                    {/* Fondo de la barra */}
+                                                                    <div className="absolute bottom-0 w-full h-32 bg-gradient-to-t from-slate-200 to-slate-100 dark:from-slate-700 dark:to-slate-600 rounded-lg opacity-30"></div>
+                                                                    {/* Barra de datos */}
                                                                     <div 
-                                                                        className="w-full bg-gradient-to-t from-indigo-500 to-indigo-400 transition-all duration-500 rounded-t-lg"
+                                                                        className="absolute bottom-0 w-full bg-gradient-to-t from-indigo-600 via-indigo-500 to-indigo-400 rounded-lg shadow-lg transition-all duration-700 ease-out group-hover:shadow-indigo-500/50 group-hover:scale-105"
                                                                         style={{ 
-                                                                            height: `${bar.value}%`,
-                                                                            animationDelay: `${index * 100}ms`
+                                                                            height: `${Math.max(bar.value, 10)}%`,
+                                                                            animationDelay: `${index * 150}ms`,
+                                                                            minHeight: '8px'
                                                                         }}
-                                                                    ></div>
+                                                                    >
+                                                                        {/* Brillo en la parte superior */}
+                                                                        <div className="absolute top-0 left-0 right-0 h-2 bg-white/20 rounded-t-lg"></div>
+                                                                    </div>
+                                                                    {/* Tooltip hover */}
+                                                                    <div className="absolute -top-8 left-1/2 transform -translate-x-1/2 bg-slate-800 text-white text-xs px-2 py-1 rounded opacity-0 group-hover:opacity-100 transition-opacity duration-200 whitespace-nowrap">
+                                                                        €{bar.amount.toLocaleString()}
+                                                                    </div>
                                                                 </div>
-                                                                <div className="mt-2 text-center">
-                                                                    <p className="text-xs font-bold text-slate-700 dark:text-slate-300">{bar.month}</p>
-                                                                    <p className="text-xs text-slate-500 dark:text-slate-400">€{bar.amount.toLocaleString()}</p>
+                                                                <div className="text-center">
+                                                                    <p className="text-xs font-bold text-slate-700 dark:text-slate-300 mb-1">{bar.month}</p>
+                                                                    <p className="text-xs text-slate-500 dark:text-slate-400">€{(bar.amount/1000).toFixed(1)}k</p>
                                                                 </div>
                                                             </div>
                                                         ))}
