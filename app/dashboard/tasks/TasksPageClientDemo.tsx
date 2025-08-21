@@ -34,7 +34,7 @@ import { format, addDays, isToday, isPast } from 'date-fns';
 import { es } from 'date-fns/locale';
 
 // Datos demo importados
-import { demoTasks, demoClients, demoProjects } from '../../demo/demo-data';
+import { demoTasks, demoClients, demoProjects } from '@/app/demo/demo-data';
 
 // ==================== TIPOS ====================
 interface Task {
