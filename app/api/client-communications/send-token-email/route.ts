@@ -298,7 +298,7 @@ async function sendEmail(emailContent: any) {
                 'Content-Type': 'application/json',
             },
             body: JSON.stringify({
-                from: process.env.FROM_EMAIL || 'Clyra <onboarding@resend.dev>',
+                from: process.env.FROM_EMAIL || 'Taskelio <onboarding@resend.dev>',
                 to: [to],
                 subject,
                 html,
@@ -324,7 +324,7 @@ async function sendEmail(emailContent: any) {
             },
             body: JSON.stringify({
                 personalizations: [{ to: [{ email: to }] }],
-                from: { email: process.env.FROM_EMAIL || 'noreply@yourdomain.com', name: 'Clyra' },
+                from: { email: process.env.FROM_EMAIL || 'noreply@yourdomain.com', name: 'Taskelio' },
                 subject,
                 content: [{ type: 'text/html', value: html }],
             }),

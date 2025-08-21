@@ -27,3 +27,6 @@ export const createServerSupabaseClient = async () => {
         },
     });
 };
+
+// Alias para compatibilidad
+export const createSupabaseServerClient = createServerSupabaseClient;

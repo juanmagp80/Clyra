@@ -4,13 +4,11 @@ import { Moon, Sparkles, Sun } from 'lucide-react';
 import { useState } from 'react';
 
 export default function ThemeToggleHeader() {
-
+    const [isAnimating, setIsAnimating] = useState(false);
     const themeContext = useTheme();
     const theme = themeContext?.theme || 'light';
     const toggleTheme = themeContext?.toggleTheme || (() => {});
-    const mounted = themeContext?.mounted || false;
-
-    const [isAnimating, setIsAnimating] = useState(false);
+    const mounted = themeContext?.mounted ?? true;
 
     const handleToggle = () => {
         setIsAnimating(true);
@@ -46,16 +44,16 @@ export default function ThemeToggleHeader() {
                     {/* Icono de Sol - Modo Claro */}
                     <Sun
                         className={`absolute w-6 h-6 text-yellow-500 dark:text-yellow-400 transition-all duration-500 transform ${theme === 'light'
-                            ? 'rotate-0 scale-100 opacity-100'
-                            : 'rotate-90 scale-0 opacity-0'
+                                ? 'rotate-0 scale-100 opacity-100'
+                                : 'rotate-90 scale-0 opacity-0'
                             }`}
                     />
 
                     {/* Icono de Luna - Modo Oscuro */}
                     <Moon
                         className={`absolute w-6 h-6 text-indigo-500 dark:text-indigo-300 transition-all duration-500 transform ${theme === 'dark'
-                            ? 'rotate-0 scale-100 opacity-100'
-                            : '-rotate-90 scale-0 opacity-0'
+                                ? 'rotate-0 scale-100 opacity-100'
+                                : '-rotate-90 scale-0 opacity-0'
                             }`}
                     />
                 </div>

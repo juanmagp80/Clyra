@@ -17,7 +17,7 @@ Una aplicación SaaS moderna diseñada específicamente para freelancers que bus
 ```bash
 # Clona el repositorio
 git clone <tu-repo>
-cd Clyra
+cd Taskelio
 
 # Instala dependencias e inicia
 ./start.sh

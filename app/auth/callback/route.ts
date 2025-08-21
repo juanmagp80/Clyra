@@ -46,6 +46,63 @@ export async function GET(request: NextRequest) {
                 )
             }
 
+            // ✅ Verificar y crear perfil si no existe (para usuarios OAuth)
+            const { data: existingProfile } = await supabase
+                .from('profiles')
+                .select('id')
+                .eq('id', user.id)
+                .single()
+
+            if (!existingProfile) {
+                // Crear perfil con trial de 14 días
+                const trialStartDate = new Date()
+                const trialEndDate = new Date()
+                trialEndDate.setDate(trialEndDate.getDate() + 14)
+
+                const { error: profileError } = await supabase
+                    .from('profiles')
+                    .insert({
+                        id: user.id,
+                        email: user.email,
+                        subscription_status: 'trial',
+                        subscription_plan: 'free',
+                        trial_started_at: trialStartDate.toISOString(),
+                        trial_ends_at: trialEndDate.toISOString(),
+                        created_at: new Date().toISOString()
+                    })
+
+                if (profileError) {
+                    console.error('Error creating profile:', profileError)
+                }
+
+                // Crear registro de uso inicial
+                const { error: usageError } = await supabase
+                    .from('user_usage')
+                    .insert({
+                        user_id: user.id,
+                        clients_count: 0,
+                        projects_count: 0,
+                        storage_used_mb: 0,
+                        emails_sent_month: 0
+                    })
+
+                if (usageError) {
+                    console.error('Error creating user usage:', usageError)
+                }
+
+                // Registrar actividad de trial iniciado
+                await supabase
+                    .from('trial_activities')
+                    .insert({
+                        user_id: user.id,
+                        activity_type: 'trial_started',
+                        activity_data: { 
+                            source: 'oauth_google',
+                            trial_days: 14 
+                        }
+                    })
+            }
+
             // ✅ Crear empresa si no existe
             if (user.user_metadata) {
                 const { data: existingCompany } = await supabase

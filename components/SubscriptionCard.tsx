@@ -19,13 +19,13 @@ export function SubscriptionCard({ priceId }: SubscriptionCardProps) {
     <div className="w-full max-w-md mx-auto border-2 border-indigo-200 shadow-lg rounded-lg bg-white">
       <div className="text-center p-6 pb-4">
         <h3 className="text-2xl font-bold text-indigo-900 mb-2">
-          Clyra Pro
+          Taskelio PRO
         </h3>
         <p className="text-gray-600 mb-4">
           Acceso completo a todas las funcionalidades
         </p>
         <div className="mt-4">
-          <span className="text-4xl font-bold text-indigo-600">€12</span>
+          <span className="text-4xl font-bold text-indigo-600">€10</span>
           <span className="text-gray-500 ml-2">/mes</span>
         </div>
       </div>
