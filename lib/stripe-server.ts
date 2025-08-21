@@ -3,15 +3,22 @@ import Stripe from 'stripe';
 // Verificación más suave para las claves de Stripe
 const stripeSecretKey = process.env.STRIPE_SECRET_KEY;
 
-if (!stripeSecretKey || stripeSecretKey === 'sk_test_EJEMPLO_TEMPORAL') {
-  console.warn('⚠️ Stripe servidor no configurado correctamente. Configura tu STRIPE_SECRET_KEY en .env.local');
+// Objeto mock para desarrollo cuando no hay clave configurada
+const stripeMock = {
+  prices: { create: async () => ({ id: 'price_mock' }) },
+  products: { create: async () => ({ id: 'prod_mock' }) },
+  checkout: { sessions: { create: async () => ({ url: '#' }) } }
+} as unknown as Stripe;
+
+if (!stripeSecretKey) {
+  console.warn('⚠️ Stripe servidor no configurado. Por favor configura STRIPE_SECRET_KEY en .env.local');
 }
 
-export const stripe = stripeSecretKey && stripeSecretKey !== 'sk_test_EJEMPLO_TEMPORAL' 
+export const stripe = stripeSecretKey
   ? new Stripe(stripeSecretKey, {
       apiVersion: '2025-07-30.basil',
     })
-  : null;
+  : stripeMock;
 
 export const createCheckoutSession = async (
   priceId: string,

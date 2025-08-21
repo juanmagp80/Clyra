@@ -1,3 +1,5 @@
+export const runtime = 'nodejs';
+
 console.log('🟢 API /api/send-email cargada y lista');
 import { createServerClient } from '@supabase/ssr';
 import { NextRequest, NextResponse } from 'next/server';
