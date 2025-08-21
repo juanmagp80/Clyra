@@ -38,3 +38,14 @@ import { demoTasks, demoClients, demoProjects } from '@/app/demo/demo-data';
 
 // ==================== TIPOS ====================
 interface Task {
+    id: string;
+    title: string;
+    description: string;
+    status: 'pendiente' | 'en_progreso' | 'completada';
+    priority: 'baja' | 'media' | 'alta';
+    project_id: string;
+    due_date: string;
+    created_at: string;
+    billable: boolean;
+    time_tracked: number;
+}
