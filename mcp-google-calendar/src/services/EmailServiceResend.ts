@@ -8,6 +8,21 @@ interface EmailConfig {
 }
 
 export class EmailService {
+  // Propiedad dummy para compatibilidad con EmailService.ts
+  public transporter: undefined = undefined;
+
+  // Método dummy para compatibilidad
+  public generateTextContent(params: {
+    recipientName: string;
+    meetingTitle: string;
+    meetingDate: string;
+    meetingLocation?: string;
+    timeText: string;
+    professionalName: string;
+  }): string {
+    // Opcional: puedes retornar un string vacío o una versión simple
+    return '';
+  }
   private resend: Resend;
   private config: EmailConfig;
 

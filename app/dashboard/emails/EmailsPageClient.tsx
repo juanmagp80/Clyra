@@ -78,6 +78,14 @@ interface EmailsPageClientProps {
 export default function EmailsPageClient({ userEmail }: EmailsPageClientProps) {
     // Hook de trial status
     const { trialInfo, loading: trialLoading, hasReachedLimit, canUseFeatures } = useTrialStatus(userEmail);
+
+    // Extiende el tipo de limits para incluir 'emails' opcional
+    type TrialLimits = {
+        maxClients: number;
+        maxProjects: number;
+        maxStorageGB: number;
+        emails?: number;
+    };
     
     const [emails, setEmails] = useState<EmailThread[]>([]);
     const [templates, setTemplates] = useState<EmailTemplate[]>([]);
@@ -233,7 +241,10 @@ export default function EmailsPageClient({ userEmail }: EmailsPageClientProps) {
         }
         
         if (hasReachedLimit('emails')) {
-            const emailLimit = 100;
+            // Usa el límite de emails si existe en trialInfo.limits, si no, usa 100 por defecto
+            const emailLimit = (trialInfo && trialInfo.limits && typeof (trialInfo.limits as TrialLimits).emails === 'number')
+                ? (trialInfo.limits as TrialLimits).emails
+                : 100;
             alert(`Has alcanzado el límite de ${emailLimit} emails mensuales en el plan de prueba. Actualiza tu plan para enviar más emails.`);
             return;
         }

@@ -1,4 +1,11 @@
-// ...existing code...
+import { createSupabaseClient } from '@/src/lib/supabase-client';
+import { getBaseUrl } from '@/lib/url';
+import Link from 'next/link';
+import { UserPlus, Lock, Mail, EyeOff, Eye, Building, Phone, Globe, Sparkles, ArrowRight, Github, Chrome, CheckCircle, Users, TrendingUp } from 'lucide-react';
+import { Input } from '@/components/ui/Input';
+import { Button } from '@/components/ui/Button';
+import { useState } from 'react';
+import { useRouter } from 'next/navigation';
 
 export default function RegisterPage() {
     // Estados para autenticación
