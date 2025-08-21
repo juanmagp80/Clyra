@@ -8,6 +8,21 @@ interface EmailConfig {
 }
 
 export class EmailService {
+  // Propiedad dummy para compatibilidad con EmailService.ts
+  public transporter: undefined = undefined;
+
+  // Método dummy para compatibilidad
+  public generateTextContent(params: {
+    recipientName: string;
+    meetingTitle: string;
+    meetingDate: string;
+    meetingLocation?: string;
+    timeText: string;
+    professionalName: string;
+  }): string {
+    // Opcional: puedes retornar un string vacío o una versión simple
+    return '';
+  }
   private resend: Resend;
   private config: EmailConfig;
 
@@ -15,7 +30,7 @@ export class EmailService {
     this.config = {
       resendApiKey: process.env.RESEND_API_KEY,
       fromEmail: process.env.FROM_EMAIL || 'noreply@taskelio.app',
-      fromName: process.env.EMAIL_FROM_NAME || 'Taskelio - Recordatorios',
+      fromName: process.env.EMAIL_FROM_NAME || 'Clyra - Recordatorios',
       debug: process.env.NODE_ENV === 'development'
     };
 
@@ -51,7 +66,7 @@ export class EmailService {
       });
 
       const subject = `Recordatorio: ${params.meetingTitle} ${timeText}`;
-      
+
       const htmlContent = this.generateEmailTemplate({
         recipientName: params.recipientName,
         meetingTitle: params.meetingTitle,
@@ -74,7 +89,7 @@ export class EmailService {
         console.error('❌ Error enviando email con Resend:', result.error);
         return { success: false, error: result.error.message };
       }
-      
+
       if (this.config.debug) {
         console.log('✅ Email enviado exitosamente con Resend:', result.data?.id);
       }
@@ -117,7 +132,7 @@ export class EmailService {
     timeText: string;
   }): string {
     const urgencyColor = params.reminderType === '1_hour' ? '#ff6b6b' : '#4ecdc4';
-    
+
     return `
     <!DOCTYPE html>
     <html>
@@ -185,7 +200,7 @@ export class EmailService {
 
       <div style="text-align: center; margin-top: 30px; padding: 20px; border-top: 1px solid #eee;">
         <p style="color: #666; font-size: 14px; margin: 0;">
-          Este es un recordatorio automático enviado por <strong>Taskelio</strong><br>
+          Este es un recordatorio automático enviado por <strong>Clyra</strong><br>
           Sistema de gestión de citas profesionales
         </p>
       </div>
@@ -204,7 +219,7 @@ export class EmailService {
         console.error('❌ RESEND_API_KEY no configurado');
         return false;
       }
-      
+
       // Resend no tiene método de verificación directo, asumimos que está bien configurado
       console.log('✅ Resend configurado correctamente');
       return true;
@@ -222,7 +237,7 @@ export class EmailService {
       const result = await this.resend.emails.send({
         from: `${this.config.fromName} <${this.config.fromEmail}>`,
         to: recipientEmail,
-        subject: 'Prueba de Conexión - Taskelio MCP Server',
+        subject: 'Prueba de Conexión - Clyra MCP Server',
         html: `
           <div style="font-family: Arial, sans-serif; padding: 20px;">
             <h2>✅ Prueba de Conexión Exitosa</h2>

@@ -1,3 +1,5 @@
+export const runtime = 'nodejs';
+
 console.log('🟢 API /api/send-email cargada y lista');
 import { createServerClient } from '@supabase/ssr';
 import { NextRequest, NextResponse } from 'next/server';
@@ -64,7 +66,7 @@ export async function POST(request: NextRequest) {
             console.log('📧 [SIMULADO] Email API route:', {
                 to,
                 subject,
-                from: from || 'Taskelio <onboarding@resend.dev>',
+                from: from || 'Clyra <onboarding@resend.dev>',
                 htmlLength: html.length
             });
 
@@ -107,7 +109,7 @@ export async function POST(request: NextRequest) {
 
         if (!hasCustomDomain && !forceProduction) {
             // Modo sandbox: solo enviar a email de prueba
-            const testEmail = 'taskeliocrm@gmail.com';
+            const testEmail = 'clyracrm@gmail.com';
             const originalTo = to;
 
             console.log('⚠️ API send-email: Modo sandbox activo - enviando a email de prueba', {

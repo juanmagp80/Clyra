@@ -12,8 +12,7 @@ import {
     Target,
     TrendingUp,
     User,
-    Users,
-    LogOut
+    Users
 } from 'lucide-react';
 import { useRouter } from 'next/navigation';
 import { useEffect, useState } from 'react';
@@ -46,7 +45,7 @@ export default function DashboardClient({
     const [realProjects, setRealProjects] = useState<any[]>([]);
     const [realClients, setRealClients] = useState<any[]>([]);
     const [loading, setLoading] = useState(true);
-    
+
     const [recentActivity, setRecentActivity] = useState<Array<{
         id: string;
         type: string;
@@ -148,18 +147,18 @@ export default function DashboardClient({
             const activeProjects = projectsData?.filter((p: any) => p.status === 'active').length || 0;
             const completedProjects = projectsData?.filter((p: any) => p.status === 'completed').length || 0;
 
-            // Calcular ingresos del mes (proyectos completados)
+            // Calcular ingresos del mes (facturas pagadas)
             const currentMonth = new Date().getMonth();
             const currentYear = new Date().getFullYear();
 
-            const { data: monthlyData } = await supabase
-                .from('projects')
-                .select('budget, created_at')
+            const { data: paidInvoicesData } = await supabase
+                .from('invoices')
+                .select('total_amount, issue_date, status')
                 .eq('user_id', user.id)
-                .eq('status', 'completed')
-                .gte('created_at', `${currentYear}-${String(currentMonth + 1).padStart(2, '0')}-01`);
+                .eq('status', 'paid')
+                .gte('issue_date', `${currentYear}-${String(currentMonth + 1).padStart(2, '0')}-01`);
 
-            const monthlyRevenue = monthlyData?.reduce((sum: number, project: any) => sum + (project.budget || 0), 0) || 0;
+            const monthlyRevenue = paidInvoicesData?.reduce((sum: number, invoice: any) => sum + (invoice.total_amount || 0), 0) || 0;
 
             // Calcular horas de esta semana
             const startOfWeek = new Date();
@@ -289,7 +288,7 @@ export default function DashboardClient({
     const loadRealProjects = async () => {
         try {
             if (!supabase) return;
-            
+
             const user = (await supabase.auth.getUser()).data.user;
             if (!user) return;
 
@@ -305,7 +304,7 @@ export default function DashboardClient({
             console.error('Error loading real projects:', error);
         }
     };
-    
+
     useEffect(() => {
         loadDashboardData();
         loadRecentActivity();
@@ -354,7 +353,7 @@ export default function DashboardClient({
                                 </div>
                             </div>
 
-{loading ? (
+                            {loading ? (
                                 <div className="flex flex-col items-center justify-center h-96 space-y-4">
                                     <div className="relative">
                                         <div className="w-20 h-20 border-4 border-purple-100 dark:border-purple-900/30 rounded-full"></div>
@@ -372,7 +371,7 @@ export default function DashboardClient({
                                     {/* Estadísticas Principales - Diseño Premium */}
                                     <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-12">
                                         {/* Total Clients */}
-                                        <div 
+                                        <div
                                             onClick={() => router.push('/dashboard/clients')}
                                             className="group relative bg-white/80 dark:bg-slate-800/80 backdrop-blur-sm rounded-3xl p-8 border border-white/60 dark:border-slate-700/60 shadow-2xl shadow-blue-500/10 dark:shadow-blue-500/20 hover:shadow-blue-500/20 dark:hover:shadow-blue-500/30 transition-all duration-300 cursor-pointer hover:scale-105"
                                         >
@@ -404,7 +403,7 @@ export default function DashboardClient({
                                         </div>
 
                                         {/* Active Projects */}
-                                        <div 
+                                        <div
                                             onClick={() => router.push('/dashboard/projects')}
                                             className="group relative bg-white/80 dark:bg-slate-800/80 backdrop-blur-sm rounded-3xl p-8 border border-white/60 dark:border-slate-700/60 shadow-2xl shadow-emerald-500/10 dark:shadow-emerald-500/20 hover:shadow-emerald-500/20 dark:hover:shadow-emerald-500/30 transition-all duration-300 cursor-pointer hover:scale-105"
                                         >
@@ -436,7 +435,7 @@ export default function DashboardClient({
                                         </div>
 
                                         {/* Monthly Revenue */}
-                                        <div 
+                                        <div
                                             onClick={() => router.push('/dashboard/invoices')}
                                             className="group relative bg-white/80 dark:bg-slate-800/80 backdrop-blur-sm rounded-3xl p-8 border border-white/60 dark:border-slate-700/60 shadow-2xl shadow-purple-500/10 dark:shadow-purple-500/20 hover:shadow-purple-500/20 dark:hover:shadow-purple-500/30 transition-all duration-300 cursor-pointer hover:scale-105"
                                         >
@@ -470,7 +469,7 @@ export default function DashboardClient({
                                         </div>
 
                                         {/* Hours This Month */}
-                                        <div 
+                                        <div
                                             onClick={() => router.push('/dashboard/time-tracking')}
                                             className="group relative bg-white/80 dark:bg-slate-800/80 backdrop-blur-sm rounded-3xl p-8 border border-white/60 dark:border-slate-700/60 shadow-2xl shadow-orange-500/10 dark:shadow-orange-500/20 hover:shadow-orange-500/20 dark:hover:shadow-orange-500/30 transition-all duration-300 cursor-pointer hover:scale-105"
                                         >
@@ -521,10 +520,10 @@ export default function DashboardClient({
                                                         </div>
                                                     </div>
                                                 </div>
-                                                
-                                                {/* Simulación de gráfico con barras */}
+
+                                                {/* Gráfico de barras mejorado */}
                                                 <div className="space-y-4">
-                                                    <div className="flex items-end justify-between h-32 gap-2">
+                                                    <div className="flex items-end justify-between h-40 gap-3 px-2">
                                                         {[
                                                             { month: 'Mar', value: 85, amount: 8500 },
                                                             { month: 'Abr', value: 70, amount: 7200 },
@@ -533,19 +532,30 @@ export default function DashboardClient({
                                                             { month: 'Jul', value: 60, amount: 6400 },
                                                             { month: 'Ago', value: 100, amount: metrics.monthlyRevenue }
                                                         ].map((bar, index) => (
-                                                            <div key={bar.month} className="flex flex-col items-center flex-1">
-                                                                <div className="relative w-full bg-slate-100 dark:bg-slate-700 rounded-t-lg overflow-hidden">
-                                                                    <div 
-                                                                        className="w-full bg-gradient-to-t from-indigo-500 to-indigo-400 transition-all duration-500 rounded-t-lg"
-                                                                        style={{ 
-                                                                            height: `${bar.value}%`,
-                                                                            animationDelay: `${index * 100}ms`
+                                                            <div key={bar.month} className="flex flex-col items-center flex-1 group">
+                                                                <div className="relative w-full h-32 mb-2">
+                                                                    {/* Fondo de la barra */}
+                                                                    <div className="absolute bottom-0 w-full h-32 bg-gradient-to-t from-slate-200 to-slate-100 dark:from-slate-700 dark:to-slate-600 rounded-lg opacity-30"></div>
+                                                                    {/* Barra de datos */}
+                                                                    <div
+                                                                        className="absolute bottom-0 w-full bg-gradient-to-t from-indigo-600 via-indigo-500 to-indigo-400 rounded-lg shadow-lg transition-all duration-700 ease-out group-hover:shadow-indigo-500/50 group-hover:scale-105"
+                                                                        style={{
+                                                                            height: `${Math.max(bar.value, 10)}%`,
+                                                                            animationDelay: `${index * 150}ms`,
+                                                                            minHeight: '8px'
                                                                         }}
-                                                                    ></div>
+                                                                    >
+                                                                        {/* Brillo en la parte superior */}
+                                                                        <div className="absolute top-0 left-0 right-0 h-2 bg-white/20 rounded-t-lg"></div>
+                                                                    </div>
+                                                                    {/* Tooltip hover */}
+                                                                    <div className="absolute -top-8 left-1/2 transform -translate-x-1/2 bg-slate-800 text-white text-xs px-2 py-1 rounded opacity-0 group-hover:opacity-100 transition-opacity duration-200 whitespace-nowrap">
+                                                                        €{bar.amount.toLocaleString()}
+                                                                    </div>
                                                                 </div>
-                                                                <div className="mt-2 text-center">
-                                                                    <p className="text-xs font-bold text-slate-700 dark:text-slate-300">{bar.month}</p>
-                                                                    <p className="text-xs text-slate-500 dark:text-slate-400">€{bar.amount.toLocaleString()}</p>
+                                                                <div className="text-center">
+                                                                    <p className="text-xs font-bold text-slate-700 dark:text-slate-300 mb-1">{bar.month}</p>
+                                                                    <p className="text-xs text-slate-500 dark:text-slate-400">€{(bar.amount / 1000).toFixed(1)}k</p>
                                                                 </div>
                                                             </div>
                                                         ))}
@@ -569,7 +579,7 @@ export default function DashboardClient({
                                                         </div>
                                                     </div>
                                                 </div>
-                                                
+
                                                 {/* Distribución de tiempo */}
                                                 <div className="space-y-4">
                                                     {[
@@ -584,9 +594,9 @@ export default function DashboardClient({
                                                                 <span className="text-sm text-slate-500 dark:text-slate-400">{item.hours}h ({item.percentage}%)</span>
                                                             </div>
                                                             <div className="w-full bg-slate-100 dark:bg-slate-700 rounded-full h-3 overflow-hidden">
-                                                                <div 
+                                                                <div
                                                                     className={`h-full bg-gradient-to-r ${item.color} transition-all duration-500 rounded-full`}
-                                                                    style={{ 
+                                                                    style={{
                                                                         width: `${item.percentage}%`,
                                                                         animationDelay: `${index * 200}ms`
                                                                     }}
@@ -665,7 +675,7 @@ export default function DashboardClient({
                                                         <p className="text-slate-500 dark:text-slate-400 font-medium">Progreso actual</p>
                                                     </div>
                                                 </div>
-                                                
+
                                                 <div className="space-y-6">
                                                     {[
                                                         { status: 'En Progreso', count: metrics.activeProjects, color: 'from-emerald-500 to-emerald-600', percentage: 70 },
@@ -682,9 +692,9 @@ export default function DashboardClient({
                                                                 </div>
                                                             </div>
                                                             <div className="relative w-full bg-slate-100 dark:bg-slate-700 rounded-full h-4 overflow-hidden">
-                                                                <div 
+                                                                <div
                                                                     className={`h-full bg-gradient-to-r ${item.color} transition-all duration-1000 rounded-full shadow-lg`}
-                                                                    style={{ 
+                                                                    style={{
                                                                         width: `${item.percentage}%`,
                                                                         animationDelay: `${index * 300}ms`
                                                                     }}
@@ -710,7 +720,7 @@ export default function DashboardClient({
                                                         <p className="text-slate-500 dark:text-slate-400 font-medium">Por ingresos generados</p>
                                                     </div>
                                                 </div>
-                                                
+
                                                 <div className="space-y-4">
                                                     {[
                                                         { name: 'TechCorp Solutions', revenue: Math.round(metrics.monthlyRevenue * 0.35) || 5250, percentage: 100 },
@@ -734,9 +744,9 @@ export default function DashboardClient({
                                                                 </span>
                                                             </div>
                                                             <div className="w-full bg-slate-100 dark:bg-slate-700 rounded-full h-2 overflow-hidden">
-                                                                <div 
+                                                                <div
                                                                     className="h-full bg-gradient-to-r from-purple-400 to-purple-600 transition-all duration-1000 rounded-full"
-                                                                    style={{ 
+                                                                    style={{
                                                                         width: `${client.percentage}%`,
                                                                         animationDelay: `${index * 200}ms`
                                                                     }}
@@ -764,7 +774,7 @@ export default function DashboardClient({
                                                         <p className="text-slate-500 dark:text-slate-400 font-medium">Horas por día</p>
                                                     </div>
                                                 </div>
-                                                
+
                                                 <div className="flex items-end justify-between h-40 gap-3">
                                                     {[
                                                         { day: 'Lun', hours: 8.5, percentage: 85 },
@@ -777,9 +787,9 @@ export default function DashboardClient({
                                                     ].map((day, index) => (
                                                         <div key={day.day} className="flex-1 flex flex-col items-center">
                                                             <div className="w-full bg-slate-100 dark:bg-slate-700 rounded-t-lg overflow-hidden mb-2 relative group" style={{ height: '120px' }}>
-                                                                <div 
+                                                                <div
                                                                     className="w-full bg-gradient-to-t from-emerald-600 to-emerald-400 transition-all duration-700 rounded-t-lg relative"
-                                                                    style={{ 
+                                                                    style={{
                                                                         height: `${day.percentage}%`,
                                                                         animationDelay: `${index * 150}ms`
                                                                     }}
@@ -813,18 +823,17 @@ export default function DashboardClient({
                                                         <p className="text-slate-500 dark:text-slate-400 font-medium">Requieren atención</p>
                                                     </div>
                                                 </div>
-                                                
+
                                                 <div className="space-y-4">
                                                     {realProjects.length > 0 ? realProjects.slice(0, 3).map((project, index) => (
-                                                        <div 
-                                                            key={project.id} 
+                                                        <div
+                                                            key={project.id}
                                                             onClick={() => router.push(`/dashboard/projects/${project.id}`)}
-                                                            className={`group p-4 rounded-xl border-l-4 cursor-pointer transition-all duration-200 hover:scale-[1.02] hover:shadow-lg ${
-                                                                project.status === 'active' ? 'border-green-500 bg-green-50/50 dark:bg-green-900/20 hover:bg-green-50/70 dark:hover:bg-green-900/30' :
-                                                                project.status === 'paused' ? 'border-orange-500 bg-orange-50/50 dark:bg-orange-900/20 hover:bg-orange-50/70 dark:hover:bg-orange-900/30' :
-                                                                project.status === 'completed' ? 'border-blue-500 bg-blue-50/50 dark:bg-blue-900/20 hover:bg-blue-50/70 dark:hover:bg-blue-900/30' :
-                                                                'border-red-500 bg-red-50/50 dark:bg-red-900/20 hover:bg-red-50/70 dark:hover:bg-red-900/30'
-                                                            }`}
+                                                            className={`group p-4 rounded-xl border-l-4 cursor-pointer transition-all duration-200 hover:scale-[1.02] hover:shadow-lg ${project.status === 'active' ? 'border-green-500 bg-green-50/50 dark:bg-green-900/20 hover:bg-green-50/70 dark:hover:bg-green-900/30' :
+                                                                    project.status === 'paused' ? 'border-orange-500 bg-orange-50/50 dark:bg-orange-900/20 hover:bg-orange-50/70 dark:hover:bg-orange-900/30' :
+                                                                        project.status === 'completed' ? 'border-blue-500 bg-blue-50/50 dark:bg-blue-900/20 hover:bg-blue-50/70 dark:hover:bg-blue-900/30' :
+                                                                            'border-red-500 bg-red-50/50 dark:bg-red-900/20 hover:bg-red-50/70 dark:hover:bg-red-900/30'
+                                                                }`}
                                                         >
                                                             <div className="flex justify-between items-start mb-2">
                                                                 <div className="flex-1">
@@ -832,9 +841,9 @@ export default function DashboardClient({
                                                                         {project.name}
                                                                     </h4>
                                                                     <p className="text-sm text-slate-600 dark:text-slate-400 mt-1">
-                                                                        Estado: {project.status === 'active' ? '🟢 Activo' : 
-                                                                               project.status === 'paused' ? '⏸️ Pausado' :
-                                                                               project.status === 'completed' ? '✅ Completado' : '❌ Cancelado'}
+                                                                        Estado: {project.status === 'active' ? '🟢 Activo' :
+                                                                            project.status === 'paused' ? '⏸️ Pausado' :
+                                                                                project.status === 'completed' ? '✅ Completado' : '❌ Cancelado'}
                                                                     </p>
                                                                     {project.budget && (
                                                                         <p className="text-xs text-slate-500 dark:text-slate-400 mt-1">
@@ -873,7 +882,7 @@ export default function DashboardClient({
                                     {/* Actividad Reciente - Diseño Premium */}
                                     <div className="relative bg-white/80 dark:bg-slate-800/80 backdrop-blur-sm rounded-3xl border border-white/60 dark:border-slate-700/60 shadow-2xl shadow-slate-500/10 dark:shadow-slate-500/20 overflow-hidden">
                                         <div className="absolute inset-0 bg-gradient-to-br from-slate-50/50 via-transparent to-slate-100/50 dark:from-slate-800/50 dark:to-slate-900/50"></div>
-                                        
+
                                         {/* Header con gradiente */}
                                         <div className="relative p-8 border-b border-slate-200/60 dark:border-slate-700/60 bg-gradient-to-r from-slate-50/80 via-white/80 to-slate-50/80 dark:from-slate-800/80 dark:via-slate-800/80 dark:to-slate-800/80">
                                             <div className="flex items-center justify-between">
@@ -909,7 +918,7 @@ export default function DashboardClient({
                                                         Aún no hay actividad
                                                     </h4>
                                                     <p className="text-slate-500 dark:text-slate-400 max-w-md mx-auto leading-relaxed">
-                                                        Cuando comiences a trabajar con clientes y proyectos, 
+                                                        Cuando comiences a trabajar con clientes y proyectos,
                                                         la actividad aparecerá aquí en tiempo real
                                                     </p>
                                                 </div>
@@ -968,10 +977,10 @@ export default function DashboardClient({
                                     </div>
                                 </>
                             )}
-                                        </div>
-                                    </div>
-                                </div>
-                            </div>
                         </div>
+                    </div>
+                </div>
+            </div>
+        </div>
     );
 }

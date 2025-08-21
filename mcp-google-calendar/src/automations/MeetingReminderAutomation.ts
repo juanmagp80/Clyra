@@ -1,15 +1,24 @@
 import cron from 'node-cron';
+import { config } from '../config/index.js';
+import { EmailService } from '../services/EmailService.js';
 import { GoogleCalendarService } from '../services/GoogleCalendarService.js';
 import { SupabaseService } from '../services/SupabaseService.js';
-import { EmailService } from '../services/EmailService.js';
-import { config } from '../config/index.js';
-import { CalendarEvent, Client, AutomationStatus } from '../types/index.js';
+import { AutomationStatus, CalendarEvent, Client } from '../types/index.js';
+
+// Declaración manual del tipo ScheduleOptions (según @types/node-cron)
+type ScheduleOptions = {
+  scheduled?: boolean;
+  timezone?: string;
+  recoverMissedExecutions?: boolean;
+  name?: string;
+  runOnInit?: boolean;
+};
 
 export class MeetingReminderAutomation {
   private googleCalendar: GoogleCalendarService;
   private supabase: SupabaseService;
   private email: EmailService;
-  private cronJob?: cron.ScheduledTask;
+  private cronJob?: import('node-cron').ScheduledTask;
   private status: AutomationStatus;
 
   constructor(
@@ -20,7 +29,7 @@ export class MeetingReminderAutomation {
     this.googleCalendar = googleCalendar;
     this.supabase = supabase;
     this.email = email;
-    
+
     this.status = {
       isRunning: false,
       remindersToday: 0,
@@ -39,12 +48,16 @@ export class MeetingReminderAutomation {
     console.log('🚀 Iniciando automatización de recordatorios...');
     console.log(`⏰ Patrón cron: ${config.automation.cronPattern}`);
 
-    this.cronJob = cron.schedule(config.automation.cronPattern, async () => {
-      await this.runReminderCheck();
-    }, {
-      scheduled: true,
-      timezone: config.automation.timezone,
-    });
+    this.cronJob = cron.schedule(
+      config.automation.cronPattern,
+      async () => {
+        await this.runReminderCheck();
+      },
+      {
+        scheduled: true,
+        timezone: config.automation.timezone,
+      } as ScheduleOptions
+    );
 
     this.status.isRunning = true;
     console.log('✅ Automatización iniciada exitosamente');
@@ -81,7 +94,7 @@ export class MeetingReminderAutomation {
 
       // Obtener reuniones que necesitan recordatorios
       const upcomingMeetings = await this.supabase.getUpcomingMeetings(undefined, 3);
-      
+
       if (upcomingMeetings.length === 0) {
         console.log('📭 No hay reuniones próximas que requieran recordatorios');
         return;
@@ -142,7 +155,7 @@ export class MeetingReminderAutomation {
 
       // Enviar recordatorio
       const result = await this.sendMeetingReminder(meeting.id, reminderType);
-      
+
       if (result.success) {
         console.log(`✅ Recordatorio ${reminderType} enviado para "${meeting.title}" a ${meeting.client.email}`);
       } else {
@@ -158,13 +171,13 @@ export class MeetingReminderAutomation {
    * Enviar recordatorio de reunión
    */
   async sendMeetingReminder(
-    eventId: string, 
+    eventId: string,
     reminderType: '1_hour' | '3_hours' | '24_hours'
   ): Promise<{ success: boolean; error?: string; recipientEmail?: string }> {
     try {
       // Obtener detalles del evento
       const meeting = await this.supabase.getEvent(eventId);
-      
+
       if (!meeting) {
         return { success: false, error: 'Evento no encontrado' };
       }
@@ -203,7 +216,7 @@ export class MeetingReminderAutomation {
     } catch (error) {
       const errorMessage = error instanceof Error ? error.message : 'Error desconocido';
       console.error('❌ Error enviando recordatorio:', errorMessage);
-      
+
       // Intentar registrar el error
       try {
         await this.supabase.recordReminderSent({
@@ -225,7 +238,7 @@ export class MeetingReminderAutomation {
    * Obtener reuniones próximas
    */
   async getUpcomingMeetings(
-    userId?: string, 
+    userId?: string,
     hoursAhead: number = 3
   ): Promise<(CalendarEvent & { client?: Client })[]> {
     return await this.supabase.getUpcomingMeetings(userId, hoursAhead);
@@ -237,11 +250,11 @@ export class MeetingReminderAutomation {
   async syncWithGoogleCalendar(userId: string) {
     try {
       console.log(`🔄 Iniciando sincronización con Google Calendar para usuario ${userId}...`);
-      
+
       // Obtener eventos de Google Calendar (próximos 30 días)
       const now = new Date();
       const futureDate = new Date(now.getTime() + 30 * 24 * 60 * 60 * 1000);
-      
+
       const googleEvents = await this.googleCalendar.getEvents({
         userId: userId,
         timeMin: now.toISOString(),
@@ -250,10 +263,10 @@ export class MeetingReminderAutomation {
 
       // Sincronizar con Supabase
       const syncedEvents = await this.supabase.syncEvents(userId, googleEvents);
-      
+
       console.log(`✅ Sincronizados ${syncedEvents.length} eventos para usuario ${userId}`);
       return { success: true, syncedCount: syncedEvents.length };
-      
+
     } catch (error) {
       const errorMessage = error instanceof Error ? error.message : 'Error desconocido';
       console.error('❌ Error en sincronización:', errorMessage);
@@ -267,9 +280,9 @@ export class MeetingReminderAutomation {
   async runManualCheck(): Promise<{ success: boolean; processed: number; errors: number }> {
     try {
       console.log('🔍 Ejecutando verificación manual de recordatorios...');
-      
+
       const upcomingMeetings = await this.supabase.getUpcomingMeetings(undefined, 25); // 25 horas para incluir recordatorios de 24h
-      
+
       let processed = 0;
       let errors = 0;
 
@@ -284,7 +297,7 @@ export class MeetingReminderAutomation {
       }
 
       console.log(`✅ Verificación manual completada: ${processed} procesadas, ${errors} errores`);
-      
+
       return { success: true, processed, errors };
     } catch (error) {
       console.error('❌ Error en verificación manual:', error);

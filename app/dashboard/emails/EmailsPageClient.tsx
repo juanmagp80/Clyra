@@ -1,7 +1,6 @@
 'use client';
 import Sidebar from '@/components/Sidebar';
 import { createSupabaseClient } from '@/src/lib/supabase-client';
-import EmailTemplatesModal from './EmailTemplatesModal';
 import {
     AlertTriangle,
     Archive,
@@ -13,7 +12,6 @@ import {
     Inbox,
     Mail,
     MailOpen,
-    Plus,
     Reply,
     Search,
     Send,
@@ -25,6 +23,7 @@ import { useRouter } from 'next/navigation';
 import { useEffect, useState } from 'react';
 import TrialBanner from '../../../components/TrialBanner';
 import { useTrialStatus } from '../../../src/lib/useTrialStatus';
+import EmailTemplatesModal from './EmailTemplatesModal';
 
 // Tipos para el sistema de emails
 type EmailTemplate = {
@@ -78,7 +77,15 @@ interface EmailsPageClientProps {
 export default function EmailsPageClient({ userEmail }: EmailsPageClientProps) {
     // Hook de trial status
     const { trialInfo, loading: trialLoading, hasReachedLimit, canUseFeatures } = useTrialStatus(userEmail);
-    
+
+    // Extiende el tipo de limits para incluir 'emails' opcional
+    type TrialLimits = {
+        maxClients: number;
+        maxProjects: number;
+        maxStorageGB: number;
+        emails?: number;
+    };
+
     const [emails, setEmails] = useState<EmailThread[]>([]);
     const [templates, setTemplates] = useState<EmailTemplate[]>([]);
     const [clients, setClients] = useState<any[]>([]);
@@ -89,7 +96,7 @@ export default function EmailsPageClient({ userEmail }: EmailsPageClientProps) {
     const [selectedEmail, setSelectedEmail] = useState<EmailThread | null>(null);
     const [showComposer, setShowComposer] = useState(false);
     const [showTemplates, setShowTemplates] = useState(false);
-    
+
     const [composeData, setComposeData] = useState<EmailCompose>({
         to: '',
         subject: '',
@@ -182,13 +189,13 @@ export default function EmailsPageClient({ userEmail }: EmailsPageClientProps) {
         // Simulamos carga de datos
         const loadData = async () => {
             setLoading(true);
-            
+
             // Simular delay de red
             await new Promise(resolve => setTimeout(resolve, 1000));
-            
+
             setEmails(demoEmails);
             setTemplates(demoTemplates);
-            
+
             // También podríamos cargar clientes y proyectos reales de Supabase
             if (supabase) {
                 try {
@@ -196,19 +203,19 @@ export default function EmailsPageClient({ userEmail }: EmailsPageClientProps) {
                         .from('clients')
                         .select('id, name, company')
                         .limit(10);
-                    
+
                     const { data: projectsData } = await supabase
                         .from('projects')
                         .select('id, name')
                         .limit(10);
-                    
+
                     setClients(clientsData || []);
                     setProjects(projectsData || []);
                 } catch (error) {
                     console.error('Error loading data:', error);
                 }
             }
-            
+
             setLoading(false);
         };
 
@@ -231,21 +238,25 @@ export default function EmailsPageClient({ userEmail }: EmailsPageClientProps) {
             alert('Tu periodo de prueba ha expirado. Actualiza tu plan para continuar enviando emails.');
             return;
         }
-        
+
         if (hasReachedLimit('emails')) {
-            alert(`Has alcanzado el límite de ${trialInfo?.limits.emails || 100} emails mensuales en el plan de prueba. Actualiza tu plan para enviar más emails.`);
+            // Usa el límite de emails si existe en trialInfo.limits, si no, usa 100 por defecto
+            const emailLimit = (trialInfo && trialInfo.limits && typeof (trialInfo.limits as TrialLimits).emails === 'number')
+                ? (trialInfo.limits as TrialLimits).emails
+                : 100;
+            alert(`Has alcanzado el límite de ${emailLimit} emails mensuales en el plan de prueba. Actualiza tu plan para enviar más emails.`);
             return;
         }
-        
+
         setShowComposer(true);
     };
 
     const filteredEmails = emails.filter(email => {
-        const matchesSearch = 
+        const matchesSearch =
             email.subject.toLowerCase().includes(searchTerm.toLowerCase()) ||
             email.from_name.toLowerCase().includes(searchTerm.toLowerCase()) ||
             email.content.toLowerCase().includes(searchTerm.toLowerCase());
-        
+
         let matchesFilter = true;
         switch (filterType) {
             case 'unread':
@@ -264,7 +275,7 @@ export default function EmailsPageClient({ userEmail }: EmailsPageClientProps) {
                 matchesFilter = !!email.project_id;
                 break;
         }
-        
+
         return matchesSearch && matchesFilter;
     });
 
@@ -280,13 +291,13 @@ export default function EmailsPageClient({ userEmail }: EmailsPageClientProps) {
     };
 
     const markAsRead = (emailId: string) => {
-        setEmails(prev => prev.map(email => 
+        setEmails(prev => prev.map(email =>
             email.id === emailId ? { ...email, is_read: true } : email
         ));
     };
 
     const toggleImportant = (emailId: string) => {
-        setEmails(prev => prev.map(email => 
+        setEmails(prev => prev.map(email =>
             email.id === emailId ? { ...email, is_important: !email.is_important } : email
         ));
     };
@@ -295,7 +306,7 @@ export default function EmailsPageClient({ userEmail }: EmailsPageClientProps) {
         const date = new Date(dateString);
         const now = new Date();
         const diffInHours = Math.floor((now.getTime() - date.getTime()) / (1000 * 60 * 60));
-        
+
         if (diffInHours < 1) return 'Hace unos minutos';
         if (diffInHours < 24) return `Hace ${diffInHours}h`;
         if (diffInHours < 48) return 'Ayer';
@@ -361,11 +372,10 @@ export default function EmailsPageClient({ userEmail }: EmailsPageClientProps) {
                                             <button
                                                 onClick={handleNewEmailClick}
                                                 disabled={!canUseFeatures || hasReachedLimit('emails')}
-                                                className={`group relative px-8 py-4 bg-gradient-to-r from-blue-600 to-indigo-600 text-white rounded-2xl font-semibold shadow-2xl shadow-blue-500/25 hover:shadow-blue-500/40 hover:scale-105 transform transition-all duration-200 flex items-center gap-3 ${
-                                                    (!canUseFeatures || hasReachedLimit('emails')) 
-                                                        ? 'opacity-50 cursor-not-allowed !bg-gray-400 hover:!bg-gray-400 !shadow-gray-400/25 hover:!shadow-gray-400/25 hover:!scale-100' 
+                                                className={`group relative px-8 py-4 bg-gradient-to-r from-blue-600 to-indigo-600 text-white rounded-2xl font-semibold shadow-2xl shadow-blue-500/25 hover:shadow-blue-500/40 hover:scale-105 transform transition-all duration-200 flex items-center gap-3 ${(!canUseFeatures || hasReachedLimit('emails'))
+                                                        ? 'opacity-50 cursor-not-allowed !bg-gray-400 hover:!bg-gray-400 !shadow-gray-400/25 hover:!shadow-gray-400/25 hover:!scale-100'
                                                         : ''
-                                                }`}
+                                                    }`}
                                             >
                                                 {(!canUseFeatures || hasReachedLimit('emails')) ? (
                                                     <AlertTriangle className="w-5 h-5" />
@@ -460,11 +470,10 @@ export default function EmailsPageClient({ userEmail }: EmailsPageClientProps) {
                                                 <button
                                                     key={filter.key}
                                                     onClick={() => setFilterType(filter.key)}
-                                                    className={`w-full flex items-center gap-3 px-4 py-3 rounded-xl transition-all duration-200 ${
-                                                        filterType === filter.key
+                                                    className={`w-full flex items-center gap-3 px-4 py-3 rounded-xl transition-all duration-200 ${filterType === filter.key
                                                             ? 'bg-gradient-to-r from-blue-600 to-indigo-600 text-white shadow-lg'
                                                             : 'text-slate-700 hover:bg-white/60'
-                                                    }`}
+                                                        }`}
                                                 >
                                                     {filter.icon}
                                                     <span className="font-medium">{filter.label}</span>
@@ -530,11 +539,10 @@ export default function EmailsPageClient({ userEmail }: EmailsPageClientProps) {
                                                                 setSelectedEmail(email);
                                                                 markAsRead(email.id);
                                                             }}
-                                                            className={`p-4 rounded-xl border cursor-pointer transition-all duration-200 hover:shadow-lg hover:scale-[1.02] ${
-                                                                email.is_read 
-                                                                    ? 'bg-white/60 border-white/70' 
+                                                            className={`p-4 rounded-xl border cursor-pointer transition-all duration-200 hover:shadow-lg hover:scale-[1.02] ${email.is_read
+                                                                    ? 'bg-white/60 border-white/70'
                                                                     : 'bg-white/80 border-blue-200/70 shadow-md'
-                                                            }`}
+                                                                }`}
                                                         >
                                                             <div className="flex items-start justify-between">
                                                                 <div className="flex-1 min-w-0">
@@ -569,9 +577,8 @@ export default function EmailsPageClient({ userEmail }: EmailsPageClientProps) {
                                                                             e.stopPropagation();
                                                                             toggleImportant(email.id);
                                                                         }}
-                                                                        className={`p-1 rounded transition-colors duration-200 ${
-                                                                            email.is_important ? 'text-yellow-500' : 'text-slate-400 hover:text-yellow-500'
-                                                                        }`}
+                                                                        className={`p-1 rounded transition-colors duration-200 ${email.is_important ? 'text-yellow-500' : 'text-slate-400 hover:text-yellow-500'
+                                                                            }`}
                                                                     >
                                                                         <Star className="w-4 h-4" fill={email.is_important ? 'currentColor' : 'none'} />
                                                                     </button>
@@ -654,7 +661,7 @@ export default function EmailsPageClient({ userEmail }: EmailsPageClientProps) {
                                                     type="email"
                                                     placeholder="destinatario@email.com"
                                                     value={composeData.to}
-                                                    onChange={(e) => setComposeData({...composeData, to: e.target.value})}
+                                                    onChange={(e) => setComposeData({ ...composeData, to: e.target.value })}
                                                     className="w-full px-4 py-3 bg-white/50 backdrop-blur-xl border border-white/60 rounded-xl focus:border-indigo-500 focus:ring-2 focus:ring-indigo-500/20 transition-all duration-200 placeholder-slate-400"
                                                 />
                                             </div>
@@ -664,7 +671,7 @@ export default function EmailsPageClient({ userEmail }: EmailsPageClientProps) {
                                                     type="text"
                                                     placeholder="Asunto del email"
                                                     value={composeData.subject}
-                                                    onChange={(e) => setComposeData({...composeData, subject: e.target.value})}
+                                                    onChange={(e) => setComposeData({ ...composeData, subject: e.target.value })}
                                                     className="w-full px-4 py-3 bg-white/50 backdrop-blur-xl border border-white/60 rounded-xl focus:border-indigo-500 focus:ring-2 focus:ring-indigo-500/20 transition-all duration-200 placeholder-slate-400"
                                                 />
                                             </div>
@@ -674,13 +681,13 @@ export default function EmailsPageClient({ userEmail }: EmailsPageClientProps) {
                                                     rows={10}
                                                     placeholder="Escribe tu mensaje aquí..."
                                                     value={composeData.content}
-                                                    onChange={(e) => setComposeData({...composeData, content: e.target.value})}
+                                                    onChange={(e) => setComposeData({ ...composeData, content: e.target.value })}
                                                     className="w-full px-4 py-3 bg-white/50 backdrop-blur-xl border border-white/60 rounded-xl focus:border-indigo-500 focus:ring-2 focus:ring-indigo-500/20 transition-all duration-200 placeholder-slate-400 resize-none"
                                                 />
                                             </div>
                                         </div>
                                         <div className="p-6 border-t border-white/30 flex gap-3">
-                                            <button 
+                                            <button
                                                 onClick={() => {
                                                     // Aquí iría la lógica de envío
                                                     console.log('Enviando email:', composeData);

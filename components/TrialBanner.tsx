@@ -15,8 +15,8 @@ export default function TrialBanner({ userEmail }: TrialBannerProps) {
 
     if (loading || !trialInfo || dismissed) return null;
 
-    // No mostrar banner si el usuario tiene una suscripción activa
-    if (trialInfo.hasActiveSubscription || trialInfo.status === 'active') return null;
+    // No mostrar banner si tiene suscripción activa O si puede usar funciones (incluye suscripción de Stripe)
+    if (trialInfo.status === 'active' || trialInfo.canUseFeatures) return null;
 
     const getBannerConfig = () => {
         const { daysRemaining, isExpired } = trialInfo;
@@ -53,7 +53,7 @@ export default function TrialBanner({ userEmail }: TrialBannerProps) {
                 icon: Calendar,
                 title: `${daysRemaining} días restantes de trial`,
                 message: 'Considera actualizar para acceso completo',
-                buttonText: 'Pasarse a PRO',
+                buttonText: 'Ver Planes',
                 buttonVariant: 'secondary' as const,
                 urgent: false
             };
@@ -63,9 +63,9 @@ export default function TrialBanner({ userEmail }: TrialBannerProps) {
                 bgSecondary: 'from-blue-50 to-indigo-50',
                 textColor: 'text-white',
                 icon: Crown,
-                title: `Acceso Completo Ilimitado - ${daysRemaining} días restantes`,
-                message: 'Disfruta de todas las funciones sin restricciones durante tu trial',
-                buttonText: 'Pasarse a PRO',
+                title: `Probando Taskelio PRO - ${daysRemaining} días restantes`,
+                message: 'Tienes acceso completo durante tu trial gratuito',
+                buttonText: 'Ver Planes',
                 buttonVariant: 'secondary' as const,
                 urgent: false
             };
@@ -110,23 +110,15 @@ export default function TrialBanner({ userEmail }: TrialBannerProps) {
                         <div className="hidden lg:flex items-center space-x-6 text-sm">
                             <div className={`${config.textColor} opacity-90 text-center`}>
                                 <div className="font-bold text-lg">{trialInfo.usage.clients}</div>
-                                <div className="text-xs">
-                                    {trialInfo.status === 'trial' && !trialInfo.isExpired ? 'Ilimitados' : 'Clientes'}
-                                </div>
+                                <div className="text-xs">Clientes</div>
                             </div>
                             <div className={`${config.textColor} opacity-90 text-center`}>
                                 <div className="font-bold text-lg">{trialInfo.usage.projects}</div>
-                                <div className="text-xs">
-                                    {trialInfo.status === 'trial' && !trialInfo.isExpired ? 'Ilimitados' : 'Proyectos'}
-                                </div>
+                                <div className="text-xs">Proyectos</div>
                             </div>
                             <div className={`${config.textColor} opacity-90 text-center`}>
-                                <div className="font-bold text-lg">
-                                    {trialInfo.status === 'trial' && !trialInfo.isExpired ? '∞' : Math.round(trialInfo.usage.storage / 1024 * 100) / 100}
-                                </div>
-                                <div className="text-xs">
-                                    {trialInfo.status === 'trial' && !trialInfo.isExpired ? 'Almacenamiento' : 'GB Usados'}
-                                </div>
+                                <div className="font-bold text-lg">{Math.round(trialInfo.usage.storage / 1024 * 100) / 100}</div>
+                                <div className="text-xs">GB Usados</div>
                             </div>
                         </div>
                     </div>
@@ -138,8 +130,8 @@ export default function TrialBanner({ userEmail }: TrialBannerProps) {
                             variant={config.buttonVariant}
                             className={`
                                 font-semibold transition-all duration-200 hover:scale-105 shadow-lg
-                                ${config.urgent 
-                                    ? 'bg-white text-red-600 hover:bg-red-50 border-2 border-white' 
+                                ${config.urgent
+                                    ? 'bg-white text-red-600 hover:bg-red-50 border-2 border-white'
                                     : 'bg-white/20 backdrop-blur-sm text-white border border-white/30 hover:bg-white/30'
                                 }
                             `}
