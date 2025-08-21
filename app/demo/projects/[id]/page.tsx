@@ -12,7 +12,23 @@ import {
 } from 'lucide-react';
 import Link from 'next/link';
 import { notFound } from 'next/navigation';
-import { demoClients, demoProjects } from '../../demo-data';
+import { useState, useEffect } from 'react';
+// import { demoClients, demoProjects } from '../../demo-data';
+interface DemoClient {
+    id: string;
+    name: string;
+    company?: string;
+    email?: string;
+    phone?: string;
+}
+interface DemoProject {
+    id: string;
+    title?: string;
+    description?: string;
+    client_id?: string;
+}
+const demoClients: DemoClient[] = [];
+const demoProjects: DemoProject[] = [];
 
 interface Props {
     params: Promise<{
@@ -20,15 +36,21 @@ interface Props {
     }>;
 }
 
-export default async function DemoProjectDetailsPage({ params }: Props) {
-    const { id } = await params;
-    const project = demoProjects.find(p => p.id === id);
-
-    if (!project) {
-        notFound();
-    }
-
-    const client = demoClients.find(c => c.id === project.client_id);
+export default function DemoProjectDetailsPage({ params }: Props) {
+    const [project, setProject] = useState<any>(null);
+    const [client, setClient] = useState<any>(null);
+    useEffect(() => {
+        (async () => {
+            const { id } = await params;
+            const proj = demoProjects.find(p => p.id === id);
+            if (!proj) {
+                notFound();
+                return;
+            }
+            setProject(proj);
+            setClient(demoClients.find(c => c.id === proj.client_id));
+        })();
+    }, [params]);
 
     const formatDate = (dateString: string) => {
         return new Date(dateString).toLocaleDateString('es-ES', {

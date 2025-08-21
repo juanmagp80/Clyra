@@ -246,7 +246,7 @@ async function createSampleAutomations() {
         ];
 
         console.log('🚀 Eliminando automatizaciones existentes...');
-        
+
         // Primero eliminar automatizaciones existentes del usuario
         const { error: deleteError } = await supabase
             .from('automations')

@@ -1,29 +1,30 @@
 'use client'
-import { Button } from '@/components/ui/Button';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/Card';
-import { Input } from '@/components/ui/Input';
-import { createSupabaseClient, isSupabaseConfigured } from '@/src/lib/supabase-client';
+import { createSupabaseClient } from '@/src/lib/supabase-client';
 import { getBaseUrl } from '@/lib/url';
-import { 
-    ArrowRight, 
-    Building, 
-    Chrome, 
-    Eye, 
-    EyeOff, 
-    Github, 
-    Globe, 
-    Lock, 
-    Mail, 
-    Phone, 
-    Sparkles, 
-    TrendingUp, 
-    UserPlus,
-    Users,
-    CheckCircle
+import {
+    X,
+    AlertCircle,
+    CheckCircle,
+    Eye,
+    EyeOff,
+    Mail,
+    Lock,
+    Building,
+    Phone,
+    Globe,
+    MapPin
 } from 'lucide-react';
 import Link from 'next/link';
+import { Input } from '@/components/ui/Input';
+import { UserPlus, Sparkles, ArrowRight, Github, Chrome, Users, TrendingUp } from 'lucide-react';
 import { useRouter } from 'next/navigation';
-import { useState } from 'react';
+import { useState, useCallback } from 'react';
+
+interface PopupState {
+    show: boolean;
+    type: 'success' | 'error';
+    message: string;
+}
 
 export default function RegisterPage() {
     // Estados para autenticación
@@ -42,516 +43,544 @@ export default function RegisterPage() {
     const [companyAddress, setCompanyAddress] = useState('');
 
     const [loading, setLoading] = useState(false);
-    const [error, setError] = useState('');
-    const [success, setSuccess] = useState('');
     const router = useRouter();
     const [captchaToken, setCaptchaToken] = useState('');
 
-    // ✅ Función para registro con GitHub
-    const registerWithGitHub = async () => {
-        if (!supabase) {
-            setError('Para usar autenticación, configura Supabase en las variables de entorno.');
-            return;
-        }
-        
-        try {
-            setLoading(true);
-            const { error } = await supabase.auth.signInWithOAuth({
-                provider: 'github',
-                options: {
-                    redirectTo: `${getBaseUrl()}/auth/callback`
-                }
-            });
-            
-            if (error) {
-                setError('Error al conectar con GitHub: ' + error.message);
-            }
-        } catch (err) {
-            setError('Error de conexión con GitHub');
-        }
-        setLoading(false);
-    };
-
-    // ✅ Función para registro con Google
-    const registerWithGoogle = async () => {
-        if (!supabase) {
-            setError('Para usar autenticación, configura Supabase en las variables de entorno.');
-            return;
-        }
-        
-        try {
-            setLoading(true);
-            const { error } = await supabase.auth.signInWithOAuth({
-                provider: 'google',
-                options: {
-                    redirectTo: `${getBaseUrl()}/auth/callback`
-                }
-            });
-            
-            if (error) {
-                setError('Error al conectar con Google: ' + error.message);
-            }
-        } catch (err) {
-            setError('Error de conexión con Google');
-        }
-        setLoading(false);
-    };
+    // Estado para popup unificado
+    const [popup, setPopup] = useState<PopupState>({
+        show: false,
+        type: 'success',
+        message: ''
+    });
 
     // Crear instancia del cliente de Supabase
     const supabase = createSupabaseClient();
 
+    // Función para mostrar popup
+    const showPopup = useCallback((type: 'success' | 'error', message: string) => {
+        setPopup({ show: true, type, message });
+    }, []);
 
-    // Reemplaza la función register completa con esta versión corregida:
+    // Función para cerrar popup
+    const closePopup = useCallback(() => {
+        setPopup(prev => ({ ...prev, show: false }));
+    }, []);
 
-    const register = async () => {
-        if (!supabase) {
-            setError('Para usar autenticación, configura Supabase en las variables de entorno.');
-            return;
+    // Validaciones mejoradas
+    const validateForm = useCallback(() => {
+        if (!email.trim() || !password || !confirmPassword || !companyName.trim()) {
+            showPopup('error', 'Por favor completa todos los campos obligatorios');
+            return false;
         }
-        
-        const now = Date.now();
-        if (now - lastAttempt < 5000) {
-            setError('Por favor espera 5 segundos antes de intentar de nuevo.');
-            return;
-        }
-        if (process.env.NODE_ENV === 'production' && !captchaToken) {
-            setError('Por favor completa el captcha');
-            return;
-        }
-        setLastAttempt(now);
-        setError('');
-        setSuccess('');
 
-        // Validaciones...
-        if (!email || !password || !confirmPassword || !companyName) {
-            setError('Por favor completa todos los campos obligatorios');
-            return;
+        // Validación de email
+        const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+        if (!emailRegex.test(email)) {
+            showPopup('error', 'Por favor ingresa un email válido');
+            return false;
         }
 
         if (password !== confirmPassword) {
-            setError('Las contraseñas no coinciden');
-            return;
+            showPopup('error', 'Las contraseñas no coinciden');
+            return false;
         }
 
         if (password.length < 6) {
-            setError('La contraseña debe tener al menos 6 caracteres');
+            showPopup('error', 'La contraseña debe tener al menos 6 caracteres');
+            return false;
+        }
+
+        // Validación básica de contraseña fuerte
+        const hasNumber = /\d/.test(password);
+        const hasLetter = /[a-zA-Z]/.test(password);
+        if (!hasNumber || !hasLetter) {
+            showPopup('error', 'La contraseña debe contener al menos una letra y un número');
+            return false;
+        }
+
+        return true;
+    }, [email, password, confirmPassword, companyName, showPopup]);
+
+    // Función de registro mejorada
+    const register = async () => {
+        if (!supabase) {
+            showPopup('error', 'Para usar autenticación, configura Supabase en las variables de entorno.');
             return;
         }
 
+        const now = Date.now();
+        if (now - lastAttempt < 5000) {
+            showPopup('error', 'Por favor espera 5 segundos antes de intentar de nuevo.');
+            return;
+        }
+
+        if (process.env.NODE_ENV === 'production' && !captchaToken) {
+            showPopup('error', 'Por favor completa el captcha');
+            return;
+        }
+
+        if (!validateForm()) {
+            return;
+        }
+
+        setLastAttempt(now);
         setLoading(true);
 
         try {
-            // ✅ Agregar manejo específico para rate limiting
             const { data: authData, error: authError } = await supabase.auth.signUp({
-                email,
+                email: email.trim(),
                 password,
                 options: {
                     emailRedirectTo: `${getBaseUrl()}/auth/callback`,
                     data: {
-                        company_name: companyName,
-                        company_email: companyEmail || email,
-                        company_phone: companyPhone || '',
-                        company_website: companyWebsite || '',
-                        company_address: companyAddress || ''
+                        company_name: companyName.trim(),
+                        company_email: companyEmail.trim() || email.trim(),
+                        company_phone: companyPhone.trim() || '',
+                        company_website: companyWebsite.trim() || '',
+                        company_address: companyAddress.trim() || ''
                     }
                 }
             });
 
             if (authError) {
-                // ✅ Manejo específico para rate limiting
+                console.error('Registration error:', authError);
+
                 if (authError.message.includes('429') || authError.message.includes('rate')) {
-                    setError('Has excedido el límite de intentos. Por favor espera unos minutos antes de intentar de nuevo.');
+                    showPopup('error', 'Has excedido el límite de intentos. Por favor espera unos minutos antes de intentar de nuevo.');
+                } else if (authError.message.includes('already registered')) {
+                    showPopup('error', 'Este email ya está registrado. ¿Has intentado iniciar sesión?');
                 } else {
-                    setError(authError.message);
+                    showPopup('error', authError.message);
                 }
-                setLoading(false);
                 return;
             }
 
-            setSuccess('¡Cuenta creada! Revisa tu email para confirmar tu cuenta. Los datos de tu empresa se configurarán automáticamente.');
+            showPopup('success', '¡Cuenta creada exitosamente! 🎉\n\nRevisa tu email para confirmar tu cuenta. Los datos de tu empresa se configurarán automáticamente.');
 
+            // Redireccionar después de mostrar el mensaje
             setTimeout(() => {
+                closePopup();
                 router.push('/login');
-            }, 3000);
+            }, 4000);
 
-        } catch (err: any) {
-            if (err.message?.includes('429') || err.message?.includes('rate')) {
-                setError('Demasiados intentos de registro. Por favor espera 5-10 minutos antes de intentar de nuevo.');
-            } else {
-                setError('Error inesperado. Inténtalo de nuevo.');
-            }
+        } catch (err: unknown) {
             console.error('Registration error:', err);
-        }
+            const error = err as Error;
 
-        setLoading(false);
+            if (error.message?.includes('429') || error.message?.includes('rate')) {
+                showPopup('error', 'Demasiados intentos de registro. Por favor espera 5-10 minutos antes de intentar de nuevo.');
+            } else if (error.message?.includes('network')) {
+                showPopup('error', 'Error de conexión. Verifica tu internet e inténtalo de nuevo.');
+            } else {
+                showPopup('error', 'Error inesperado. Inténtalo de nuevo.');
+            }
+        } finally {
+            setLoading(false);
+        }
+    };
+
+    const handleSubmit = (e: React.FormEvent) => {
+        e.preventDefault();
+        register();
     };
 
     return (
-        <div className="min-h-screen bg-gradient-to-br from-slate-50 via-gray-50 to-zinc-100 text-slate-900 relative overflow-hidden">
-            {/* Premium Silicon Valley Background */}
-            <div className="fixed inset-0 z-0">
-                <div className="absolute inset-0 bg-gradient-to-br from-slate-50 via-gray-50 to-zinc-50" />
-                <div className="absolute inset-0 bg-[radial-gradient(circle_at_25%_25%,rgba(99,102,241,0.08),transparent_50%)]" />
-                <div className="absolute inset-0 bg-[radial-gradient(circle_at_75%_75%,rgba(139,92,246,0.06),transparent_50%)]" />
-                <div className="absolute inset-0 bg-grid-slate-900/[0.02] bg-[size:32px_32px]" />
-                
-                {/* Elegant Floating Orbs */}
-                <div className="absolute top-24 left-16 w-40 h-40 bg-gradient-to-br from-indigo-100/40 to-violet-100/40 rounded-full blur-3xl animate-pulse"></div>
-                <div className="absolute bottom-40 right-24 w-56 h-56 bg-gradient-to-br from-violet-100/40 to-indigo-100/40 rounded-full blur-3xl animate-pulse" style={{animationDelay: '1.5s'}}></div>
-                <div className="absolute top-1/3 left-8 w-28 h-28 bg-gradient-to-br from-blue-100/40 to-indigo-100/40 rounded-full blur-3xl animate-pulse" style={{animationDelay: '3s'}}></div>
-            </div>
+        <>
+            {/* Popup de notificación mejorado */}
+            {popup.show && (
+                <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm animate-in fade-in duration-300">
+                    <div
+                        className={`relative p-8 max-w-md mx-4 rounded-3xl shadow-2xl transform transition-all duration-500 
+                            ${popup.type === 'success'
+                                ? 'bg-gradient-to-br from-emerald-500 via-teal-500 to-green-600 text-white '
+                                : 'bg-gradient-to-br from-red-500 via-pink-500 to-rose-600 text-white '
+                            }border border-white/20 backdrop-blur-lg`}
+                        style={{ animation: 'fadeInScale 0.5s ease-out forwards' }}
+                    >
+                        {/* Efecto de cristal */}
+                        <div className="absolute inset-0 bg-white/10 rounded-3xl"></div>
 
-            {/* Premium Header */}
-            <header className="relative z-10 p-6">
-                <Link href="/" className="inline-flex items-center gap-3 group">
-                    <h1 className="text-xl font-black tracking-tight relative">
-                        <span className="relative text-slate-900">
-                            Taskelio
-                            <div className="absolute -top-0.5 -right-0.5 w-1 h-1 bg-gradient-to-r from-indigo-500 to-violet-500 rounded-full opacity-80"></div>
-                        </span>
-                    </h1>
-                    <span className="text-xs bg-gradient-to-r from-indigo-50 to-violet-50 border border-indigo-200 text-indigo-700 px-2 py-1 rounded-full font-medium">
-                        BETA
-                    </span>
-                </Link>
-            </header>
+                        {/* Botón cerrar */}
+                        <button
+                            onClick={closePopup}
+                            className="absolute top-4 right-4 p-2 hover:bg-white/20 rounded-full transition-all duration-200 hover:scale-110"
+                            type="button"
+                        >
+                            <X size={18} />
+                        </button>
 
-            <div className="relative z-10 flex items-center justify-center min-h-[calc(100vh-100px)] px-4">
-                <div className="w-full max-w-4xl">
-                    {/* Premium Silicon Valley Card */}
-                    <div className="relative bg-white/95 backdrop-blur-2xl border border-slate-200/60 rounded-3xl p-8 shadow-2xl shadow-slate-900/5">
-                        {/* Premium Border Glow */}
-                        <div className="absolute inset-0 bg-gradient-to-br from-indigo-50/80 via-transparent to-violet-50/80 rounded-3xl blur-sm -z-10"></div>
-                        
-                        {/* Inner Premium Glow */}
-                        <div className="absolute inset-0 bg-gradient-to-br from-indigo-50/30 to-violet-50/30 rounded-3xl"></div>
-                        
-                        {/* Professional Header */}
-                        <div className="text-center mb-8 relative">
-                            <div className="relative inline-flex items-center justify-center w-16 h-16 bg-gradient-to-br from-indigo-600 via-blue-600 to-violet-600 rounded-2xl mb-6 shadow-xl shadow-indigo-500/25 group">
-                                <UserPlus className="w-8 h-8 text-white group-hover:scale-110 transition-transform duration-300" />
-                                {/* Premium Ring Animation */}
-                                <div className="absolute inset-0 rounded-2xl bg-gradient-to-br from-indigo-400 to-violet-400 opacity-0 group-hover:opacity-20 transition-opacity duration-300"></div>
-                            </div>
-                            
-                            <h1 className="text-3xl font-black mb-3 tracking-tight">
-                                <span className="bg-gradient-to-r from-slate-900 via-indigo-900 to-violet-900 bg-clip-text text-transparent">
-                                    Únete a Taskelio
-                                </span>
-                            </h1>
-                            <p className="text-slate-600 text-base leading-relaxed">
-                                Crea tu 
-                                <span className="text-indigo-600 font-semibold"> workspace profesional</span> en segundos
-                            </p>
+                        {/* Icono animado */}
+                        <div
+                            className={`w-20 h-20 mx-auto mb-6 rounded-full flex items-center justify-center relative ${popup.type === 'success' ? 'bg-white/20' : 'bg-white/20'}`}
+                            style={{ animation: 'pulse 2s infinite' }}
+                        >
+                            {popup.type === 'success' ? (
+                                <CheckCircle size={32} />
+                            ) : (
+                                <AlertCircle size={32} />
+                            )}
+
+                            {/* Anillos animados */}
+                            <div className="absolute inset-0 rounded-full border-2 border-white/30" style={{ animation: 'ping 1s infinite' }}></div>
+                            <div className="absolute inset-2 rounded-full border border-white/20" style={{ animation: 'ping 1s infinite', animationDelay: '0.5s' }}></div>
                         </div>
 
-                        {/* Professional Alerts */}
-                        {error && (
-                            <div className="bg-red-50/80 border border-red-200 rounded-xl p-4 mb-6 backdrop-blur-sm">
-                                <p className="text-red-700 text-sm font-medium">{error}</p>
-                            </div>
-                        )}
-
-                        {success && (
-                            <div className="bg-emerald-50/80 border border-emerald-200 rounded-xl p-4 mb-6 backdrop-blur-sm">
-                                <p className="text-emerald-700 text-sm font-medium">{success}</p>
-                            </div>
-                        )}
-
-                        {/* Premium Form Design */}
-                        <div className="grid md:grid-cols-2 gap-8">
-                            {/* Account Section */}
-                            <div className="space-y-6">
-                                <div className="flex items-center gap-3 mb-6">
-                                    <div className="w-8 h-8 bg-gradient-to-br from-indigo-100 to-violet-100 rounded-xl flex items-center justify-center">
-                                        <Lock className="w-4 h-4 text-indigo-600" />
-                                    </div>
-                                    <h3 className="text-lg font-bold text-slate-900">Detalles de Cuenta</h3>
-                                </div>
-
-                                {/* Email Field - Premium Style */}
-                                <div className="space-y-3">
-                                    <label className="text-sm font-semibold text-slate-700 flex items-center gap-2">
-                                        <div className="w-1 h-4 bg-gradient-to-b from-indigo-500 to-violet-500 rounded-full"></div>
-                                        Dirección de Email *
-                                    </label>
-                                    <div className="relative group">
-                                        <Mail className="absolute left-4 top-1/2 transform -translate-y-1/2 w-5 h-5 text-slate-400 group-focus-within:text-indigo-500 transition-colors duration-300" />
-                                        <Input
-                                            type="email"
-                                            placeholder="tu@empresa.com"
-                                            value={email}
-                                            onChange={(e) => setEmail(e.target.value)}
-                                            className="pl-12 bg-slate-50/50 border-slate-200 text-slate-900 placeholder:text-slate-400 focus:border-indigo-500 focus:ring-indigo-100 h-12 text-base rounded-xl hover:bg-slate-50 transition-all duration-300 font-medium"
-                                        />
-                                        <div className="absolute inset-0 rounded-xl bg-gradient-to-r from-indigo-50/40 to-violet-50/40 opacity-0 group-focus-within:opacity-100 transition-opacity duration-300 pointer-events-none"></div>
-                                    </div>
-                                </div>
-
-                                {/* Password Field - Premium Style */}
-                                <div className="space-y-3">
-                                    <label className="text-sm font-semibold text-slate-700 flex items-center gap-2">
-                                        <div className="w-1 h-4 bg-gradient-to-b from-indigo-500 to-violet-500 rounded-full"></div>
-                                        Contraseña *
-                                    </label>
-                                    <div className="relative group">
-                                        <Lock className="absolute left-4 top-1/2 transform -translate-y-1/2 w-5 h-5 text-slate-400 group-focus-within:text-indigo-500 transition-colors duration-300" />
-                                        <Input
-                                            type={showPassword ? "text" : "password"}
-                                            placeholder="Mínimo 6 caracteres"
-                                            value={password}
-                                            onChange={(e) => setPassword(e.target.value)}
-                                            className="pl-12 pr-12 bg-slate-50/50 border-slate-200 text-slate-900 placeholder:text-slate-400 focus:border-indigo-500 focus:ring-indigo-100 h-12 text-base rounded-xl hover:bg-slate-50 transition-all duration-300 font-medium"
-                                        />
-                                        <button
-                                            type="button"
-                                            onClick={() => setShowPassword(!showPassword)}
-                                            className="absolute right-4 top-1/2 transform -translate-y-1/2 text-slate-400 hover:text-slate-600 transition-colors duration-300 p-1 rounded-lg hover:bg-slate-100"
-                                        >
-                                            {showPassword ? <EyeOff className="w-5 h-5" /> : <Eye className="w-5 h-5" />}
-                                        </button>
-                                        <div className="absolute inset-0 rounded-xl bg-gradient-to-r from-indigo-50/40 to-violet-50/40 opacity-0 group-focus-within:opacity-100 transition-opacity duration-300 pointer-events-none"></div>
-                                    </div>
-                                </div>
-
-                                {/* Confirm Password Field - Premium Style */}
-                                <div className="space-y-3">
-                                    <label className="text-sm font-semibold text-slate-700 flex items-center gap-2">
-                                        <div className="w-1 h-4 bg-gradient-to-b from-indigo-500 to-violet-500 rounded-full"></div>
-                                        Confirmar Contraseña *
-                                    </label>
-                                    <div className="relative group">
-                                        <Lock className="absolute left-4 top-1/2 transform -translate-y-1/2 w-5 h-5 text-slate-400 group-focus-within:text-indigo-500 transition-colors duration-300" />
-                                        <Input
-                                            type={showConfirmPassword ? "text" : "password"}
-                                            placeholder="Repite tu contraseña"
-                                            value={confirmPassword}
-                                            onChange={(e) => setConfirmPassword(e.target.value)}
-                                            className="pl-12 pr-12 bg-slate-50/50 border-slate-200 text-slate-900 placeholder:text-slate-400 focus:border-indigo-500 focus:ring-indigo-100 h-12 text-base rounded-xl hover:bg-slate-50 transition-all duration-300 font-medium"
-                                        />
-                                        <button
-                                            type="button"
-                                            onClick={() => setShowConfirmPassword(!showConfirmPassword)}
-                                            className="absolute right-4 top-1/2 transform -translate-y-1/2 text-slate-400 hover:text-slate-600 transition-colors duration-300 p-1 rounded-lg hover:bg-slate-100"
-                                        >
-                                            {showConfirmPassword ? <EyeOff className="w-5 h-5" /> : <Eye className="w-5 h-5" />}
-                                        </button>
-                                        <div className="absolute inset-0 rounded-xl bg-gradient-to-r from-indigo-50/40 to-violet-50/40 opacity-0 group-focus-within:opacity-100 transition-opacity duration-300 pointer-events-none"></div>
-                                    </div>
-                                </div>
-                            </div>
-
-                            {/* Company Section - Premium Style */}
-                            <div className="space-y-6">
-                                <div className="flex items-center gap-3 mb-6">
-                                    <div className="w-8 h-8 bg-gradient-to-br from-violet-100 to-indigo-100 rounded-xl flex items-center justify-center">
-                                        <Building className="w-4 h-4 text-violet-600" />
-                                    </div>
-                                    <h3 className="text-lg font-bold text-slate-900">Detalles de Empresa</h3>
-                                    <span className="text-xs bg-gradient-to-r from-violet-50 to-indigo-50 border border-violet-200 text-violet-700 px-3 py-1 rounded-full font-medium">Opcional</span>
-                                </div>
-
-                                {/* Company Name - Premium Style */}
-                                <div className="space-y-3">
-                                    <label className="text-sm font-semibold text-slate-700 flex items-center gap-2">
-                                        <div className="w-1 h-4 bg-gradient-to-b from-violet-500 to-indigo-500 rounded-full"></div>
-                                        Nombre de Empresa
-                                    </label>
-                                    <div className="relative group">
-                                        <Building className="absolute left-4 top-1/2 transform -translate-y-1/2 w-5 h-5 text-slate-400 group-focus-within:text-violet-500 transition-colors duration-300" />
-                                        <Input
-                                            type="text"
-                                            placeholder="Tu Empresa S.L."
-                                            value={companyName}
-                                            onChange={(e) => setCompanyName(e.target.value)}
-                                            className="pl-12 bg-slate-50/50 border-slate-200 text-slate-900 placeholder:text-slate-400 focus:border-violet-500 focus:ring-violet-100 h-12 text-base rounded-xl hover:bg-slate-50 transition-all duration-300 font-medium"
-                                        />
-                                        <div className="absolute inset-0 rounded-xl bg-gradient-to-r from-violet-50/40 to-indigo-50/40 opacity-0 group-focus-within:opacity-100 transition-opacity duration-300 pointer-events-none"></div>
-                                    </div>
-                                </div>
-
-                                {/* Company Email - Premium Style */}
-                                <div className="space-y-3">
-                                    <label className="text-sm font-semibold text-slate-700 flex items-center gap-2">
-                                        <div className="w-1 h-4 bg-gradient-to-b from-violet-500 to-indigo-500 rounded-full"></div>
-                                        Email de Empresa
-                                    </label>
-                                    <div className="relative group">
-                                        <Mail className="absolute left-4 top-1/2 transform -translate-y-1/2 w-5 h-5 text-slate-400 group-focus-within:text-violet-500 transition-colors duration-300" />
-                                        <Input
-                                            type="email"
-                                            placeholder="contacto@tuempresa.com"
-                                            value={companyEmail}
-                                            onChange={(e) => setCompanyEmail(e.target.value)}
-                                            className="pl-12 bg-slate-50/50 border-slate-200 text-slate-900 placeholder:text-slate-400 focus:border-violet-500 focus:ring-violet-100 h-12 text-base rounded-xl hover:bg-slate-50 transition-all duration-300 font-medium"
-                                        />
-                                        <div className="absolute inset-0 rounded-xl bg-gradient-to-r from-violet-50/40 to-indigo-50/40 opacity-0 group-focus-within:opacity-100 transition-opacity duration-300 pointer-events-none"></div>
-                                    </div>
-                                </div>
-
-                                {/* Phone - Premium Style */}
-                                <div className="space-y-3">
-                                    <label className="text-sm font-semibold text-slate-700 flex items-center gap-2">
-                                        <div className="w-1 h-4 bg-gradient-to-b from-violet-500 to-indigo-500 rounded-full"></div>
-                                        Número de Teléfono
-                                    </label>
-                                    <div className="relative group">
-                                        <Phone className="absolute left-4 top-1/2 transform -translate-y-1/2 w-5 h-5 text-slate-400 group-focus-within:text-violet-500 transition-colors duration-300" />
-                                        <Input
-                                            type="tel"
-                                            placeholder="+34 123 456 789"
-                                            value={companyPhone}
-                                            onChange={(e) => setCompanyPhone(e.target.value)}
-                                            className="pl-12 bg-slate-50/50 border-slate-200 text-slate-900 placeholder:text-slate-400 focus:border-violet-500 focus:ring-violet-100 h-12 text-base rounded-xl hover:bg-slate-50 transition-all duration-300 font-medium"
-                                        />
-                                        <div className="absolute inset-0 rounded-xl bg-gradient-to-r from-violet-50/40 to-indigo-50/40 opacity-0 group-focus-within:opacity-100 transition-opacity duration-300 pointer-events-none"></div>
-                                    </div>
-                                </div>
-
-                                {/* Website - Premium Style */}
-                                <div className="space-y-3">
-                                    <label className="text-sm font-semibold text-slate-700 flex items-center gap-2">
-                                        <div className="w-1 h-4 bg-gradient-to-b from-violet-500 to-indigo-500 rounded-full"></div>
-                                        Sitio Web
-                                    </label>
-                                    <div className="relative group">
-                                        <Globe className="absolute left-4 top-1/2 transform -translate-y-1/2 w-5 h-5 text-slate-400 group-focus-within:text-violet-500 transition-colors duration-300" />
-                                        <Input
-                                            type="url"
-                                            placeholder="www.tuempresa.com"
-                                            value={companyWebsite}
-                                            onChange={(e) => setCompanyWebsite(e.target.value)}
-                                            className="pl-12 bg-slate-50/50 border-slate-200 text-slate-900 placeholder:text-slate-400 focus:border-violet-500 focus:ring-violet-100 h-12 text-base rounded-xl hover:bg-slate-50 transition-all duration-300 font-medium"
-                                        />
-                                        <div className="absolute inset-0 rounded-xl bg-gradient-to-r from-violet-50/40 to-indigo-50/40 opacity-0 group-focus-within:opacity-100 transition-opacity duration-300 pointer-events-none"></div>
-                                    </div>
-                                </div>
-
-                                {/* Address - Premium Style */}
-                                <div className="space-y-3">
-                                    <label className="text-sm font-semibold text-slate-700 flex items-center gap-2">
-                                        <div className="w-1 h-4 bg-gradient-to-b from-violet-500 to-indigo-500 rounded-full"></div>
-                                        Dirección
-                                    </label>
-                                    <Input
-                                        type="text"
-                                        placeholder="Calle Ejemplo 123, Madrid"
-                                        value={companyAddress}
-                                        onChange={(e) => setCompanyAddress(e.target.value)}
-                                        className="bg-slate-50/50 border-slate-200 text-slate-900 placeholder:text-slate-400 focus:border-violet-500 focus:ring-violet-100 h-12 text-base rounded-xl hover:bg-slate-50 transition-all duration-300 font-medium"
-                                    />
-                                </div>
-                            </div>
-                        </div>
-
-                        {/* Premium Create Account Button */}
-                        <div className="mt-8">
-                            <Button
-                                type="button"
-                                onClick={register}
-                                disabled={loading}
-                                className="w-full bg-gradient-to-r from-indigo-600 via-blue-600 to-violet-600 hover:from-indigo-700 hover:via-blue-700 hover:to-violet-700 text-white border-0 h-12 text-base font-bold rounded-xl shadow-xl shadow-indigo-500/25 group relative overflow-hidden"
-                            >
-                                {/* Premium Button Glow */}
-                                <div className="absolute inset-0 bg-gradient-to-r from-indigo-400 to-violet-400 opacity-0 group-hover:opacity-20 transition-opacity duration-300"></div>
-                                
-                                {loading ? (
-                                    <div className="flex items-center gap-3 relative z-10">
-                                        <div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin"></div>
-                                        <span>Creando cuenta...</span>
-                                    </div>
-                                ) : (
-                                    <div className="flex items-center gap-3 relative z-10">
-                                        <Sparkles className="w-4 h-4 group-hover:rotate-12 transition-transform duration-300" />
-                                        <span>Crear Cuenta</span>
-                                        <ArrowRight className="w-4 h-4 group-hover:translate-x-1 transition-transform duration-300" />
-                                    </div>
-                                )}
-                            </Button>
-                        </div>
-
-                        {/* Premium Divider */}
-                        <div className="my-8 flex items-center">
-                            <div className="flex-1 h-px bg-gradient-to-r from-transparent via-slate-300 to-transparent"></div>
-                            <div className="px-4 bg-white border border-slate-200 rounded-full shadow-sm">
-                                <span className="text-sm text-slate-600 font-medium">O regístrate con</span>
-                            </div>
-                            <div className="flex-1 h-px bg-gradient-to-r from-transparent via-slate-300 to-transparent"></div>
-                        </div>
-
-                        {/* Premium Social Login - TEMPORALMENTE DESACTIVADO */}
-                        <div className="grid grid-cols-2 gap-4 mb-8">
-                            <Button
-                                type="button"
-                                onClick={registerWithGitHub}
-                                disabled={true}
-                                variant="ghost"
-                                className="border border-slate-200 text-slate-400 bg-slate-50 cursor-not-allowed h-11 rounded-xl group transition-all duration-300 font-medium relative z-10 opacity-50"
-                            >
-                                <Github className="w-4 h-4 mr-2" />
-                                GitHub
-                            </Button>
-                            <Button
-                                type="button"
-                                onClick={registerWithGoogle}
-                                disabled={true}
-                                variant="ghost"
-                                className="border border-slate-200 text-slate-400 bg-slate-50 cursor-not-allowed h-11 rounded-xl group transition-all duration-300 font-medium relative z-10 opacity-50"
-                            >
-                                <Chrome className="w-4 h-4 mr-2" />
-                                Google
-                            </Button>
-                        </div>
-
-                        {/* Professional Footer */}
+                        {/* Contenido */}
                         <div className="text-center relative z-10">
-                            <p className="text-slate-600 mb-4">
-                                ¿Ya tienes cuenta?{' '}
-                                <Link 
-                                    href="/login" 
-                                    className="text-indigo-600 hover:text-indigo-700 font-semibold transition-colors relative z-10"
-                                >
-                                    Iniciar sesión
-                                </Link>
-                            </p>
-                            <p className="text-xs text-slate-500 leading-relaxed">
-                                Al crear una cuenta, aceptas nuestros términos de servicio y política de privacidad
+                            <h3 className="text-2xl font-bold mb-4">
+                                {popup.type === 'success' ? '¡Fantástico!' : '¡Ups!'}
+                            </h3>
+                            <p className="text-white/95 leading-relaxed text-lg whitespace-pre-line">
+                                {popup.message}
                             </p>
                         </div>
+
+                        {/* Barra de progreso para éxito */}
+                        {popup.type === 'success' && (
+                            <div className="mt-6 bg-white/20 rounded-full h-2 overflow-hidden">
+                                <div
+                                    className="bg-white h-2 rounded-full transition-all ease-out"
+                                    style={{
+                                        width: '100%',
+                                        animation: 'progressBar 4s ease-out forwards'
+                                    }}
+                                ></div>
+                            </div>
+                        )}
+
+                        {/* Partículas flotantes */}
+                        {popup.type === 'success' && (
+                            <>
+                                <div className="absolute top-8 left-8 w-2 h-2 bg-white/40 rounded-full" style={{ animation: 'bounce 2s infinite', animationDelay: '0.2s' }}></div>
+                                <div className="absolute top-12 right-12 w-1 h-1 bg-white/60 rounded-full" style={{ animation: 'bounce 2s infinite', animationDelay: '0.8s' }}></div>
+                                <div className="absolute bottom-8 left-12 w-1.5 h-1.5 bg-white/50 rounded-full" style={{ animation: 'bounce 2s infinite', animationDelay: '1.2s' }}></div>
+                            </>
+                        )}
+                    </div>
+                </div>
+            )}
+
+            {/* Página principal con diseño espectacular */}
+            <div className="min-h-screen bg-gradient-to-br from-slate-900 via-purple-900 to-slate-900 relative overflow-hidden">
+                {/* Fondo animado */}
+                <div className="absolute inset-0">
+                    <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_top,_var(--tw-gradient-stops))] from-purple-400/20 via-purple-900/10 to-slate-900"></div>
+                    <div className="absolute inset-0 opacity-20">
+                        <div className="h-full w-full bg-repeat" style={{
+                            backgroundImage: `url("data:image/svg+xml,%3Csvg width='60' height='60' viewBox='0 0 60 60' xmlns='http://www.w3.org/2000/svg'%3E%3Cg fill='none' fill-rule='evenodd'%3E%3Cg fill='%23ffffff' fill-opacity='0.03'%3E%3Ccircle cx='30' cy='30' r='1'/%3E%3C/g%3E%3C/g%3E%3C/svg%3E")`
+                        }}></div>
                     </div>
 
-                    {/* Premium Features */}
-                    <div className="mt-8 grid grid-cols-3 gap-4 text-center">
-                        <div className="bg-white/90 backdrop-blur-2xl border border-slate-200/60 rounded-2xl p-4 group hover:scale-105 transition-all duration-300 shadow-lg shadow-slate-900/5">
-                            <div className="flex items-center justify-center mb-3">
-                                <div className="w-10 h-10 bg-gradient-to-br from-emerald-100 to-green-100 rounded-xl flex items-center justify-center group-hover:scale-110 transition-transform">
-                                    <CheckCircle className="w-5 h-5 text-emerald-600" />
-                                </div>
+                    {/* Orbes flotantes */}
+                    <div className="absolute top-1/4 left-1/4 w-64 h-64 bg-purple-500/20 rounded-full blur-3xl" style={{ animation: 'pulse 3s infinite' }}></div>
+                    <div className="absolute bottom-1/4 right-1/4 w-80 h-80 bg-pink-500/15 rounded-full blur-3xl" style={{ animation: 'pulse 3s infinite', animationDelay: '2s' }}></div>
+                    <div className="absolute top-3/4 left-1/6 w-48 h-48 bg-blue-500/20 rounded-full blur-3xl" style={{ animation: 'pulse 3s infinite', animationDelay: '4s' }}></div>
+                </div>
+
+                <div className="relative z-10 flex items-center justify-center min-h-screen px-4 py-8">
+                    <div className="w-full max-w-6xl">
+                        {/* Header espectacular */}
+                        <div className="text-center mb-12" style={{ animation: 'fadeInUp 0.7s ease-out' }}>
+                            <div className="inline-flex items-center justify-center w-24 h-24 bg-gradient-to-r from-purple-500 via-pink-500 to-purple-600 rounded-full mb-6 shadow-2xl relative" style={{ animation: 'pulse 3s infinite' }}>
+                                <Building size={40} className="text-white" />
+                                <div className="absolute inset-0 rounded-full bg-white/20" style={{ animation: 'ping 2s infinite' }}></div>
                             </div>
-                            <p className="text-sm font-bold text-slate-900">Prueba gratuita 14 días</p>
-                            <p className="text-xs text-slate-600 font-medium">Sin tarjeta requerida</p>
+                            <h1 className="text-5xl font-black text-white mb-4 tracking-tight">
+                                Únete a la revolución
+                            </h1>
+                            <p className="text-xl text-slate-300 max-w-2xl mx-auto leading-relaxed">
+                                Crea tu cuenta en <span className="text-transparent bg-clip-text bg-gradient-to-r from-purple-400 to-pink-400 font-bold">Taskelio</span> y transforma tu manera de trabajar
+                            </p>
                         </div>
-                        <div className="bg-white/90 backdrop-blur-2xl border border-slate-200/60 rounded-2xl p-4 group hover:scale-105 transition-all duration-300 shadow-lg shadow-slate-900/5">
-                            <div className="flex items-center justify-center mb-3">
-                                <div className="w-10 h-10 bg-gradient-to-br from-indigo-100 to-violet-100 rounded-xl flex items-center justify-center group-hover:scale-110 transition-transform">
-                                    <Users className="w-5 h-5 text-indigo-600" />
+
+                        {/* Formulario principal */}
+                        <div className="bg-white/5 backdrop-blur-2xl rounded-3xl border border-white/10 shadow-2xl p-8 lg:p-12" style={{ animation: 'fadeInUp 0.7s ease-out', animationDelay: '0.2s' }}>
+                            <form onSubmit={handleSubmit} className="space-y-8" noValidate>
+                                {/* Grid de campos */}
+                                <div className="grid lg:grid-cols-2 gap-12">
+                                    {/* Sección de cuenta */}
+                                    <div className="space-y-6">
+                                        <div className="flex items-center space-x-3 mb-6">
+                                            <div className="w-10 h-10 bg-gradient-to-r from-purple-500 to-pink-500 rounded-xl flex items-center justify-center">
+                                                <Lock size={20} className="text-white" />
+                                            </div>
+                                            <h3 className="text-2xl font-bold text-white">Datos de acceso</h3>
+                                        </div>
+
+                                        {/* Email */}
+                                        <div className="group">
+                                            <label htmlFor="email" className="text-sm font-semibold text-white/90 mb-3 flex items-center">
+                                                <Mail size={16} className="mr-2 text-purple-400" />
+                                                Email *
+                                            </label>
+                                            <div className="relative">
+                                                <input
+                                                    id="email"
+                                                    type="email"
+                                                    value={email}
+                                                    onChange={(e) => setEmail(e.target.value)}
+                                                    className="w-full px-6 py-4 bg-white/5 border border-white/20 rounded-2xl text-white placeholder-white/50 focus:ring-2 focus:ring-purple-400 focus:border-transparent transition-all duration-300 hover:bg-white/10 text-lg font-medium backdrop-blur-sm"
+                                                    placeholder="tu@empresa.com"
+                                                    required
+                                                    autoComplete="email"
+                                                />
+                                                <div className="absolute inset-0 rounded-2xl bg-gradient-to-r from-purple-500/20 to-pink-500/20 opacity-0 group-hover:opacity-100 transition-all duration-300 pointer-events-none"></div>
+                                            </div>
+                                        </div>
+
+                                        {/* Contraseña */}
+                                        <div className="group">
+                                            <label htmlFor="password" className="text-sm font-semibold text-white/90 mb-3 flex items-center">
+                                                <Lock size={16} className="mr-2 text-purple-400" />
+                                                Contraseña *
+                                            </label>
+                                            <div className="relative">
+                                                <input
+                                                    id="password"
+                                                    type={showPassword ? "text" : "password"}
+                                                    value={password}
+                                                    onChange={(e) => setPassword(e.target.value)}
+                                                    className="w-full px-6 py-4 pr-14 bg-white/5 border border-white/20 rounded-2xl text-white placeholder-white/50 focus:ring-2 focus:ring-purple-400 focus:border-transparent transition-all duration-300 hover:bg-white/10 text-lg font-medium backdrop-blur-sm"
+                                                    placeholder="Mínimo 6 caracteres"
+                                                    required
+                                                    autoComplete="new-password"
+                                                />
+                                                <button
+                                                    type="button"
+                                                    onClick={() => setShowPassword(!showPassword)}
+                                                    className="absolute right-4 top-1/2 transform -translate-y-1/2 text-white/60 hover:text-white transition-colors p-2 rounded-lg hover:bg-white/10"
+                                                    aria-label={showPassword ? "Ocultar contraseña" : "Mostrar contraseña"}
+                                                >
+                                                    {showPassword ? <EyeOff size={20} /> : <Eye size={20} />}
+                                                </button>
+                                                <div className="absolute inset-0 rounded-2xl bg-gradient-to-r from-purple-500/20 to-pink-500/20 opacity-0 group-hover:opacity-100 transition-all duration-300 pointer-events-none"></div>
+                                            </div>
+                                        </div>
+
+                                        {/* Confirmar contraseña */}
+                                        <div className="group">
+                                            <label htmlFor="confirm-password" className="text-sm font-semibold text-white/90 mb-3 flex items-center">
+                                                <Lock size={16} className="mr-2 text-purple-400" />
+                                                Confirmar contraseña *
+                                            </label>
+                                            <div className="relative">
+                                                <input
+                                                    id="confirm-password"
+                                                    type={showConfirmPassword ? "text" : "password"}
+                                                    value={confirmPassword}
+                                                    onChange={(e) => setConfirmPassword(e.target.value)}
+                                                    className="w-full px-6 py-4 pr-14 bg-white/5 border border-white/20 rounded-2xl text-white placeholder-white/50 focus:ring-2 focus:ring-purple-400 focus:border-transparent transition-all duration-300 hover:bg-white/10 text-lg font-medium backdrop-blur-sm"
+                                                    placeholder="Repetir contraseña"
+                                                    required
+                                                    autoComplete="new-password"
+                                                />
+                                                <button
+                                                    type="button"
+                                                    onClick={() => setShowConfirmPassword(!showConfirmPassword)}
+                                                    className="absolute right-4 top-1/2 transform -translate-y-1/2 text-white/60 hover:text-white transition-colors p-2 rounded-lg hover:bg-white/10"
+                                                    aria-label={showConfirmPassword ? "Ocultar contraseña" : "Mostrar contraseña"}
+                                                >
+                                                    {showConfirmPassword ? <EyeOff size={20} /> : <Eye size={20} />}
+                                                </button>
+                                                <div className="absolute inset-0 rounded-2xl bg-gradient-to-r from-purple-500/20 to-pink-500/20 opacity-0 group-hover:opacity-100 transition-all duration-300 pointer-events-none"></div>
+                                            </div>
+                                        </div>
+                                    </div>
+
+                                    {/* Sección de empresa */}
+                                    <div className="space-y-6">
+                                        <div className="flex items-center space-x-3 mb-6">
+                                            <div className="w-10 h-10 bg-gradient-to-r from-pink-500 to-purple-500 rounded-xl flex items-center justify-center">
+                                                <Building size={20} className="text-white" />
+                                            </div>
+                                            <h3 className="text-2xl font-bold text-white">Tu empresa</h3>
+                                        </div>
+
+                                        {/* Nombre empresa */}
+                                        <div className="group">
+                                            <label htmlFor="company-name" className="text-sm font-semibold text-white/90 mb-3 flex items-center">
+                                                <Building size={16} className="mr-2 text-pink-400" />
+                                                Nombre de la empresa *
+                                            </label>
+                                            <div className="relative">
+                                                <input
+                                                    id="company-name"
+                                                    type="text"
+                                                    value={companyName}
+                                                    onChange={(e) => setCompanyName(e.target.value)}
+                                                    className="w-full px-6 py-4 bg-white/5 border border-white/20 rounded-2xl text-white placeholder-white/50 focus:ring-2 focus:ring-pink-400 focus:border-transparent transition-all duration-300 hover:bg-white/10 text-lg font-medium backdrop-blur-sm"
+                                                    placeholder="Mi Empresa SL"
+                                                    required
+                                                    autoComplete="organization"
+                                                />
+                                                <div className="absolute inset-0 rounded-2xl bg-gradient-to-r from-pink-500/20 to-purple-500/20 opacity-0 group-hover:opacity-100 transition-all duration-300 pointer-events-none"></div>
+                                            </div>
+                                        </div>
+
+                                        {/* Email empresa */}
+                                        <div className="group">
+                                            <label htmlFor="company-email" className="text-sm font-semibold text-white/90 mb-3 flex items-center">
+                                                <Mail size={16} className="mr-2 text-pink-400" />
+                                                Email empresarial
+                                            </label>
+                                            <div className="relative">
+                                                <input
+                                                    id="company-email"
+                                                    type="email"
+                                                    value={companyEmail}
+                                                    onChange={e => setCompanyEmail(e.target.value)}
+                                                    className="w-full px-6 py-4 bg-white/5 border border-white/20 rounded-2xl text-white placeholder-white/50 focus:ring-2 focus:ring-pink-400 focus:border-transparent transition-all duration-300 hover:bg-white/10 text-lg font-medium backdrop-blur-sm"
+                                                    placeholder="info@miempresa.com"
+                                                    autoComplete="email"
+                                                />
+                                                <div className="absolute inset-0 rounded-2xl bg-gradient-to-r from-pink-500/20 to-purple-500/20 opacity-0 group-hover:opacity-100 transition-all duration-300 pointer-events-none"></div>
+                                            </div>
+                                        </div>
+
+                                        {/* Grid de campos opcionales */}
+                                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                            <div className="group">
+                                                <label htmlFor="company-phone" className="text-sm font-semibold text-white/90 mb-3 flex items-center">
+                                                    <Phone size={16} className="mr-2 text-pink-400" />
+                                                    Teléfono
+                                                </label>
+                                                <div className="relative">
+                                                    <input
+                                                        id="company-phone"
+                                                        type="tel"
+                                                        value={companyPhone}
+                                                        onChange={(e) => setCompanyPhone(e.target.value)}
+                                                        className="w-full px-6 py-4 bg-white/5 border border-white/20 rounded-2xl text-white placeholder-white/50 focus:ring-2 focus:ring-pink-400 focus:border-transparent transition-all duration-300 hover:bg-white/10 text-lg font-medium backdrop-blur-sm"
+                                                        placeholder="+34 xxx xxx"
+                                                        autoComplete="tel"
+                                                    />
+                                                    <div className="absolute inset-0 rounded-2xl bg-gradient-to-r from-pink-500/20 to-purple-500/20 opacity-0 group-hover:opacity-100 transition-all duration-300 pointer-events-none"></div>
+                                                </div>
+                                            </div>
+
+                                            <div className="group">
+                                                <label htmlFor="company-website" className="text-sm font-semibold text-white/90 mb-3 flex items-center">
+                                                    <Globe size={16} className="mr-2 text-pink-400" />
+                                                    Web
+                                                </label>
+                                                <div className="relative">
+                                                    <input
+                                                        id="company-website"
+                                                        type="url"
+                                                        value={companyWebsite}
+                                                        onChange={e => setCompanyWebsite(e.target.value)}
+                                                        className="w-full px-6 py-4 bg-white/5 border border-white/20 rounded-2xl text-white placeholder-white/50 focus:ring-2 focus:ring-pink-400 focus:border-transparent transition-all duration-300 hover:bg-white/10 text-lg font-medium backdrop-blur-sm"
+                                                        placeholder="miempresa.com"
+                                                        autoComplete="url"
+                                                    />
+                                                    <div className="absolute inset-0 rounded-2xl bg-gradient-to-r from-pink-500/20 to-purple-500/20 opacity-0 group-hover:opacity-100 transition-all duration-300 pointer-events-none"></div>
+                                                </div>
+                                            </div>
+                                        </div>
+
+                                        {/* Dirección */}
+                                        <div className="group">
+                                            <label htmlFor="company-address" className="text-sm font-semibold text-white/90 mb-3 flex items-center">
+                                                <MapPin size={16} className="mr-2 text-pink-400" />
+                                                Dirección
+                                            </label>
+                                            <div className="relative">
+                                                <textarea
+                                                    id="company-address"
+                                                    value={companyAddress}
+                                                    onChange={(e) => setCompanyAddress(e.target.value)}
+                                                    rows={3}
+                                                    className="w-full px-6 py-4 bg-white/5 border border-white/20 rounded-2xl text-white placeholder-white/50 focus:ring-2 focus:ring-pink-400 focus:border-transparent transition-all duration-300 hover:bg-white/10 text-lg font-medium backdrop-blur-sm resize-none"
+                                                    placeholder="Calle Principal 123, Madrid, España"
+                                                    autoComplete="address-line1"
+                                                />
+                                                <div className="absolute inset-0 rounded-2xl bg-gradient-to-r from-pink-500/20 to-purple-500/20 opacity-0 group-hover:opacity-100 transition-all duration-300 pointer-events-none"></div>
+                                            </div>
+                                        </div>
+                                    </div>
                                 </div>
-                            </div>
-                            <p className="text-sm font-bold text-slate-900">2K+ usuarios</p>
-                            <p className="text-xs text-slate-600 font-medium">Confían en nosotros</p>
-                        </div>
-                        <div className="bg-white/90 backdrop-blur-2xl border border-slate-200/60 rounded-2xl p-4 group hover:scale-105 transition-all duration-300 shadow-lg shadow-slate-900/5">
-                            <div className="flex items-center justify-center mb-3">
-                                <div className="w-10 h-10 bg-gradient-to-br from-violet-100 to-indigo-100 rounded-xl flex items-center justify-center group-hover:scale-110 transition-transform">
-                                    <TrendingUp className="w-5 h-5 text-violet-600" />
+
+                                {/* Botón de registro espectacular */}
+                                <div className="pt-8">
+                                    <button
+                                        type="submit"
+                                        disabled={loading}
+                                        className="w-full relative overflow-hidden group bg-gradient-to-r from-purple-600 via-pink-600 to-purple-700 
+                                                 text-white font-bold py-6 px-8 rounded-2xl shadow-2xl transition-all duration-300
+                                                 hover:from-purple-700 hover:via-pink-700 hover:to-purple-800 
+                                                 hover:shadow-purple-500/25 hover:scale-[1.02] transform
+                                                 focus:ring-4 focus:ring-purple-400/50 focus:outline-none
+                                                 disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:scale-100
+                                                 text-xl"
+                                    >
+                                        <span className="relative z-10 flex items-center justify-center">
+                                            {loading ? (
+                                                <>
+                                                    <div className="w-6 h-6 border-2 border-white/30 border-t-white rounded-full animate-spin mr-3"></div>
+                                                    Creando tu cuenta...
+                                                </>
+                                            ) : (
+                                                <>
+                                                    Crear cuenta
+                                                </>
+                                            )}
+                                        </span>
+                                    </button>
                                 </div>
+                            </form>
+                            {/* Divider espectacular */}
+                            <div className="my-8 flex items-center">
+                                <div className="flex-1 h-px bg-gradient-to-r from-transparent via-white/30 to-transparent"></div>
+                                <div className="px-4 bg-white/10 border border-white/20 rounded-full shadow-sm">
+                                    <span className="text-sm text-white font-medium">O regístrate con</span>
+                                </div>
+                                <div className="flex-1 h-px bg-gradient-to-r from-transparent via-white/30 to-transparent"></div>
                             </div>
-                            <p className="text-sm font-bold text-slate-900">15h ahorradas</p>
-                            <p className="text-xs text-slate-600 font-medium">Por semana promedio</p>
+                            {/* Botón Google */}
+                            <div className="grid grid-cols-1 gap-4 mb-8">
+                                <button
+                                    type="button"
+                                    onClick={async () => {
+                                        if (!supabase) return;
+                                        setLoading(true);
+                                        try {
+                                            const { error } = await supabase.auth.signInWithOAuth({
+                                                provider: 'google',
+                                                options: {
+                                                    redirectTo: `${getBaseUrl()}/auth/callback`
+                                                }
+                                            });
+                                            if (error) {
+                                                showPopup('error', 'Error al conectar con Google: ' + error.message);
+                                            }
+                                        } catch (err) {
+                                            showPopup('error', 'Error de conexión con Google');
+                                        }
+                                        setLoading(false);
+                                    }}
+                                    className="w-full border border-white/20 text-white bg-white/10 hover:bg-white/20 h-12 rounded-xl font-medium flex items-center justify-center gap-3 transition-all duration-300 shadow-lg shadow-purple-900/10"
+                                    disabled={loading}
+                                >
+                                    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="20" height="20" className="inline-block mr-2"><g><path fill="#EA4335" d="M12 11.7v2.6h7.3c-.3 1.7-2.1 5-7.3 5-4.4 0-8-3.6-8-8s3.6-8 8-8c2.5 0 4.2 1 5.2 1.9l-2.1 2c-.7-.6-1.9-1.3-3.1-1.3-2.7 0-4.9 2.2-4.9 4.9s2.2 4.9 4.9 4.9c3.1 0 4.2-2.2 4.6-3.4H12z"></path><path fill="#34A853" d="M21.6 12.2c0-.5-.1-1-.2-1.5H12v2.9h5.3c-.2 1.1-1.4 3.1-5.3 3.1-3.1 0-5.6-2.5-5.6-5.6s2.5-5.6 5.6-5.6c1.7 0 2.8.7 3.4 1.3l2.1-2C16.2 4.7 14.5 3.7 12 3.7c-4.6 0-8.3 3.7-8.3 8.3s3.7 8.3 8.3 8.3c4.2 0 7.7-2.7 7.7-7.1z"></path></g></svg>
+                                    Registrarse con Google
+                                </button>
+                            </div>
+                            {/* Botón para login */}
+                            <div className="text-center relative z-10 mt-4">
+                                <p className="text-white/80">
+                                    ¿Ya tienes cuenta?{' '}
+                                    <a
+                                        href="/login"
+                                        className="text-pink-300 hover:text-pink-400 font-semibold transition-colors relative z-10"
+                                    >
+                                        Inicia sesión
+                                    </a>
+                                </p>
+                            </div>
                         </div>
                     </div>
                 </div>
             </div>
-        </div>
+        </>
     );
 }

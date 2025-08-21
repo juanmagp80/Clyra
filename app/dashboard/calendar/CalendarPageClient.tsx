@@ -9,6 +9,7 @@ import { Input } from '@/components/ui/Input';
 import { createSupabaseClient } from '@/src/lib/supabase';
 import { calendarAI, type CalendarEvent, type AIInsight, type DashboardMetrics, type SmartSuggestion, type EventType } from '@/src/lib/calendar-ai-local';
 import {
+    AlertTriangle,
     Calendar as CalendarIcon,
     ChevronLeft,
     ChevronRight,
@@ -37,6 +38,8 @@ import {
     Sparkles,
     Calculator
 } from 'lucide-react';
+import TrialBanner from '../../../components/TrialBanner';
+import { useTrialStatus } from '../../../src/lib/useTrialStatus';
 
 // Tipos TypeScript para el calendario
 type ViewType = 'day' | 'week' | 'month';
@@ -60,6 +63,9 @@ interface CalendarPageClientProps {
 export default function CalendarPageClient({ userEmail }: CalendarPageClientProps) {
     const supabase = createSupabaseClient();
     const router = useRouter();
+    
+    // Hook de trial status
+    const { trialInfo, loading: trialLoading, hasReachedLimit, canUseFeatures } = useTrialStatus(userEmail);
     
     // States básicos
     const [currentDate, setCurrentDate] = useState(new Date());
@@ -110,6 +116,16 @@ export default function CalendarPageClient({ userEmail }: CalendarPageClientProp
         if (!supabase) return;
         await supabase.auth.signOut();
         router.push('/login');
+    };
+
+    // Función para manejar nuevo evento
+    const handleNewEventClick = () => {
+        if (!canUseFeatures) {
+            alert('Tu periodo de prueba ha expirado. Actualiza tu plan para continuar creando eventos.');
+            return;
+        }
+        
+        setShowNewEventForm(true);
     };
 
     // ==================== FUNCIONES DE DATOS INICIALES ====================
@@ -1151,6 +1167,11 @@ export default function CalendarPageClient({ userEmail }: CalendarPageClientProp
                 
                 <main className="flex-1 ml-56 overflow-auto">
                     <div className="p-4">
+                        {/* Trial Banner */}
+                        <div className="mb-4">
+                            <TrialBanner />
+                        </div>
+
                         {/* Header del Calendario */}
                         <div className={"p-4 shadow-xl mb-4 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl shadow-sm"}>
                             <div className="flex items-center justify-between mb-4">
@@ -1202,11 +1223,20 @@ export default function CalendarPageClient({ userEmail }: CalendarPageClientProp
                                     </Button>
                                     
                                     <Button
-                                        onClick={() => setShowNewEventForm(true)}
-                                        className="bg-gradient-to-r from-indigo-600 to-violet-600 hover:from-indigo-700 hover:to-violet-700 text-white border-0 h-9 px-4 text-sm font-semibold rounded-lg shadow-lg shadow-indigo-500/25"
+                                        onClick={handleNewEventClick}
+                                        disabled={!canUseFeatures}
+                                        className={`bg-gradient-to-r from-indigo-600 to-violet-600 hover:from-indigo-700 hover:to-violet-700 text-white border-0 h-9 px-4 text-sm font-semibold rounded-lg shadow-lg shadow-indigo-500/25 ${
+                                            !canUseFeatures 
+                                                ? 'opacity-50 cursor-not-allowed !bg-gray-400 hover:!bg-gray-400 !shadow-gray-400/25' 
+                                                : ''
+                                        }`}
                                     >
-                                        <Plus className="w-4 h-4 mr-2" />
-                                        Nuevo Evento
+                                        {!canUseFeatures ? (
+                                            <AlertTriangle className="w-4 h-4 mr-2" />
+                                        ) : (
+                                            <Plus className="w-4 h-4 mr-2" />
+                                        )}
+                                        {!canUseFeatures ? 'Trial Expirado' : 'Nuevo Evento'}
                                     </Button>
                                 </div>
                             </div>

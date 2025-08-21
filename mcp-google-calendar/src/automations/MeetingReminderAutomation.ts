@@ -1,4 +1,13 @@
 import cron from 'node-cron';
+
+// Declaración manual del tipo ScheduleOptions (según @types/node-cron)
+type ScheduleOptions = {
+  scheduled?: boolean;
+  timezone?: string;
+  recoverMissedExecutions?: boolean;
+  name?: string;
+  runOnInit?: boolean;
+};
 import { GoogleCalendarService } from '../services/GoogleCalendarService.js';
 import { SupabaseService } from '../services/SupabaseService.js';
 import { EmailService } from '../services/EmailService.js';
@@ -9,7 +18,7 @@ export class MeetingReminderAutomation {
   private googleCalendar: GoogleCalendarService;
   private supabase: SupabaseService;
   private email: EmailService;
-  private cronJob?: cron.ScheduledTask;
+  private cronJob?: import('node-cron').ScheduledTask;
   private status: AutomationStatus;
 
   constructor(
@@ -39,12 +48,16 @@ export class MeetingReminderAutomation {
     console.log('🚀 Iniciando automatización de recordatorios...');
     console.log(`⏰ Patrón cron: ${config.automation.cronPattern}`);
 
-    this.cronJob = cron.schedule(config.automation.cronPattern, async () => {
-      await this.runReminderCheck();
-    }, {
-      scheduled: true,
-      timezone: config.automation.timezone,
-    });
+    this.cronJob = cron.schedule(
+      config.automation.cronPattern,
+      async () => {
+        await this.runReminderCheck();
+      },
+      {
+        scheduled: true,
+        timezone: config.automation.timezone,
+      } as ScheduleOptions
+    );
 
     this.status.isRunning = true;
     console.log('✅ Automatización iniciada exitosamente');

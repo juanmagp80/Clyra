@@ -16,7 +16,37 @@ import {
 } from 'lucide-react';
 import Link from 'next/link';
 import { notFound } from 'next/navigation';
-import { demoClients, demoInvoices, demoProjects, demoUser } from '../../demo-data';
+import { useState, useEffect } from 'react';
+// import { demoClients, demoInvoices, demoProjects, demoUser } from '../../demo-data';
+interface DemoClient {
+    id: string;
+    name: string;
+    company?: string;
+    email?: string;
+    phone?: string;
+}
+interface DemoInvoice {
+    id: string;
+    title?: string;
+    client_id?: string;
+    project_id?: string;
+    issue_date?: string;
+    due_date?: string;
+    paid_date?: string;
+    status?: string;
+    amount?: number;
+    tax_rate?: number;
+    tax_amount?: number;
+    total_amount?: number;
+}
+interface DemoProject {
+    id: string;
+    title?: string;
+}
+const demoClients: DemoClient[] = [];
+const demoInvoices: DemoInvoice[] = [];
+const demoProjects: DemoProject[] = [];
+const demoUser = { company: 'Demo Company', name: 'Demo User', email: 'demo@demo.com' };
 
 interface Props {
     params: Promise<{
@@ -24,16 +54,23 @@ interface Props {
     }>;
 }
 
-export default async function DemoInvoiceDetailsPage({ params }: Props) {
-    const { id } = await params;
-    const invoice = demoInvoices.find(inv => inv.id === id);
-
-    if (!invoice) {
-        notFound();
-    }
-
-    const client = demoClients.find(c => c.id === invoice.client_id);
-    const project = demoProjects.find(p => p.id === invoice.project_id);
+export default function DemoInvoiceDetailsPage({ params }: Props) {
+    const [invoice, setInvoice] = useState<any>(null);
+    const [client, setClient] = useState<any>(null);
+    const [project, setProject] = useState<any>(null);
+    useEffect(() => {
+        (async () => {
+            const { id } = await params;
+            const inv = demoInvoices.find(inv => inv.id === id);
+            if (!inv) {
+                notFound();
+                return;
+            }
+            setInvoice(inv);
+            setClient(demoClients.find(c => c.id === inv.client_id));
+            setProject(demoProjects.find(p => p.id === inv.project_id));
+        })();
+    }, [params]);
 
     const formatDate = (dateString: string) => {
         return new Date(dateString).toLocaleDateString('es-ES', {

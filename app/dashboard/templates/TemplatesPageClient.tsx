@@ -3,6 +3,7 @@
 import Sidebar from '@/components/Sidebar';
 import { createSupabaseClient } from '@/src/lib/supabase-client';
 import {
+    AlertTriangle,
     Calendar,
     ChevronDown,
     Clock,
@@ -29,6 +30,8 @@ import {
     X
 } from 'lucide-react';
 import Link from 'next/link';
+import TrialBanner from '../../../components/TrialBanner';
+import { useTrialStatus } from '../../../src/lib/useTrialStatus';
 import { useRouter } from 'next/navigation';
 import { useEffect, useState } from 'react';
 
@@ -52,6 +55,9 @@ interface TemplatesPageClientProps {
 
 // Componente principal
 export default function TemplatesPageClient({ userEmail }: TemplatesPageClientProps) {
+    // Hook de trial status
+    const { trialInfo, loading: trialLoading, hasReachedLimit, canUseFeatures } = useTrialStatus(userEmail);
+    
     // Estados
     const [searchTerm, setSearchTerm] = useState('');
     const [filterCategory, setFilterCategory] = useState('all');
@@ -96,6 +102,16 @@ export default function TemplatesPageClient({ userEmail }: TemplatesPageClientPr
     });
     const supabase = createSupabaseClient();
     const router = useRouter();
+
+    // Función para manejar la creación de nueva plantilla
+    const handleNewTemplateClick = () => {
+        if (!canUseFeatures) {
+            alert('Tu periodo de prueba ha expirado. Actualiza tu plan para continuar creando plantillas.');
+            return;
+        }
+        
+        setShowForm(true);
+    };
 
     const fetchTemplates = async () => {
         try {
@@ -424,6 +440,11 @@ export default function TemplatesPageClient({ userEmail }: TemplatesPageClientPr
 
             {/* Main Content */}
             <main className="flex-1 ml-64 overflow-auto relative z-10">
+                {/* Trial Banner */}
+                <div className="p-8 pb-0">
+                    <TrialBanner />
+                </div>
+
                 {/* Header Ultra Premium Mejorado */}
                 <div className="border-b sticky top-0 z-20 bg-white/95 dark:bg-slate-900/95 backdrop-blur-sm border-slate-200 dark:border-slate-700 shadow-sm">
                     <div className="p-8">
@@ -450,13 +471,22 @@ export default function TemplatesPageClient({ userEmail }: TemplatesPageClientPr
                                     <span className={"text-sm font-bold text-slate-900 dark:text-white"}>Panel en Vivo</span>
                                 </div>
                                 <button
-                                    onClick={() => setShowForm(true)}
-                                    className="group bg-gradient-to-r from-purple-600 via-pink-600 to-indigo-600 hover:from-purple-700 hover:via-pink-700 hover:to-indigo-700 text-white font-bold px-8 py-4 rounded-2xl shadow-2xl shadow-purple-500/30 hover:shadow-purple-500/50 hover:scale-105 hover:-translate-y-1 transition-all duration-300 flex items-center gap-3"
+                                    onClick={handleNewTemplateClick}
+                                    disabled={!canUseFeatures}
+                                    className={`group bg-gradient-to-r from-purple-600 via-pink-600 to-indigo-600 hover:from-purple-700 hover:via-pink-700 hover:to-indigo-700 text-white font-bold px-8 py-4 rounded-2xl shadow-2xl shadow-purple-500/30 hover:shadow-purple-500/50 hover:scale-105 hover:-translate-y-1 transition-all duration-300 flex items-center gap-3 ${
+                                        !canUseFeatures 
+                                            ? 'opacity-50 cursor-not-allowed !bg-gray-400 hover:!bg-gray-400 !shadow-gray-400/30 hover:!shadow-gray-400/30 hover:!scale-100 hover:!translate-y-0' 
+                                            : ''
+                                    }`}
                                 >
                                     <span className="flex items-center gap-3">
-                                        <Plus className="w-5 h-5 group-hover:rotate-180 transition-transform duration-500" />
-                                        Nuevo Template
-                                        <Sparkles className="w-4 h-4 group-hover:scale-125 group-hover:rotate-12 transition-all duration-300" />
+                                        {!canUseFeatures ? (
+                                            <AlertTriangle className="w-5 h-5" />
+                                        ) : (
+                                            <Plus className="w-5 h-5 group-hover:rotate-180 transition-transform duration-500" />
+                                        )}
+                                        {!canUseFeatures ? 'Trial Expirado' : 'Nuevo Template'}
+                                        {canUseFeatures && <Sparkles className="w-4 h-4 group-hover:scale-125 group-hover:rotate-12 transition-all duration-300" />}
                                     </span>
                                 </button>
                             </div>
@@ -692,10 +722,19 @@ export default function TemplatesPageClient({ userEmail }: TemplatesPageClientPr
                                 <button
                                     onClick={() => {
                                         console.log('Botón clickeado, showForm actual:', showForm);
+                                        if (!canUseFeatures) {
+                                            alert('Tu periodo de prueba ha expirado. Actualiza tu plan para continuar creando plantillas.');
+                                            return;
+                                        }
                                         setShowForm(true);
                                         console.log('setShowForm(true) llamado');
                                     }}
-                                    className="group px-10 py-5 bg-gradient-to-r from-purple-600 via-pink-600 to-indigo-600 hover:from-purple-700 hover:via-pink-700 hover:to-indigo-700 text-white font-black rounded-3xl shadow-2xl shadow-purple-500/30 hover:shadow-purple-500/50 hover:scale-110 hover:-translate-y-2 transition-all duration-500 flex items-center gap-4 text-lg relative overflow-hidden"
+                                    disabled={!canUseFeatures}
+                                    className={`group px-10 py-5 bg-gradient-to-r from-purple-600 via-pink-600 to-indigo-600 hover:from-purple-700 hover:via-pink-700 hover:to-indigo-700 text-white font-black rounded-3xl shadow-2xl shadow-purple-500/30 hover:shadow-purple-500/50 hover:scale-110 hover:-translate-y-2 transition-all duration-500 flex items-center gap-4 text-lg relative overflow-hidden ${
+                                        !canUseFeatures 
+                                            ? 'opacity-50 cursor-not-allowed !bg-gray-400 hover:!bg-gray-400 !shadow-gray-400/30 hover:!shadow-gray-400/30 hover:!scale-100 hover:!translate-y-0' 
+                                            : ''
+                                    }`}
                                 >
                                     {/* Efecto de brillo en hover */}
                                     <div className="absolute inset-0 bg-gradient-to-r from-white/0 via-white/20 to-white/0 -translate-x-full group-hover:translate-x-full transition-transform duration-1000"></div>
@@ -770,14 +809,27 @@ export default function TemplatesPageClient({ userEmail }: TemplatesPageClientPr
                                                     </button>
                                                     <button
                                                         onClick={() => {
+                                                            if (!canUseFeatures) {
+                                                                alert('Tu periodo de prueba ha expirado. Actualiza tu plan para continuar creando plantillas.');
+                                                                return;
+                                                            }
                                                             setShowForm(true);
                                                             setSearchTerm('');
                                                         }}
-                                                        className="group px-8 py-4 bg-gradient-to-r from-purple-600 via-pink-600 to-indigo-600 hover:from-purple-700 hover:via-pink-700 hover:to-indigo-700 text-white font-bold rounded-2xl shadow-2xl shadow-purple-500/30 hover:shadow-purple-500/50 hover:scale-105 hover:-translate-y-1 transition-all duration-300 flex items-center justify-center gap-3"
+                                                        disabled={!canUseFeatures}
+                                                        className={`group px-8 py-4 bg-gradient-to-r from-purple-600 via-pink-600 to-indigo-600 hover:from-purple-700 hover:via-pink-700 hover:to-indigo-700 text-white font-bold rounded-2xl shadow-2xl shadow-purple-500/30 hover:shadow-purple-500/50 hover:scale-105 hover:-translate-y-1 transition-all duration-300 flex items-center justify-center gap-3 ${
+                                                            !canUseFeatures 
+                                                                ? 'opacity-50 cursor-not-allowed !bg-gray-400 hover:!bg-gray-400 !shadow-gray-400/30 hover:!shadow-gray-400/30 hover:!scale-100 hover:!translate-y-0' 
+                                                                : ''
+                                                        }`}
                                                     >
-                                                        <Plus className="w-5 h-5 group-hover:scale-125 transition-transform duration-300" />
-                                                        Crear template nuevo
-                                                        <Sparkles className="w-4 h-4 group-hover:rotate-45 transition-transform duration-300" />
+                                                        {!canUseFeatures ? (
+                                                            <AlertTriangle className="w-5 h-5" />
+                                                        ) : (
+                                                            <Plus className="w-5 h-5 group-hover:scale-125 transition-transform duration-300" />
+                                                        )}
+                                                        {!canUseFeatures ? 'Límite Alcanzado' : 'Crear template nuevo'}
+                                                        {canUseFeatures && <Sparkles className="w-4 h-4 group-hover:rotate-45 transition-transform duration-300" />}
                                                     </button>
                                                 </>
                                             ) : (

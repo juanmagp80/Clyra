@@ -34,22 +34,23 @@ export async function GET(request: NextRequest) {
       return NextResponse.redirect(authUrl);
     }
 
-    // Intercambiar código por tokens
-    const { tokens } = await oauth2Client.getAccessToken(code);
-    
-    if (tokens.access_token) {
-      console.log('✅ Tokens obtenidos exitosamente');
-      
-      // Aquí guardarías los tokens en tu base de datos normalmente
-      // Por ahora, los pasamos como parámetros de URL (solo para desarrollo)
+    // Intercambiar código por tokens usando getToken
+    const { tokens } = await oauth2Client.getToken(code);
+    const access_token = tokens?.access_token;
+
+    if (access_token) {
+      console.log('✅ Token obtenido exitosamente');
+
+      // Aquí guardarías el token en tu base de datos normalmente
+      // Por ahora, lo pasamos como parámetro de URL (solo para desarrollo)
       const redirectUrl = new URL('/dashboard/google-calendar', request.url);
       redirectUrl.searchParams.set('auth_success', 'true');
-      redirectUrl.searchParams.set('access_token', tokens.access_token);
-      
+      redirectUrl.searchParams.set('access_token', access_token);
+
       return NextResponse.redirect(redirectUrl);
     }
 
-    throw new Error('No se pudieron obtener los tokens');
+    throw new Error('No se pudo obtener el access_token');
 
   } catch (error) {
     console.error('❌ Error en callback OAuth:', error);

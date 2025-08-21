@@ -15,8 +15,8 @@ export default function TrialBanner({ userEmail }: TrialBannerProps) {
 
     if (loading || !trialInfo || dismissed) return null;
 
-    // No mostrar banner si tiene suscripción activa
-    if (trialInfo.status === 'active') return null;
+    // No mostrar banner si tiene suscripción activa O si puede usar funciones (incluye suscripción de Stripe)
+    if (trialInfo.status === 'active' || trialInfo.canUseFeatures) return null;
 
     const getBannerConfig = () => {
         const { daysRemaining, isExpired } = trialInfo;

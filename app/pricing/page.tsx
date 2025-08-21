@@ -1,8 +1,29 @@
 "use client"
 import Link from 'next/link';
 import { Home, Check, Crown, Star, Shield, ArrowRight, Sparkles, TrendingUp } from 'lucide-react';
+import { createCheckoutAndRedirect } from '@/lib/stripe-client';
+import { useState } from 'react';
+
+// CONFIGURA ESTOS PRICE IDS EN TU DASHBOARD DE STRIPE
+// Estos son ejemplos - necesitas crear productos reales en tu dashboard
+const STRIPE_PRICES = {
+  BASIC: 'price_1PRxsALHFKglWYpZi_BASIC_TEST',     // Reemplaza con tu Price ID real del plan básico
+  BUSINESS: 'price_1PRxsALHFKglWYpZi_BUSINESS_TEST' // Reemplaza con tu Price ID real del plan empresarial
+};
 
 export default function PricingPage() {
+  const [isLoading, setIsLoading] = useState<string | null>(null);
+
+  const handleStripeCheckout = async (priceId: string, planName: string) => {
+    setIsLoading(planName);
+    try {
+      await createCheckoutAndRedirect(priceId);
+    } catch (error) {
+      console.error('Error al procesar el pago:', error);
+      alert('Error al procesar el pago. Inténtalo de nuevo.');
+      setIsLoading(null);
+    }
+  };
     return (
         <div className="min-h-screen bg-gradient-to-br from-amber-50 via-orange-50 to-yellow-50">
             <div className="relative z-10">
@@ -165,18 +186,25 @@ export default function PricingPage() {
                     <div className="text-center mt-16">
                         <div className="bg-white/40 backdrop-blur-2xl rounded-2xl border border-white/60 p-8 max-w-4xl mx-auto">
                             <h3 className="text-2xl font-black text-slate-900 mb-4">
-                                ✅ Stripe Listo para Usar
+                                🧪 Stripe en Modo de Prueba
                             </h3>
                             <p className="text-slate-700 mb-4">
-                                La integración está configurada. Los botones muestran alertas de demostración.
+                                Tienes las claves configuradas. Ahora crea productos para probarlo gratis.
                             </p>
-                            <div className="bg-green-50 border border-green-200 rounded-lg p-4">
-                                <p className="text-green-700 font-semibold text-sm">
-                                    ✓ Página funcionando correctamente<br />
-                                    ✓ Diseño cálido aplicado<br />
-                                    ✓ Stripe configurado para pruebas
+                            <div className="bg-blue-50 border border-blue-200 rounded-lg p-4 mb-4">
+                                <p className="text-blue-700 font-semibold text-sm">
+                                    ✓ Claves de prueba configuradas<br />
+                                    ⚠️ Necesitas crear productos en Stripe Dashboard<br />
+                                    💳 Usa tarjetas de prueba - no gasta dinero real
                                 </p>
                             </div>
+                            <Link
+                                href="/stripe-setup"
+                                className="inline-flex items-center gap-2 bg-blue-600 hover:bg-blue-700 text-white px-6 py-3 rounded-xl font-semibold transition-colors"
+                            >
+                                📦 Ver Guía de Configuración
+                                <ArrowRight className="w-4 h-4" />
+                            </Link>
                         </div>
                     </div>
                 </div>

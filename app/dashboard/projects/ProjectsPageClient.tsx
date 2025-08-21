@@ -1,7 +1,10 @@
 'use client';
 import Sidebar from '@/components/Sidebar';
+import TrialBanner from '@/components/TrialBanner';
 import { createSupabaseClient } from '@/src/lib/supabase-client';
+import { useTrialStatus } from '@/src/lib/useTrialStatus';
 import {
+    AlertTriangle,
     Briefcase,
     Calendar,
     CheckCircle,
@@ -51,6 +54,9 @@ interface ProjectsPageClientProps {
 
 // Componente principal
 export default function ProjectsPageClient({ userEmail }: ProjectsPageClientProps) {
+    // Hook de trial status
+    const { trialInfo, loading: trialLoading, hasReachedLimit, canUseFeatures } = useTrialStatus(userEmail);
+    
     // Estados
     const [searchTerm, setSearchTerm] = useState('');
     const [filterStatus, setFilterStatus] = useState('all');
@@ -131,6 +137,21 @@ export default function ProjectsPageClient({ userEmail }: ProjectsPageClientProp
         } finally {
             setLoading(false);
         }
+    };
+
+    // Función para manejar la creación de nuevo proyecto
+    const handleNewProjectClick = () => {
+        if (!canUseFeatures) {
+            alert('Tu periodo de prueba ha expirado. Actualiza tu plan para continuar creando proyectos.');
+            return;
+        }
+        
+        if (hasReachedLimit('projects')) {
+            alert(`Has alcanzado el límite de ${(trialInfo && trialInfo.limits && typeof trialInfo.limits.maxProjects === 'number') ? trialInfo.limits.maxProjects : 5} proyectos en el plan de prueba. Actualiza tu plan para crear más proyectos.`);
+            return;
+        }
+        
+        setShowForm(true);
     };
 
     const createProject = async () => {
@@ -376,11 +397,20 @@ export default function ProjectsPageClient({ userEmail }: ProjectsPageClientProp
                                     <span className="text-sm font-bold text-slate-700">Panel en Vivo</span>
                                 </div>
                                 <button
-                                    onClick={() => setShowForm(true)}
-                                    className="group px-8 py-4 bg-gradient-to-r from-blue-600 via-indigo-600 to-purple-600 hover:from-blue-700 hover:via-indigo-700 hover:to-purple-700 text-white font-black rounded-2xl shadow-2xl shadow-blue-500/30 hover:shadow-blue-500/50 hover:scale-110 hover:-translate-y-1 transition-all duration-300"
+                                    onClick={handleNewProjectClick}
+                                    disabled={!canUseFeatures || hasReachedLimit('projects')}
+                                    className={`group px-8 py-4 bg-gradient-to-r from-blue-600 via-indigo-600 to-purple-600 hover:from-blue-700 hover:via-indigo-700 hover:to-purple-700 text-white font-black rounded-2xl shadow-2xl shadow-blue-500/30 hover:shadow-blue-500/50 hover:scale-110 hover:-translate-y-1 transition-all duration-300 ${
+                                        (!canUseFeatures || hasReachedLimit('projects')) 
+                                            ? 'opacity-50 cursor-not-allowed !bg-gray-400 hover:!bg-gray-400 !shadow-gray-400/30 hover:!shadow-gray-400/30 hover:!scale-100 hover:!translate-y-0' 
+                                            : ''
+                                    }`}
                                 >
                                     <span className="flex items-center gap-3">
-                                        <Plus className="w-5 h-5 group-hover:rotate-180 transition-transform duration-500" />
+                                        {(!canUseFeatures || hasReachedLimit('projects')) ? (
+                                            <AlertTriangle className="w-5 h-5" />
+                                        ) : (
+                                            <Plus className="w-5 h-5 group-hover:rotate-180 transition-transform duration-500" />
+                                        )}
                                         Nuevo Proyecto
                                         <TrendingUp className="w-4 h-4 group-hover:scale-125 group-hover:rotate-12 transition-all duration-300" />
                                     </span>
@@ -388,6 +418,11 @@ export default function ProjectsPageClient({ userEmail }: ProjectsPageClientProp
                             </div>
                         </div>
                     </div>
+                </div>
+
+                {/* Trial Banner */}
+                <div className="px-8">
+                    <TrialBanner />
                 </div>
 
                 <div className="p-8 space-y-8">
@@ -617,17 +652,32 @@ export default function ProjectsPageClient({ userEmail }: ProjectsPageClientProp
                             {/* Botón Nuevo Proyecto Premium */}
                             <div className="flex justify-center">
                                 <button
-                                    onClick={() => setShowForm(true)}
-                                    className="group px-10 py-5 bg-gradient-to-r from-blue-600 via-indigo-600 to-purple-600 hover:from-blue-700 hover:via-indigo-700 hover:to-purple-700 text-white font-black rounded-3xl shadow-2xl shadow-blue-500/30 hover:shadow-blue-500/50 hover:scale-110 hover:-translate-y-2 transition-all duration-500 flex items-center gap-4 text-lg relative overflow-hidden"
+                                    onClick={handleNewProjectClick}
+                                    disabled={!canUseFeatures || hasReachedLimit('projects')}
+                                    className={`group px-10 py-5 bg-gradient-to-r from-blue-600 via-indigo-600 to-purple-600 hover:from-blue-700 hover:via-indigo-700 hover:to-purple-700 text-white font-black rounded-3xl shadow-2xl shadow-blue-500/30 hover:shadow-blue-500/50 hover:scale-110 hover:-translate-y-2 transition-all duration-500 flex items-center gap-4 text-lg relative overflow-hidden ${
+                                        (!canUseFeatures || hasReachedLimit('projects')) 
+                                            ? 'opacity-50 cursor-not-allowed !bg-gray-400 hover:!bg-gray-400 !shadow-gray-400/30 hover:!shadow-gray-400/30 hover:!scale-100 hover:!translate-y-0' 
+                                            : ''
+                                    }`}
                                 >
                                     {/* Efecto de brillo en hover */}
                                     <div className="absolute inset-0 bg-gradient-to-r from-white/0 via-white/20 to-white/0 -translate-x-full group-hover:translate-x-full transition-transform duration-1000"></div>
                                     
                                     <div className="relative z-10 flex items-center gap-4">
-                                        <div className="p-2 bg-white/20 rounded-2xl group-hover:scale-125 group-hover:rotate-180 transition-all duration-500">
-                                            <Plus className="w-6 h-6" />
+                                        <div className={`p-2 bg-white/20 rounded-2xl group-hover:scale-125 group-hover:rotate-180 transition-all duration-500 ${
+                                            (!canUseFeatures || hasReachedLimit('projects')) ? 'bg-gray-300/50' : ''
+                                        }`}>
+                                            {(!canUseFeatures || hasReachedLimit('projects')) ? (
+                                                <AlertTriangle className="w-6 h-6" />
+                                            ) : (
+                                                <Plus className="w-6 h-6" />
+                                            )}
                                         </div>
-                                        <span>Crear Nuevo Proyecto</span>
+                                        <span>{
+                                            (!canUseFeatures || hasReachedLimit('projects')) 
+                                                ? 'Límite Alcanzado' 
+                                                : 'Crear Nuevo Proyecto'
+                                        }</span>
                                         <TrendingUp className="w-5 h-5 group-hover:rotate-45 group-hover:scale-125 transition-all duration-500" />
                                     </div>
                                 </button>
@@ -891,23 +941,55 @@ export default function ProjectsPageClient({ userEmail }: ProjectsPageClientProp
                                                     </button>
                                                     <button
                                                         onClick={() => {
+                                                            if (!canUseFeatures) {
+                                                                alert('Tu periodo de prueba ha expirado. Actualiza tu plan para continuar creando proyectos.');
+                                                                return;
+                                                            }
+                                                            
+                                                            if (hasReachedLimit('projects')) {
+                                                                 alert(`Has alcanzado el límite de ${(trialInfo && trialInfo.limits && typeof trialInfo.limits.maxProjects === 'number') ? trialInfo.limits.maxProjects : 5} proyectos en el plan de prueba. Actualiza tu plan para crear más proyectos.`);
+                                                                return;
+                                                            }
+                                                            
                                                             setShowForm(true);
                                                             setSearchTerm('');
                                                         }}
-                                                        className="group px-8 py-4 bg-gradient-to-r from-blue-600 via-indigo-600 to-purple-600 hover:from-blue-700 hover:via-indigo-700 hover:to-purple-700 text-white font-bold rounded-2xl shadow-2xl shadow-blue-500/30 hover:shadow-blue-500/50 hover:scale-105 hover:-translate-y-1 transition-all duration-300 flex items-center justify-center gap-3"
+                                                        disabled={!canUseFeatures || hasReachedLimit('projects')}
+                                                        className={`group px-8 py-4 bg-gradient-to-r from-blue-600 via-indigo-600 to-purple-600 hover:from-blue-700 hover:via-indigo-700 hover:to-purple-700 text-white font-bold rounded-2xl shadow-2xl shadow-blue-500/30 hover:shadow-blue-500/50 hover:scale-105 hover:-translate-y-1 transition-all duration-300 flex items-center justify-center gap-3 ${
+                                                            (!canUseFeatures || hasReachedLimit('projects')) 
+                                                                ? 'opacity-50 cursor-not-allowed !bg-gray-400 hover:!bg-gray-400 !shadow-gray-400/30 hover:!shadow-gray-400/30 hover:!scale-100 hover:!translate-y-0' 
+                                                                : ''
+                                                        }`}
                                                     >
-                                                        <Plus className="w-5 h-5 group-hover:scale-125 transition-transform duration-300" />
-                                                        Crear proyecto nuevo
+                                                        {(!canUseFeatures || hasReachedLimit('projects')) ? (
+                                                            <AlertTriangle className="w-5 h-5" />
+                                                        ) : (
+                                                            <Plus className="w-5 h-5 group-hover:scale-125 transition-transform duration-300" />
+                                                        )}
+                                                        {(!canUseFeatures || hasReachedLimit('projects')) 
+                                                            ? 'Límite Alcanzado' 
+                                                            : 'Crear proyecto nuevo'}
                                                         <TrendingUp className="w-4 h-4 group-hover:rotate-45 transition-transform duration-300" />
                                                     </button>
                                                 </>
                                             ) : (
                                                 <button
-                                                    onClick={() => setShowForm(true)}
-                                                    className="group px-10 py-5 bg-gradient-to-r from-blue-600 via-indigo-600 to-purple-600 hover:from-blue-700 hover:via-indigo-700 hover:to-purple-700 text-white font-black rounded-2xl shadow-2xl shadow-blue-500/30 hover:shadow-blue-500/50 hover:scale-110 hover:-translate-y-2 transition-all duration-300 flex items-center justify-center gap-4 text-xl"
+                                                    onClick={handleNewProjectClick}
+                                                    disabled={!canUseFeatures || hasReachedLimit('projects')}
+                                                    className={`group px-10 py-5 bg-gradient-to-r from-blue-600 via-indigo-600 to-purple-600 hover:from-blue-700 hover:via-indigo-700 hover:to-purple-700 text-white font-black rounded-2xl shadow-2xl shadow-blue-500/30 hover:shadow-blue-500/50 hover:scale-110 hover:-translate-y-2 transition-all duration-300 flex items-center justify-center gap-4 text-xl ${
+                                                        (!canUseFeatures || hasReachedLimit('projects')) 
+                                                            ? 'opacity-50 cursor-not-allowed !bg-gray-400 hover:!bg-gray-400 !shadow-gray-400/30 hover:!shadow-gray-400/30 hover:!scale-100 hover:!translate-y-0' 
+                                                            : ''
+                                                    }`}
                                                 >
-                                                    <Plus className="w-6 h-6 group-hover:scale-125 transition-transform duration-300" />
-                                                    Crear tu primer proyecto
+                                                    {(!canUseFeatures || hasReachedLimit('projects')) ? (
+                                                        <AlertTriangle className="w-6 h-6" />
+                                                    ) : (
+                                                        <Plus className="w-6 h-6 group-hover:scale-125 transition-transform duration-300" />
+                                                    )}
+                                                    {(!canUseFeatures || hasReachedLimit('projects')) 
+                                                        ? 'Límite Alcanzado' 
+                                                        : 'Crear tu primer proyecto'}
                                                     <TrendingUp className="w-5 h-5 group-hover:rotate-45 transition-transform duration-300" />
                                                 </button>
                                             )}

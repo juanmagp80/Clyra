@@ -4,6 +4,8 @@ import React, { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { Button } from "@/components/ui/Button";
 import Sidebar from '@/components/Sidebar';
+import TrialBanner from '@/components/TrialBanner';
+import { useTrialStatus } from '@/src/lib/useTrialStatus';
 import { 
     Plus, 
     Search, 
@@ -59,6 +61,10 @@ interface TasksPageClientProps {
 
 export default function TasksPageClient({ userEmail }: TasksPageClientProps) {
     const router = useRouter();
+    
+    // Hook de trial status
+    const { trialInfo, loading: trialLoading, hasReachedLimit, canUseFeatures } = useTrialStatus(userEmail);
+    
     const supabase = createClient(
         'https://joyhaxtpmrmndmifsihn.supabase.co',
         'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImpveWhheHRwbXJtbmRtaWZzaWhuIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTM5ODA5NzUsImV4cCI6MjA2OTU1Njk3NX0.77Si27sIxzCtJqmw3Z81dJDejKcgaX9pm8eZMldPr4I'
@@ -100,6 +106,16 @@ export default function TasksPageClient({ userEmail }: TasksPageClientProps) {
         if (!supabase) return;
         await supabase.auth.signOut();
         router.push('/login');
+    };
+
+    // Función para manejar la creación de nueva tarea
+    const handleNewTaskClick = () => {
+        if (!canUseFeatures) {
+            alert('Tu periodo de prueba ha expirado. Actualiza tu plan para continuar creando tareas.');
+            return;
+        }
+        
+        setShowNewTaskModal(true);
     };
 
     const resetNewTaskForm = () => {
@@ -422,6 +438,11 @@ export default function TasksPageClient({ userEmail }: TasksPageClientProps) {
 
                 {/* Contenido principal */}
                 <div className="flex-1 ml-56 p-8">
+                    {/* Trial Banner */}
+                    <div className="mb-8">
+                        <TrialBanner />
+                    </div>
+
                     {/* Header */}
                     <div className="mb-8">
                         <div className="flex items-center justify-between mb-6">
@@ -432,11 +453,20 @@ export default function TasksPageClient({ userEmail }: TasksPageClientProps) {
                                 <p className={"mt-2 text-slate-500 dark:text-slate-500"}>Organiza y controla tus tareas de forma eficiente</p>
                             </div>
                             <Button 
-                                onClick={() => setShowNewTaskModal(true)}
-                                className="bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 text-white shadow-lg hover:shadow-xl transition-all duration-300"
+                                onClick={handleNewTaskClick}
+                                disabled={!canUseFeatures}
+                                className={`bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 text-white shadow-lg hover:shadow-xl transition-all duration-300 ${
+                                    !canUseFeatures 
+                                        ? 'opacity-50 cursor-not-allowed !bg-gray-400 hover:!bg-gray-400' 
+                                        : ''
+                                }`}
                             >
-                                <Plus className="mr-2 h-4 w-4" />
-                                Nueva Tarea
+                                {!canUseFeatures ? (
+                                    <AlertTriangle className="mr-2 h-4 w-4" />
+                                ) : (
+                                    <Plus className="mr-2 h-4 w-4" />
+                                )}
+                                {!canUseFeatures ? 'Trial Expirado' : 'Nueva Tarea'}
                             </Button>
                         </div>
 
@@ -559,11 +589,20 @@ export default function TasksPageClient({ userEmail }: TasksPageClientProps) {
                                 </p>
                                 {tasks.length === 0 && (
                                     <Button 
-                                        onClick={() => setShowNewTaskModal(true)}
-                                        className="bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 text-white"
+                                        onClick={handleNewTaskClick}
+                                        disabled={!canUseFeatures}
+                                        className={`bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 text-white ${
+                                            !canUseFeatures 
+                                                ? 'opacity-50 cursor-not-allowed !bg-gray-400 hover:!bg-gray-400' 
+                                                : ''
+                                        }`}
                                     >
-                                        <Plus className="mr-2 h-4 w-4" />
-                                        Crear primera tarea
+                                        {!canUseFeatures ? (
+                                            <AlertTriangle className="mr-2 h-4 w-4" />
+                                        ) : (
+                                            <Plus className="mr-2 h-4 w-4" />
+                                        )}
+                                        {!canUseFeatures ? 'Trial Expirado' : 'Crear primera tarea'}
                                     </Button>
                                 )}
                             </div>

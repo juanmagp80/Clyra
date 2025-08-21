@@ -36,11 +36,11 @@ async function fixAutomationActions() {
             console.log(`   - ID: ${automation.id}`);
             console.log(`   - Tipo: ${automation.trigger_type}`);
             console.log(`   - Actions raw:`, automation.actions);
-            
+
             // Si las acciones están vacías, agregar la acción de email
             if (!automation.actions || automation.actions === '[]' || automation.actions === '') {
                 console.log('   ⚠️ Sin acciones, agregando acción de email...');
-                
+
                 const emailAction = {
                     type: 'send_email',
                     name: 'Enviar email de ' + automation.name.toLowerCase(),

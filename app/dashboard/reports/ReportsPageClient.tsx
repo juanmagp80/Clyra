@@ -8,6 +8,8 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Input } from '@/components/ui/Input';
 import { SimpleBarChart } from '@/components/ui/Chart';
 import { createSupabaseClient } from '@/src/lib/supabase-client';
+import TrialBanner from '../../../components/TrialBanner';
+import { useTrialStatus } from '../../../src/lib/useTrialStatus';
 
 interface ReportsPageClientProps {
     userEmail: string;
@@ -36,6 +38,9 @@ interface ReportMetrics {
 export default function ReportsPageClient({ userEmail }: ReportsPageClientProps) {
     const router = useRouter();
     const reportRef = useRef<HTMLDivElement>(null);
+    
+    // Hook de trial status
+    const { trialInfo, loading: trialLoading, hasReachedLimit, canUseFeatures } = useTrialStatus(userEmail);
     
     const [loading, setLoading] = useState(true);
     const [metrics, setMetrics] = useState<ReportMetrics | null>(null);
@@ -175,6 +180,11 @@ export default function ReportsPageClient({ userEmail }: ReportsPageClientProps)
                 
                 <main className="flex-1 ml-56 overflow-auto">
                     <div className="p-6" ref={reportRef}>
+                        {/* Trial Banner */}
+                        <div className="mb-8">
+                            <TrialBanner />
+                        </div>
+
                         {/* Header */}
                         <div className="mb-8">
                             <div className="bg-white/60 backdrop-blur-xl rounded-3xl border border-white/60 shadow-2xl p-8">

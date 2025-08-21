@@ -3,6 +3,7 @@ import Sidebar from '@/components/Sidebar';
 import { createSupabaseClient } from '@/src/lib/supabase-client';
 import EmailTemplatesModal from './EmailTemplatesModal';
 import {
+    AlertTriangle,
     Archive,
     Clock,
     Edit3,
@@ -12,6 +13,7 @@ import {
     Inbox,
     Mail,
     MailOpen,
+    Plus,
     Reply,
     Search,
     Send,
@@ -21,6 +23,8 @@ import {
 } from 'lucide-react';
 import { useRouter } from 'next/navigation';
 import { useEffect, useState } from 'react';
+import TrialBanner from '../../../components/TrialBanner';
+import { useTrialStatus } from '../../../src/lib/useTrialStatus';
 
 // Tipos para el sistema de emails
 type EmailTemplate = {
@@ -72,6 +76,17 @@ interface EmailsPageClientProps {
 }
 
 export default function EmailsPageClient({ userEmail }: EmailsPageClientProps) {
+    // Hook de trial status
+    const { trialInfo, loading: trialLoading, hasReachedLimit, canUseFeatures } = useTrialStatus(userEmail);
+
+    // Extiende el tipo de limits para incluir 'emails' opcional
+    type TrialLimits = {
+        maxClients: number;
+        maxProjects: number;
+        maxStorageGB: number;
+        emails?: number;
+    };
+    
     const [emails, setEmails] = useState<EmailThread[]>([]);
     const [templates, setTemplates] = useState<EmailTemplate[]>([]);
     const [clients, setClients] = useState<any[]>([]);
@@ -218,6 +233,25 @@ export default function EmailsPageClient({ userEmail }: EmailsPageClientProps) {
         }
     };
 
+    // Función para manejar nuevo email
+    const handleNewEmailClick = () => {
+        if (!canUseFeatures) {
+            alert('Tu periodo de prueba ha expirado. Actualiza tu plan para continuar enviando emails.');
+            return;
+        }
+        
+        if (hasReachedLimit('emails')) {
+            // Usa el límite de emails si existe en trialInfo.limits, si no, usa 100 por defecto
+            const emailLimit = (trialInfo && trialInfo.limits && typeof (trialInfo.limits as TrialLimits).emails === 'number')
+                ? (trialInfo.limits as TrialLimits).emails
+                : 100;
+            alert(`Has alcanzado el límite de ${emailLimit} emails mensuales en el plan de prueba. Actualiza tu plan para enviar más emails.`);
+            return;
+        }
+        
+        setShowComposer(true);
+    };
+
     const filteredEmails = emails.filter(email => {
         const matchesSearch = 
             email.subject.toLowerCase().includes(searchTerm.toLowerCase()) ||
@@ -311,6 +345,11 @@ export default function EmailsPageClient({ userEmail }: EmailsPageClientProps) {
                 <div className="h-full overflow-y-auto">
                     <div className="min-h-screen bg-gradient-to-br from-slate-50/80 via-blue-50/90 to-indigo-100/80 backdrop-blur-3xl">
                         <div className="container mx-auto px-6 py-8">
+                            {/* Trial Banner */}
+                            <div className="mb-8">
+                                <TrialBanner />
+                            </div>
+
                             {/* Header Premium */}
                             <div className="mb-8">
                                 <div className="bg-white/40 backdrop-blur-2xl rounded-3xl border border-white/60 shadow-2xl shadow-indigo-500/10 p-8">
@@ -332,11 +371,20 @@ export default function EmailsPageClient({ userEmail }: EmailsPageClientProps) {
                                                 Templates
                                             </button>
                                             <button
-                                                onClick={() => setShowComposer(true)}
-                                                className="group relative px-8 py-4 bg-gradient-to-r from-blue-600 to-indigo-600 text-white rounded-2xl font-semibold shadow-2xl shadow-blue-500/25 hover:shadow-blue-500/40 hover:scale-105 transform transition-all duration-200 flex items-center gap-3"
+                                                onClick={handleNewEmailClick}
+                                                disabled={!canUseFeatures || hasReachedLimit('emails')}
+                                                className={`group relative px-8 py-4 bg-gradient-to-r from-blue-600 to-indigo-600 text-white rounded-2xl font-semibold shadow-2xl shadow-blue-500/25 hover:shadow-blue-500/40 hover:scale-105 transform transition-all duration-200 flex items-center gap-3 ${
+                                                    (!canUseFeatures || hasReachedLimit('emails')) 
+                                                        ? 'opacity-50 cursor-not-allowed !bg-gray-400 hover:!bg-gray-400 !shadow-gray-400/25 hover:!shadow-gray-400/25 hover:!scale-100' 
+                                                        : ''
+                                                }`}
                                             >
-                                                <Edit3 className="w-5 h-5 group-hover:rotate-12 transition-transform duration-200" />
-                                                Nuevo Email
+                                                {(!canUseFeatures || hasReachedLimit('emails')) ? (
+                                                    <AlertTriangle className="w-5 h-5" />
+                                                ) : (
+                                                    <Edit3 className="w-5 h-5 group-hover:rotate-12 transition-transform duration-200" />
+                                                )}
+                                                {(!canUseFeatures || hasReachedLimit('emails')) ? 'Límite Alcanzado' : 'Nuevo Email'}
                                             </button>
                                         </div>
                                     </div>

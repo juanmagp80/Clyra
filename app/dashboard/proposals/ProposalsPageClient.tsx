@@ -7,6 +7,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/Card';
 import { Input } from '@/components/ui/Input';
 import { createSupabaseClient } from '@/src/lib/supabase-client';
 import {
+    AlertTriangle,
     Plus,
     Search,
     Filter,
@@ -32,6 +33,8 @@ import {
     AlertCircle
 } from 'lucide-react';
 import { useRouter } from 'next/navigation';
+import TrialBanner from '../../../components/TrialBanner';
+import { useTrialStatus } from '../../../src/lib/useTrialStatus';
 
 interface Proposal {
     id: string;
@@ -61,6 +64,9 @@ interface ProposalsPageClientProps {
 }
 
 export default function ProposalsPageClient({ userEmail }: ProposalsPageClientProps) {
+    // Hook de trial status
+    const { trialInfo, loading: trialLoading, hasReachedLimit, canUseFeatures } = useTrialStatus(userEmail);
+    
     const [proposals, setProposals] = useState<Proposal[]>([]);
     const [filteredProposals, setFilteredProposals] = useState<Proposal[]>([]);
     const [loading, setLoading] = useState(true);
@@ -170,6 +176,16 @@ export default function ProposalsPageClient({ userEmail }: ProposalsPageClientPr
         } catch (error) {
             console.error('Error signing out:', error);
         }
+    };
+
+    // Función para manejar nueva propuesta
+    const handleNewProposalClick = () => {
+        if (!canUseFeatures) {
+            alert('Tu periodo de prueba ha expirado. Actualiza tu plan para continuar creando propuestas.');
+            return;
+        }
+        
+        setShowNewProposalModal(true);
     };
 
     const loadProposals = async () => {
@@ -1097,6 +1113,10 @@ Características principales:
                 <div className="h-full overflow-y-auto">
                     <div className="min-h-screen bg-gradient-to-br from-slate-50/80 via-blue-50/90 to-indigo-100/80 backdrop-blur-3xl">
                         <div className="container mx-auto px-6 py-8">
+                            {/* Trial Banner */}
+                            <div className="mb-8">
+                                <TrialBanner />
+                            </div>
                             
                             {/* Header Premium */}
                             <div className="mb-8">
@@ -1128,11 +1148,20 @@ Características principales:
                                                 Demo Data
                                             </Button>
                                             <Button
-                                                onClick={() => setShowNewProposalModal(true)}
-                                                className="bg-gradient-to-r from-emerald-600 to-teal-600 text-white shadow-2xl shadow-emerald-500/25 hover:shadow-emerald-500/40 hover:scale-105 transform transition-all duration-200"
+                                                onClick={handleNewProposalClick}
+                                                disabled={!canUseFeatures}
+                                                className={`bg-gradient-to-r from-emerald-600 to-teal-600 text-white shadow-2xl shadow-emerald-500/25 hover:shadow-emerald-500/40 hover:scale-105 transform transition-all duration-200 ${
+                                                    !canUseFeatures 
+                                                        ? 'opacity-50 cursor-not-allowed !bg-gray-400 hover:!bg-gray-400 !shadow-gray-400/25 hover:!shadow-gray-400/25 hover:!scale-100' 
+                                                        : ''
+                                                }`}
                                             >
-                                                <Plus className="w-5 h-5 mr-2" />
-                                                Nueva Propuesta
+                                                {!canUseFeatures ? (
+                                                    <AlertTriangle className="w-5 h-5 mr-2" />
+                                                ) : (
+                                                    <Plus className="w-5 h-5 mr-2" />
+                                                )}
+                                                {!canUseFeatures ? 'Trial Expirado' : 'Nueva Propuesta'}
                                             </Button>
                                         </div>
                                     </div>

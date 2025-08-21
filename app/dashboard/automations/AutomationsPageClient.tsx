@@ -8,6 +8,7 @@ import { executeAutomationAction, type ActionPayload } from '@/src/lib/automatio
 import { createSupabaseClient } from '@/src/lib/supabase-client';
 import {
     AlertCircle,
+    AlertTriangle,
     Calendar,
     CheckCircle,
     Clock,
@@ -25,6 +26,8 @@ import {
 } from 'lucide-react';
 import { useRouter } from 'next/navigation';
 import { useEffect, useState } from 'react';
+import TrialBanner from '../../../components/TrialBanner';
+import { useTrialStatus } from '../../../src/lib/useTrialStatus';
 
 interface Automation {
     id: string;
@@ -62,6 +65,9 @@ const Modal: React.FC<ModalProps> = ({ isOpen, onClose, children }) => {
 };
 
 export default function AutomationsPageClient({ userEmail }: AutomationsPageClientProps) {
+    // Hook de trial status
+    const { trialInfo, loading: trialLoading, hasReachedLimit, canUseFeatures } = useTrialStatus(userEmail);
+    
     const [modalOpen, setModalOpen] = useState(false);
     const [modalAutomation, setModalAutomation] = useState<Automation | null>(null);
     const [entityOptions, setEntityOptions] = useState<any[]>([]);
@@ -98,6 +104,17 @@ export default function AutomationsPageClient({ userEmail }: AutomationsPageClie
         } catch (error) {
             console.error('Error signing out:', error);
         }
+    };
+
+    // Función para manejar ejecución de automaciones
+    const handleAutomationClick = (automation: Automation) => {
+        if (!canUseFeatures) {
+            alert('Tu periodo de prueba ha expirado. Actualiza tu plan para continuar usando automaciones.');
+            return;
+        }
+        
+        setModalAutomation(automation);
+        setModalOpen(true);
     };
 
     const loadAutomations = async () => {
@@ -526,6 +543,11 @@ export default function AutomationsPageClient({ userEmail }: AutomationsPageClie
                 <div className="h-full overflow-y-auto">
                     <div className="min-h-screen bg-gradient-to-br from-slate-50/80 via-blue-50/90 to-indigo-100/80 backdrop-blur-3xl">
                         <div className="container mx-auto px-6 py-8">
+                            {/* Trial Banner */}
+                            <div className="mb-8">
+                                <TrialBanner />
+                            </div>
+
                             {/* Header */}
                             <div className="mb-8">
                                 <div className="bg-white/40 backdrop-blur-2xl rounded-3xl border border-white/60 shadow-2xl shadow-indigo-500/10 p-8">
@@ -651,13 +673,19 @@ export default function AutomationsPageClient({ userEmail }: AutomationsPageClie
                                             <CardContent className="pt-0">
                                                 <div className="flex items-center gap-2">
                                                     <Button
-                                                        onClick={() => handleExecuteAutomation(automation)}
-                                                        disabled={!automation.is_active}
-                                                        className="flex-1 bg-gradient-to-r from-blue-600 to-indigo-600 text-white hover:from-blue-700 hover:to-indigo-700 shadow-lg hover:shadow-xl transition-all duration-200 disabled:opacity-50"
+                                                        onClick={() => handleAutomationClick(automation)}
+                                                        disabled={!automation.is_active || !canUseFeatures}
+                                                        className={`flex-1 bg-gradient-to-r from-blue-600 to-indigo-600 text-white hover:from-blue-700 hover:to-indigo-700 shadow-lg hover:shadow-xl transition-all duration-200 disabled:opacity-50 ${
+                                                            !canUseFeatures ? 'cursor-not-allowed' : ''
+                                                        }`}
                                                         size="sm"
                                                     >
-                                                        <Play className="w-4 h-4 mr-2" />
-                                                        Ejecutar
+                                                        {!canUseFeatures ? (
+                                                            <AlertTriangle className="w-4 h-4 mr-2" />
+                                                        ) : (
+                                                            <Play className="w-4 h-4 mr-2" />
+                                                        )}
+                                                        {!canUseFeatures ? 'Trial Expirado' : 'Ejecutar'}
                                                     </Button>
 
                                                     <Button

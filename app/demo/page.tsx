@@ -3,25 +3,25 @@ import { Button } from '@/components/ui/Button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/Card';
 import {
     ArrowRight,
-    BarChart3,
+    Award,
+    Calendar,
+    CheckCircle,
     Clock,
     DollarSign,
     FileText,
+    Rocket,
     Sparkles,
+    Star,
+    Target,
+    TrendingUp,
     Users,
     X,
-    TrendingUp,
-    Zap,
-    Target,
-    Star,
-    Rocket,
-    Award,
-    Calendar,
-    CheckCircle
+    Zap
 } from 'lucide-react';
 import Link from 'next/link';
-import { useState, useEffect } from 'react';
-import { demoStats } from './demo-data';
+import { useEffect, useState } from 'react';
+// import { demoStats } from './demo-data';
+const demoStats = { totalClients: 0, activeProjects: 0, totalRevenue: 0, hoursThisMonth: 0 };
 
 export default function DemoPage() {
     const [showTour, setShowTour] = useState(true);
@@ -155,11 +155,10 @@ export default function DemoPage() {
                                 {tourSteps.map((_, index) => (
                                     <div
                                         key={index}
-                                        className={`w-3 h-3 rounded-full transition-all duration-300 ${
-                                            index === tourStep 
-                                                ? 'bg-gradient-to-r from-blue-500 to-purple-500 scale-110' 
+                                        className={`w-3 h-3 rounded-full transition-all duration-300 ${index === tourStep
+                                                ? 'bg-gradient-to-r from-blue-500 to-purple-500 scale-110'
                                                 : 'bg-slate-200'
-                                        }`}
+                                            }`}
                                     />
                                 ))}
                             </div>
@@ -207,7 +206,7 @@ export default function DemoPage() {
                         {statsCards.map((stat, index) => {
                             const IconComponent = stat.icon;
                             return (
-                                <Card 
+                                <Card
                                     key={stat.title}
                                     className={`relative overflow-hidden border-0 shadow-xl hover:shadow-2xl transition-all duration-500 hover:scale-105 bg-gradient-to-br ${stat.bgGradient} group animate-in fade-in ${stat.delay}`}
                                 >
@@ -221,9 +220,8 @@ export default function DemoPage() {
                                         </div>
                                     </CardHeader>
                                     <CardContent className="relative z-10">
-                                        <div className={`text-3xl font-bold bg-gradient-to-r ${stat.gradient} bg-clip-text text-transparent mb-1 ${
-                                            animationStep === index ? 'animate-pulse' : ''
-                                        }`}>
+                                        <div className={`text-3xl font-bold bg-gradient-to-r ${stat.gradient} bg-clip-text text-transparent mb-1 ${animationStep === index ? 'animate-pulse' : ''
+                                            }`}>
                                             {stat.value}
                                         </div>
                                         <p className="text-xs text-slate-600 flex items-center gap-1">
@@ -428,7 +426,7 @@ export default function DemoPage() {
                             ¿Listo para revolucionar tu negocio?
                         </h2>
                         <p className="text-xl text-slate-300 mb-8 max-w-3xl mx-auto leading-relaxed">
-                            Únete a miles de profesionales que ya han transformado su forma de trabajar. 
+                            Únete a miles de profesionales que ya han transformado su forma de trabajar.
                             Sin tarjeta de crédito, configuración en 60 segundos, soporte premium incluido.
                         </p>
                         <div className="flex flex-col sm:flex-row gap-6 justify-center items-center">
@@ -450,7 +448,7 @@ export default function DemoPage() {
                                 </p>
                             </div>
                         </div>
-                        
+
                         {/* Features list */}
                         <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mt-12 pt-8 border-t border-slate-700">
                             <div className="flex items-center gap-3">

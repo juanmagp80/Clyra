@@ -4,6 +4,7 @@
 import Sidebar from '@/components/Sidebar';
 import TrialBanner from '@/components/TrialBanner';
 import { createSupabaseClient } from '@/src/lib/supabase-client';
+import { useTrialStatus } from '@/src/lib/useTrialStatus';
 import {
     Briefcase,
     Clock,
@@ -11,7 +12,8 @@ import {
     Target,
     TrendingUp,
     User,
-    Users
+    Users,
+    LogOut
 } from 'lucide-react';
 import { useRouter } from 'next/navigation';
 import { useEffect, useState } from 'react';
@@ -25,6 +27,9 @@ export default function DashboardClient({
 }) {
     const supabase = createSupabaseClient();
     const router = useRouter();
+
+    // Hook de trial status
+    const { trialInfo, loading: trialLoading, hasReachedLimit, canUseFeatures } = useTrialStatus(userEmail);
 
     // Estados para las métricas
     const [metrics, setMetrics] = useState({
@@ -318,14 +323,14 @@ export default function DashboardClient({
             {/* Sidebar */}
             <Sidebar userEmail={userEmail} onLogout={handleLogout} />
 
-            {/* Main Content */}
-            <div className="flex-1 ml-56 overflow-hidden relative">
+            {/* Main Content - Responsive with proper spacing */}
+            <div className="flex-1 pl-56 overflow-hidden relative">
                 <div className="h-full overflow-y-auto">
                     {/* Trial Banner - Solo si no es demo */}
                     {!isDemo && <TrialBanner userEmail={userEmail} />}
 
                     <div className="min-h-screen relative bg-gradient-to-b from-transparent via-slate-50/20 to-blue-50/30">
-                        <div className="container mx-auto px-6 py-8">
+                        <div className="container mx-auto px-4 lg:px-6 py-8">
                             {/* Header Premium con Animaciones */}
                             <div className="relative mb-8 overflow-hidden">
                                 <div className="absolute inset-0 bg-gradient-to-r from-blue-500/5 via-purple-500/5 to-pink-500/5 blur-3xl"></div>

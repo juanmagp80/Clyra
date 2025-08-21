@@ -7,7 +7,6 @@ import {
   CheckCircle,
   DollarSign,
   Globe,
-  Play,
   Sparkles,
   Star,
   TrendingUp,
@@ -159,18 +158,12 @@ export default function Home() {
             <span className="text-purple-400 font-medium">El CRM que entiende tu forma de trabajar.</span>
           </p>
 
-          {/* CTA Buttons */}
-          <div className="flex gap-6 justify-center flex-wrap mb-8">
+          {/* CTA Button */}
+          <div className="flex justify-center mb-8">
             <Link href="/register">
               <Button size="lg" className="bg-gradient-to-r from-purple-600 to-cyan-600 hover:from-purple-700 hover:to-cyan-700 text-lg px-12 py-4 rounded-full border-0 shadow-2xl shadow-purple-500/25 group">
-                Probarlo Gratis
+                Comenzar Prueba Gratuita - 14 Días
                 <ArrowRight className="ml-2 h-5 w-5 group-hover:translate-x-1 transition-transform" />
-              </Button>
-            </Link>
-            <Link href="/demo">
-              <Button size="lg" className="bg-gradient-to-r from-purple-600 to-cyan-600 hover:from-purple-700 hover:to-cyan-700 text-lg px-12 py-4 rounded-full border-0 shadow-2xl shadow-purple-500/25 group">
-                <Play className="mr-2 h-5 w-5 group-hover:scale-110 transition-transform" />
-                Ver en Acción
               </Button>
             </Link>
           </div>

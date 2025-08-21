@@ -12,7 +12,7 @@ async function findMeetings() {
   try {
     console.log('🔍 BUSCANDO REUNIONES EN TODAS LAS TABLAS POSIBLES');
     console.log('================================================');
-    
+
     // 1. Verificar calendar_events
     console.log('1. 📅 Verificando calendar_events...');
     const { data: calendarEvents, error: calendarError } = await supabase
@@ -20,19 +20,19 @@ async function findMeetings() {
       .select('*')
       .order('created_at', { ascending: false })
       .limit(10);
-    
+
     if (calendarError) {
       console.log(`   ❌ Error: ${calendarError.message}`);
     } else {
       console.log(`   📊 Eventos encontrados: ${calendarEvents?.length || 0}`);
       if (calendarEvents && calendarEvents.length > 0) {
         calendarEvents.forEach((event, i) => {
-          console.log(`   ${i+1}. ${event.title} - ${event.start_time} (${event.type})`);
+          console.log(`   ${i + 1}. ${event.title} - ${event.start_time} (${event.type})`);
         });
       }
     }
     console.log('');
-    
+
     // 2. Verificar si existe tabla meetings
     console.log('2. 📅 Verificando tabla meetings...');
     const { data: meetings, error: meetingsError } = await supabase
@@ -40,7 +40,7 @@ async function findMeetings() {
       .select('*')
       .order('created_at', { ascending: false })
       .limit(10);
-    
+
     if (meetingsError) {
       console.log(`   ❌ Error: ${meetingsError.message}`);
       if (meetingsError.message.includes('relation "public.meetings" does not exist')) {
@@ -50,46 +50,46 @@ async function findMeetings() {
       console.log(`   📊 Reuniones encontradas: ${meetings?.length || 0}`);
       if (meetings && meetings.length > 0) {
         meetings.forEach((meeting, i) => {
-          console.log(`   ${i+1}. ${meeting.title} - ${meeting.meeting_date} ${meeting.meeting_time}`);
+          console.log(`   ${i + 1}. ${meeting.title} - ${meeting.meeting_date} ${meeting.meeting_time}`);
         });
       }
     }
     console.log('');
-    
+
     // 3. Verificar clientes (para poder crear reuniones)
     console.log('3. 👥 Verificando clientes disponibles...');
     const { data: clients, error: clientsError } = await supabase
       .from('clients')
       .select('id, name, email')
       .limit(5);
-    
+
     if (clientsError) {
       console.log(`   ❌ Error: ${clientsError.message}`);
     } else {
       console.log(`   📊 Clientes encontrados: ${clients?.length || 0}`);
       if (clients && clients.length > 0) {
         clients.forEach((client, i) => {
-          console.log(`   ${i+1}. ${client.name} (${client.email || 'sin email'})`);
+          console.log(`   ${i + 1}. ${client.name} (${client.email || 'sin email'})`);
         });
       } else {
         console.log('   ⚠️ No hay clientes - necesarios para crear reuniones');
       }
     }
     console.log('');
-    
+
     // 4. Verificar estructura de calendar_events
     console.log('4. 🔧 Verificando estructura de calendar_events...');
     const { data: tableInfo, error: tableError } = await supabase
       .rpc('get_table_columns', { table_name: 'calendar_events' })
       .limit(1);
-    
+
     if (tableError) {
       console.log('   ⚠️ No se pudo obtener estructura de tabla');
       console.log('   💡 Intentando insertar evento de prueba...');
-      
+
       // Intentar crear evento de prueba
       const futureDate = new Date(Date.now() + 1.5 * 60 * 60 * 1000);
-      
+
       const { data: testEvent, error: insertError } = await supabase
         .from('calendar_events')
         .insert({
@@ -104,12 +104,12 @@ async function findMeetings() {
         })
         .select()
         .single();
-      
+
       if (insertError) {
         console.log(`   ❌ Error insertando: ${insertError.message}`);
         console.log('   💡 Posibles problemas:');
         console.log('      - Tabla calendar_events no existe');
-        console.log('      - Faltan columnas requeridas'); 
+        console.log('      - Faltan columnas requeridas');
         console.log('      - Problemas de permisos RLS');
         console.log('      - Usuario no autenticado');
       } else {
@@ -120,7 +120,7 @@ async function findMeetings() {
       }
     }
     console.log('');
-    
+
     console.log('📋 DIAGNÓSTICO COMPLETO:');
     console.log('=======================');
     console.log('');
@@ -141,7 +141,7 @@ async function findMeetings() {
     console.log('🚀 PARA PROBAR INMEDIATAMENTE:');
     console.log('- Usa el evento de prueba que acabamos de crear (si funcionó)');
     console.log('- O crea una nueva reunión manualmente en el calendario');
-    
+
   } catch (error) {
     console.error('❌ Error general:', error);
   }
