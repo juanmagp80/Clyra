@@ -42,18 +42,21 @@ export async function POST(request: NextRequest) {
                     const userId = session.client_reference_id;
 
                     if (userId) {
+                        // Actualizar la tabla user_subscriptions
                         await supabase
-                            .from('subscriptions')
+                            .from('user_subscriptions')
                             .upsert({
                                 user_id: userId,
+                                is_subscribed: true,
+                                plan_type: 'pro',
+                                subscription_end: new Date(subscription.current_period_end * 1000).toISOString(),
                                 stripe_customer_id: session.customer,
                                 stripe_subscription_id: subscription.id,
-                                status: subscription.status,
-                                price_id: subscription.items.data[0].price.id,
-                                current_period_start: (subscription as any).current_period_start ? new Date((subscription as any).current_period_start * 1000).toISOString() : null,
-                                current_period_end: (subscription as any).current_period_end ? new Date((subscription as any).current_period_end * 1000).toISOString() : null,
-                                cancel_at_period_end: subscription.cancel_at_period_end || false,
+                            }, {
+                                onConflict: 'user_id'
                             });
+                            
+                        console.log('Suscripción actualizada para usuario:', userId);
                     }
                 }
                 break;
@@ -64,14 +67,15 @@ export async function POST(request: NextRequest) {
                 const subscription = event.data.object as any;
 
                 await supabase
-                    .from('subscriptions')
+                    .from('user_subscriptions')
                     .update({
-                        status: subscription.status,
-                        current_period_start: new Date(subscription.current_period_start * 1000).toISOString(),
-                        current_period_end: new Date(subscription.current_period_end * 1000).toISOString(),
-                        cancel_at_period_end: subscription.cancel_at_period_end,
+                        is_subscribed: subscription.status === 'active',
+                        subscription_end: new Date(subscription.current_period_end * 1000).toISOString(),
+                        plan_type: subscription.status === 'active' ? 'pro' : 'free',
                     })
                     .eq('stripe_subscription_id', subscription.id);
+                    
+                console.log('Suscripción actualizada:', subscription.id, 'Estado:', subscription.status);
                 break;
             }
 
@@ -80,11 +84,14 @@ export async function POST(request: NextRequest) {
 
                 if (invoice.subscription) {
                     await supabase
-                        .from('subscriptions')
+                        .from('user_subscriptions')
                         .update({
-                            status: 'active',
+                            is_subscribed: true,
+                            plan_type: 'pro',
                         })
                         .eq('stripe_subscription_id', invoice.subscription);
+                        
+                    console.log('Pago exitoso para suscripción:', invoice.subscription);
                 }
                 break;
             }
@@ -94,11 +101,14 @@ export async function POST(request: NextRequest) {
 
                 if (invoice.subscription) {
                     await supabase
-                        .from('subscriptions')
+                        .from('user_subscriptions')
                         .update({
-                            status: 'past_due',
+                            is_subscribed: false,
+                            plan_type: 'free',
                         })
                         .eq('stripe_subscription_id', invoice.subscription);
+                        
+                    console.log('Pago fallido para suscripción:', invoice.subscription);
                 }
                 break;
             }

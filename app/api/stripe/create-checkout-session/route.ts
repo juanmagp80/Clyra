@@ -3,9 +3,13 @@ import { NextRequest, NextResponse } from 'next/server';
 
 export async function POST(request: NextRequest) {
   try {
-    const { priceId, successUrl, cancelUrl, userEmail } = await request.json();
+    const body = await request.json();
+    console.log('Received request body:', body);
+    
+    const { priceId, successUrl, cancelUrl, userEmail } = body;
 
     if (!priceId) {
+      console.error('Missing priceId');
       return NextResponse.json(
         { error: 'Price ID is required' },
         { status: 400 }
@@ -13,11 +17,14 @@ export async function POST(request: NextRequest) {
     }
 
     if (!userEmail) {
+      console.error('Missing userEmail');
       return NextResponse.json(
         { error: 'User email is required' },
         { status: 400 }
       );
     }
+
+    console.log('Creating checkout session for:', { priceId, userEmail, successUrl, cancelUrl });
 
     // Para simplificar, vamos a usar un enfoque temporal
     // En producción deberías verificar la autenticación del usuario
@@ -34,12 +41,15 @@ export async function POST(request: NextRequest) {
       userEmail
     );
 
-    return NextResponse.json({ sessionId: session.id });
+    console.log('Stripe session created:', { id: session.id, url: session.url });
+
+    return NextResponse.json({ url: session.url });
 
   } catch (error) {
     console.error('Error in create-checkout-session:', error);
+    const errorMessage = error instanceof Error ? error.message : 'Unknown error';
     return NextResponse.json(
-      { error: 'Internal server error' },
+      { error: `Internal server error: ${errorMessage}` },
       { status: 500 }
     );
   }

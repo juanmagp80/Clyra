@@ -1,285 +1,265 @@
 'use client';
 
+import { useEffect, useState } from 'react';
+import { createClientComponentClient } from '@supabase/auth-helpers-nextjs';
+import { Zap, CreditCard, AlertCircle } from 'lucide-react';
 import { Button } from '@/components/ui/Button';
-import { useTrialStatus } from '@/src/lib/useTrialStatus';
-import { Crown, CreditCard, AlertTriangle, Calendar, X, CheckCircle, XCircle } from 'lucide-react';
-import { useState } from 'react';
+import { toast } from 'sonner';
 
 interface SubscriptionStatusProps {
     userEmail?: string;
 }
 
 export default function SubscriptionStatus({ userEmail }: SubscriptionStatusProps) {
-    const { trialInfo, loading } = useTrialStatus(userEmail);
-    const [isExpanded, setIsExpanded] = useState(false);
-    const [isCancelling, setIsCancelling] = useState(false);
+    const [status, setStatus] = useState({
+        is_subscribed: false,
+        trial_end: null as string | null,
+        subscription_end: null as string | null,
+        plan_type: 'free' as string
+    });
+    const [loading, setLoading] = useState(true);
+    const [currentUserEmail, setCurrentUserEmail] = useState<string>('');
+    const supabase = createClientComponentClient();
 
-    if (loading || !trialInfo) {
+    useEffect(() => {
+        async function checkSubscription() {
+            try {
+                const { data: { session } } = await supabase.auth.getSession();
+                if (!session) {
+                    setLoading(false);
+                    return;
+                }
+
+                // Establecer el email del usuario
+                const email = userEmail || session.user.email || '';
+                setCurrentUserEmail(email);
+
+                // Obtener datos de suscripción
+                const { data, error } = await supabase
+                    .from('user_subscriptions')
+                    .select('*')
+                    .eq('user_id', session.user.id)
+                    .single();
+
+                if (error) {
+                    console.error('Error al verificar suscripción:', error);
+                    // Si no existe la suscripción, crear una por defecto
+                    if (error.code === 'PGRST116') {
+                        const { data: newSub, error: insertError } = await supabase
+                            .from('user_subscriptions')
+                            .insert([
+                                { 
+                                    user_id: session.user.id,
+                                    is_subscribed: false,
+                                    trial_end: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString(), // 30 días
+                                    plan_type: 'trial'
+                                }
+                            ])
+                            .select()
+                            .single();
+                            
+                        if (!insertError && newSub) {
+                            setStatus(newSub);
+                        }
+                    }
+                } else if (data) {
+                    setStatus(data);
+                }
+            } catch (error) {
+                console.error('Error al verificar suscripción:', error);
+            } finally {
+                setLoading(false);
+            }
+        }
+
+        checkSubscription();
+    }, [supabase, userEmail]);
+
+    if (loading) {
         return (
             <div className="p-3 bg-slate-100/50 dark:bg-slate-800/50 rounded-lg animate-pulse">
                 <div className="h-4 bg-slate-200 dark:bg-slate-700 rounded w-3/4"></div>
-                <div className="h-3 bg-slate-200 dark:bg-slate-700 rounded w-1/2 mt-2"></div>
             </div>
         );
     }
 
-    const handleCancelSubscription = async () => {
-        if (!confirm('¿Estás seguro de que quieres cancelar tu suscripción? Perderás el acceso a las funciones PRO al final del período actual.')) {
-            return;
-        }
+    const isTrialActive = status.trial_end && new Date(status.trial_end) > new Date();
+    const isSubscribed = status.is_subscribed;
+    const isPro = status.plan_type === 'pro';
 
-        setIsCancelling(true);
+    const handleSubscribe = async () => {
         try {
-            const response = await fetch('/api/stripe/cancel-subscription', {
+            const emailToUse = currentUserEmail || userEmail;
+            console.log('Iniciando suscripción con userEmail:', emailToUse);
+            
+            if (!emailToUse) {
+                throw new Error('No se pudo obtener el email del usuario');
+            }
+            
+            const response = await fetch('/api/stripe/create-checkout-session', {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json',
                 },
-                body: JSON.stringify({ userEmail }),
+                body: JSON.stringify({
+                    priceId: 'price_1RyeBiHFKglWYpZiSeo70KYD', // ID real de tu producto en Stripe
+                    userEmail: emailToUse,
+                    successUrl: `${window.location.origin}/dashboard?success=true`,
+                    cancelUrl: `${window.location.origin}/dashboard?canceled=true`,
+                }),
+            });
+
+            console.log('Response status:', response.status);
+            console.log('Response ok:', response.ok);
+
+            const data = await response.json();
+            console.log('Response data:', data);
+
+            if (!response.ok) {
+                throw new Error(data.error || `Error HTTP: ${response.status}`);
+            }
+
+            if (data.url) {
+                console.log('Redirigiendo a:', data.url);
+                window.location.href = data.url;
+            } else {
+                console.error('Respuesta sin URL:', data);
+                throw new Error('No se pudo obtener la URL de pago');
+            }
+        } catch (error: any) {
+            console.error('Error al iniciar suscripción:', error);
+            toast.error('Error al iniciar la suscripción: ' + error.message);
+        }
+    };
+
+    const handleCancelSubscription = async () => {
+        if (!confirm('¿Estás seguro de que quieres cancelar tu suscripción?')) {
+            return;
+        }
+
+        try {
+            const response = await fetch('/api/stripe/cancel-subscription', {
+                method: 'POST',
+            });
+
+            const data = await response.json();
+            if (response.ok) {
+                toast.success('Suscripción cancelada correctamente');
+                // Actualizar el estado local
+                setStatus(prev => ({
+                    ...prev,
+                    is_subscribed: false,
+                    plan_type: 'free'
+                }));
+            } else {
+                throw new Error(data.error || 'Error al cancelar la suscripción');
+            }
+        } catch (error: any) {
+            console.error('Error al cancelar suscripción:', error);
+            toast.error('Error al cancelar la suscripción: ' + error.message);
+        }
+    };
+
+    // Función temporal para activar suscripción manualmente (solo para debug)
+    const handleManualActivation = async () => {
+        try {
+            const response = await fetch('/api/activate-subscription', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
             });
 
             const result = await response.json();
 
-            if (response.ok) {
-                alert('Tu suscripción ha sido cancelada. Mantendrás el acceso PRO hasta el final del período actual.');
-                // Recargar para actualizar el estado
-                window.location.reload();
-            } else {
-                alert(`Error cancelando suscripción: ${result.error || 'Error desconocido'}`);
+            if (!response.ok) {
+                if (result.sql) {
+                    console.log('📋 SQL para crear tabla:', result.sql);
+                    toast.error('Tabla no existe. Revisa la consola para el SQL.');
+                } else {
+                    toast.error('Error: ' + result.error);
+                }
+                return;
             }
-        } catch (error) {
-            console.error('Error cancelando suscripción:', error);
-            alert('Error cancelando suscripción. Por favor, inténtalo de nuevo.');
-        } finally {
-            setIsCancelling(false);
+
+            toast.success('Suscripción activada correctamente');
+            setStatus({
+                is_subscribed: true,
+                plan_type: 'pro',
+                trial_end: null,
+                subscription_end: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString()
+            });
+
+        } catch (error: any) {
+            console.error('Error:', error);
+            toast.error('Error al activar suscripción: ' + error.message);
         }
     };
-
-    const getStatusConfig = () => {
-        if (trialInfo.hasActiveSubscription || trialInfo.status === 'active') {
-            return {
-                icon: Crown,
-                title: 'Taskelio PRO',
-                subtitle: 'Suscripción Activa',
-                bgColor: 'from-emerald-500 to-teal-600',
-                textColor: 'text-white',
-                badgeColor: 'bg-emerald-100 text-emerald-800',
-                status: 'Activo'
-            };
-        } else if (trialInfo.status === 'cancelled') {
-            const periodEndDate = trialInfo.periodEndDate ? new Date(trialInfo.periodEndDate) : null;
-            const formattedDate = periodEndDate ? periodEndDate.toLocaleDateString('es-ES', { 
-                day: 'numeric', 
-                month: 'long', 
-                year: 'numeric' 
-            }) : 'Fecha no disponible';
-            
-            return {
-                icon: AlertTriangle,
-                title: 'Taskelio PRO',
-                subtitle: `Cancela el ${formattedDate}`,
-                bgColor: 'from-orange-500 to-amber-600',
-                textColor: 'text-white',
-                badgeColor: 'bg-orange-100 text-orange-800',
-                status: 'Cancelado'
-            };
-        } else if (trialInfo.status === 'trial' && !trialInfo.isExpired) {
-            return {
-                icon: Calendar,
-                title: 'Trial Gratuito',
-                subtitle: `${trialInfo.daysRemaining || 0} días restantes`,
-                bgColor: 'from-blue-500 to-indigo-600',
-                textColor: 'text-white',
-                badgeColor: 'bg-blue-100 text-blue-800',
-                status: 'Trial'
-            };
-        } else {
-            return {
-                icon: AlertTriangle,
-                title: 'Trial Expirado',
-                subtitle: 'Actualiza para continuar',
-                bgColor: 'from-red-500 to-red-600',
-                textColor: 'text-white',
-                badgeColor: 'bg-red-100 text-red-800',
-                status: 'Expirado'
-            };
-        }
-    };
-
-    const config = getStatusConfig();
-    const IconComponent = config.icon;
-    const isPro = trialInfo.hasActiveSubscription || trialInfo.status === 'active';
-    const isCancelled = trialInfo.status === 'cancelled';
-    const canCancel = isPro && !isCancelled;
 
     return (
-        <div className="space-y-2">
-            {/* Botón principal compacto */}
-            <button
-                onClick={() => setIsExpanded(!isExpanded)}
-                className={`w-full p-3 rounded-lg bg-gradient-to-r ${config.bgColor} ${config.textColor} transition-all duration-300 hover:shadow-lg group`}
-            >
-                <div className="flex items-center justify-between">
-                    <div className="flex items-center space-x-2">
-                        <IconComponent className="w-4 h-4" />
-                        <div className="text-left">
-                            <div className="text-sm font-bold">{config.title}</div>
-                            <div className="text-xs opacity-90">{config.subtitle}</div>
-                        </div>
-                    </div>
-                    <div className="flex items-center space-x-1">
-                        <span className={`text-xs px-2 py-1 rounded-full ${config.badgeColor} font-medium`}>
-                            {config.status}
-                        </span>
-                        <div className={`transition-transform duration-200 ${isExpanded ? 'rotate-180' : ''}`}>
-                            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
-                            </svg>
-                        </div>
-                    </div>
+        <div className="px-3 py-2 bg-gradient-to-br from-indigo-50/50 via-violet-50/50 to-purple-50/50 dark:from-indigo-950/50 dark:via-violet-950/50 dark:to-purple-950/50 rounded-lg border border-indigo-100/50 dark:border-indigo-800/30 shadow-sm">
+            <div className="flex items-center justify-between mb-2">
+                <div className="flex items-center space-x-2">
+                    <Zap className="h-4 w-4 text-indigo-600 dark:text-indigo-400" />
+                    <span className="text-xs font-medium text-indigo-700 dark:text-indigo-300">
+                        {isTrialActive ? 'Periodo de Prueba' : 
+                         isPro ? 'Plan Profesional' : 
+                         'Plan Gratuito'}
+                    </span>
                 </div>
-            </button>
-
-            {/* Panel expandido */}
-            {isExpanded && (
-                <div className="bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg p-4 shadow-lg space-y-3">
-                    {/* Detalles del estado */}
-                    <div className="space-y-2">
-                        <div className="flex items-center justify-between">
-                            <span className="text-sm font-medium text-slate-700 dark:text-slate-300">Plan:</span>
-                            <span className={`text-sm font-bold ${isPro ? 'text-emerald-600' : 'text-slate-600'}`}>
-                                {isPro ? 'Taskelio PRO' : 'Trial Gratuito'}
-                            </span>
-                        </div>
-                        
-                        <div className="flex items-center justify-between">
-                            <span className="text-sm font-medium text-slate-700 dark:text-slate-300">Estado:</span>
-                            <div className="flex items-center space-x-2">
-                                {isPro ? (
-                                    <CheckCircle className="w-4 h-4 text-emerald-500" />
-                                ) : (
-                                    <XCircle className="w-4 h-4 text-red-500" />
-                                )}
-                                <span className="text-sm">{config.status}</span>
-                            </div>
-                        </div>
-
-                        {isPro && (
-                            <div className="flex items-center justify-between">
-                                <span className="text-sm font-medium text-slate-700 dark:text-slate-300">Precio:</span>
-                                <span className="text-sm font-bold text-emerald-600">€10/mes</span>
-                            </div>
-                        )}
-
-                        {isCancelled && trialInfo.periodEndDate && (
-                            <div className="flex items-center justify-between">
-                                <span className="text-sm font-medium text-slate-700 dark:text-slate-300">Cancela el:</span>
-                                <span className="text-sm font-bold text-orange-600">
-                                    {new Date(trialInfo.periodEndDate).toLocaleDateString('es-ES', { 
-                                        day: 'numeric', 
-                                        month: 'long', 
-                                        year: 'numeric' 
-                                    })}
-                                </span>
-                            </div>
-                        )}
-
-                        {trialInfo.daysRemaining !== null && !isPro && (
-                            <div className="flex items-center justify-between">
-                                <span className="text-sm font-medium text-slate-700 dark:text-slate-300">Días restantes:</span>
-                                <span className={`text-sm font-bold ${(trialInfo.daysRemaining || 0) > 3 ? 'text-blue-600' : 'text-red-600'}`}>
-                                    {trialInfo.daysRemaining || 0}
-                                </span>
-                            </div>
-                        )}
-                    </div>
-
-                    {/* Límites actuales */}
-                    <div className="border-t border-slate-200 dark:border-slate-700 pt-3">
-                        <h4 className="text-xs font-semibold text-slate-600 dark:text-slate-400 mb-2">Límites Actuales:</h4>
-                        <div className="grid grid-cols-3 gap-2 text-xs">
-                            <div className="text-center">
-                                <div className="font-bold text-slate-900 dark:text-slate-100">
-                                    {trialInfo.limits.maxClients === -1 ? '∞' : trialInfo.limits.maxClients}
-                                </div>
-                                <div className="text-slate-600 dark:text-slate-400">Clientes</div>
-                            </div>
-                            <div className="text-center">
-                                <div className="font-bold text-slate-900 dark:text-slate-100">
-                                    {trialInfo.limits.maxProjects === -1 ? '∞' : trialInfo.limits.maxProjects}
-                                </div>
-                                <div className="text-slate-600 dark:text-slate-400">Proyectos</div>
-                            </div>
-                            <div className="text-center">
-                                <div className="font-bold text-slate-900 dark:text-slate-100">
-                                    {trialInfo.limits.maxStorageGB === -1 ? '∞' : `${trialInfo.limits.maxStorageGB}GB`}
-                                </div>
-                                <div className="text-slate-600 dark:text-slate-400">Storage</div>
-                            </div>
-                        </div>
-                    </div>
-
-                    {/* Acciones */}
-                    <div className="border-t border-slate-200 dark:border-slate-700 pt-3 space-y-2">
-                        {!isPro && (
-                            <Button
-                                className="w-full bg-gradient-to-r from-indigo-600 to-violet-600 text-white hover:from-indigo-700 hover:to-violet-700"
-                                size="sm"
-                                onClick={() => window.location.href = '/subscription'}
-                            >
-                                <Crown className="w-4 h-4 mr-2" />
-                                Pasarse a PRO - €10/mes
-                            </Button>
-                        )}
-
-                        {isCancelled && (
-                            <Button
-                                className="w-full bg-gradient-to-r from-emerald-600 to-teal-600 text-white hover:from-emerald-700 hover:to-teal-700"
-                                size="sm"
-                                onClick={() => window.location.href = '/subscription'}
-                            >
-                                <Crown className="w-4 h-4 mr-2" />
-                                Renovar Suscripción - €10/mes
-                            </Button>
-                        )}
-
-                        {canCancel && (
-                            <Button
-                                variant="ghost"
-                                className="w-full text-red-600 hover:text-red-700 hover:bg-red-50 dark:hover:bg-red-900/20"
-                                size="sm"
-                                onClick={handleCancelSubscription}
-                                disabled={isCancelling}
-                            >
-                                {isCancelling ? (
-                                    <>
-                                        <div className="w-4 h-4 mr-2 animate-spin rounded-full border-2 border-red-600 border-t-transparent"></div>
-                                        Cancelando...
-                                    </>
-                                ) : (
-                                    <>
-                                        <X className="w-4 h-4 mr-2" />
-                                        Cancelar Suscripción
-                                    </>
-                                )}
-                            </Button>
-                        )}
-
-                        {isPro && (
-                            <div className="flex space-x-2">
-                                <Button
-                                    variant="ghost"
-                                    className="flex-1 text-slate-600 hover:text-slate-800"
-                                    size="sm"
-                                    onClick={() => window.open('https://billing.stripe.com/p/login/test_8wMbKVfYLaBZ8i4fYY', '_blank')}
-                                >
-                                    <CreditCard className="w-4 h-4 mr-2" />
-                                    Facturación
-                                </Button>
-                            </div>
-                        )}
-                    </div>
-                </div>
+            </div>
+            
+            {isTrialActive && status.trial_end && (
+                <>
+                    <p className="mt-1 text-[11px] text-slate-600 dark:text-slate-400 mb-2">
+                        Finaliza el {new Date(status.trial_end).toLocaleDateString()}
+                    </p>
+                    <Button 
+                        onClick={handleSubscribe}
+                        className="w-full text-[11px] h-7 bg-gradient-to-r from-indigo-600 to-violet-600 hover:from-indigo-700 hover:to-violet-700"
+                    >
+                        <CreditCard className="w-3 h-3 mr-1" />
+                        Activar Plan Pro
+                    </Button>
+                </>
+            )}
+            
+            {!isTrialActive && !isPro && (
+                <Button 
+                    onClick={handleSubscribe}
+                    className="w-full text-[11px] h-7 bg-gradient-to-r from-indigo-600 to-violet-600 hover:from-indigo-700 hover:to-violet-700"
+                >
+                    <CreditCard className="w-3 h-3 mr-1" />
+                    Suscribirse al Plan Pro
+                </Button>
+            )}
+            
+            {isPro && (
+                <>
+                    <p className="mt-1 text-[11px] text-slate-600 dark:text-slate-400 mb-2">
+                        {status.subscription_end ? 
+                            `Suscripción activa hasta ${new Date(status.subscription_end).toLocaleDateString()}` :
+                            'Suscripción activa'}
+                    </p>
+                    <Button 
+                        onClick={handleCancelSubscription}
+                        variant="destructive"
+                        className="w-full text-[11px] h-7"
+                    >
+                        <AlertCircle className="w-3 h-3 mr-1" />
+                        Cancelar Suscripción
+                    </Button>
+                </>
+            )}
+            
+            {/* Botón temporal de activación manual - Solo para debug */}
+            {!isPro && (
+                <Button 
+                    onClick={handleManualActivation}
+                    className="w-full text-[10px] h-6 mt-2 bg-green-600 hover:bg-green-700 text-white"
+                >
+                    🔧 Activar Pro (Temporal)
+                </Button>
             )}
         </div>
     );
