@@ -56,7 +56,7 @@ interface ProjectsPageClientProps {
 export default function ProjectsPageClient({ userEmail }: ProjectsPageClientProps) {
     // Hook de trial status
     const { trialInfo, loading: trialLoading, hasReachedLimit, canUseFeatures } = useTrialStatus(userEmail);
-    
+
     // Estados
     const [searchTerm, setSearchTerm] = useState('');
     const [filterStatus, setFilterStatus] = useState('all');
@@ -86,7 +86,7 @@ export default function ProjectsPageClient({ userEmail }: ProjectsPageClientProp
                 console.error('Supabase client not available');
                 return;
             }
-            
+
             const user = (await supabase.auth.getUser()).data.user;
             if (!user) return;
 
@@ -113,7 +113,7 @@ export default function ProjectsPageClient({ userEmail }: ProjectsPageClientProp
                 console.error('Supabase client not available');
                 return;
             }
-            
+
             const user = (await supabase.auth.getUser()).data.user;
             if (!user) return;
 
@@ -145,19 +145,19 @@ export default function ProjectsPageClient({ userEmail }: ProjectsPageClientProp
             alert('Tu periodo de prueba ha expirado. Actualiza tu plan para continuar creando proyectos.');
             return;
         }
-        
+
         if (hasReachedLimit('projects')) {
             alert(`Has alcanzado el límite de ${(trialInfo && trialInfo.limits && typeof trialInfo.limits.maxProjects === 'number') ? trialInfo.limits.maxProjects : 5} proyectos en el plan de prueba. Actualiza tu plan para crear más proyectos.`);
             return;
         }
-        
+
         setShowForm(true);
     };
 
     const createProject = async () => {
         try {
             if (!supabase || !formData.name || !formData.client_id) return;
-            
+
             const user = (await supabase.auth.getUser()).data.user;
             if (!user) return;
 
@@ -390,7 +390,7 @@ export default function ProjectsPageClient({ userEmail }: ProjectsPageClientProp
                                     </p>
                                 </div>
                             </div>
-                            
+
                             <div className="flex items-center gap-4">
                                 <div className="flex items-center space-x-2 bg-white/70 backdrop-blur-xl rounded-2xl px-6 py-3 shadow-lg border border-white/60">
                                     <div className="w-2 h-2 bg-green-500 rounded-full animate-pulse"></div>
@@ -399,11 +399,10 @@ export default function ProjectsPageClient({ userEmail }: ProjectsPageClientProp
                                 <button
                                     onClick={handleNewProjectClick}
                                     disabled={!canUseFeatures || hasReachedLimit('projects')}
-                                    className={`group px-8 py-4 bg-gradient-to-r from-blue-600 via-indigo-600 to-purple-600 hover:from-blue-700 hover:via-indigo-700 hover:to-purple-700 text-white font-black rounded-2xl shadow-2xl shadow-blue-500/30 hover:shadow-blue-500/50 hover:scale-110 hover:-translate-y-1 transition-all duration-300 ${
-                                        (!canUseFeatures || hasReachedLimit('projects')) 
-                                            ? 'opacity-50 cursor-not-allowed !bg-gray-400 hover:!bg-gray-400 !shadow-gray-400/30 hover:!shadow-gray-400/30 hover:!scale-100 hover:!translate-y-0' 
+                                    className={`group px-8 py-4 bg-gradient-to-r from-blue-600 via-indigo-600 to-purple-600 hover:from-blue-700 hover:via-indigo-700 hover:to-purple-700 text-white font-black rounded-2xl shadow-2xl shadow-blue-500/30 hover:shadow-blue-500/50 hover:scale-110 hover:-translate-y-1 transition-all duration-300 ${(!canUseFeatures || hasReachedLimit('projects'))
+                                            ? 'opacity-50 cursor-not-allowed !bg-gray-400 hover:!bg-gray-400 !shadow-gray-400/30 hover:!shadow-gray-400/30 hover:!scale-100 hover:!translate-y-0'
                                             : ''
-                                    }`}
+                                        }`}
                                 >
                                     <span className="flex items-center gap-3">
                                         {(!canUseFeatures || hasReachedLimit('projects')) ? (
@@ -532,27 +531,25 @@ export default function ProjectsPageClient({ userEmail }: ProjectsPageClientProp
                                         Gestiona todos tus proyectos activos y completados
                                     </p>
                                 </div>
-                                
+
                                 {/* Botones de Vista */}
                                 <div className="flex items-center gap-2 bg-white/60 backdrop-blur-xl rounded-2xl p-2 shadow-lg border border-white/80">
                                     <button
                                         onClick={() => setViewMode('grid')}
-                                        className={`group flex items-center gap-2 px-4 py-2 rounded-xl font-bold text-sm transition-all duration-300 ${
-                                            viewMode === 'grid'
+                                        className={`group flex items-center gap-2 px-4 py-2 rounded-xl font-bold text-sm transition-all duration-300 ${viewMode === 'grid'
                                                 ? 'bg-gradient-to-r from-blue-600 to-indigo-600 text-white shadow-lg shadow-blue-500/30'
                                                 : 'text-slate-600 hover:text-blue-600 hover:bg-blue-50'
-                                        }`}
+                                            }`}
                                     >
                                         <Grid3x3 className="w-4 h-4 group-hover:scale-110 transition-transform duration-300" />
                                         Tarjetas
                                     </button>
                                     <button
                                         onClick={() => setViewMode('list')}
-                                        className={`group flex items-center gap-2 px-4 py-2 rounded-xl font-bold text-sm transition-all duration-300 ${
-                                            viewMode === 'list'
+                                        className={`group flex items-center gap-2 px-4 py-2 rounded-xl font-bold text-sm transition-all duration-300 ${viewMode === 'list'
                                                 ? 'bg-gradient-to-r from-blue-600 to-indigo-600 text-white shadow-lg shadow-blue-500/30'
                                                 : 'text-slate-600 hover:text-blue-600 hover:bg-blue-50'
-                                        }`}
+                                            }`}
                                     >
                                         <List className="w-4 h-4 group-hover:scale-110 transition-transform duration-300" />
                                         Lista
@@ -566,10 +563,10 @@ export default function ProjectsPageClient({ userEmail }: ProjectsPageClientProp
                                 <div className="lg:col-span-2 relative group/search">
                                     {/* Fondo Decorativo con Gradientes Animados */}
                                     <div className="absolute -inset-2 bg-gradient-to-r from-indigo-500 via-purple-500 to-pink-500 rounded-3xl opacity-0 group-focus-within/search:opacity-30 group-hover/search:opacity-20 blur-lg transition-all duration-700"></div>
-                                    
+
                                     {/* Contenedor Principal MÁS GRANDE */}
                                     <div className={"relative p-6 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl shadow-sm"}>
-                                        
+
                                         {/* Icono de Búsqueda con Animaciones MEJORADO */}
                                         <div className="absolute left-6 top-1/2 transform -translate-y-1/2 z-10">
                                             <div className="relative">
@@ -595,7 +592,7 @@ export default function ProjectsPageClient({ userEmail }: ProjectsPageClientProp
 
                                         {/* Botón de Limpiar MEJORADO */}
                                         {searchTerm && (
-                                            <button 
+                                            <button
                                                 onClick={() => setSearchTerm('')}
                                                 className="absolute right-4 top-1/2 transform -translate-y-1/2 w-8 h-8 bg-gradient-to-br from-red-500 to-red-600 hover:from-red-600 hover:to-red-700 rounded-2xl shadow-2xl hover:shadow-xl hover:scale-110 transition-all duration-300 flex items-center justify-center group"
                                                 title="Limpiar búsqueda (ESC)"
@@ -654,19 +651,17 @@ export default function ProjectsPageClient({ userEmail }: ProjectsPageClientProp
                                 <button
                                     onClick={handleNewProjectClick}
                                     disabled={!canUseFeatures || hasReachedLimit('projects')}
-                                    className={`group px-10 py-5 bg-gradient-to-r from-blue-600 via-indigo-600 to-purple-600 hover:from-blue-700 hover:via-indigo-700 hover:to-purple-700 text-white font-black rounded-3xl shadow-2xl shadow-blue-500/30 hover:shadow-blue-500/50 hover:scale-110 hover:-translate-y-2 transition-all duration-500 flex items-center gap-4 text-lg relative overflow-hidden ${
-                                        (!canUseFeatures || hasReachedLimit('projects')) 
-                                            ? 'opacity-50 cursor-not-allowed !bg-gray-400 hover:!bg-gray-400 !shadow-gray-400/30 hover:!shadow-gray-400/30 hover:!scale-100 hover:!translate-y-0' 
+                                    className={`group px-10 py-5 bg-gradient-to-r from-blue-600 via-indigo-600 to-purple-600 hover:from-blue-700 hover:via-indigo-700 hover:to-purple-700 text-white font-black rounded-3xl shadow-2xl shadow-blue-500/30 hover:shadow-blue-500/50 hover:scale-110 hover:-translate-y-2 transition-all duration-500 flex items-center gap-4 text-lg relative overflow-hidden ${(!canUseFeatures || hasReachedLimit('projects'))
+                                            ? 'opacity-50 cursor-not-allowed !bg-gray-400 hover:!bg-gray-400 !shadow-gray-400/30 hover:!shadow-gray-400/30 hover:!scale-100 hover:!translate-y-0'
                                             : ''
-                                    }`}
+                                        }`}
                                 >
                                     {/* Efecto de brillo en hover */}
                                     <div className="absolute inset-0 bg-gradient-to-r from-white/0 via-white/20 to-white/0 -translate-x-full group-hover:translate-x-full transition-transform duration-1000"></div>
-                                    
+
                                     <div className="relative z-10 flex items-center gap-4">
-                                        <div className={`p-2 bg-white/20 rounded-2xl group-hover:scale-125 group-hover:rotate-180 transition-all duration-500 ${
-                                            (!canUseFeatures || hasReachedLimit('projects')) ? 'bg-gray-300/50' : ''
-                                        }`}>
+                                        <div className={`p-2 bg-white/20 rounded-2xl group-hover:scale-125 group-hover:rotate-180 transition-all duration-500 ${(!canUseFeatures || hasReachedLimit('projects')) ? 'bg-gray-300/50' : ''
+                                            }`}>
                                             {(!canUseFeatures || hasReachedLimit('projects')) ? (
                                                 <AlertTriangle className="w-6 h-6" />
                                             ) : (
@@ -674,8 +669,8 @@ export default function ProjectsPageClient({ userEmail }: ProjectsPageClientProp
                                             )}
                                         </div>
                                         <span>{
-                                            (!canUseFeatures || hasReachedLimit('projects')) 
-                                                ? 'Límite Alcanzado' 
+                                            (!canUseFeatures || hasReachedLimit('projects'))
+                                                ? 'Límite Alcanzado'
                                                 : 'Crear Nuevo Proyecto'
                                         }</span>
                                         <TrendingUp className="w-5 h-5 group-hover:rotate-45 group-hover:scale-125 transition-all duration-500" />
@@ -687,7 +682,7 @@ export default function ProjectsPageClient({ userEmail }: ProjectsPageClientProp
 
                     {/* Modal Espectacular de Nuevo Proyecto */}
                     {showForm && (
-                        <div 
+                        <div
                             className="fixed inset-0 bg-black/70 backdrop-blur-2xl z-50 flex items-center justify-center p-4 animate-fadeIn"
                             onClick={(e) => {
                                 if (e.target === e.currentTarget) {
@@ -706,7 +701,7 @@ export default function ProjectsPageClient({ userEmail }: ProjectsPageClientProp
                                 <div className="bg-white/90 backdrop-blur-3xl rounded-3xl border-2 border-white/80 shadow-2xl shadow-slate-500/20 relative overflow-hidden">
                                     {/* Gradiente decorativo superior */}
                                     <div className="absolute top-0 inset-x-0 h-1 bg-gradient-to-r from-blue-500 via-purple-500 to-indigo-500"></div>
-                                    
+
                                     {/* Header del Modal */}
                                     <div className="relative bg-gradient-to-r from-blue-50/80 via-purple-50/80 to-indigo-50/80 backdrop-blur-xl p-8 border-b border-white/40">
                                         <button
@@ -715,7 +710,7 @@ export default function ProjectsPageClient({ userEmail }: ProjectsPageClientProp
                                         >
                                             <X className="w-5 h-5 text-slate-600 group-hover:text-red-600 transition-colors duration-300" />
                                         </button>
-                                        
+
                                         <div className="flex items-center gap-6">
                                             <div className="p-4 bg-gradient-to-br from-blue-600 to-indigo-600 rounded-3xl shadow-2xl shadow-blue-500/40">
                                                 <Briefcase className="w-8 h-8 text-white" />
@@ -890,7 +885,7 @@ export default function ProjectsPageClient({ userEmail }: ProjectsPageClientProp
                                 <Briefcase className="w-6 h-6 text-indigo-600" />
                                 Directorio de Proyectos
                             </h2>
-                            
+
                             {loading ? (
                                 <div className="flex flex-col items-center justify-center py-20 space-y-6">
                                     <div className="relative">
@@ -908,7 +903,7 @@ export default function ProjectsPageClient({ userEmail }: ProjectsPageClientProp
                                     <div className="absolute inset-0 flex items-center justify-center">
                                         <div className="w-64 h-64 bg-gradient-to-br from-blue-500/10 via-purple-500/10 to-indigo-500/10 rounded-full blur-3xl animate-pulse"></div>
                                     </div>
-                                    
+
                                     <div className="relative z-10">
                                         <div className="w-24 h-24 bg-gradient-to-br from-slate-200 to-slate-300 rounded-3xl flex items-center justify-center mx-auto mb-8 shadow-2xl shadow-slate-500/20 relative overflow-hidden group">
                                             <div className="absolute inset-0 bg-gradient-to-br from-blue-500/20 via-purple-500/20 to-indigo-500/20 opacity-0 group-hover:opacity-100 transition-opacity duration-500"></div>
@@ -917,23 +912,23 @@ export default function ProjectsPageClient({ userEmail }: ProjectsPageClientProp
                                                 <span className="text-white text-xs font-bold">0</span>
                                             </div>
                                         </div>
-                                        
+
                                         <h3 className="text-3xl font-black bg-gradient-to-r from-slate-700 via-slate-800 to-slate-700 bg-clip-text text-transparent mb-4">
                                             {searchTerm ? '🔍 Sin resultados para tu búsqueda' : '📋 Aún no tienes proyectos'}
                                         </h3>
-                                        
+
                                         <p className="text-slate-600 max-w-2xl mx-auto font-semibold text-lg mb-8">
-                                            {searchTerm 
+                                            {searchTerm
                                                 ? `No encontramos proyectos que coincidan con "${searchTerm}". Prueba con otros términos.`
                                                 : 'Comienza creando tu primer proyecto para organizar y gestionar tu trabajo de forma profesional'
                                             }
                                         </p>
-                                        
+
                                         <div className="flex flex-col sm:flex-row gap-4 justify-center">
                                             {searchTerm ? (
                                                 <>
-                                                    <button 
-                                                        onClick={() => setSearchTerm('')} 
+                                                    <button
+                                                        onClick={() => setSearchTerm('')}
                                                         className="group px-8 py-4 bg-gradient-to-r from-slate-600 to-slate-700 hover:from-slate-700 hover:to-slate-800 text-white font-bold rounded-2xl shadow-2xl hover:shadow-3xl hover:scale-105 hover:-translate-y-1 transition-all duration-300 flex items-center justify-center gap-3"
                                                     >
                                                         <X className="w-5 h-5 group-hover:rotate-180 transition-transform duration-500" />
@@ -945,29 +940,28 @@ export default function ProjectsPageClient({ userEmail }: ProjectsPageClientProp
                                                                 alert('Tu periodo de prueba ha expirado. Actualiza tu plan para continuar creando proyectos.');
                                                                 return;
                                                             }
-                                                            
+
                                                             if (hasReachedLimit('projects')) {
-                                                                 alert(`Has alcanzado el límite de ${(trialInfo && trialInfo.limits && typeof trialInfo.limits.maxProjects === 'number') ? trialInfo.limits.maxProjects : 5} proyectos en el plan de prueba. Actualiza tu plan para crear más proyectos.`);
+                                                                alert(`Has alcanzado el límite de ${(trialInfo && trialInfo.limits && typeof trialInfo.limits.maxProjects === 'number') ? trialInfo.limits.maxProjects : 5} proyectos en el plan de prueba. Actualiza tu plan para crear más proyectos.`);
                                                                 return;
                                                             }
-                                                            
+
                                                             setShowForm(true);
                                                             setSearchTerm('');
                                                         }}
                                                         disabled={!canUseFeatures || hasReachedLimit('projects')}
-                                                        className={`group px-8 py-4 bg-gradient-to-r from-blue-600 via-indigo-600 to-purple-600 hover:from-blue-700 hover:via-indigo-700 hover:to-purple-700 text-white font-bold rounded-2xl shadow-2xl shadow-blue-500/30 hover:shadow-blue-500/50 hover:scale-105 hover:-translate-y-1 transition-all duration-300 flex items-center justify-center gap-3 ${
-                                                            (!canUseFeatures || hasReachedLimit('projects')) 
-                                                                ? 'opacity-50 cursor-not-allowed !bg-gray-400 hover:!bg-gray-400 !shadow-gray-400/30 hover:!shadow-gray-400/30 hover:!scale-100 hover:!translate-y-0' 
+                                                        className={`group px-8 py-4 bg-gradient-to-r from-blue-600 via-indigo-600 to-purple-600 hover:from-blue-700 hover:via-indigo-700 hover:to-purple-700 text-white font-bold rounded-2xl shadow-2xl shadow-blue-500/30 hover:shadow-blue-500/50 hover:scale-105 hover:-translate-y-1 transition-all duration-300 flex items-center justify-center gap-3 ${(!canUseFeatures || hasReachedLimit('projects'))
+                                                                ? 'opacity-50 cursor-not-allowed !bg-gray-400 hover:!bg-gray-400 !shadow-gray-400/30 hover:!shadow-gray-400/30 hover:!scale-100 hover:!translate-y-0'
                                                                 : ''
-                                                        }`}
+                                                            }`}
                                                     >
                                                         {(!canUseFeatures || hasReachedLimit('projects')) ? (
                                                             <AlertTriangle className="w-5 h-5" />
                                                         ) : (
                                                             <Plus className="w-5 h-5 group-hover:scale-125 transition-transform duration-300" />
                                                         )}
-                                                        {(!canUseFeatures || hasReachedLimit('projects')) 
-                                                            ? 'Límite Alcanzado' 
+                                                        {(!canUseFeatures || hasReachedLimit('projects'))
+                                                            ? 'Límite Alcanzado'
                                                             : 'Crear proyecto nuevo'}
                                                         <TrendingUp className="w-4 h-4 group-hover:rotate-45 transition-transform duration-300" />
                                                     </button>
@@ -976,19 +970,18 @@ export default function ProjectsPageClient({ userEmail }: ProjectsPageClientProp
                                                 <button
                                                     onClick={handleNewProjectClick}
                                                     disabled={!canUseFeatures || hasReachedLimit('projects')}
-                                                    className={`group px-10 py-5 bg-gradient-to-r from-blue-600 via-indigo-600 to-purple-600 hover:from-blue-700 hover:via-indigo-700 hover:to-purple-700 text-white font-black rounded-2xl shadow-2xl shadow-blue-500/30 hover:shadow-blue-500/50 hover:scale-110 hover:-translate-y-2 transition-all duration-300 flex items-center justify-center gap-4 text-xl ${
-                                                        (!canUseFeatures || hasReachedLimit('projects')) 
-                                                            ? 'opacity-50 cursor-not-allowed !bg-gray-400 hover:!bg-gray-400 !shadow-gray-400/30 hover:!shadow-gray-400/30 hover:!scale-100 hover:!translate-y-0' 
+                                                    className={`group px-10 py-5 bg-gradient-to-r from-blue-600 via-indigo-600 to-purple-600 hover:from-blue-700 hover:via-indigo-700 hover:to-purple-700 text-white font-black rounded-2xl shadow-2xl shadow-blue-500/30 hover:shadow-blue-500/50 hover:scale-110 hover:-translate-y-2 transition-all duration-300 flex items-center justify-center gap-4 text-xl ${(!canUseFeatures || hasReachedLimit('projects'))
+                                                            ? 'opacity-50 cursor-not-allowed !bg-gray-400 hover:!bg-gray-400 !shadow-gray-400/30 hover:!shadow-gray-400/30 hover:!scale-100 hover:!translate-y-0'
                                                             : ''
-                                                    }`}
+                                                        }`}
                                                 >
                                                     {(!canUseFeatures || hasReachedLimit('projects')) ? (
                                                         <AlertTriangle className="w-6 h-6" />
                                                     ) : (
                                                         <Plus className="w-6 h-6 group-hover:scale-125 transition-transform duration-300" />
                                                     )}
-                                                    {(!canUseFeatures || hasReachedLimit('projects')) 
-                                                        ? 'Límite Alcanzado' 
+                                                    {(!canUseFeatures || hasReachedLimit('projects'))
+                                                        ? 'Límite Alcanzado'
                                                         : 'Crear tu primer proyecto'}
                                                     <TrendingUp className="w-5 h-5 group-hover:rotate-45 transition-transform duration-300" />
                                                 </button>
@@ -999,289 +992,289 @@ export default function ProjectsPageClient({ userEmail }: ProjectsPageClientProp
                             ) : (
                                 <div>
                                     {viewMode === 'grid' ? (
-                                    /* Vista de Tarjetas (Grid) */
-                                    <div className="grid gap-6 lg:grid-cols-2 xl:grid-cols-3">
-                                        {filteredProjects.map((project, index) => {
-                                            // Generar color del avatar basado en el nombre
-                                            const getAvatarColor = (name: string) => {
-                                                const colors = [
-                                                    'from-red-500 to-red-600',
-                                                    'from-blue-500 to-blue-600', 
-                                                    'from-green-500 to-green-600',
-                                                    'from-purple-500 to-purple-600',
-                                                    'from-pink-500 to-pink-600',
-                                                    'from-indigo-500 to-indigo-600',
-                                                    'from-yellow-500 to-yellow-600',
-                                                    'from-teal-500 to-teal-600'
-                                                ];
-                                                const hash = name.split('').reduce((a, b) => a + b.charCodeAt(0), 0);
-                                                return colors[hash % colors.length];
-                                            };
+                                        /* Vista de Tarjetas (Grid) */
+                                        <div className="grid gap-6 lg:grid-cols-2 xl:grid-cols-3">
+                                            {filteredProjects.map((project, index) => {
+                                                // Generar color del avatar basado en el nombre
+                                                const getAvatarColor = (name: string) => {
+                                                    const colors = [
+                                                        'from-red-500 to-red-600',
+                                                        'from-blue-500 to-blue-600',
+                                                        'from-green-500 to-green-600',
+                                                        'from-purple-500 to-purple-600',
+                                                        'from-pink-500 to-pink-600',
+                                                        'from-indigo-500 to-indigo-600',
+                                                        'from-yellow-500 to-yellow-600',
+                                                        'from-teal-500 to-teal-600'
+                                                    ];
+                                                    const hash = name.split('').reduce((a, b) => a + b.charCodeAt(0), 0);
+                                                    return colors[hash % colors.length];
+                                                };
 
-                                            const avatarColor = getAvatarColor(project.name || 'Proyecto');
+                                                const avatarColor = getAvatarColor(project.name || 'Proyecto');
 
-                                            return (
-                                                <div
-                                                    key={project.id}
-                                                    className="group bg-white/40 backdrop-blur-2xl rounded-3xl border border-white/60 shadow-xl shadow-slate-500/5 p-6 hover:shadow-2xl hover:scale-[1.02] hover:-translate-y-1 transition-all duration-500 relative overflow-hidden"
-                                                    style={{
-                                                        animationDelay: `${index * 100}ms`
-                                                    }}
-                                                >
-                                                    {/* Hover Gradient Overlay */}
-                                                    <div className="absolute inset-0 bg-gradient-to-br from-blue-500/5 via-purple-500/5 to-indigo-500/5 opacity-0 group-hover:opacity-100 transition-opacity duration-500"></div>
-                                                    
-                                                    {/* Animated Border */}
-                                                    <div className="absolute inset-0 rounded-3xl bg-gradient-to-r from-blue-500 via-purple-500 to-indigo-500 opacity-0 group-hover:opacity-20 blur-sm transition-opacity duration-500"></div>
-                                                    
-                                                    <div className="relative z-10">
-                                                        <div className="flex items-start justify-between mb-4">
-                                                            <div className="flex items-center space-x-4">
-                                                                <div className={`relative w-16 h-16 bg-gradient-to-br ${avatarColor} rounded-2xl flex items-center justify-center shadow-2xl shadow-black/20 group-hover:scale-110 group-hover:rotate-3 transition-all duration-500`}>
-                                                                    <span className="text-white font-black text-xl">
-                                                                        {project.name?.charAt(0).toUpperCase() || 'P'}
-                                                                    </span>
-                                                                    <div className="absolute -top-1 -right-1 w-5 h-5 bg-green-500 rounded-full border-2 border-white shadow-lg animate-pulse"></div>
-                                                                </div>
-                                                                <div className="space-y-2">
-                                                                    <div className="flex items-center gap-2">
-                                                                        <h3 className="font-black text-slate-900 text-lg group-hover:text-indigo-900 transition-colors duration-300 max-w-[160px] truncate" title={project.name}>
-                                                                            {project.name || 'Sin nombre'}
-                                                                        </h3>
-                                                                    </div>
-                                                                    <div className="flex items-center gap-2 text-sm text-slate-600 group-hover:text-slate-700">
-                                                                        <div className="p-1 bg-slate-100 rounded-lg group-hover:bg-indigo-100 transition-colors duration-300">
-                                                                            <User className="w-3 h-3 group-hover:text-indigo-600" />
-                                                                        </div>
-                                                                        <span className="font-semibold max-w-[140px] truncate" title={project.client?.name}>
-                                                                            {project.client?.name || 'Sin cliente'}
+                                                return (
+                                                    <div
+                                                        key={project.id}
+                                                        className="group bg-white/40 backdrop-blur-2xl rounded-3xl border border-white/60 shadow-xl shadow-slate-500/5 p-6 hover:shadow-2xl hover:scale-[1.02] hover:-translate-y-1 transition-all duration-500 relative overflow-hidden"
+                                                        style={{
+                                                            animationDelay: `${index * 100}ms`
+                                                        }}
+                                                    >
+                                                        {/* Hover Gradient Overlay */}
+                                                        <div className="absolute inset-0 bg-gradient-to-br from-blue-500/5 via-purple-500/5 to-indigo-500/5 opacity-0 group-hover:opacity-100 transition-opacity duration-500"></div>
+
+                                                        {/* Animated Border */}
+                                                        <div className="absolute inset-0 rounded-3xl bg-gradient-to-r from-blue-500 via-purple-500 to-indigo-500 opacity-0 group-hover:opacity-20 blur-sm transition-opacity duration-500"></div>
+
+                                                        <div className="relative z-10">
+                                                            <div className="flex items-start justify-between mb-4">
+                                                                <div className="flex items-center space-x-4">
+                                                                    <div className={`relative w-16 h-16 bg-gradient-to-br ${avatarColor} rounded-2xl flex items-center justify-center shadow-2xl shadow-black/20 group-hover:scale-110 group-hover:rotate-3 transition-all duration-500`}>
+                                                                        <span className="text-white font-black text-xl">
+                                                                            {project.name?.charAt(0).toUpperCase() || 'P'}
                                                                         </span>
+                                                                        <div className="absolute -top-1 -right-1 w-5 h-5 bg-green-500 rounded-full border-2 border-white shadow-lg animate-pulse"></div>
+                                                                    </div>
+                                                                    <div className="space-y-2">
+                                                                        <div className="flex items-center gap-2">
+                                                                            <h3 className="font-black text-slate-900 text-lg group-hover:text-indigo-900 transition-colors duration-300 max-w-[160px] truncate" title={project.name}>
+                                                                                {project.name || 'Sin nombre'}
+                                                                            </h3>
+                                                                        </div>
+                                                                        <div className="flex items-center gap-2 text-sm text-slate-600 group-hover:text-slate-700">
+                                                                            <div className="p-1 bg-slate-100 rounded-lg group-hover:bg-indigo-100 transition-colors duration-300">
+                                                                                <User className="w-3 h-3 group-hover:text-indigo-600" />
+                                                                            </div>
+                                                                            <span className="font-semibold max-w-[140px] truncate" title={project.client?.name}>
+                                                                                {project.client?.name || 'Sin cliente'}
+                                                                            </span>
+                                                                        </div>
                                                                     </div>
                                                                 </div>
-                                                            </div>
-                                                            <div className="flex items-center gap-2">
-                                                                <span className={`px-3 py-1 rounded-2xl text-xs font-bold border-2 shadow-lg group-hover:scale-110 group-hover:rotate-1 transition-all duration-300 flex items-center gap-1 ${getStatusColor(project.status)}`}>
-                                                                    {getStatusIcon(project.status)}
-                                                                    {project.status.charAt(0).toUpperCase() + project.status.slice(1)}
-                                                                </span>
-                                                            </div>
-                                                        </div>
-
-                                                        <div className="space-y-3 mb-6">
-                                                            {project.description && (
-                                                                <div className="group/item flex items-start gap-3 text-sm text-slate-600 p-3 rounded-xl hover:bg-white/50 transition-all duration-300">
-                                                                    <div className="p-2 bg-slate-100 rounded-xl group-hover/item:bg-purple-100 group-hover/item:scale-110 transition-all duration-300 flex-shrink-0">
-                                                                        <FileText className="w-4 h-4 group-hover/item:text-purple-600" />
-                                                                    </div>
-                                                                    <p className="font-semibold group-hover/item:text-purple-700 line-clamp-2" title={project.description}>
-                                                                        {project.description}
-                                                                    </p>
-                                                                </div>
-                                                            )}
-                                                            
-                                                            {project.budget && (
-                                                                <div className="group/item flex items-center gap-3 text-sm text-slate-600 p-3 rounded-xl hover:bg-white/50 transition-all duration-300">
-                                                                    <div className="p-2 bg-slate-100 rounded-xl group-hover/item:bg-green-100 group-hover/item:scale-110 transition-all duration-300">
-                                                                        <DollarSign className="w-4 h-4 group-hover/item:text-green-600" />
-                                                                    </div>
-                                                                    <span className="font-black text-lg group-hover/item:text-green-700">{formatCurrency(project.budget)}</span>
-                                                                </div>
-                                                            )}
-                                                            
-                                                            <div className="flex items-center gap-3 text-sm text-slate-500 p-3 rounded-xl">
-                                                                <div className="p-2 bg-slate-100 rounded-xl">
-                                                                    <Calendar className="w-4 h-4" />
-                                                                </div>
-                                                                <div className="space-y-1">
-                                                                    <span className="font-semibold block">Creado: {formatDate(project.created_at)}</span>
-                                                                    {project.start_date && (
-                                                                        <span className="text-xs block">Inicio: {formatDate(project.start_date)}</span>
-                                                                    )}
-                                                                    {project.end_date && (
-                                                                        <span className="text-xs block">Fin: {formatDate(project.end_date)}</span>
-                                                                    )}
-                                                                </div>
-                                                            </div>
-                                                        </div>
-
-                                                        <div className="flex gap-2 pt-4 border-t border-white/50">
-                                                            <Link href={`/dashboard/projects/${project.id}`} className="flex-1">
-                                                                <button className="w-full px-4 py-3 text-sm bg-white/70 backdrop-blur-xl border border-white/60 rounded-2xl text-slate-700 font-bold hover:bg-gradient-to-r hover:from-blue-50 hover:to-indigo-50 hover:border-blue-200 hover:text-blue-700 hover:scale-105 transition-all duration-300 group/btn">
-                                                                    <span className="group-hover/btn:scale-110 transition-transform duration-300 flex items-center justify-center gap-2">
-                                                                        <Eye className="w-4 h-4" />
-                                                                        Ver Detalles
-                                                                    </span>
-                                                                </button>
-                                                            </Link>
-                                                            <button 
-                                                                onClick={() => {
-                                                                    setEditingProject(project);
-                                                                    setFormData({
-                                                                        name: project.name,
-                                                                        description: project.description || '',
-                                                                        client_id: project.client_id,
-                                                                        budget: project.budget?.toString() || '',
-                                                                        start_date: project.start_date || '',
-                                                                        end_date: project.end_date || '',
-                                                                        status: project.status
-                                                                    });
-                                                                    setShowEditForm(true);
-                                                                }}
-                                                                className="px-4 py-3 bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 text-white rounded-2xl shadow-2xl shadow-blue-500/30 hover:shadow-blue-500/50 hover:scale-110 hover:rotate-1 transition-all duration-300"
-                                                                title="Editar proyecto"
-                                                            >
-                                                                <Edit className="w-4 h-4" />
-                                                            </button>
-                                                            <button 
-                                                                onClick={() => {
-                                                                    if (confirm('¿Estás seguro de que quieres eliminar este proyecto?')) {
-                                                                        deleteProject(project.id);
-                                                                    }
-                                                                }}
-                                                                className="px-4 py-3 bg-gradient-to-r from-red-600 to-red-700 hover:from-red-700 hover:to-red-800 text-white rounded-2xl shadow-2xl shadow-red-500/30 hover:shadow-red-500/50 hover:scale-110 hover:rotate-1 transition-all duration-300"
-                                                                title="Eliminar proyecto"
-                                                            >
-                                                                <Trash2 className="w-4 h-4" />
-                                                            </button>
-                                                        </div>
-                                                    </div>
-                                                </div>
-                                            );
-                                        })}
-                                    </div>
-                                ) : (
-                                    /* Vista de Lista */
-                                    <div className="space-y-4">
-                                        {filteredProjects.map((project, index) => {
-                                            const getAvatarColor = (name: string) => {
-                                                const colors = [
-                                                    'from-red-500 to-red-600',
-                                                    'from-blue-500 to-blue-600', 
-                                                    'from-green-500 to-green-600',
-                                                    'from-purple-500 to-purple-600',
-                                                    'from-pink-500 to-pink-600',
-                                                    'from-indigo-500 to-indigo-600',
-                                                    'from-yellow-500 to-yellow-600',
-                                                    'from-teal-500 to-teal-600'
-                                                ];
-                                                const hash = name.split('').reduce((a, b) => a + b.charCodeAt(0), 0);
-                                                return colors[hash % colors.length];
-                                            };
-
-                                            const avatarColor = getAvatarColor(project.name || 'Proyecto');
-
-                                            return (
-                                                <div
-                                                    key={project.id}
-                                                    className="group bg-white/50 backdrop-blur-2xl rounded-2xl border border-white/60 shadow-xl shadow-slate-500/5 p-6 hover:shadow-2xl hover:scale-[1.01] hover:-translate-y-1 transition-all duration-500 relative overflow-hidden"
-                                                    style={{
-                                                        animationDelay: `${index * 50}ms`
-                                                    }}
-                                                >
-                                                    {/* Hover Gradient Overlay */}
-                                                    <div className="absolute inset-0 bg-gradient-to-r from-blue-500/3 via-purple-500/3 to-indigo-500/3 opacity-0 group-hover:opacity-100 transition-opacity duration-500"></div>
-                                                    
-                                                    <div className="relative z-10 flex items-center justify-between">
-                                                        <div className="flex items-center space-x-6 flex-1">
-                                                            {/* Avatar del Proyecto */}
-                                                            <div className={`relative w-14 h-14 bg-gradient-to-br ${avatarColor} rounded-2xl flex items-center justify-center shadow-2xl shadow-black/15 group-hover:scale-110 group-hover:rotate-3 transition-all duration-500`}>
-                                                                <span className="text-white font-black text-lg">
-                                                                    {project.name?.charAt(0).toUpperCase() || 'P'}
-                                                                </span>
-                                                                <div className="absolute -top-1 -right-1 w-4 h-4 bg-green-500 rounded-full border-2 border-white shadow-lg animate-pulse"></div>
-                                                            </div>
-                                                            
-                                                            {/* Información Principal */}
-                                                            <div className="flex-1 min-w-0">
-                                                                <div className="flex items-center gap-3 mb-2">
-                                                                    <h3 className="font-black text-xl text-slate-900 group-hover:text-indigo-900 transition-colors duration-300 truncate" title={project.name}>
-                                                                        {project.name || 'Sin nombre'}
-                                                                    </h3>
-                                                                    <span className={`px-3 py-1 rounded-full text-xs font-bold border-2 shadow-lg flex items-center gap-1 ${getStatusColor(project.status)}`}>
+                                                                <div className="flex items-center gap-2">
+                                                                    <span className={`px-3 py-1 rounded-2xl text-xs font-bold border-2 shadow-lg group-hover:scale-110 group-hover:rotate-1 transition-all duration-300 flex items-center gap-1 ${getStatusColor(project.status)}`}>
                                                                         {getStatusIcon(project.status)}
                                                                         {project.status.charAt(0).toUpperCase() + project.status.slice(1)}
                                                                     </span>
                                                                 </div>
-                                                                
-                                                                <div className="flex items-center gap-6 text-sm text-slate-600">
-                                                                    <div className="flex items-center gap-2">
-                                                                        <div className="p-1 bg-slate-100 rounded-lg">
-                                                                            <User className="w-4 h-4" />
+                                                            </div>
+
+                                                            <div className="space-y-3 mb-6">
+                                                                {project.description && (
+                                                                    <div className="group/item flex items-start gap-3 text-sm text-slate-600 p-3 rounded-xl hover:bg-white/50 transition-all duration-300">
+                                                                        <div className="p-2 bg-slate-100 rounded-xl group-hover/item:bg-purple-100 group-hover/item:scale-110 transition-all duration-300 flex-shrink-0">
+                                                                            <FileText className="w-4 h-4 group-hover/item:text-purple-600" />
                                                                         </div>
-                                                                        <span className="font-semibold" title={project.client?.name}>
-                                                                            {project.client?.name || 'Sin cliente'}
-                                                                        </span>
+                                                                        <p className="font-semibold group-hover/item:text-purple-700 line-clamp-2" title={project.description}>
+                                                                            {project.description}
+                                                                        </p>
                                                                     </div>
-                                                                    
-                                                                    {project.budget && (
-                                                                        <div className="flex items-center gap-2">
-                                                                            <div className="p-1 bg-green-100 rounded-lg">
-                                                                                <DollarSign className="w-4 h-4 text-green-600" />
-                                                                            </div>
-                                                                            <span className="font-bold text-green-700">{formatCurrency(project.budget)}</span>
+                                                                )}
+
+                                                                {project.budget && (
+                                                                    <div className="group/item flex items-center gap-3 text-sm text-slate-600 p-3 rounded-xl hover:bg-white/50 transition-all duration-300">
+                                                                        <div className="p-2 bg-slate-100 rounded-xl group-hover/item:bg-green-100 group-hover/item:scale-110 transition-all duration-300">
+                                                                            <DollarSign className="w-4 h-4 group-hover/item:text-green-600" />
                                                                         </div>
-                                                                    )}
-                                                                    
-                                                                    <div className="flex items-center gap-2">
-                                                                        <div className="p-1 bg-slate-100 rounded-lg">
-                                                                            <Calendar className="w-4 h-4" />
-                                                                        </div>
-                                                                        <span className="font-semibold">{formatDate(project.created_at)}</span>
+                                                                        <span className="font-black text-lg group-hover/item:text-green-700">{formatCurrency(project.budget)}</span>
+                                                                    </div>
+                                                                )}
+
+                                                                <div className="flex items-center gap-3 text-sm text-slate-500 p-3 rounded-xl">
+                                                                    <div className="p-2 bg-slate-100 rounded-xl">
+                                                                        <Calendar className="w-4 h-4" />
+                                                                    </div>
+                                                                    <div className="space-y-1">
+                                                                        <span className="font-semibold block">Creado: {formatDate(project.created_at)}</span>
+                                                                        {project.start_date && (
+                                                                            <span className="text-xs block">Inicio: {formatDate(project.start_date)}</span>
+                                                                        )}
+                                                                        {project.end_date && (
+                                                                            <span className="text-xs block">Fin: {formatDate(project.end_date)}</span>
+                                                                        )}
                                                                     </div>
                                                                 </div>
-                                                                
-                                                                {project.description && (
-                                                                    <p className="mt-2 text-sm text-slate-600 font-medium line-clamp-1" title={project.description}>
-                                                                        {project.description}
-                                                                    </p>
-                                                                )}
+                                                            </div>
+
+                                                            <div className="flex gap-2 pt-4 border-t border-white/50">
+                                                                <Link href={`/dashboard/projects/${project.id}`} className="flex-1">
+                                                                    <button className="w-full px-4 py-3 text-sm bg-white/70 backdrop-blur-xl border border-white/60 rounded-2xl text-slate-700 font-bold hover:bg-gradient-to-r hover:from-blue-50 hover:to-indigo-50 hover:border-blue-200 hover:text-blue-700 hover:scale-105 transition-all duration-300 group/btn">
+                                                                        <span className="group-hover/btn:scale-110 transition-transform duration-300 flex items-center justify-center gap-2">
+                                                                            <Eye className="w-4 h-4" />
+                                                                            Ver Detalles
+                                                                        </span>
+                                                                    </button>
+                                                                </Link>
+                                                                <button
+                                                                    onClick={() => {
+                                                                        setEditingProject(project);
+                                                                        setFormData({
+                                                                            name: project.name,
+                                                                            description: project.description || '',
+                                                                            client_id: project.client_id,
+                                                                            budget: project.budget?.toString() || '',
+                                                                            start_date: project.start_date || '',
+                                                                            end_date: project.end_date || '',
+                                                                            status: project.status
+                                                                        });
+                                                                        setShowEditForm(true);
+                                                                    }}
+                                                                    className="px-4 py-3 bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 text-white rounded-2xl shadow-2xl shadow-blue-500/30 hover:shadow-blue-500/50 hover:scale-110 hover:rotate-1 transition-all duration-300"
+                                                                    title="Editar proyecto"
+                                                                >
+                                                                    <Edit className="w-4 h-4" />
+                                                                </button>
+                                                                <button
+                                                                    onClick={() => {
+                                                                        if (confirm('¿Estás seguro de que quieres eliminar este proyecto?')) {
+                                                                            deleteProject(project.id);
+                                                                        }
+                                                                    }}
+                                                                    className="px-4 py-3 bg-gradient-to-r from-red-600 to-red-700 hover:from-red-700 hover:to-red-800 text-white rounded-2xl shadow-2xl shadow-red-500/30 hover:shadow-red-500/50 hover:scale-110 hover:rotate-1 transition-all duration-300"
+                                                                    title="Eliminar proyecto"
+                                                                >
+                                                                    <Trash2 className="w-4 h-4" />
+                                                                </button>
                                                             </div>
                                                         </div>
-                                                        
-                                                        {/* Acciones */}
-                                                        <div className="flex items-center gap-3">
-                                                            <Link href={`/dashboard/projects/${project.id}`}>
-                                                                <button className="px-6 py-3 text-sm bg-white/70 backdrop-blur-xl border border-white/60 rounded-2xl text-slate-700 font-bold hover:bg-gradient-to-r hover:from-blue-50 hover:to-indigo-50 hover:border-blue-200 hover:text-blue-700 hover:scale-105 transition-all duration-300 flex items-center gap-2">
-                                                                    <Eye className="w-4 h-4" />
-                                                                    Ver Detalles
+                                                    </div>
+                                                );
+                                            })}
+                                        </div>
+                                    ) : (
+                                        /* Vista de Lista */
+                                        <div className="space-y-4">
+                                            {filteredProjects.map((project, index) => {
+                                                const getAvatarColor = (name: string) => {
+                                                    const colors = [
+                                                        'from-red-500 to-red-600',
+                                                        'from-blue-500 to-blue-600',
+                                                        'from-green-500 to-green-600',
+                                                        'from-purple-500 to-purple-600',
+                                                        'from-pink-500 to-pink-600',
+                                                        'from-indigo-500 to-indigo-600',
+                                                        'from-yellow-500 to-yellow-600',
+                                                        'from-teal-500 to-teal-600'
+                                                    ];
+                                                    const hash = name.split('').reduce((a, b) => a + b.charCodeAt(0), 0);
+                                                    return colors[hash % colors.length];
+                                                };
+
+                                                const avatarColor = getAvatarColor(project.name || 'Proyecto');
+
+                                                return (
+                                                    <div
+                                                        key={project.id}
+                                                        className="group bg-white/50 backdrop-blur-2xl rounded-2xl border border-white/60 shadow-xl shadow-slate-500/5 p-6 hover:shadow-2xl hover:scale-[1.01] hover:-translate-y-1 transition-all duration-500 relative overflow-hidden"
+                                                        style={{
+                                                            animationDelay: `${index * 50}ms`
+                                                        }}
+                                                    >
+                                                        {/* Hover Gradient Overlay */}
+                                                        <div className="absolute inset-0 bg-gradient-to-r from-blue-500/3 via-purple-500/3 to-indigo-500/3 opacity-0 group-hover:opacity-100 transition-opacity duration-500"></div>
+
+                                                        <div className="relative z-10 flex items-center justify-between">
+                                                            <div className="flex items-center space-x-6 flex-1">
+                                                                {/* Avatar del Proyecto */}
+                                                                <div className={`relative w-14 h-14 bg-gradient-to-br ${avatarColor} rounded-2xl flex items-center justify-center shadow-2xl shadow-black/15 group-hover:scale-110 group-hover:rotate-3 transition-all duration-500`}>
+                                                                    <span className="text-white font-black text-lg">
+                                                                        {project.name?.charAt(0).toUpperCase() || 'P'}
+                                                                    </span>
+                                                                    <div className="absolute -top-1 -right-1 w-4 h-4 bg-green-500 rounded-full border-2 border-white shadow-lg animate-pulse"></div>
+                                                                </div>
+
+                                                                {/* Información Principal */}
+                                                                <div className="flex-1 min-w-0">
+                                                                    <div className="flex items-center gap-3 mb-2">
+                                                                        <h3 className="font-black text-xl text-slate-900 group-hover:text-indigo-900 transition-colors duration-300 truncate" title={project.name}>
+                                                                            {project.name || 'Sin nombre'}
+                                                                        </h3>
+                                                                        <span className={`px-3 py-1 rounded-full text-xs font-bold border-2 shadow-lg flex items-center gap-1 ${getStatusColor(project.status)}`}>
+                                                                            {getStatusIcon(project.status)}
+                                                                            {project.status.charAt(0).toUpperCase() + project.status.slice(1)}
+                                                                        </span>
+                                                                    </div>
+
+                                                                    <div className="flex items-center gap-6 text-sm text-slate-600">
+                                                                        <div className="flex items-center gap-2">
+                                                                            <div className="p-1 bg-slate-100 rounded-lg">
+                                                                                <User className="w-4 h-4" />
+                                                                            </div>
+                                                                            <span className="font-semibold" title={project.client?.name}>
+                                                                                {project.client?.name || 'Sin cliente'}
+                                                                            </span>
+                                                                        </div>
+
+                                                                        {project.budget && (
+                                                                            <div className="flex items-center gap-2">
+                                                                                <div className="p-1 bg-green-100 rounded-lg">
+                                                                                    <DollarSign className="w-4 h-4 text-green-600" />
+                                                                                </div>
+                                                                                <span className="font-bold text-green-700">{formatCurrency(project.budget)}</span>
+                                                                            </div>
+                                                                        )}
+
+                                                                        <div className="flex items-center gap-2">
+                                                                            <div className="p-1 bg-slate-100 rounded-lg">
+                                                                                <Calendar className="w-4 h-4" />
+                                                                            </div>
+                                                                            <span className="font-semibold">{formatDate(project.created_at)}</span>
+                                                                        </div>
+                                                                    </div>
+
+                                                                    {project.description && (
+                                                                        <p className="mt-2 text-sm text-slate-600 font-medium line-clamp-1" title={project.description}>
+                                                                            {project.description}
+                                                                        </p>
+                                                                    )}
+                                                                </div>
+                                                            </div>
+
+                                                            {/* Acciones */}
+                                                            <div className="flex items-center gap-3">
+                                                                <Link href={`/dashboard/projects/${project.id}`}>
+                                                                    <button className="px-6 py-3 text-sm bg-white/70 backdrop-blur-xl border border-white/60 rounded-2xl text-slate-700 font-bold hover:bg-gradient-to-r hover:from-blue-50 hover:to-indigo-50 hover:border-blue-200 hover:text-blue-700 hover:scale-105 transition-all duration-300 flex items-center gap-2">
+                                                                        <Eye className="w-4 h-4" />
+                                                                        Ver Detalles
+                                                                    </button>
+                                                                </Link>
+                                                                <button
+                                                                    onClick={() => {
+                                                                        setEditingProject(project);
+                                                                        setFormData({
+                                                                            name: project.name,
+                                                                            description: project.description || '',
+                                                                            client_id: project.client_id,
+                                                                            budget: project.budget?.toString() || '',
+                                                                            start_date: project.start_date || '',
+                                                                            end_date: project.end_date || '',
+                                                                            status: project.status
+                                                                        });
+                                                                        setShowEditForm(true);
+                                                                    }}
+                                                                    className="px-4 py-3 bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 text-white rounded-2xl shadow-2xl shadow-blue-500/30 hover:shadow-blue-500/50 hover:scale-110 transition-all duration-300"
+                                                                    title="Editar proyecto"
+                                                                >
+                                                                    <Edit className="w-4 h-4" />
                                                                 </button>
-                                                            </Link>
-                                                            <button 
-                                                                onClick={() => {
-                                                                    setEditingProject(project);
-                                                                    setFormData({
-                                                                        name: project.name,
-                                                                        description: project.description || '',
-                                                                        client_id: project.client_id,
-                                                                        budget: project.budget?.toString() || '',
-                                                                        start_date: project.start_date || '',
-                                                                        end_date: project.end_date || '',
-                                                                        status: project.status
-                                                                    });
-                                                                    setShowEditForm(true);
-                                                                }}
-                                                                className="px-4 py-3 bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 text-white rounded-2xl shadow-2xl shadow-blue-500/30 hover:shadow-blue-500/50 hover:scale-110 transition-all duration-300"
-                                                                title="Editar proyecto"
-                                                            >
-                                                                <Edit className="w-4 h-4" />
-                                                            </button>
-                                                            <button 
-                                                                onClick={() => {
-                                                                    if (confirm('¿Estás seguro de que quieres eliminar este proyecto?')) {
-                                                                        deleteProject(project.id);
-                                                                    }
-                                                                }}
-                                                                className="px-4 py-3 bg-gradient-to-r from-red-600 to-red-700 hover:from-red-700 hover:to-red-800 text-white rounded-2xl shadow-2xl shadow-red-500/30 hover:shadow-red-500/50 hover:scale-110 transition-all duration-300"
-                                                                title="Eliminar proyecto"
-                                                            >
-                                                                <Trash2 className="w-4 h-4" />
-                                                            </button>
+                                                                <button
+                                                                    onClick={() => {
+                                                                        if (confirm('¿Estás seguro de que quieres eliminar este proyecto?')) {
+                                                                            deleteProject(project.id);
+                                                                        }
+                                                                    }}
+                                                                    className="px-4 py-3 bg-gradient-to-r from-red-600 to-red-700 hover:from-red-700 hover:to-red-800 text-white rounded-2xl shadow-2xl shadow-red-500/30 hover:shadow-red-500/50 hover:scale-110 transition-all duration-300"
+                                                                    title="Eliminar proyecto"
+                                                                >
+                                                                    <Trash2 className="w-4 h-4" />
+                                                                </button>
+                                                            </div>
                                                         </div>
                                                     </div>
-                                                </div>
-                                            );
-                                        })}
-                                    </div>
+                                                );
+                                            })}
+                                        </div>
                                     )}
                                 </div>
                             )}
@@ -1292,7 +1285,7 @@ export default function ProjectsPageClient({ userEmail }: ProjectsPageClientProp
 
             {/* Modal Espectacular de Nuevo Proyecto con estilos de Cliente */}
             {showForm && (
-                <div 
+                <div
                     className="fixed inset-0 bg-black/70 backdrop-blur-2xl z-50 flex items-start justify-center pt-8 pb-8 px-4 animate-fadeIn overflow-y-auto"
                     onClick={(e) => {
                         if (e.target === e.currentTarget) {
@@ -1312,10 +1305,10 @@ export default function ProjectsPageClient({ userEmail }: ProjectsPageClientProp
                         <div className="bg-white/95 backdrop-blur-3xl rounded-3xl shadow-2xl shadow-black/30 border border-white/60 relative overflow-hidden animate-slideInUp">
                             {/* Gradiente animado de fondo */}
                             <div className="absolute inset-0 bg-gradient-to-br from-purple-500/5 via-pink-500/5 to-indigo-500/5 opacity-80 pointer-events-none"></div>
-                            
+
                             {/* Border animado brillante */}
                             <div className="absolute inset-0 rounded-3xl bg-gradient-to-r from-purple-500/30 via-pink-500/30 to-indigo-500/30 blur-sm animate-pulse pointer-events-none"></div>
-                            
+
                             <div className="relative z-10 p-8">
                                 {/* Header Espectacular */}
                                 <div className="flex items-center justify-between mb-8 pb-6 border-b border-white/40">
@@ -1353,7 +1346,7 @@ export default function ProjectsPageClient({ userEmail }: ProjectsPageClientProp
                                             </div>
                                             <h3 className="text-xl font-black text-slate-900">Información General</h3>
                                         </div>
-                                        
+
                                         <div className="grid gap-6 md:grid-cols-2">
                                             <div className="group md:col-span-2">
                                                 <label className="block text-sm font-black text-slate-700 mb-3 group-focus-within:text-purple-600 transition-colors duration-300">

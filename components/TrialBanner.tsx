@@ -130,8 +130,8 @@ export default function TrialBanner({ userEmail }: TrialBannerProps) {
                             variant={config.buttonVariant}
                             className={`
                                 font-semibold transition-all duration-200 hover:scale-105 shadow-lg
-                                ${config.urgent 
-                                    ? 'bg-white text-red-600 hover:bg-red-50 border-2 border-white' 
+                                ${config.urgent
+                                    ? 'bg-white text-red-600 hover:bg-red-50 border-2 border-white'
                                     : 'bg-white/20 backdrop-blur-sm text-white border border-white/30 hover:bg-white/30'
                                 }
                             `}

@@ -1,8 +1,7 @@
 'use client';
 
-import { useState } from 'react';
-import { Check, CreditCard, Loader2 } from 'lucide-react';
 import { useStripeSubscription } from '@/hooks/useStripeSubscription';
+import { Check, CreditCard, Loader2 } from 'lucide-react';
 
 interface SubscriptionCardProps {
   priceId: string;
@@ -29,7 +28,7 @@ export function SubscriptionCard({ priceId }: SubscriptionCardProps) {
           <span className="text-gray-500 ml-2">/mes</span>
         </div>
       </div>
-      
+
       <div className="p-6 pt-0 space-y-4">
         <ul className="space-y-3">
           <li className="flex items-center">
@@ -61,19 +60,18 @@ export function SubscriptionCard({ priceId }: SubscriptionCardProps) {
             <span className="text-sm text-gray-700">Reportes avanzados</span>
           </li>
         </ul>
-        
+
         {error && (
           <div className="p-3 bg-red-50 border border-red-200 rounded-lg">
             <p className="text-sm text-red-600">{error}</p>
           </div>
         )}
-        
-        <button 
+
+        <button
           onClick={handleSubscribe}
           disabled={isLoading}
-          className={`w-full bg-gradient-to-r from-indigo-600 to-violet-600 hover:from-indigo-700 hover:to-violet-700 text-white font-semibold py-3 px-4 rounded-lg shadow-lg transition-all duration-200 flex items-center justify-center ${
-            isLoading ? 'opacity-50 cursor-not-allowed' : 'hover:shadow-xl'
-          }`}
+          className={`w-full bg-gradient-to-r from-indigo-600 to-violet-600 hover:from-indigo-700 hover:to-violet-700 text-white font-semibold py-3 px-4 rounded-lg shadow-lg transition-all duration-200 flex items-center justify-center ${isLoading ? 'opacity-50 cursor-not-allowed' : 'hover:shadow-xl'
+            }`}
         >
           {isLoading ? (
             <>
@@ -87,7 +85,7 @@ export function SubscriptionCard({ priceId }: SubscriptionCardProps) {
             </>
           )}
         </button>
-        
+
         <p className="text-xs text-gray-500 text-center mt-4">
           Cancela en cualquier momento. Pago seguro con Stripe.
         </p>

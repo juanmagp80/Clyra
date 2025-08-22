@@ -1,9 +1,9 @@
 'use client';
 
-import { useEffect, useState } from 'react';
 import { SubscriptionCard } from '@/components/SubscriptionCard';
 import { useTrialStatus } from '@/src/lib/useTrialStatus';
-import { Crown, CheckCircle, Users, Mail } from 'lucide-react';
+import { CheckCircle, Crown, Users } from 'lucide-react';
+import { useEffect, useState } from 'react';
 
 export default function SubscriptionPage() {
   const [priceId, setPriceId] = useState<string>('');
@@ -17,7 +17,7 @@ export default function SubscriptionPage() {
         const response = await fetch('/api/stripe/setup-product', {
           method: 'POST',
         });
-        
+
         if (response.ok) {
           const data = await response.json();
           setPriceId(data.price.id);
@@ -67,8 +67,8 @@ export default function SubscriptionPage() {
             <div className="text-center">
               <h3 className="font-semibold text-blue-900">Estado de tu Trial</h3>
               <p className="text-blue-700">
-                {trialInfo.isExpired 
-                  ? 'Tu trial ha expirado' 
+                {trialInfo.isExpired
+                  ? 'Tu trial ha expirado'
                   : `${trialInfo.daysRemaining} días restantes`
                 }
               </p>
@@ -93,7 +93,7 @@ export default function SubscriptionPage() {
           <h2 className="text-3xl font-bold text-center text-gray-900 mb-12">
             ¿Qué obtienes con Pro?
           </h2>
-          
+
           <div className="grid md:grid-cols-2 gap-8">
             {/* Trial/Free */}
             <div className="bg-white rounded-xl shadow-lg p-8 border border-gray-200">
@@ -173,7 +173,7 @@ export default function SubscriptionPage() {
           <h2 className="text-2xl font-bold text-center text-gray-900 mb-8">
             Preguntas Frecuentes
           </h2>
-          
+
           <div className="space-y-6">
             <div className="bg-white rounded-lg shadow p-6">
               <h3 className="font-semibold text-gray-900 mb-2">
@@ -183,7 +183,7 @@ export default function SubscriptionPage() {
                 Sí, utilizamos Stripe para procesar los pagos, que es uno de los procesadores de pago más seguros del mundo.
               </p>
             </div>
-            
+
             <div className="bg-white rounded-lg shadow p-6">
               <h3 className="font-semibold text-gray-900 mb-2">
                 ¿Puedo cancelar en cualquier momento?
@@ -192,7 +192,7 @@ export default function SubscriptionPage() {
                 Por supuesto. Puedes cancelar tu suscripción en cualquier momento y seguirás teniendo acceso hasta el final del período de facturación.
               </p>
             </div>
-            
+
             <div className="bg-white rounded-lg shadow p-6">
               <h3 className="font-semibold text-gray-900 mb-2">
                 ¿Qué incluye el soporte prioritario?

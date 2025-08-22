@@ -46,7 +46,7 @@ export function useTrialStatus(userEmail?: string) {
 
             // Obtener información del usuario y su trial
             const { data: { user } } = await supabase.auth.getUser();
-            
+
             if (!user) {
                 router.push('/login');
                 return;
@@ -80,8 +80,8 @@ export function useTrialStatus(userEmail?: string) {
                 .single();
 
             // Si tiene suscripción activa en Stripe, activar características
-            const hasActiveSubscription = subscription && !subError && 
-                subscription.status === 'active' && 
+            const hasActiveSubscription = subscription && !subError &&
+                subscription.status === 'active' &&
                 new Date(subscription.current_period_end) > new Date();
 
             if (profileError) {
@@ -115,9 +115,9 @@ export function useTrialStatus(userEmail?: string) {
             const now = new Date();
             const trialEnd = profile?.trial_ends_at ? new Date(profile.trial_ends_at) : null;
             const daysRemaining = trialEnd ? Math.max(0, Math.ceil((trialEnd.getTime() - now.getTime()) / (1000 * 60 * 60 * 24))) : 0;
-            
+
             const isExpired = profile?.subscription_status === 'trial' && daysRemaining <= 0;
-            
+
             // Actualizar lógica: permitir uso si tiene suscripción activa de Stripe O si el trial no ha expirado
             const canUseFeatures = hasActiveSubscription || (!isExpired && (profile?.subscription_status === 'active' || profile?.subscription_status === 'trial'));
 
@@ -149,9 +149,9 @@ export function useTrialStatus(userEmail?: string) {
                 .insert({
                     user_id: user.id,
                     activity_type: 'status_check',
-                    activity_data: { 
+                    activity_data: {
                         days_remaining: daysRemaining,
-                        status: profile?.subscription_status 
+                        status: profile?.subscription_status
                     }
                 });
 
@@ -189,9 +189,9 @@ export function useTrialStatus(userEmail?: string) {
 
     const hasReachedLimit = (type: 'clients' | 'projects' | 'storage' | 'emails'): boolean => {
         if (!trialInfo) return false;
-        
+
         const { usage, limits } = trialInfo;
-        
+
         switch (type) {
             case 'clients':
                 return limits.maxClients > 0 && usage.clients >= limits.maxClients;

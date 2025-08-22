@@ -1,24 +1,21 @@
 'use client'
-import { createSupabaseClient } from '@/src/lib/supabase-client';
 import { getBaseUrl } from '@/lib/url';
+import { createSupabaseClient } from '@/src/lib/supabase-client';
 import {
-    X,
     AlertCircle,
+    Building,
     CheckCircle,
     Eye,
     EyeOff,
-    Mail,
-    Lock,
-    Building,
-    Phone,
     Globe,
-    MapPin
+    Lock,
+    Mail,
+    MapPin,
+    Phone,
+    X
 } from 'lucide-react';
-import Link from 'next/link';
-import { Input } from '@/components/ui/Input';
-import { UserPlus, Sparkles, ArrowRight, Github, Chrome, Users, TrendingUp } from 'lucide-react';
 import { useRouter } from 'next/navigation';
-import { useState, useCallback } from 'react';
+import { useCallback, useState } from 'react';
 
 interface PopupState {
     show: boolean;

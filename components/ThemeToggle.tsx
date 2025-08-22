@@ -7,7 +7,7 @@ import { useState } from 'react';
 export default function ThemeToggle() {
     const themeContext = useTheme();
     const theme = themeContext?.theme || 'light';
-    const toggleTheme = themeContext?.toggleTheme || (() => {});
+    const toggleTheme = themeContext?.toggleTheme || (() => { });
     const mounted = themeContext?.mounted || false;
     const [isAnimating, setIsAnimating] = useState(false);
 

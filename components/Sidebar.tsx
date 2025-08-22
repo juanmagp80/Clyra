@@ -4,24 +4,23 @@ import { Button } from '@/components/ui/Button';
 import { cn } from '@/src/lib/utils';
 import {
   BarChart3,
+  Bot,
   Briefcase,
+  Building2,
   Calendar,
   CheckSquare,
+  ChevronDown,
+  ChevronRight,
   Clock,
   FileText,
   Home,
   LogOut,
   Mail,
   MessageCircle,
+  Presentation,
   Settings,
   Users,
-  Zap,
-  Bot,
-  Presentation,
-  Building2,
-  Receipt,
-  ChevronDown,
-  ChevronRight
+  Zap
 } from 'lucide-react';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
@@ -127,8 +126,8 @@ export default function Sidebar({ userEmail, onLogout }: SidebarProps) {
   const [expandedMenus, setExpandedMenus] = useState<string[]>([]);
 
   const toggleMenu = (menuName: string) => {
-    setExpandedMenus(prev => 
-      prev.includes(menuName) 
+    setExpandedMenus(prev =>
+      prev.includes(menuName)
         ? prev.filter(name => name !== menuName)
         : [...prev, menuName]
     );
@@ -156,7 +155,7 @@ export default function Sidebar({ userEmail, onLogout }: SidebarProps) {
           const IconComponent = item.icon;
           const hasSubmenu = item.submenu && item.submenu.length > 0;
           const isExpanded = expandedMenus.includes(item.name);
-          const hasActiveSubmenu = hasSubmenu && item.submenu?.some(sub => 
+          const hasActiveSubmenu = hasSubmenu && item.submenu?.some(sub =>
             pathname === sub.href || pathname.startsWith(sub.href + '/')
           );
 
@@ -223,7 +222,7 @@ export default function Sidebar({ userEmail, onLogout }: SidebarProps) {
                   {item.submenu?.map((subItem) => {
                     const isSubActive = pathname === subItem.href || pathname.startsWith(subItem.href + '/');
                     const SubIcon = subItem.icon;
-                    
+
                     return (
                       <Link
                         key={subItem.name}
@@ -233,8 +232,8 @@ export default function Sidebar({ userEmail, onLogout }: SidebarProps) {
                           isSubActive
                             ? 'bg-gradient-to-r from-blue-100 to-indigo-100 dark:from-blue-900/30 dark:to-indigo-900/30 text-indigo-900 dark:text-indigo-300 shadow-sm'
                             : subItem.highlight
-                            ? 'text-indigo-700 dark:text-indigo-400 hover:bg-gradient-to-r hover:from-indigo-50 hover:to-blue-50 dark:hover:from-indigo-900/20 dark:hover:to-blue-900/20 border border-indigo-200/50 dark:border-indigo-700/50'
-                            : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-slate-200 hover:bg-slate-50 dark:hover:bg-slate-700/40'
+                              ? 'text-indigo-700 dark:text-indigo-400 hover:bg-gradient-to-r hover:from-indigo-50 hover:to-blue-50 dark:hover:from-indigo-900/20 dark:hover:to-blue-900/20 border border-indigo-200/50 dark:border-indigo-700/50'
+                              : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-slate-200 hover:bg-slate-50 dark:hover:bg-slate-700/40'
                         )}
                       >
                         {SubIcon && (

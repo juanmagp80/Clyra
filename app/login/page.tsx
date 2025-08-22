@@ -3,7 +3,7 @@ import { Button } from '@/components/ui/Button';
 import { Input } from '@/components/ui/Input';
 import { getBaseUrl } from '@/lib/url';
 import { createSupabaseClient } from '@/src/lib/supabase-client';
-import { ArrowRight, Chrome, Eye, EyeOff, Github, Lock, Mail, Sparkles, TrendingUp, X, CheckCircle, AlertCircle } from 'lucide-react';
+import { AlertCircle, ArrowRight, CheckCircle, Chrome, Eye, EyeOff, Github, Lock, Mail, Sparkles, TrendingUp, X } from 'lucide-react';
 import Link from 'next/link';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { Suspense, useEffect, useState } from 'react';

@@ -1,11 +1,11 @@
-import { createSupabaseClient } from '@/src/lib/supabase-client';
-import { getBaseUrl } from '@/lib/url';
-import Link from 'next/link';
-import { UserPlus, Lock, Mail, EyeOff, Eye, Building, Phone, Globe, Sparkles, ArrowRight, Github, Chrome, CheckCircle, Users, TrendingUp } from 'lucide-react';
-import { Input } from '@/components/ui/Input';
 import { Button } from '@/components/ui/Button';
-import { useState } from 'react';
+import { Input } from '@/components/ui/Input';
+import { getBaseUrl } from '@/lib/url';
+import { createSupabaseClient } from '@/src/lib/supabase-client';
+import { ArrowRight, Building, CheckCircle, Chrome, Eye, EyeOff, Github, Globe, Lock, Mail, Phone, Sparkles, TrendingUp, UserPlus, Users } from 'lucide-react';
+import Link from 'next/link';
 import { useRouter } from 'next/navigation';
+import { useState } from 'react';
 
 export default function RegisterPage() {
     // Estados para autenticación
@@ -40,7 +40,7 @@ export default function RegisterPage() {
             setError('Para usar autenticación, configura Supabase en las variables de entorno.');
             return;
         }
-        
+
         try {
             setLoading(true);
             const { error } = await supabase.auth.signInWithOAuth({
@@ -49,7 +49,7 @@ export default function RegisterPage() {
                     redirectTo: `${getBaseUrl()}/auth/callback`
                 }
             });
-            
+
             if (error) {
                 setError('Error al conectar con GitHub: ' + error.message);
             }
@@ -65,7 +65,7 @@ export default function RegisterPage() {
             setError('Para usar autenticación, configura Supabase en las variables de entorno.');
             return;
         }
-        
+
         try {
             setLoading(true);
             const { error } = await supabase.auth.signInWithOAuth({
@@ -74,7 +74,7 @@ export default function RegisterPage() {
                     redirectTo: `${getBaseUrl()}/auth/callback`
                 }
             });
-            
+
             if (error) {
                 setError('Error al conectar con Google: ' + error.message);
             }
@@ -97,7 +97,7 @@ export default function RegisterPage() {
             setShowPopup(true);
             return;
         }
-        
+
         const now = Date.now();
         if (now - lastAttempt < 5000) {
             setPopupType('error');
@@ -202,11 +202,11 @@ export default function RegisterPage() {
                 <div className="absolute inset-0 bg-[radial-gradient(circle_at_25%_25%,rgba(99,102,241,0.08),transparent_50%)]" />
                 <div className="absolute inset-0 bg-[radial-gradient(circle_at_75%_75%,rgba(139,92,246,0.06),transparent_50%)]" />
                 <div className="absolute inset-0 bg-grid-slate-900/[0.02] bg-[size:32px_32px]" />
-                
+
                 {/* Elegant Floating Orbs */}
                 <div className="absolute top-24 left-16 w-40 h-40 bg-gradient-to-br from-indigo-100/40 to-violet-100/40 rounded-full blur-3xl animate-pulse"></div>
-                <div className="absolute bottom-40 right-24 w-56 h-56 bg-gradient-to-br from-violet-100/40 to-indigo-100/40 rounded-full blur-3xl animate-pulse" style={{animationDelay: '1.5s'}}></div>
-                <div className="absolute top-1/3 left-8 w-28 h-28 bg-gradient-to-br from-blue-100/40 to-indigo-100/40 rounded-full blur-3xl animate-pulse" style={{animationDelay: '3s'}}></div>
+                <div className="absolute bottom-40 right-24 w-56 h-56 bg-gradient-to-br from-violet-100/40 to-indigo-100/40 rounded-full blur-3xl animate-pulse" style={{ animationDelay: '1.5s' }}></div>
+                <div className="absolute top-1/3 left-8 w-28 h-28 bg-gradient-to-br from-blue-100/40 to-indigo-100/40 rounded-full blur-3xl animate-pulse" style={{ animationDelay: '3s' }}></div>
             </div>
 
             {/* Premium Header */}
@@ -230,10 +230,10 @@ export default function RegisterPage() {
                     <div className="relative bg-white/95 backdrop-blur-2xl border border-slate-200/60 rounded-3xl p-8 shadow-2xl shadow-slate-900/5">
                         {/* Premium Border Glow */}
                         <div className="absolute inset-0 bg-gradient-to-br from-indigo-50/80 via-transparent to-violet-50/80 rounded-3xl blur-sm -z-10"></div>
-                        
+
                         {/* Inner Premium Glow */}
                         <div className="absolute inset-0 bg-gradient-to-br from-indigo-50/30 to-violet-50/30 rounded-3xl"></div>
-                        
+
                         {/* Professional Header */}
                         <div className="text-center mb-8 relative">
                             <div className="relative inline-flex items-center justify-center w-16 h-16 bg-gradient-to-br from-indigo-600 via-blue-600 to-violet-600 rounded-2xl mb-6 shadow-xl shadow-indigo-500/25 group">
@@ -241,14 +241,14 @@ export default function RegisterPage() {
                                 {/* Premium Ring Animation */}
                                 <div className="absolute inset-0 rounded-2xl bg-gradient-to-br from-indigo-400 to-violet-400 opacity-0 group-hover:opacity-20 transition-opacity duration-300"></div>
                             </div>
-                            
+
                             <h1 className="text-3xl font-black mb-3 tracking-tight">
                                 <span className="bg-gradient-to-r from-slate-900 via-indigo-900 to-violet-900 bg-clip-text text-transparent">
                                     Únete a Taskelio
                                 </span>
                             </h1>
                             <p className="text-slate-600 text-base leading-relaxed">
-                                Crea tu 
+                                Crea tu
                                 <span className="text-indigo-600 font-semibold"> workspace profesional</span> en segundos
                             </p>
                         </div>
@@ -462,7 +462,7 @@ export default function RegisterPage() {
                             >
                                 {/* Premium Button Glow */}
                                 <div className="absolute inset-0 bg-gradient-to-r from-indigo-400 to-violet-400 opacity-0 group-hover:opacity-20 transition-opacity duration-300"></div>
-                                
+
                                 {loading ? (
                                     <div className="flex items-center gap-3 relative z-10">
                                         <div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin"></div>
@@ -515,8 +515,8 @@ export default function RegisterPage() {
                         <div className="text-center relative z-10">
                             <p className="text-slate-600 mb-4">
                                 ¿Ya tienes cuenta?{' '}
-                                <Link 
-                                    href="/login" 
+                                <Link
+                                    href="/login"
                                     className="text-indigo-600 hover:text-indigo-700 font-semibold transition-colors relative z-10"
                                 >
                                     Iniciar sesión
