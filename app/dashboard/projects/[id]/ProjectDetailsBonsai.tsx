@@ -236,7 +236,8 @@ export default function ProjectDetailsBonsai({ projectId, userEmail }: ProjectDe
                 return;
             }
 
-            console.log('📋 Tasks fetched:', tasksData?.map(task => ({
+            console.log('📋 Tasks fetched - RAW DATA:', tasksData);
+            console.log('📋 Tasks analyzed:', tasksData?.map(task => ({
                 id: task.id,
                 title: task.title,
                 is_running: task.is_running,
@@ -341,7 +342,14 @@ export default function ProjectDetailsBonsai({ projectId, userEmail }: ProjectDe
 
             const now = new Date().toISOString();
             
-            console.log(`🔄 TOGGLE TIMER - Task: ${taskId}, Running: ${isCurrentlyRunning}`);
+            console.log(`🔄 TOGGLE TIMER INICIO:`);
+            console.log(`   - Task ID: ${taskId}`);
+            console.log(`   - Currently Running: ${isCurrentlyRunning}`);
+            console.log(`   - Timestamp: ${now}`);
+            
+            // Buscar la tarea actual para ver su estado
+            const currentTask = tasks.find(t => t.id === taskId);
+            console.log(`   - Task actual:`, currentTask);
             
             if (isCurrentlyRunning) {
                 // PARAR: Solo cambiar el estado, NO tocar total_time_seconds aún
@@ -367,14 +375,18 @@ export default function ProjectDetailsBonsai({ projectId, userEmail }: ProjectDe
                 console.log(`▶️ INICIANDO cronómetro para tarea: ${taskId}`);
                 
                 // Parar otras tareas primero
-                await supabase
+                console.log(`🛑 Parando otras tareas...`);
+                const stopResult = await supabase
                     .from('tasks')
                     .update({ is_running: false })
                     .eq('project_id', projectId)
                     .eq('is_running', true);
+                
+                console.log(`🛑 Resultado de parar otras tareas:`, stopResult);
 
                 // Iniciar esta tarea
-                const { error } = await supabase
+                console.log(`🚀 Iniciando tarea ${taskId}...`);
+                const { data: updateData, error } = await supabase
                     .from('tasks')
                     .update({
                         is_running: true,
@@ -382,6 +394,8 @@ export default function ProjectDetailsBonsai({ projectId, userEmail }: ProjectDe
                         started_at: now // Solo la primera vez
                     })
                     .eq('id', taskId);
+
+                console.log(`🚀 Resultado de iniciar tarea:`, { data: updateData, error });
 
                 if (error) {
                     console.error('❌ Error iniciando:', error);
@@ -392,7 +406,9 @@ export default function ProjectDetailsBonsai({ projectId, userEmail }: ProjectDe
             }
 
             // Recargar tareas
+            console.log(`🔄 Recargando tareas después del toggle...`);
             await fetchTasks();
+            console.log(`✅ Tareas recargadas después del toggle`);
 
         } catch (error) {
             console.error('❌ Error en toggleTaskTimer:', error);
@@ -401,43 +417,79 @@ export default function ProjectDetailsBonsai({ projectId, userEmail }: ProjectDe
 
     // Función para formatear tiempo
     const formatTime = (seconds: number) => {
-        if (!seconds) return '0m';
+        console.log(`🕐 formatTime called with: ${seconds} seconds`);
+        
+        if (!seconds) {
+            console.log(`🕐 formatTime result: '0m' (no seconds)`);
+            return '0m';
+        }
         
         const hours = Math.floor(seconds / 3600);
         const minutes = Math.floor((seconds % 3600) / 60);
         const secs = seconds % 60;
 
+        console.log(`🕐 formatTime breakdown: ${hours}h ${minutes}m ${secs}s`);
+
         if (hours > 0) {
-            return `${hours}h ${minutes}m`;
+            const result = `${hours}h ${minutes}m`;
+            console.log(`🕐 formatTime result: '${result}' (has hours)`);
+            return result;
         } else if (minutes > 0) {
-            return `${minutes}m`;
+            const result = `${minutes}m`;
+            console.log(`🕐 formatTime result: '${result}' (has minutes)`);
+            return result;
         } else {
-            return `${secs}s`;
+            const result = `${secs}s`;
+            console.log(`🕐 formatTime result: '${result}' (only seconds)`);
+            return result;
         }
     };
 
     // useEffect para actualizar cronómetros en tiempo real (SIMPLIFICADO)
     useEffect(() => {
+        console.log(`🕐 Timer useEffect - Tasks count: ${tasks.length}`);
+        
         const interval = setInterval(() => {
             const newLiveTimers: {[taskId: string]: number} = {};
             const now = Date.now();
+            console.log(`🕐 Timer tick - Now: ${now} (${new Date(now).toISOString()})`);
             
             tasks.forEach(task => {
                 let displayTime = task.total_time_seconds || 0;
+                console.log(`🔍 Processing task ${task.title}:`);
+                console.log(`   - is_running: ${task.is_running}`);
+                console.log(`   - total_time_seconds: ${task.total_time_seconds}`);
+                console.log(`   - last_start: ${task.last_start}`);
                 
                 if (task.is_running && task.last_start) {
-                    const startTime = new Date(task.last_start).getTime();
+                    // ARREGLO: Parsing correcto del timestamp UTC
+                    let startTime;
+                    if (task.last_start.endsWith('Z')) {
+                        startTime = new Date(task.last_start).getTime();
+                    } else {
+                        startTime = new Date(task.last_start + 'Z').getTime();
+                    }
+                    console.log(`   - startTime parsed: ${startTime} (${new Date(startTime).toISOString()})`);
+                    
                     const elapsedMs = now - startTime;
+                    console.log(`   - elapsedMs: ${elapsedMs}`);
+                    
                     const elapsedSeconds = Math.floor(elapsedMs / 1000);
+                    console.log(`   - elapsedSeconds: ${elapsedSeconds}`);
+                    
                     displayTime = (task.total_time_seconds || 0) + elapsedSeconds;
+                    console.log(`   - displayTime: ${displayTime}`);
                     
                     // Log solo las tareas que están corriendo
                     console.log(`⏱️ Task ${task.title}: ${elapsedSeconds}s elapsed, total: ${displayTime}s`);
+                } else {
+                    console.log(`   - Not running or no last_start, displayTime: ${displayTime}`);
                 }
                 
                 newLiveTimers[task.id] = displayTime;
             });
             
+            console.log(`🕐 New live timers:`, newLiveTimers);
             setLiveTimers(newLiveTimers);
         }, 1000);
 
