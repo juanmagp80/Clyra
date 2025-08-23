@@ -213,7 +213,7 @@ export default function InvoicesPageClient({ userEmail }: ClientsPageClientProps
                         <div className="container mx-auto px-6 py-8">
                             {/* Trial Banner */}
                             <div className="mb-8">
-                                <TrialBanner />
+                                <TrialBanner userEmail={userEmail} />
                             </div>
 
                             {/* Header Premium */}
@@ -235,19 +235,23 @@ export default function InvoicesPageClient({ userEmail }: ClientsPageClientProps
                                         </div>
                                         <button
                                             onClick={handleNewInvoiceClick}
-                                            disabled={!canUseFeatures}
+                                            disabled={trialLoading || !canUseFeatures}
                                             className={`group relative px-8 py-4 bg-gradient-to-r from-blue-600 to-indigo-600 text-white rounded-2xl font-semibold shadow-2xl shadow-blue-500/25 hover:shadow-blue-500/40 hover:scale-105 transform transition-all duration-200 flex items-center gap-3 ${
-                                                !canUseFeatures 
+                                                trialLoading
+                                                    ? 'opacity-75 cursor-wait'
+                                                    : !canUseFeatures 
                                                     ? 'opacity-50 cursor-not-allowed !bg-gray-400 hover:!bg-gray-400 !shadow-gray-400/25 hover:!shadow-gray-400/25 hover:!scale-100' 
                                                     : ''
                                             }`}
                                         >
-                                            {!canUseFeatures ? (
+                                            {trialLoading ? (
+                                                <div className="w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
+                                            ) : !canUseFeatures ? (
                                                 <AlertTriangle className="w-5 h-5" />
                                             ) : (
                                                 <Plus className="w-5 h-5 group-hover:rotate-90 transition-transform duration-200" />
                                             )}
-                                            {!canUseFeatures ? 'Trial Expirado' : 'Nueva Factura'}
+                                            {trialLoading ? 'Cargando...' : (!canUseFeatures ? 'Trial Expirado' : 'Nueva Factura')}
                                         </button>
                                     </div>
                                 </div>

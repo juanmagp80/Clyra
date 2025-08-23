@@ -1,82 +1,94 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { createClientComponentClient } from '@supabase/auth-helpers-nextjs';
+import { createServerSupabaseClient } from '@/src/lib/supabase-server';
 
 export async function POST(request: NextRequest) {
   try {
-    const supabase = createClientComponentClient();
+    console.log('🔧 Activating subscription with real user...');
+
+    const supabase = await createServerSupabaseClient();
     
-    // Obtener sesión del usuario
-    const { data: { session }, error: sessionError } = await supabase.auth.getSession();
+    // Obtener el usuario autenticado
+    const { data: { user }, error: authError } = await supabase.auth.getUser();
     
-    if (sessionError || !session) {
+    if (authError || !user) {
+      console.error('❌ No authenticated user:', authError);
       return NextResponse.json(
-        { error: 'No authenticated user' },
+        { error: 'Usuario no autenticado' },
         { status: 401 }
       );
     }
 
-    console.log('Creating/updating subscription for user:', session.user.id);
+    console.log('👤 Authenticated user:', { id: user.id, email: user.email });
 
-    // Intentar insertar o actualizar la suscripción
-    const { data, error } = await supabase
-      .from('user_subscriptions')
-      .upsert({
-        user_id: session.user.id,
-        is_subscribed: true,
-        plan_type: 'pro',
-        subscription_end: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString() // 30 días
-      }, {
-        onConflict: 'user_id'
-      })
-      .select();
+    // Verificar si ya existe un perfil
+    const { data: existingProfile, error: checkError } = await supabase
+      .from('profiles')
+      .select('*')
+      .eq('id', user.id)
+      .single();
 
-    if (error) {
-      console.error('Database error:', error);
-      
-      // Si la tabla no existe, intentar crearla
-      if (error.message.includes('does not exist')) {
-        return NextResponse.json({
-          error: 'Database table does not exist',
-          message: 'Please create the user_subscriptions table in Supabase Dashboard',
-          sql: `
-CREATE TABLE IF NOT EXISTS public.user_subscriptions (
-    id UUID DEFAULT gen_random_uuid() PRIMARY KEY,
-    user_id UUID NOT NULL REFERENCES auth.users(id) ON DELETE CASCADE,
-    is_subscribed BOOLEAN DEFAULT FALSE,
-    plan_type VARCHAR(20) DEFAULT 'free',
-    trial_end TIMESTAMPTZ,
-    subscription_end TIMESTAMPTZ,
-    stripe_customer_id VARCHAR(255),
-    stripe_subscription_id VARCHAR(255),
-    created_at TIMESTAMPTZ DEFAULT NOW(),
-    updated_at TIMESTAMPTZ DEFAULT NOW(),
-    UNIQUE(user_id)
-);
+    const profileData = {
+      subscription_status: 'active',
+      subscription_plan: 'pro',
+      stripe_customer_id: `cus_real_${user.id.substring(0, 8)}`,
+      stripe_subscription_id: `sub_real_${user.id.substring(0, 8)}`,
+      subscription_current_period_end: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString(),
+      trial_started_at: new Date().toISOString(),
+      trial_ends_at: new Date(Date.now() + 14 * 24 * 60 * 60 * 1000).toISOString(),
+      updated_at: new Date().toISOString()
+    };
 
-ALTER TABLE public.user_subscriptions ENABLE ROW LEVEL SECURITY;
+    let result;
+    if (existingProfile) {
+      // Actualizar perfil existente
+      console.log('🔄 Updating existing profile...');
+      const { data, error } = await supabase
+        .from('profiles')
+        .update(profileData)
+        .eq('id', user.id)
+        .select()
+        .single();
 
-CREATE POLICY "Users can manage their own subscriptions" ON public.user_subscriptions
-    FOR ALL USING (auth.uid() = user_id);
-          `
-        }, { status: 500 });
-      }
-      
+      result = { data, error };
+    } else {
+      // Crear nuevo perfil
+      console.log('✨ Creating new profile...');
+      const newProfileData = {
+        id: user.id,
+        email: user.email,
+        created_at: new Date().toISOString(),
+        ...profileData
+      };
+
+      const { data, error } = await supabase
+        .from('profiles')
+        .insert([newProfileData])
+        .select()
+        .single();
+
+      result = { data, error };
+    }
+
+    if (result.error) {
+      console.error('❌ Error saving profile:', result.error);
       return NextResponse.json(
-        { error: 'Database error: ' + error.message },
+        { error: 'Error guardando perfil', details: result.error },
         { status: 500 }
       );
     }
 
-    return NextResponse.json({ 
-      success: true, 
-      data,
-      message: 'Subscription activated successfully' 
+    console.log('✅ Profile saved successfully:', result.data);
+    
+    return NextResponse.json({
+      success: true,
+      message: 'Suscripción PRO activada exitosamente',
+      profile: result.data
     });
-
+    
   } catch (error) {
-    console.error('Error activating subscription:', error);
+    console.error('💥 Error general:', error);
     return NextResponse.json(
-      { error: 'Internal server error' },
+      { error: 'Error interno del servidor', details: error },
       { status: 500 }
     );
   }

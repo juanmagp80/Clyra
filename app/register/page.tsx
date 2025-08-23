@@ -5,6 +5,7 @@ import {
     AlertCircle,
     Building,
     CheckCircle,
+    Chrome,
     Eye,
     EyeOff,
     Globe,
@@ -534,7 +535,7 @@ export default function RegisterPage() {
                                 <div className="flex-1 h-px bg-gradient-to-r from-transparent via-white/30 to-transparent"></div>
                             </div>
                             {/* Botón Google */}
-                            <div className="grid grid-cols-1 gap-4 mb-8">
+                            <div className="mb-8">
                                 <button
                                     type="button"
                                     onClick={async () => {
@@ -555,10 +556,10 @@ export default function RegisterPage() {
                                         }
                                         setLoading(false);
                                     }}
-                                    className="w-full border border-white/20 text-white bg-white/10 hover:bg-white/20 h-12 rounded-xl font-medium flex items-center justify-center gap-3 transition-all duration-300 shadow-lg shadow-purple-900/10"
+                                    className="w-full border border-white/20 text-white hover:bg-white/10 hover:text-white h-12 rounded-xl group transition-all duration-300 font-medium relative z-10 hover:border-white/40 flex items-center justify-center gap-3"
                                     disabled={loading}
                                 >
-                                    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="20" height="20" className="inline-block mr-2"><g><path fill="#EA4335" d="M12 11.7v2.6h7.3c-.3 1.7-2.1 5-7.3 5-4.4 0-8-3.6-8-8s3.6-8 8-8c2.5 0 4.2 1 5.2 1.9l-2.1 2c-.7-.6-1.9-1.3-3.1-1.3-2.7 0-4.9 2.2-4.9 4.9s2.2 4.9 4.9 4.9c3.1 0 4.2-2.2 4.6-3.4H12z"></path><path fill="#34A853" d="M21.6 12.2c0-.5-.1-1-.2-1.5H12v2.9h5.3c-.2 1.1-1.4 3.1-5.3 3.1-3.1 0-5.6-2.5-5.6-5.6s2.5-5.6 5.6-5.6c1.7 0 2.8.7 3.4 1.3l2.1-2C16.2 4.7 14.5 3.7 12 3.7c-4.6 0-8.3 3.7-8.3 8.3s3.7 8.3 8.3 8.3c4.2 0 7.7-2.7 7.7-7.1z"></path></g></svg>
+                                    <Chrome className="w-4 h-4 group-hover:scale-110 transition-transform" />
                                     Registrarse con Google
                                 </button>
                             </div>

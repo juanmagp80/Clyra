@@ -70,7 +70,7 @@ const navigation = [
   },
   {
     name: 'Tiempo',
-    href: '/dashboard/time-tracking',
+    href: '/dashboard/projects',
     icon: Clock,
   },
   {

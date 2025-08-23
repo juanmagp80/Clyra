@@ -1,6 +1,6 @@
 import { createServerSupabaseClient } from '@/src/lib/supabase-server';
 import { redirect } from 'next/navigation';
-import DashboardClient from './DashboardClient';
+import DashboardBonsai from './DashboardBonsai';
 
 export default async function DashboardPage() {
     try {
@@ -81,7 +81,7 @@ export default async function DashboardPage() {
                                 </div>
                             </div>
                             
-                            <DashboardClient 
+                            <DashboardBonsai 
                                 userEmail="demo@taskelio.com" 
                                 isDemo={true}
                             />
@@ -111,7 +111,7 @@ export default async function DashboardPage() {
         }
 
         console.log('✅ Valid session found - rendering dashboard');
-        return <DashboardClient userEmail={session.user.email} />;
+        return <DashboardBonsai userEmail={session.user.email} />;
     } catch (error) {
         console.error('❌ Error in dashboard page:', error);
         redirect('/login');

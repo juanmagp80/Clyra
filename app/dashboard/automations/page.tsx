@@ -1,5 +1,6 @@
 import { createServerSupabaseClient } from '@/src/lib/supabase-server';
 import { redirect } from 'next/navigation';
+import { ProtectedPage } from '@/components/ProtectedPage';
 import AutomationsPageClient from './AutomationsPageClient';
 
 export default async function AutomationsPage() {

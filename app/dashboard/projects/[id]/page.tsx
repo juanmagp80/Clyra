@@ -1,6 +1,6 @@
 import { createServerSupabaseClient } from '@/src/lib/supabase-server';
 import { redirect } from 'next/navigation';
-import ProjectDetails from './ProjectDetails';
+import ProjectDetailsBonsai from './ProjectDetailsBonsai';
 
 // Configuración correcta para Next.js 15+
 interface PageProps {
@@ -22,7 +22,7 @@ export default async function ProjectDetailPage({ params }: PageProps) {
     const { id } = await params;
 
     return (
-        <ProjectDetails
+        <ProjectDetailsBonsai
             projectId={id}
             userEmail={session.user.email || ''}
         />

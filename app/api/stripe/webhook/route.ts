@@ -35,28 +35,36 @@ export async function POST(request: NextRequest) {
         switch (event.type) {
             case 'checkout.session.completed': {
                 const session = event.data.object as any;
+                console.log('🎉 Checkout session completed:', session.id);
 
                 if (session.mode === 'subscription') {
                     const subscription = await stripe.subscriptions.retrieve(session.subscription);
+                    const customer = await stripe.customers.retrieve(session.customer) as any;
+                    
+                    console.log('📧 Customer email:', customer.email);
+                    console.log('💳 Subscription:', subscription.id);
 
-                    const userId = session.client_reference_id;
-
-                    if (userId) {
-                        // Actualizar la tabla user_subscriptions
-                        await supabase
-                            .from('user_subscriptions')
-                            .upsert({
-                                user_id: userId,
-                                is_subscribed: true,
-                                plan_type: 'pro',
-                                subscription_end: new Date(subscription.current_period_end * 1000).toISOString(),
+                    if (customer.email) {
+                        // Actualizar la tabla profiles directamente con el email
+                        const { data: updateResult, error: updateError } = await supabase
+                            .from('profiles')
+                            .update({
+                                subscription_status: 'active',
+                                subscription_plan: 'pro',
                                 stripe_customer_id: session.customer,
                                 stripe_subscription_id: subscription.id,
-                            }, {
-                                onConflict: 'user_id'
-                            });
-                            
-                        console.log('Suscripción actualizada para usuario:', userId);
+                                subscription_current_period_end: new Date((subscription as any).current_period_end * 1000).toISOString(),
+                                cancel_at_period_end: false,
+                                updated_at: new Date().toISOString()
+                            })
+                            .eq('email', customer.email)
+                            .select();
+
+                        if (updateError) {
+                            console.error('❌ Error actualizando perfil:', updateError);
+                        } else {
+                            console.log('✅ Perfil actualizado exitosamente:', updateResult);
+                        }
                     }
                 }
                 break;
@@ -65,50 +73,73 @@ export async function POST(request: NextRequest) {
             case 'customer.subscription.updated':
             case 'customer.subscription.deleted': {
                 const subscription = event.data.object as any;
+                console.log('🔄 Subscription updated/deleted:', subscription.id, 'Status:', subscription.status);
 
-                await supabase
-                    .from('user_subscriptions')
+                // Actualizar el perfil basado en el stripe_subscription_id
+                const { data: updateResult, error: updateError } = await supabase
+                    .from('profiles')
                     .update({
-                        is_subscribed: subscription.status === 'active',
-                        subscription_end: new Date(subscription.current_period_end * 1000).toISOString(),
-                        plan_type: subscription.status === 'active' ? 'pro' : 'free',
+                        subscription_status: subscription.status === 'active' ? 'active' : 'cancelled',
+                        subscription_plan: subscription.status === 'active' ? 'pro' : 'free',
+                        subscription_current_period_end: new Date(subscription.current_period_end * 1000).toISOString(),
+                        cancel_at_period_end: subscription.cancel_at_period_end || false,
+                        updated_at: new Date().toISOString()
                     })
-                    .eq('stripe_subscription_id', subscription.id);
+                    .eq('stripe_subscription_id', subscription.id)
+                    .select();
                     
-                console.log('Suscripción actualizada:', subscription.id, 'Estado:', subscription.status);
+                if (updateError) {
+                    console.error('❌ Error actualizando suscripción:', updateError);
+                } else {
+                    console.log('✅ Suscripción actualizada:', updateResult);
+                }
                 break;
             }
 
             case 'invoice.payment_succeeded': {
                 const invoice = event.data.object as any;
+                console.log('💰 Payment succeeded for subscription:', invoice.subscription);
 
                 if (invoice.subscription) {
-                    await supabase
-                        .from('user_subscriptions')
+                    const { data: updateResult, error: updateError } = await supabase
+                        .from('profiles')
                         .update({
-                            is_subscribed: true,
-                            plan_type: 'pro',
+                            subscription_status: 'active',
+                            subscription_plan: 'pro',
+                            updated_at: new Date().toISOString()
                         })
-                        .eq('stripe_subscription_id', invoice.subscription);
+                        .eq('stripe_subscription_id', invoice.subscription)
+                        .select();
                         
-                    console.log('Pago exitoso para suscripción:', invoice.subscription);
+                    if (updateError) {
+                        console.error('❌ Error actualizando pago:', updateError);
+                    } else {
+                        console.log('✅ Pago procesado:', updateResult);
+                    }
                 }
                 break;
             }
 
             case 'invoice.payment_failed': {
                 const invoice = event.data.object as any;
+                console.log('❌ Payment failed for subscription:', invoice.subscription);
 
                 if (invoice.subscription) {
-                    await supabase
-                        .from('user_subscriptions')
+                    const { data: updateResult, error: updateError } = await supabase
+                        .from('profiles')
                         .update({
-                            is_subscribed: false,
-                            plan_type: 'free',
+                            subscription_status: 'cancelled',
+                            subscription_plan: 'free',
+                            updated_at: new Date().toISOString()
                         })
-                        .eq('stripe_subscription_id', invoice.subscription);
+                        .eq('stripe_subscription_id', invoice.subscription)
+                        .select();
                         
-                    console.log('Pago fallido para suscripción:', invoice.subscription);
+                    if (updateError) {
+                        console.error('❌ Error actualizando pago fallido:', updateError);
+                    } else {
+                        console.log('✅ Pago fallido procesado:', updateResult);
+                    }
                 }
                 break;
             }

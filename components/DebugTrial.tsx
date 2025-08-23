@@ -1,7 +1,7 @@
 'use client';
 
-import { useTrialStatus } from '@/src/lib/useTrialStatus';
 import { createSupabaseClient } from '@/src/lib/supabase-client';
+import { useTrialStatus } from '@/src/lib/useTrialStatus';
 import { useEffect, useState } from 'react';
 
 interface DebugTrialProps {
@@ -35,21 +35,12 @@ export default function DebugTrial({ userEmail }: DebugTrialProps) {
                     .eq('user_id', user.id)
                     .single();
 
-                // Obtener suscripciones
-                const { data: subscription, error: subError } = await supabase
-                    .from('subscriptions')
-                    .select('*')
-                    .eq('user_id', user.id)
-                    .single();
-
                 setRawData({
                     user,
                     profile,
                     profileError,
                     usage,
-                    usageError,
-                    subscription,
-                    subError
+                    usageError
                 });
             } catch (err) {
                 console.error('Error fetching raw data:', err);
@@ -62,18 +53,18 @@ export default function DebugTrial({ userEmail }: DebugTrialProps) {
     return (
         <div className="fixed top-4 right-4 w-96 max-h-96 overflow-y-auto bg-black/90 text-white p-4 rounded-lg text-xs z-50">
             <h3 className="font-bold text-yellow-400 mb-2">🐛 Debug Trial Info</h3>
-            
+
             <div className="space-y-2">
                 <div>
                     <strong className="text-green-400">Loading:</strong> {loading ? 'true' : 'false'}
                 </div>
-                
+
                 {error && (
                     <div>
                         <strong className="text-red-400">Error:</strong> {error}
                     </div>
                 )}
-                
+
                 <div>
                     <strong className="text-blue-400">Trial Info:</strong>
                     <pre className="text-xs bg-gray-800 p-2 rounded mt-1 overflow-x-auto">

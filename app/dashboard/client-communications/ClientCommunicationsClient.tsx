@@ -401,7 +401,7 @@ export default function ClientCommunications({ userEmail }: ClientCommunications
                     <div className="p-4">
                         {/* Trial Banner */}
                         <div className="mb-4">
-                            <TrialBanner />
+                            <TrialBanner userEmail={userEmail} />
                         </div>
 
                         {/* Header */}

@@ -47,7 +47,8 @@ export const createCheckoutSession = async (
       client_reference_id: userId,
       subscription_data: {
         metadata: {
-          userId: userId || '',
+          user_id: userId || '',
+          customer_email: customerEmail || '',
         },
       },
     });

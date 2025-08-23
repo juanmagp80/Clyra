@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import Stripe from 'stripe';
-import { createSupabaseServerClient } from '@/src/lib/supabase-server';
+import { createSupabaseAdmin } from '@/src/lib/supabase-admin';
 
 const stripe = new Stripe(process.env.STRIPE_SECRET_KEY!, {
   apiVersion: '2024-12-18.acacia',
@@ -9,10 +9,19 @@ const stripe = new Stripe(process.env.STRIPE_SECRET_KEY!, {
 const webhookSecret = process.env.STRIPE_WEBHOOK_SECRET!;
 
 export async function POST(request: NextRequest) {
+  console.log('🎯 Webhook de Stripe - Inicio del procesamiento');
+  
   const body = await request.text();
   const signature = request.headers.get('stripe-signature');
 
+  console.log('📋 Webhook details:', {
+    hasSignature: !!signature,
+    bodyLength: body.length,
+    signature: signature?.substring(0, 20) + '...'
+  });
+
   if (!signature) {
+    console.error('❌ Missing stripe-signature header');
     return NextResponse.json(
       { error: 'Missing stripe-signature header' },
       { status: 400 }
@@ -22,18 +31,25 @@ export async function POST(request: NextRequest) {
   let event: Stripe.Event;
 
   try {
+    console.log('🔐 Verificando firma del webhook...');
     event = stripe.webhooks.constructEvent(body, signature, webhookSecret);
+    console.log('✅ Firma verificada correctamente');
   } catch (error: any) {
-    console.error('Webhook signature verification failed:', error.message);
+    console.error('❌ Webhook signature verification failed:', error.message);
     return NextResponse.json(
       { error: 'Webhook signature verification failed' },
       { status: 400 }
     );
   }
 
-  const supabase = createSupabaseServerClient();
+  const supabase = createSupabaseAdmin();
 
   try {
+    console.log('🎯 Webhook de Stripe recibido:', {
+      type: event.type,
+      id: event.id
+    });
+
     switch (event.type) {
       case 'customer.subscription.created':
       case 'customer.subscription.updated': {
@@ -75,89 +91,135 @@ export async function POST(request: NextRequest) {
 }
 
 async function handleSubscriptionChange(subscription: Stripe.Subscription, supabase: any) {
-  const userId = subscription.metadata.user_id;
+  console.log('🔄 Procesando cambio de suscripción de Stripe:', {
+    subscriptionId: subscription.id,
+    metadata: subscription.metadata,
+    status: subscription.status,
+    customerId: subscription.customer
+  });
+
+  // Buscar usuario por customer_id o email en metadata
+  let targetEmail = subscription.metadata?.customer_email;
+  let userId = subscription.metadata?.user_id;
   
-  if (!userId) {
-    console.error('No user_id found in subscription metadata');
+  console.log('🔍 Buscando usuario con metadata:', {
+    targetEmail,
+    userId,
+    customerId: subscription.customer
+  });
+
+  // Si no tenemos email en metadata, intentar obtenerlo del customer de Stripe
+  if (!targetEmail && subscription.customer) {
+    try {
+      const customer = await stripe.customers.retrieve(subscription.customer as string);
+      if (customer && !customer.deleted) {
+        targetEmail = customer.email || null;
+        console.log('📧 Email obtenido del customer de Stripe:', targetEmail);
+      }
+    } catch (error) {
+      console.error('❌ Error obteniendo customer de Stripe:', error);
+    }
+  }
+
+  if (!targetEmail) {
+    console.error('❌ No se pudo determinar el email del usuario para la suscripción', {
+      subscriptionId: subscription.id,
+      customerId: subscription.customer,
+      metadata: subscription.metadata
+    });
     return;
   }
 
-  // Actualizar o crear suscripción en la base de datos
+  console.log('📝 Actualizando perfil para:', targetEmail);
+
+  // Actualizar el perfil del usuario con el estado de suscripción real
   const { error } = await supabase
-    .from('subscriptions')
-    .upsert({
-      user_id: userId,
+    .from('profiles')
+    .update({
+      subscription_status: subscription.status === 'active' ? 'active' : subscription.status,
+      subscription_plan: 'pro',
       stripe_subscription_id: subscription.id,
-      stripe_customer_id: subscription.customer,
-      status: subscription.status,
-      plan_id: (await supabase
-        .from('subscription_plans')
-        .select('id')
-        .eq('name', 'Plan PRO')
-        .single()
-      ).data?.id,
-      current_period_start: new Date(subscription.current_period_start * 1000).toISOString(),
-      current_period_end: new Date(subscription.current_period_end * 1000).toISOString(),
+      stripe_customer_id: subscription.customer as string,
+      subscription_current_period_start: (subscription as any).current_period_start ? new Date((subscription as any).current_period_start * 1000).toISOString() : null,
+      subscription_current_period_end: (subscription as any).current_period_end ? new Date((subscription as any).current_period_end * 1000).toISOString() : null,
       updated_at: new Date().toISOString(),
-    });
+    })
+    .eq('email', targetEmail);
 
   if (error) {
-    console.error('Error updating subscription:', error);
+    console.error('❌ Error actualizando perfil del usuario:', error);
+    throw error;
   } else {
-    console.log(`Subscription ${subscription.id} updated for user ${userId}`);
+    console.log('✅ Perfil actualizado exitosamente:', {
+      email: targetEmail,
+      status: subscription.status,
+      plan: 'pro',
+      subscriptionId: subscription.id
+    });
   }
 }
 
 async function handleSubscriptionCancellation(subscription: Stripe.Subscription, supabase: any) {
+  console.log('🚫 Procesando cancelación de suscripción:', subscription.id);
+  
+  // Actualizar perfil por stripe_subscription_id
   const { error } = await supabase
-    .from('subscriptions')
+    .from('profiles')
     .update({
-      status: 'cancelled',
+      subscription_status: 'cancelled',
       updated_at: new Date().toISOString(),
     })
     .eq('stripe_subscription_id', subscription.id);
 
   if (error) {
-    console.error('Error cancelling subscription:', error);
+    console.error('❌ Error cancelando suscripción en perfil:', error);
   } else {
-    console.log(`Subscription ${subscription.id} cancelled`);
+    console.log('✅ Suscripción cancelada exitosamente:', subscription.id);
   }
 }
 
 async function handlePaymentSucceeded(invoice: Stripe.Invoice, supabase: any) {
-  if (invoice.subscription) {
-    // Actualizar estado de suscripción a activo
+  const subscriptionId = (invoice as any).subscription;
+  
+  if (subscriptionId) {
+    console.log('✅ Procesando pago exitoso para suscripción:', subscriptionId);
+    
+    // Actualizar estado de suscripción a activo en profiles
     const { error } = await supabase
-      .from('subscriptions')
+      .from('profiles')
       .update({
-        status: 'active',
+        subscription_status: 'active',
         updated_at: new Date().toISOString(),
       })
-      .eq('stripe_subscription_id', invoice.subscription);
+      .eq('stripe_subscription_id', subscriptionId);
 
     if (error) {
-      console.error('Error updating subscription after payment:', error);
+      console.error('❌ Error actualizando perfil después del pago:', error);
     } else {
-      console.log(`Payment succeeded for subscription ${invoice.subscription}`);
+      console.log('✅ Perfil actualizado después del pago exitoso:', subscriptionId);
     }
   }
 }
 
 async function handlePaymentFailed(invoice: Stripe.Invoice, supabase: any) {
-  if (invoice.subscription) {
-    // Marcar suscripción como past_due
+  const subscriptionId = (invoice as any).subscription;
+  
+  if (subscriptionId) {
+    console.log('❌ Procesando fallo de pago para suscripción:', subscriptionId);
+    
+    // Marcar suscripción como past_due en profiles
     const { error } = await supabase
-      .from('subscriptions')
+      .from('profiles')
       .update({
-        status: 'past_due',
+        subscription_status: 'past_due',
         updated_at: new Date().toISOString(),
       })
-      .eq('stripe_subscription_id', invoice.subscription);
+      .eq('stripe_subscription_id', subscriptionId);
 
     if (error) {
-      console.error('Error updating subscription after failed payment:', error);
+      console.error('❌ Error actualizando perfil después del fallo de pago:', error);
     } else {
-      console.log(`Payment failed for subscription ${invoice.subscription}`);
+      console.log('⚠️ Perfil marcado como atrasado después del fallo de pago:', subscriptionId);
     }
   }
 }

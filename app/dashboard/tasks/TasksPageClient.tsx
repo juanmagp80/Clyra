@@ -440,7 +440,7 @@ export default function TasksPageClient({ userEmail }: TasksPageClientProps) {
                 <div className="flex-1 ml-56 p-8">
                     {/* Trial Banner */}
                     <div className="mb-8">
-                        <TrialBanner />
+                        <TrialBanner userEmail={userEmail} />
                     </div>
 
                     {/* Header */}
@@ -454,19 +454,31 @@ export default function TasksPageClient({ userEmail }: TasksPageClientProps) {
                             </div>
                             <Button 
                                 onClick={handleNewTaskClick}
-                                disabled={!canUseFeatures}
+                                disabled={trialLoading || !canUseFeatures}
                                 className={`bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 text-white shadow-lg hover:shadow-xl transition-all duration-300 ${
-                                    !canUseFeatures 
+                                    trialLoading
+                                        ? 'opacity-75 cursor-wait'
+                                        : !canUseFeatures 
                                         ? 'opacity-50 cursor-not-allowed !bg-gray-400 hover:!bg-gray-400' 
                                         : ''
                                 }`}
                             >
-                                {!canUseFeatures ? (
-                                    <AlertTriangle className="mr-2 h-4 w-4" />
+                                {trialLoading ? (
+                                    <>
+                                        <div className="mr-2 h-4 w-4 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
+                                        Cargando...
+                                    </>
+                                ) : !canUseFeatures ? (
+                                    <>
+                                        <AlertTriangle className="mr-2 h-4 w-4" />
+                                        Trial Expirado
+                                    </>
                                 ) : (
-                                    <Plus className="mr-2 h-4 w-4" />
+                                    <>
+                                        <Plus className="mr-2 h-4 w-4" />
+                                        Nueva Tarea
+                                    </>
                                 )}
-                                {!canUseFeatures ? 'Trial Expirado' : 'Nueva Tarea'}
                             </Button>
                         </div>
 
@@ -590,19 +602,31 @@ export default function TasksPageClient({ userEmail }: TasksPageClientProps) {
                                 {tasks.length === 0 && (
                                     <Button 
                                         onClick={handleNewTaskClick}
-                                        disabled={!canUseFeatures}
+                                        disabled={trialLoading || !canUseFeatures}
                                         className={`bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 text-white ${
-                                            !canUseFeatures 
+                                            trialLoading
+                                                ? 'opacity-75 cursor-wait'
+                                                : !canUseFeatures 
                                                 ? 'opacity-50 cursor-not-allowed !bg-gray-400 hover:!bg-gray-400' 
                                                 : ''
                                         }`}
                                     >
-                                        {!canUseFeatures ? (
-                                            <AlertTriangle className="mr-2 h-4 w-4" />
+                                        {trialLoading ? (
+                                            <>
+                                                <div className="mr-2 h-4 w-4 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
+                                                Cargando...
+                                            </>
+                                        ) : !canUseFeatures ? (
+                                            <>
+                                                <AlertTriangle className="mr-2 h-4 w-4" />
+                                                Trial Expirado
+                                            </>
                                         ) : (
-                                            <Plus className="mr-2 h-4 w-4" />
+                                            <>
+                                                <Plus className="mr-2 h-4 w-4" />
+                                                Crear primera tarea
+                                            </>
                                         )}
-                                        {!canUseFeatures ? 'Trial Expirado' : 'Crear primera tarea'}
                                     </Button>
                                 )}
                             </div>

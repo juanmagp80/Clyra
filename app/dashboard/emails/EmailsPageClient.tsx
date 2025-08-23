@@ -346,7 +346,7 @@ export default function EmailsPageClient({ userEmail }: EmailsPageClientProps) {
                         <div className="container mx-auto px-6 py-8">
                             {/* Trial Banner */}
                             <div className="mb-8">
-                                <TrialBanner />
+                                <TrialBanner userEmail={userEmail} />
                             </div>
 
                             {/* Header Premium */}

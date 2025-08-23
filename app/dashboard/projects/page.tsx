@@ -1,6 +1,6 @@
 import { createServerSupabaseClient } from '@/src/lib/supabase-server';
 import { redirect } from 'next/navigation';
-import ProjectsPageClient from './ProjectsPageClient';
+import ProjectsPageBonsai from './ProjectsPageBonsai';
 
 export default async function ProjectsPage() {
     const supabase = await createServerSupabaseClient();
@@ -13,5 +13,5 @@ export default async function ProjectsPage() {
         redirect('/login');
     }
 
-    return <ProjectsPageClient userEmail={session.user.email} />;
+    return <ProjectsPageBonsai userEmail={session.user.email} />;
 }

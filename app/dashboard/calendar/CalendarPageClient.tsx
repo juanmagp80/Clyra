@@ -1169,7 +1169,7 @@ export default function CalendarPageClient({ userEmail }: CalendarPageClientProp
                     <div className="p-4">
                         {/* Trial Banner */}
                         <div className="mb-4">
-                            <TrialBanner />
+                            <TrialBanner userEmail={userEmail} />
                         </div>
 
                         {/* Header del Calendario */}
@@ -1224,19 +1224,31 @@ export default function CalendarPageClient({ userEmail }: CalendarPageClientProp
                                     
                                     <Button
                                         onClick={handleNewEventClick}
-                                        disabled={!canUseFeatures}
+                                        disabled={trialLoading || !canUseFeatures}
                                         className={`bg-gradient-to-r from-indigo-600 to-violet-600 hover:from-indigo-700 hover:to-violet-700 text-white border-0 h-9 px-4 text-sm font-semibold rounded-lg shadow-lg shadow-indigo-500/25 ${
-                                            !canUseFeatures 
+                                            trialLoading
+                                                ? 'opacity-75 cursor-wait'
+                                                : !canUseFeatures 
                                                 ? 'opacity-50 cursor-not-allowed !bg-gray-400 hover:!bg-gray-400 !shadow-gray-400/25' 
                                                 : ''
                                         }`}
                                     >
-                                        {!canUseFeatures ? (
-                                            <AlertTriangle className="w-4 h-4 mr-2" />
+                                        {trialLoading ? (
+                                            <>
+                                                <div className="w-4 h-4 mr-2 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
+                                                Cargando...
+                                            </>
+                                        ) : !canUseFeatures ? (
+                                            <>
+                                                <AlertTriangle className="w-4 h-4 mr-2" />
+                                                Trial Expirado
+                                            </>
                                         ) : (
-                                            <Plus className="w-4 h-4 mr-2" />
+                                            <>
+                                                <Plus className="w-4 h-4 mr-2" />
+                                                Nuevo Evento
+                                            </>
                                         )}
-                                        {!canUseFeatures ? 'Trial Expirado' : 'Nuevo Evento'}
                                     </Button>
                                 </div>
                             </div>

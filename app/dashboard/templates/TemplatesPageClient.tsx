@@ -442,7 +442,7 @@ export default function TemplatesPageClient({ userEmail }: TemplatesPageClientPr
             <main className="flex-1 ml-64 overflow-auto relative z-10">
                 {/* Trial Banner */}
                 <div className="p-8 pb-0">
-                    <TrialBanner />
+                    <TrialBanner userEmail={userEmail} />
                 </div>
 
                 {/* Header Ultra Premium Mejorado */}

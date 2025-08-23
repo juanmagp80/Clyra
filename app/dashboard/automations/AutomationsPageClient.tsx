@@ -4,6 +4,7 @@ import Sidebar from '@/components/Sidebar';
 import { Button } from '@/components/ui/Button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/Card';
 import { Input } from '@/components/ui/Input';
+import { ProtectedButton } from '@/components/ProtectedComponents';
 import { executeAutomationAction, type ActionPayload } from '@/src/lib/automation-actions';
 import { createSupabaseClient } from '@/src/lib/supabase-client';
 import {
@@ -28,6 +29,7 @@ import { useRouter } from 'next/navigation';
 import { useEffect, useState } from 'react';
 import TrialBanner from '../../../components/TrialBanner';
 import { useTrialStatus } from '../../../src/lib/useTrialStatus';
+import { useAccessControl } from '../../../src/lib/useAccessControl';
 
 interface Automation {
     id: string;
@@ -67,6 +69,9 @@ const Modal: React.FC<ModalProps> = ({ isOpen, onClose, children }) => {
 export default function AutomationsPageClient({ userEmail }: AutomationsPageClientProps) {
     // Hook de trial status
     const { trialInfo, loading: trialLoading, hasReachedLimit, canUseFeatures } = useTrialStatus(userEmail);
+    
+    // Hook de control de acceso
+    const { checkAccess } = useAccessControl();
     
     const [modalOpen, setModalOpen] = useState(false);
     const [modalAutomation, setModalAutomation] = useState<Automation | null>(null);
@@ -536,46 +541,71 @@ export default function AutomationsPageClient({ userEmail }: AutomationsPageClie
     }
 
     return (
-        <div className="flex h-screen overflow-hidden bg-gradient-to-br from-slate-50 via-blue-50 to-indigo-100">
+        <div className={"min-h-screen bg-gradient-to-br from-slate-50/80 via-blue-50/40 to-indigo-50/60 dark:from-slate-900 dark:to-slate-800"}>
+            {/* Trial Banner */}
+            <TrialBanner userEmail={userEmail} />
+            
+            {/* Elementos decorativos de fondo mejorados */}
+            <div className="absolute inset-0 overflow-hidden pointer-events-none">
+                <div className="absolute top-0 left-0 w-96 h-96 bg-gradient-to-br from-blue-500/4 via-purple-500/4 to-indigo-500/4 dark:from-blue-400/3 dark:via-purple-400/3 dark:to-indigo-400/3 rounded-full blur-3xl animate-pulse"></div>
+                <div className="absolute top-20 right-20 w-64 h-64 bg-gradient-to-br from-purple-500/4 via-pink-500/4 to-indigo-500/4 dark:from-purple-400/3 dark:via-pink-400/3 dark:to-indigo-400/3 rounded-full blur-3xl animate-pulse" style={{ animationDelay: '2s' }}></div>
+                <div className="absolute bottom-20 left-20 w-80 h-80 bg-gradient-to-br from-indigo-500/4 via-blue-500/4 to-purple-500/4 dark:from-indigo-400/3 dark:via-blue-400/3 dark:to-purple-400/3 rounded-full blur-3xl animate-pulse" style={{ animationDelay: '4s' }}></div>
+            </div>
+
+            {/* Sidebar */}
             <Sidebar userEmail={userEmail} onLogout={handleLogout} />
 
-            <div className="flex-1 ml-56 overflow-hidden">
+            {/* Main Content */}
+            <div className="flex-1 ml-56 overflow-hidden relative">
                 <div className="h-full overflow-y-auto">
-                    <div className="min-h-screen bg-gradient-to-br from-slate-50/80 via-blue-50/90 to-indigo-100/80 backdrop-blur-3xl">
+                    <div className={"min-h-screen bg-gradient-to-br from-slate-50 to-blue-50 dark:from-slate-900 dark:to-slate-800"}>
                         <div className="container mx-auto px-6 py-8">
-                            {/* Trial Banner */}
-                            <div className="mb-8">
-                                <TrialBanner />
-                            </div>
-
-                            {/* Header */}
-                            <div className="mb-8">
-                                <div className="bg-white/40 backdrop-blur-2xl rounded-3xl border border-white/60 shadow-2xl shadow-indigo-500/10 p-8">
-                                    <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-6">
-                                        <div>
-                                            <div className="flex items-center gap-3 mb-4">
-                                                <div className="w-12 h-12 bg-gradient-to-br from-blue-600 to-indigo-600 rounded-2xl flex items-center justify-center shadow-lg shadow-blue-500/25">
-                                                    <Zap className="w-6 h-6 text-white" />
+                            {/* Header Premium con Animaciones */}
+                            <div className="mb-8 animate-slideInDown">
+                                <div className={"group p-8 hover:scale-[1.01] transition-all duration-500 relative overflow-hidden bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl shadow-sm"}>
+                                    <div className="absolute inset-0 bg-gradient-to-r from-blue-500/5 via-indigo-500/5 to-purple-500/5 dark:from-blue-400/5 dark:via-indigo-400/5 dark:to-purple-400/5 opacity-0 group-hover:opacity-100 transition-opacity duration-500"></div>
+                                    <div className="relative z-10">
+                                        <div className="flex items-center justify-between">
+                                            <div className="flex items-center gap-4">
+                                                <div className="w-16 h-16 bg-gradient-to-br from-blue-500 to-indigo-600 dark:from-blue-400 dark:to-indigo-500 rounded-2xl flex items-center justify-center shadow-xl shadow-blue-500/20 dark:shadow-blue-400/20 transform group-hover:rotate-6 transition-transform duration-500">
+                                                    <Zap className="w-8 h-8 text-white" />
                                                 </div>
                                                 <div>
-                                                    <h1 className="text-3xl font-bold bg-gradient-to-r from-slate-900 via-blue-900 to-indigo-900 bg-clip-text text-transparent">
+                                                    <h1 className="text-3xl font-black text-slate-800 dark:text-slate-100 group-hover:text-blue-600 dark:group-hover:text-blue-400 transition-colors duration-300">
                                                         Automatizaciones
                                                     </h1>
-                                                    <p className="text-slate-600 font-medium">
-                                                        Automatiza tareas repetitivas y optimiza tu flujo de trabajo
+                                                    <p className="text-slate-600 dark:text-slate-400 text-lg font-medium">
+                                                        Automatiza tareas y flujos de trabajo
                                                     </p>
                                                 </div>
                                             </div>
-                                        </div>
-
-                                        <div className="flex items-center gap-3">
-                                            <Button
-                                                onClick={() => router.push('/dashboard/automations/create')}
-                                                className="bg-gradient-to-r from-blue-600 to-indigo-600 text-white shadow-2xl shadow-blue-500/25 hover:shadow-blue-500/40 hover:scale-105 transform transition-all duration-200"
-                                            >
-                                                <Plus className="w-5 h-5 mr-2" />
-                                                Crear Automatización
-                                            </Button>
+                                            
+                                            <div className="flex items-center gap-3">
+                                                <button
+                                                    onClick={() => router.push('/dashboard/automations/create')}
+                                                    disabled={!canUseFeatures}
+                                                    className={`group/btn relative px-8 py-4 rounded-2xl font-bold shadow-2xl transform transition-all duration-300 flex items-center gap-3 overflow-hidden ${
+                                                        !canUseFeatures
+                                                            ? 'bg-gray-400 cursor-not-allowed opacity-50'
+                                                            : 'bg-gradient-to-r from-blue-600 via-indigo-600 to-purple-600 text-white shadow-blue-500/25 hover:shadow-blue-500/40 hover:scale-110 hover:rotate-1'
+                                                    }`}
+                                                >
+                                                    {!canUseFeatures ? (
+                                                        <>
+                                                            <div className="absolute inset-0 bg-gray-400"></div>
+                                                            <X className="w-5 h-5 relative z-10 text-white" />
+                                                            <span className="relative z-10 text-white">Trial Expirado</span>
+                                                        </>
+                                                    ) : (
+                                                        <>
+                                                            <div className="absolute inset-0 bg-gradient-to-r from-purple-600 via-blue-600 to-indigo-600 opacity-0 group-hover/btn:opacity-100 transition-opacity duration-300"></div>
+                                                            <Plus className="w-5 h-5 group-hover/btn:rotate-180 transition-transform duration-300 relative z-10" />
+                                                            <span className="relative z-10">Crear Automatización</span>
+                                                            <div className="absolute -top-2 -right-2 w-4 h-4 bg-yellow-400 rounded-full animate-ping"></div>
+                                                        </>
+                                                    )}
+                                                </button>
+                                            </div>
                                         </div>
                                     </div>
                                 </div>

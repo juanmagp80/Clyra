@@ -182,7 +182,7 @@ export default function ReportsPageClient({ userEmail }: ReportsPageClientProps)
                     <div className="p-6" ref={reportRef}>
                         {/* Trial Banner */}
                         <div className="mb-8">
-                            <TrialBanner />
+                            <TrialBanner userEmail={userEmail} />
                         </div>
 
                         {/* Header */}

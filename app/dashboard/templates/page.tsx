@@ -1,7 +1,7 @@
 import { cookies } from 'next/headers';
 import { createServerSupabaseClient } from '@/src/lib/supabase-server';
 import { redirect } from 'next/navigation';
-import TemplatesPageClient from './TemplatesPageClient';
+import TemplatesPageBonsai from './TemplatesPageBonsai';
 
 export default async function TemplatesPage() {
     const supabase = await createServerSupabaseClient();
@@ -12,5 +12,5 @@ export default async function TemplatesPage() {
         redirect('/login');
     }
 
-    return <TemplatesPageClient userEmail={user.email || ''} />;
+    return <TemplatesPageBonsai userEmail={user.email || ''} />;
 }

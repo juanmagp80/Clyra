@@ -1,6 +1,6 @@
 import { createServerSupabaseClient } from '@/src/lib/supabase-server';
 import { redirect } from 'next/navigation';
-import ClientDetails from './ClientDetails';
+import ClientDetailsBonsai from './ClientDetailsBonsai';
 
 interface PageProps {
     params: Promise<{
@@ -35,7 +35,7 @@ export default async function ClientDetailPage({ params }: PageProps) {
     }
 
     return (
-        <ClientDetails
+        <ClientDetailsBonsai
             client={client}
             userEmail={session.user.email || ''}
         />
