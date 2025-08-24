@@ -442,12 +442,11 @@ export default function ClientsPageClient({ userEmail }: ClientsPageClientProps)
                             <button
                                 onClick={handleNewClientClick}
                                 disabled={trialLoading || (!canUseFeatures || hasReachedLimit('clients'))}
-                                className={`inline-flex items-center px-4 py-2 text-sm font-medium rounded-lg border transition-colors ${
-                                    trialLoading 
+                                className={`inline-flex items-center px-4 py-2 text-sm font-medium rounded-lg border transition-colors ${trialLoading
                                         ? 'bg-gray-100 border-gray-300 text-gray-500 cursor-wait'
                                         : (!canUseFeatures || hasReachedLimit('clients'))
-                                        ? 'bg-gray-100 border-gray-300 text-gray-400 cursor-not-allowed'
-                                        : 'bg-blue-600 border-blue-600 text-white hover:bg-blue-700 hover:border-blue-700'
+                                            ? 'bg-gray-100 border-gray-300 text-gray-400 cursor-not-allowed'
+                                            : 'bg-blue-600 border-blue-600 text-white hover:bg-blue-700 hover:border-blue-700'
                                     }`}
                             >
                                 {trialLoading ? (
@@ -556,8 +555,8 @@ export default function ClientsPageClient({ userEmail }: ClientsPageClientProps)
                                 <button
                                     onClick={() => setViewMode('list')}
                                     className={`p-2 rounded-lg ${viewMode === 'list'
-                                            ? 'bg-blue-100 text-blue-600'
-                                            : 'text-gray-400 hover:text-gray-600'
+                                        ? 'bg-blue-100 text-blue-600'
+                                        : 'text-gray-400 hover:text-gray-600'
                                         }`}
                                 >
                                     <List className="w-5 h-5" />
@@ -565,8 +564,8 @@ export default function ClientsPageClient({ userEmail }: ClientsPageClientProps)
                                 <button
                                     onClick={() => setViewMode('cards')}
                                     className={`p-2 rounded-lg ${viewMode === 'cards'
-                                            ? 'bg-blue-100 text-blue-600'
-                                            : 'text-gray-400 hover:text-gray-600'
+                                        ? 'bg-blue-100 text-blue-600'
+                                        : 'text-gray-400 hover:text-gray-600'
                                         }`}
                                 >
                                     <Grid3X3 className="w-5 h-5" />
@@ -602,12 +601,11 @@ export default function ClientsPageClient({ userEmail }: ClientsPageClientProps)
                                         <button
                                             onClick={handleNewClientClick}
                                             disabled={trialLoading || (!canUseFeatures || hasReachedLimit('clients'))}
-                                            className={`inline-flex items-center px-4 py-2 border border-transparent shadow-sm text-sm font-medium rounded-md text-white ${
-                                                trialLoading
+                                            className={`inline-flex items-center px-4 py-2 border border-transparent shadow-sm text-sm font-medium rounded-md text-white ${trialLoading
                                                     ? 'bg-gray-400 cursor-wait'
                                                     : (!canUseFeatures || hasReachedLimit('clients'))
-                                                    ? 'bg-gray-400 cursor-not-allowed'
-                                                    : 'bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500'
+                                                        ? 'bg-gray-400 cursor-not-allowed'
+                                                        : 'bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500'
                                                 }`}
                                         >
                                             {trialLoading ? (

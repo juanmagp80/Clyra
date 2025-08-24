@@ -1,36 +1,46 @@
+"use client";
+
 import { createSupabaseClient } from '@/src/lib/supabase-client';
 import { redirect } from 'next/navigation';
+import { useEffect, useState } from 'react';
 
-export default async function TiempoPage() {
-    const supabase = createSupabaseClient();
-    
-    if (!supabase) {
-        redirect('/login');
-    }
+export default function TiempoPage() {
+    const [loading, setLoading] = useState(true);
+    const [user, setUser] = useState<any>(null);
 
-    const { data: { user }, error } = await supabase.auth.getUser();
+    useEffect(() => {
+        const checkAuth = async () => {
+            const supabase = createSupabaseClient();
+            if (!supabase) {
+                redirect('/login');
+                return;
+            }
+            const { data, error } = await supabase.auth.getUser();
+            if (error || !data?.user) {
+                redirect('/login');
+                return;
+            }
+            setUser(data.user);
+            setLoading(false);
+        };
+        checkAuth();
+    }, []);
 
-    if (error || !user) {
-        redirect('/login');
-    }
-
-    return (
-        <div className="min-h-screen bg-gray-50">
-            <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-                <div className="bg-white rounded-lg shadow p-6">
-                    <h1 className="text-2xl font-bold text-gray-900 mb-4">
-                        Página de Tiempo - {user.email}
-                    </h1>
-                    <p className="text-gray-600">
-                        Esta es la página de tiempo tracking. Si ves esto, la ruta funciona correctamente.
-                    </p>
-                    <div className="mt-4 p-4 bg-green-50 border border-green-200 rounded-md">
-                        <p className="text-green-700">
-                            ✅ La ruta /dashboard/tiempo está funcionando correctamente
-                        </p>
-                    </div>
+    if (loading) {
+        return (
+            <div className="min-h-screen flex items-center justify-center bg-gray-50">
+                <div className="text-center">
+                    <div className="w-8 h-8 border-4 border-gray-300 border-t-blue-600 rounded-full animate-spin mx-auto mb-4"></div>
+                    <p className="text-gray-600">Verificando usuario...</p>
                 </div>
             </div>
-        </div>
-    );
+        );
+    }
+
+    // Importar el componente real de cronómetros
+    // ...existing code...
+    // Import dinámico para evitar problemas de SSR
+    const TimeTrackingPageBonsai = require('./TimeTrackingPageBonsai').default;
+
+    return <TimeTrackingPageBonsai userEmail={user.email} />;
 }

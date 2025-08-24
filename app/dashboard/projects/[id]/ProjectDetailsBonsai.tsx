@@ -352,23 +352,64 @@ export default function ProjectDetailsBonsai({ projectId, userEmail }: ProjectDe
             console.log(`   - Task actual:`, currentTask);
             
             if (isCurrentlyRunning) {
-                // PARAR: Solo cambiar el estado, NO tocar total_time_seconds aún
+                // PARAR: Calcular tiempo transcurrido y sumarlo al total
                 console.log(`⏹️ PARANDO cronómetro para tarea: ${taskId}`);
                 
-                const { error } = await supabase
-                    .from('tasks')
-                    .update({
-                        is_running: false,
-                        last_stop: now
-                    })
-                    .eq('id', taskId);
+                if (currentTask?.last_start) {
+                    // Calcular tiempo transcurrido en esta sesión
+                    let startTime;
+                    if (currentTask.last_start.endsWith('Z')) {
+                        startTime = new Date(currentTask.last_start).getTime();
+                    } else {
+                        startTime = new Date(currentTask.last_start + 'Z').getTime();
+                    }
+                    
+                    const nowMs = Date.now();
+                    const sessionMs = nowMs - startTime;
+                    const sessionSeconds = Math.floor(sessionMs / 1000);
+                    const newTotalSeconds = (currentTask.total_time_seconds || 0) + sessionSeconds;
+                    
+                    console.log(`⏱️ Calculando tiempo de sesión:`);
+                    console.log(`   - Inicio: ${new Date(startTime).toISOString()}`);
+                    console.log(`   - Fin: ${new Date(nowMs).toISOString()}`);
+                    console.log(`   - Sesión: ${sessionSeconds} segundos`);
+                    console.log(`   - Total anterior: ${currentTask.total_time_seconds || 0} segundos`);
+                    console.log(`   - Nuevo total: ${newTotalSeconds} segundos`);
+                    
+                    // Actualizar en base de datos
+                    const { error } = await supabase
+                        .from('tasks')
+                        .update({
+                            is_running: false,
+                            last_stop: now,
+                            total_time_seconds: newTotalSeconds
+                        })
+                        .eq('id', taskId);
 
-                if (error) {
-                    console.error('❌ Error parando:', error);
-                    return;
+                    if (error) {
+                        console.error('❌ Error parando:', error);
+                        return;
+                    }
+
+                    console.log(`✅ Cronómetro PARADO - Total guardado: ${newTotalSeconds}s`);
+                } else {
+                    console.log(`⚠️ No hay last_start, solo parando sin calcular tiempo`);
+                    
+                    const { error } = await supabase
+                        .from('tasks')
+                        .update({
+                            is_running: false,
+                            last_stop: now
+                        })
+                        .eq('id', taskId);
+
+                    if (error) {
+                        console.error('❌ Error parando:', error);
+                        return;
+                    }
+
+                    console.log(`✅ Cronómetro PARADO exitosamente`);
                 }
-
-                console.log(`✅ Cronómetro PARADO exitosamente`);
 
             } else {
                 // INICIAR: Solo cambiar el estado a running
@@ -462,7 +503,7 @@ export default function ProjectDetailsBonsai({ projectId, userEmail }: ProjectDe
                 console.log(`   - last_start: ${task.last_start}`);
                 
                 if (task.is_running && task.last_start) {
-                    // ARREGLO: Parsing correcto del timestamp UTC
+                    // TAREA CORRIENDO: mostrar tiempo acumulado + tiempo de sesión actual
                     let startTime;
                     if (task.last_start.endsWith('Z')) {
                         startTime = new Date(task.last_start).getTime();
@@ -478,12 +519,14 @@ export default function ProjectDetailsBonsai({ projectId, userEmail }: ProjectDe
                     console.log(`   - elapsedSeconds: ${elapsedSeconds}`);
                     
                     displayTime = (task.total_time_seconds || 0) + elapsedSeconds;
-                    console.log(`   - displayTime: ${displayTime}`);
+                    console.log(`   - displayTime: ${displayTime} (acumulado + sesión actual)`);
                     
                     // Log solo las tareas que están corriendo
                     console.log(`⏱️ Task ${task.title}: ${elapsedSeconds}s elapsed, total: ${displayTime}s`);
                 } else {
-                    console.log(`   - Not running or no last_start, displayTime: ${displayTime}`);
+                    // TAREA PARADA: mostrar solo el tiempo acumulado
+                    displayTime = task.total_time_seconds || 0;
+                    console.log(`   - displayTime: ${displayTime} (solo tiempo acumulado)`);
                 }
                 
                 newLiveTimers[task.id] = displayTime;
