@@ -18,6 +18,7 @@ import {
 } from 'lucide-react';
 import { useRouter } from 'next/navigation';
 import { useEffect, useState } from 'react';
+import TasksTimeBreakdown from './DashBoardClient.tasksTime';
 
 export default function DashboardBonsai({
     userEmail,
@@ -44,6 +45,15 @@ export default function DashboardBonsai({
         hoursThisMonth: 0,
         billableHoursThisWeek: 0
     });
+
+    // Estado para las categorías reales
+    const [categoryData, setCategoryData] = useState<Array<{
+        category: string;
+        hours: number;
+        percentage: number;
+        color: string;
+        displayName: string;
+    }>>([]);
 
     // Estados para datos dinámicos
     const [realProjects, setRealProjects] = useState<any[]>([]);
@@ -223,6 +233,87 @@ export default function DashboardBonsai({
         }
     };
 
+    // Función para cargar datos de categorías reales
+    const loadCategoryData = async () => {
+        if (isDemo) return;
+
+        try {
+            if (!supabase) return;
+
+            const { data: { user } } = await supabase.auth.getUser();
+            if (!user) return;
+
+            // Consultar tareas con tiempo registrado agrupadas por categoría
+            const { data: tasks } = await supabase
+                .from('tasks')
+                .select('category, total_time_seconds')
+                .eq('user_id', user.id)
+                .not('total_time_seconds', 'is', null)
+                .gt('total_time_seconds', 0);
+
+            if (!tasks || tasks.length === 0) {
+                setCategoryData([]);
+                return;
+            }
+
+            // Agrupar por categoría y sumar tiempos
+            const categoryTotals: { [key: string]: number } = {};
+            tasks.forEach(task => {
+                const category = task.category || 'general';
+                categoryTotals[category] = (categoryTotals[category] || 0) + (task.total_time_seconds || 0);
+            });
+
+            // Calcular total de horas para porcentajes
+            const totalSeconds = Object.values(categoryTotals).reduce((sum, seconds) => sum + seconds, 0);
+            
+            // Mapear categorías con nombres y colores
+            const categoryMapping: { [key: string]: { name: string; color: string } } = {
+                'web_development': { name: 'Desarrollo Web', color: 'bg-blue-600' },
+                'frontend_development': { name: 'Frontend', color: 'bg-cyan-600' },
+                'backend_development': { name: 'Backend', color: 'bg-blue-800' },
+                'mobile_development': { name: 'Desarrollo Móvil', color: 'bg-purple-600' },
+                'ui_ux_design': { name: 'Diseño UI/UX', color: 'bg-pink-600' },
+                'graphic_design': { name: 'Diseño Gráfico', color: 'bg-purple-500' },
+                'design': { name: 'Diseño', color: 'bg-purple-600' },
+                'seo_sem': { name: 'SEO/SEM', color: 'bg-green-600' },
+                'social_media': { name: 'Redes Sociales', color: 'bg-blue-500' },
+                'content_creation': { name: 'Contenido', color: 'bg-yellow-600' },
+                'marketing': { name: 'Marketing', color: 'bg-green-600' },
+                'consulting': { name: 'Consultoría', color: 'bg-indigo-600' },
+                'research_analysis': { name: 'Investigación', color: 'bg-teal-600' },
+                'client_meetings': { name: 'Reuniones', color: 'bg-orange-600' },
+                'proposals_presentations': { name: 'Propuestas', color: 'bg-amber-600' },
+                'client_communication': { name: 'Comunicación', color: 'bg-orange-500' },
+                'invoicing_payments': { name: 'Facturación', color: 'bg-emerald-600' },
+                'business_admin': { name: 'Administración', color: 'bg-gray-600' },
+                'email_management': { name: 'Emails', color: 'bg-slate-600' },
+                'testing_qa': { name: 'Testing', color: 'bg-red-600' },
+                'learning_training': { name: 'Formación', color: 'bg-violet-600' },
+                'general': { name: 'General', color: 'bg-gray-500' },
+                // Backward compatibility
+                'development': { name: 'Desarrollo', color: 'bg-blue-600' },
+                'meetings': { name: 'Reuniones', color: 'bg-orange-600' },
+                'administration': { name: 'Administración', color: 'bg-gray-600' }
+            };
+
+            // Convertir a formato del componente
+            const categoryArray = Object.entries(categoryTotals)
+                .map(([category, seconds]) => ({
+                    category,
+                    hours: Math.round((seconds / 3600) * 10) / 10,
+                    percentage: Math.round((seconds / totalSeconds) * 100),
+                    color: categoryMapping[category]?.color || 'bg-gray-500',
+                    displayName: categoryMapping[category]?.name || category
+                }))
+                .sort((a, b) => b.hours - a.hours); // Ordenar por horas descendente
+
+            setCategoryData(categoryArray);
+
+        } catch (error) {
+            console.error('Error loading category data:', error);
+        }
+    };
+
     const loadRecentActivity = async () => {
         // En modo demo ya está cargado
         if (isDemo) return;
@@ -294,6 +385,7 @@ export default function DashboardBonsai({
     useEffect(() => {
         loadDashboardData();
         loadRecentActivity();
+        loadCategoryData();
     }, []);
 
     return (
@@ -426,6 +518,9 @@ export default function DashboardBonsai({
                                 </div>
                             </div>
 
+                            {/* Componente de desglose de tiempo por proyectos y tareas */}
+                            <TasksTimeBreakdown />
+
                             {/* Gráficos y Estadísticas Adicionales - Estilo Bonsai */}
                             <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-8">
                                 {/* Gráfico de Ingresos por Mes - Estilo Bonsai */}
@@ -486,35 +581,68 @@ export default function DashboardBonsai({
                                         </div>
                                         <div>
                                             <h3 className="text-lg font-semibold text-gray-900">Tiempo por Categoría</h3>
-                                            <p className="text-sm text-gray-600">Esta semana</p>
+                                            <p className="text-sm text-gray-600">
+                                                {isDemo ? 'Distribución estimada esta semana' : 
+                                                 categoryData.length > 0 ? 'Distribución real basada en tareas' : 'No hay datos registrados'}
+                                            </p>
                                         </div>
                                     </div>
 
                                     {/* Distribución de tiempo */}
-                                    <div className="space-y-4">
-                                        {[
-                                            { category: 'Desarrollo', hours: Math.round(metrics.hoursThisWeek * 0.4), color: 'bg-blue-600', percentage: 40 },
-                                            { category: 'Diseño', hours: Math.round(metrics.hoursThisWeek * 0.25), color: 'bg-purple-600', percentage: 25 },
-                                            { category: 'Reuniones', hours: Math.round(metrics.hoursThisWeek * 0.2), color: 'bg-orange-600', percentage: 20 },
-                                            { category: 'Administración', hours: Math.round(metrics.hoursThisWeek * 0.15), color: 'bg-gray-600', percentage: 15 }
-                                        ].map((item, index) => (
-                                            <div key={item.category} className="space-y-2">
-                                                <div className="flex justify-between items-center">
-                                                    <span className="text-sm font-medium text-gray-700">{item.category}</span>
-                                                    <span className="text-sm text-gray-600">{item.hours}h ({item.percentage}%)</span>
+                                    {isDemo ? (
+                                        <div className="space-y-4">
+                                            {[
+                                                { category: 'Desarrollo', hours: Math.round(metrics.hoursThisWeek * 0.4 * 10) / 10, color: 'bg-blue-600', percentage: 40 },
+                                                { category: 'Diseño', hours: Math.round(metrics.hoursThisWeek * 0.25 * 10) / 10, color: 'bg-purple-600', percentage: 25 },
+                                                { category: 'Reuniones', hours: Math.round(metrics.hoursThisWeek * 0.2 * 10) / 10, color: 'bg-orange-600', percentage: 20 },
+                                                { category: 'Administración', hours: Math.round(metrics.hoursThisWeek * 0.15 * 10) / 10, color: 'bg-gray-600', percentage: 15 }
+                                            ].map((item, index) => (
+                                                <div key={item.category} className="space-y-2">
+                                                    <div className="flex justify-between items-center">
+                                                        <span className="text-sm font-medium text-gray-700">{item.category}</span>
+                                                        <span className="text-sm text-gray-600">{item.hours}h ({item.percentage}%)</span>
+                                                    </div>
+                                                    <div className="w-full bg-gray-100 rounded-full h-3 overflow-hidden">
+                                                        <div
+                                                            className={`h-full ${item.color} transition-all duration-500 rounded-full`}
+                                                            style={{
+                                                                width: `${item.percentage}%`,
+                                                                animationDelay: `${index * 200}ms`
+                                                            }}
+                                                        ></div>
+                                                    </div>
                                                 </div>
-                                                <div className="w-full bg-gray-100 rounded-full h-3 overflow-hidden">
-                                                    <div
-                                                        className={`h-full ${item.color} transition-all duration-500 rounded-full`}
-                                                        style={{
-                                                            width: `${item.percentage}%`,
-                                                            animationDelay: `${index * 200}ms`
-                                                        }}
-                                                    ></div>
+                                            ))}
+                                        </div>
+                                    ) : categoryData.length > 0 ? (
+                                        <div className="space-y-4">
+                                            {categoryData.map((item, index) => (
+                                                <div key={item.category} className="space-y-2">
+                                                    <div className="flex justify-between items-center">
+                                                        <span className="text-sm font-medium text-gray-700">{item.displayName}</span>
+                                                        <span className="text-sm text-gray-600">{item.hours}h ({item.percentage}%)</span>
+                                                    </div>
+                                                    <div className="w-full bg-gray-100 rounded-full h-3 overflow-hidden">
+                                                        <div
+                                                            className={`h-full ${item.color} transition-all duration-500 rounded-full`}
+                                                            style={{
+                                                                width: `${item.percentage}%`,
+                                                                animationDelay: `${index * 200}ms`
+                                                            }}
+                                                        ></div>
+                                                    </div>
                                                 </div>
-                                            </div>
-                                        ))}
-                                    </div>
+                                            ))}
+                                        </div>
+                                    ) : (
+                                        <div className="text-center py-6 bg-gray-50 rounded-lg">
+                                            <Clock className="w-8 h-8 text-gray-400 mx-auto mb-2" />
+                                            <p className="text-sm text-gray-500 mb-1">No hay tiempo registrado por categorías</p>
+                                            <p className="text-xs text-gray-400">
+                                                Crea tareas con categorías y registra tiempo para ver la distribución
+                                            </p>
+                                        </div>
+                                    )}
                                 </div>
                             </div>
 
@@ -654,9 +782,9 @@ export default function DashboardBonsai({
                                                         </div>
                                                         <div className="text-right">
                                                             <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${project.status === 'active' ? 'bg-green-100 text-green-800' :
-                                                                    project.status === 'completed' ? 'bg-blue-100 text-blue-800' :
-                                                                        project.status === 'paused' ? 'bg-yellow-100 text-yellow-800' :
-                                                                            'bg-gray-100 text-gray-800'
+                                                                project.status === 'completed' ? 'bg-blue-100 text-blue-800' :
+                                                                    project.status === 'paused' ? 'bg-yellow-100 text-yellow-800' :
+                                                                        'bg-gray-100 text-gray-800'
                                                                 }`}>
                                                                 {project.status === 'active' ? 'Activo' :
                                                                     project.status === 'completed' ? 'Completado' :
@@ -699,8 +827,8 @@ export default function DashboardBonsai({
                                                     return (
                                                         <div key={`${activity.type}-${activity.id}`} className="flex items-start gap-3">
                                                             <div className={`w-8 h-8 rounded-lg flex items-center justify-center ${activity.icon === 'briefcase' ? 'bg-blue-100 text-blue-600' :
-                                                                    activity.icon === 'clock' ? 'bg-green-100 text-green-600' :
-                                                                        'bg-purple-100 text-purple-600'
+                                                                activity.icon === 'clock' ? 'bg-green-100 text-green-600' :
+                                                                    'bg-purple-100 text-purple-600'
                                                                 }`}>
                                                                 <IconComponent className="w-4 h-4" />
                                                             </div>

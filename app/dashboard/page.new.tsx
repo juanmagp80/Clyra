@@ -1,6 +1,6 @@
 import { createServerSupabaseClient } from '@/src/lib/supabase-server';
 import { redirect } from 'next/navigation';
-import DashboardBonsai from './DashBoardClient';
+import DashboardBonsai from './DashboardBonsai';
 
 export default async function DashboardPage() {
     try {
@@ -19,10 +19,10 @@ export default async function DashboardPage() {
             );
         }
 
-        // Crear cliente SSR y obtener usuario autenticado
+        // Crear cliente SSR y obtener sesión
         const supabase = await createServerSupabaseClient();
-        const { data: { user }, error } = await supabase.auth.getUser();
-        if (error || !user?.email) {
+        const { data: { session } } = await supabase.auth.getSession();
+        if (!session || !session.user?.email) {
             redirect('/login');
         }
 
@@ -33,7 +33,7 @@ export default async function DashboardPage() {
             : 0;
 
         return (
-            <DashboardBonsai userEmail={user.email ?? ''} totalTaskTime={totalTime} />
+            <DashboardBonsai userEmail={session.user.email ?? ''} totalTaskTime={totalTime} />
         );
     } catch (error) {
         redirect('/login');

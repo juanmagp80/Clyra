@@ -2,7 +2,7 @@
 
 import Sidebar from '@/components/Sidebar';
 import { Button } from "@/components/ui/Button";
-import { createClientComponentClient } from '@supabase/auth-helpers-nextjs';
+import { createSupabaseClient } from '@/src/lib/supabase-client';
 import {
     Archive,
     Calendar,
@@ -38,6 +38,7 @@ interface Task {
     project_id?: string;
     user_id?: string;
     assigned_to?: string;
+    category?: string;
     created_at: string;
     updated_at: string;
     completed_at?: string;
@@ -62,7 +63,7 @@ export default function TasksPageClient({ userEmail }: TasksPageClientProps) {
     const [menuTaskId, setMenuTaskId] = useState<string | null>(null);
     const [menuAnchor, setMenuAnchor] = useState<DOMRect | null>(null);
     const router = useRouter();
-    const supabase = createClientComponentClient();
+    const supabase = createSupabaseClient();
 
     // Estados básicos
     const [tasks, setTasks] = useState<Task[]>([]);
@@ -88,8 +89,39 @@ export default function TasksPageClient({ userEmail }: TasksPageClientProps) {
         status: 'pending' as TaskStatus,
         priority: 'medium' as TaskPriority,
         due_date: '',
-        project_id: ''
+        project_id: '',
+        category: 'general'
     });
+
+    // Estados para categorías
+    const [categories] = useState([
+        { value: 'web_development', label: 'Desarrollo Web' },
+        { value: 'frontend_development', label: 'Desarrollo Frontend' },
+        { value: 'backend_development', label: 'Desarrollo Backend' },
+        { value: 'mobile_development', label: 'Desarrollo Móvil' },
+        { value: 'ui_ux_design', label: 'Diseño UI/UX' },
+        { value: 'graphic_design', label: 'Diseño Gráfico' },
+        { value: 'design', label: 'Diseño General' },
+        { value: 'seo_sem', label: 'SEO/SEM' },
+        { value: 'social_media', label: 'Redes Sociales' },
+        { value: 'content_creation', label: 'Creación de Contenido' },
+        { value: 'marketing', label: 'Marketing' },
+        { value: 'consulting', label: 'Consultoría' },
+        { value: 'research_analysis', label: 'Investigación y Análisis' },
+        { value: 'client_meetings', label: 'Reuniones con Clientes' },
+        { value: 'proposals_presentations', label: 'Propuestas y Presentaciones' },
+        { value: 'client_communication', label: 'Comunicación con Clientes' },
+        { value: 'invoicing_payments', label: 'Facturación y Pagos' },
+        { value: 'business_admin', label: 'Administración del Negocio' },
+        { value: 'email_management', label: 'Gestión de Emails' },
+        { value: 'testing_qa', label: 'Testing y QA' },
+        { value: 'learning_training', label: 'Formación y Aprendizaje' },
+        { value: 'general', label: 'General' }
+    ]);
+    
+    const [showNewCategoryInput, setShowNewCategoryInput] = useState(false);
+    const [newCategoryName, setNewCategoryName] = useState('');
+    const [customCategories, setCustomCategories] = useState<Array<{value: string, label: string}>>([]);
 
     // Estados del timer
     const [activeTimer, setActiveTimer] = useState<string | null>(null);
@@ -102,6 +134,53 @@ export default function TasksPageClient({ userEmail }: TasksPageClientProps) {
         router.push('/login');
     };
 
+    // Función para limpiar sesión corrupta
+    const clearCorruptedSession = async () => {
+        try {
+            console.log('🧹 Limpiando sesión corrupta...');
+            
+            // Limpiar cookies de Supabase
+            if (typeof window !== 'undefined') {
+                // Limpiar localStorage
+                Object.keys(localStorage).forEach(key => {
+                    if (key.startsWith('sb-') || key.includes('supabase')) {
+                        localStorage.removeItem(key);
+                    }
+                });
+                
+                // Limpiar sessionStorage
+                Object.keys(sessionStorage).forEach(key => {
+                    if (key.startsWith('sb-') || key.includes('supabase')) {
+                        sessionStorage.removeItem(key);
+                    }
+                });
+                
+                // Limpiar cookies
+                document.cookie.split(";").forEach((c) => {
+                    const eqPos = c.indexOf("=");
+                    const name = eqPos > -1 ? c.substr(0, eqPos) : c;
+                    if (name.trim().startsWith('sb-') || name.includes('supabase')) {
+                        document.cookie = `${name}=;expires=Thu, 01 Jan 1970 00:00:00 GMT;path=/`;
+                    }
+                });
+            }
+            
+            // Intentar cerrar sesión de Supabase
+            if (supabase) {
+                await supabase.auth.signOut();
+            }
+            
+            console.log('✅ Sesión limpiada, redirigiendo al login...');
+            alert('🔧 Se detectó un problema con la sesión. Serás redirigido al login para solucionarlo.');
+            router.push('/login');
+            
+        } catch (error) {
+            console.error('❌ Error limpiando sesión:', error);
+            // Como último recurso, recargar la página
+            window.location.reload();
+        }
+    };
+
     const resetNewTaskForm = () => {
         setNewTask({
             title: '',
@@ -109,8 +188,31 @@ export default function TasksPageClient({ userEmail }: TasksPageClientProps) {
             status: 'pending',
             priority: 'medium',
             due_date: '',
-            project_id: ''
+            project_id: '',
+            category: 'general'
         });
+        setShowNewCategoryInput(false);
+        setNewCategoryName('');
+    };
+
+    const createCustomCategory = () => {
+        if (!newCategoryName.trim()) return;
+        
+        const categoryValue = newCategoryName.toLowerCase().replace(/\s+/g, '_');
+        const newCategory = {
+            value: categoryValue,
+            label: newCategoryName.trim()
+        };
+        
+        // Verificar que no existe ya
+        const allCategories = [...categories, ...customCategories];
+        if (!allCategories.some(cat => cat.value === categoryValue)) {
+            setCustomCategories(prev => [...prev, newCategory]);
+            setNewTask({ ...newTask, category: categoryValue });
+        }
+        
+        setShowNewCategoryInput(false);
+        setNewCategoryName('');
     };
 
     const fetchTasks = async () => {
@@ -138,18 +240,63 @@ export default function TasksPageClient({ userEmail }: TasksPageClientProps) {
     };
 
     const fetchProjects = async () => {
-        if (!supabase) return;
+        if (!supabase) {
+            console.error('❌ Supabase client no disponible');
+            return;
+        }
+        
         try {
+            console.log('🔍 Intentando obtener usuario...');
+            
+            // Intentar obtener el usuario de varias formas
             let uid = userId;
+            
             if (!uid) {
-                const { data: authData } = await supabase.auth.getUser();
-                uid = authData.user?.id || null;
+                // Método 1: getUser (más confiable)
+                const { data: authData, error: authError } = await supabase.auth.getUser();
+                console.log('📋 Respuesta de getUser:', { user: authData?.user?.id, error: authError });
+                
+                if (authError) {
+                    console.error('❌ Error en getUser:', authError);
+                    // Método 2: getSession como fallback
+                    console.log('🔄 Intentando con getSession...');
+                    const { data: sessionData, error: sessionError } = await supabase.auth.getSession();
+                    console.log('📋 Respuesta de getSession:', { user: sessionData?.session?.user?.id, error: sessionError });
+                    
+                    if (sessionError) {
+                        console.error('❌ Error en getSession:', sessionError);
+                        // Método 3: Forzar refresh de la sesión
+                        console.log('🔄 Intentando refresh de sesión...');
+                        const { data: refreshData, error: refreshError } = await supabase.auth.refreshSession();
+                        console.log('📋 Respuesta de refreshSession:', { user: refreshData?.session?.user?.id, error: refreshError });
+                        
+                        if (refreshError) {
+                            console.error('❌ Error en refreshSession:', refreshError);
+                            console.log('🧹 Sesión parece estar corrupta, iniciando limpieza...');
+                            await clearCorruptedSession();
+                            return;
+                        } else {
+                            uid = refreshData?.session?.user?.id || null;
+                        }
+                    } else {
+                        uid = sessionData?.session?.user?.id || null;
+                    }
+                } else {
+                    uid = authData?.user?.id || null;
+                }
+                
                 setUserId(uid);
             }
+
             if (!uid) {
+                console.error('❌ No se pudo obtener user ID después de todos los intentos');
+                alert('⚠️ No se pudo verificar tu identidad. Por favor, recarga la página o inicia sesión nuevamente.');
                 setProjects([]);
                 return;
             }
+
+            console.log('✅ User ID obtenido:', uid);
+            console.log('🔍 Buscando proyectos para user_id:', uid);
 
             const { data, error } = await supabase
                 .from('projects')
@@ -157,16 +304,35 @@ export default function TasksPageClient({ userEmail }: TasksPageClientProps) {
                 .eq('user_id', uid)
                 .order('name');
 
-            if (!error && data) {
-                const activeProjects = data.filter(project => !project.status || project.status === 'active');
-                setProjects(activeProjects as Project[]);
-                console.log('✅ Proyectos cargados:', activeProjects.length);
-            } else {
-                console.error('Error fetching projects:', error);
+            console.log('📋 Respuesta de proyectos:', { data, error });
+
+            if (error) {
+                console.error('❌ Error fetching projects:', error);
+                alert('⚠️ Error al cargar proyectos: ' + error.message);
                 setProjects([]);
+                return;
             }
+
+            if (!data) {
+                console.log('📋 No se encontraron proyectos');
+                setProjects([]);
+                return;
+            }
+
+            console.log('📊 Todos los proyectos encontrados:', data.length);
+            console.log('📋 Estados de proyectos encontrados:', data.map(p => ({ name: p.name, status: p.status })));
+            
+            // TEMPORAL: Mostrar TODOS los proyectos para debugging
+            const activeProjects = data; // Sin filtrar por estado
+            
+            console.log('✅ Proyectos filtrados (todos):', activeProjects.length);
+            console.log('📋 Proyectos activos:', activeProjects.map(p => ({ name: p.name, status: p.status })));
+            
+            setProjects(activeProjects as Project[]);
+
         } catch (error) {
-            console.error('Error crítico proyectos:', error);
+            console.error('❌ Error crítico en fetchProjects:', error);
+            alert('⚠️ Error crítico al cargar proyectos. Revisa la consola para más detalles.');
             setProjects([]);
         }
     };
@@ -176,21 +342,39 @@ export default function TasksPageClient({ userEmail }: TasksPageClientProps) {
             alert('⚠️ El título de la tarea es obligatorio');
             return;
         }
-        if (!newTask.project_id) {
-            alert('⚠️ Debes seleccionar un proyecto');
+        if (!newTask.category || newTask.category.trim() === '') {
+            alert('⚠️ Debes seleccionar una categoría');
             return;
         }
         if (!supabase) return;
 
         try {
+            // Obtener el user_id actual
+            let uid = userId;
+            if (!uid) {
+                const { data: authData, error: authError } = await supabase.auth.getUser();
+                if (authError || !authData?.user?.id) {
+                    alert('⚠️ Error de autenticación. Por favor, recarga la página e intenta nuevamente.');
+                    return;
+                }
+                uid = authData.user.id;
+                setUserId(uid);
+            }
+
+            console.log('🔧 Creando tarea con user_id:', uid);
+
             const taskData = {
                 title: newTask.title,
                 description: newTask.description || null,
                 status: newTask.status,
                 priority: newTask.priority,
-                project_id: newTask.project_id,
-                due_date: newTask.due_date || null
+                project_id: newTask.project_id || null, // Convertir string vacío a null
+                category: newTask.category,
+                due_date: newTask.due_date || null,
+                user_id: uid // ¡Añadir el user_id!
             };
+
+            console.log('📋 Datos de la tarea a crear:', taskData);
 
             const { data, error } = await supabase
                 .from('tasks')
@@ -273,7 +457,8 @@ export default function TasksPageClient({ userEmail }: TasksPageClientProps) {
                     description: editingTask.description,
                     priority: editingTask.priority,
                     status: editingTask.status,
-                    project_id: editingTask.project_id,
+                    project_id: editingTask.project_id || null, // Convertir string vacío a null
+                    category: editingTask.category,
                     due_date: editingTask.due_date,
                     updated_at: new Date().toISOString()
                 })
@@ -808,19 +993,84 @@ export default function TasksPageClient({ userEmail }: TasksPageClientProps) {
                                 </div>
                             </div>
                             <div>
-                                <label className="block text-sm font-medium text-slate-700 mb-1">Proyecto *</label>
+                                <label className="block text-sm font-medium text-slate-700 mb-1">Proyecto</label>
                                 <select
                                     className="w-full px-3 py-2 border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
                                     value={newTask.project_id}
                                     onChange={(e) => setNewTask({ ...newTask, project_id: e.target.value })}
                                 >
-                                    <option value="">Selecciona un proyecto...</option>
-                                    {projects.map(project => (
-                                        <option key={project.id} value={project.id}>
-                                            {project.name}
+                                    <option value="">Sin proyecto asignado</option>
+                                    {projects.length === 0 ? (
+                                        <option disabled>🔍 Cargando proyectos... o no hay proyectos</option>
+                                    ) : (
+                                        projects.map(project => (
+                                            <option key={project.id} value={project.id}>
+                                                {project.name} {project.status ? `(${project.status})` : '(sin estado)'}
+                                            </option>
+                                        ))
+                                    )}
+                                </select>
+                                {projects.length === 0 && (
+                                    <div className="text-xs text-amber-600 mt-1 p-2 bg-amber-50 rounded">
+                                        <p>📝 <strong>No hay proyectos disponibles.</strong></p>
+                                        <p>• Verifica la consola del navegador (F12) para logs de debugging</p>
+                                        <p>• Crea proyectos desde la sección de Proyectos</p>
+                                        <p>• O continúa sin proyecto asignado</p>
+                                    </div>
+                                )}
+                            </div>
+                            <div>
+                                <label className="block text-sm font-medium text-slate-700 mb-1">Categoría *</label>
+                                <select
+                                    className="w-full px-3 py-2 border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                                    value={newTask.category}
+                                    onChange={(e) => {
+                                        if (e.target.value === 'new_category') {
+                                            setShowNewCategoryInput(true);
+                                        } else {
+                                            setNewTask({ ...newTask, category: e.target.value });
+                                        }
+                                    }}
+                                >
+                                    <option value="" disabled>Selecciona una categoría...</option>
+                                    {[...categories, ...customCategories].map(category => (
+                                        <option key={category.value} value={category.value}>
+                                            {category.label}
                                         </option>
                                     ))}
+                                    <option value="new_category">+ Crear nueva categoría</option>
                                 </select>
+                                
+                                {showNewCategoryInput && (
+                                    <div className="mt-2 flex gap-2">
+                                        <input
+                                            type="text"
+                                            placeholder="Nombre de la nueva categoría"
+                                            className="flex-1 px-3 py-2 border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm"
+                                            value={newCategoryName}
+                                            onChange={(e) => setNewCategoryName(e.target.value)}
+                                            onKeyPress={(e) => e.key === 'Enter' && createCustomCategory()}
+                                        />
+                                        <Button
+                                            size="sm"
+                                            onClick={createCustomCategory}
+                                            className="bg-green-600 hover:bg-green-700 text-white text-xs px-3 py-1"
+                                        >
+                                            Crear
+                                        </Button>
+                                        <Button
+                                            variant="outline"
+                                            size="sm"
+                                            onClick={() => {
+                                                setShowNewCategoryInput(false);
+                                                setNewCategoryName('');
+                                            }}
+                                            className="text-xs px-3 py-1"
+                                        >
+                                            Cancelar
+                                        </Button>
+                                    </div>
+                                )}
                             </div>
                             <div>
                                 <label className="block text-sm font-medium text-slate-700 mb-1">Fecha límite</label>
@@ -919,6 +1169,70 @@ export default function TasksPageClient({ userEmail }: TasksPageClientProps) {
                                         </option>
                                     ))}
                                 </select>
+                            </div>
+                            <div>
+                                <label className="block text-sm font-medium text-slate-700 mb-1">Categoría</label>
+                                <select
+                                    className="w-full px-3 py-2 border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                                    value={editingTask.category || 'general'}
+                                    onChange={(e) => {
+                                        if (e.target.value === 'new_category') {
+                                            setShowNewCategoryInput(true);
+                                        } else {
+                                            setEditingTask({ ...editingTask, category: e.target.value });
+                                        }
+                                    }}
+                                >
+                                    {[...categories, ...customCategories].map(category => (
+                                        <option key={category.value} value={category.value}>
+                                            {category.label}
+                                        </option>
+                                    ))}
+                                    <option value="new_category">+ Crear nueva categoría</option>
+                                </select>
+                                
+                                {showNewCategoryInput && (
+                                    <div className="mt-2 flex gap-2">
+                                        <input
+                                            type="text"
+                                            placeholder="Nombre de la nueva categoría"
+                                            className="flex-1 px-3 py-2 border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm"
+                                            value={newCategoryName}
+                                            onChange={(e) => setNewCategoryName(e.target.value)}
+                                            onKeyPress={(e) => e.key === 'Enter' && createCustomCategory()}
+                                        />
+                                        <Button
+                                            size="sm"
+                                            onClick={() => {
+                                                if (newCategoryName.trim()) {
+                                                    const categoryValue = newCategoryName.toLowerCase().replace(/\s+/g, '_');
+                                                    const newCategory = { value: categoryValue, label: newCategoryName.trim() };
+                                                    const allCategories = [...categories, ...customCategories];
+                                                    if (!allCategories.some(cat => cat.value === categoryValue)) {
+                                                        setCustomCategories(prev => [...prev, newCategory]);
+                                                        setEditingTask({ ...editingTask, category: categoryValue });
+                                                    }
+                                                }
+                                                setShowNewCategoryInput(false);
+                                                setNewCategoryName('');
+                                            }}
+                                            className="bg-green-600 hover:bg-green-700 text-white text-xs px-3 py-1"
+                                        >
+                                            Crear
+                                        </Button>
+                                        <Button
+                                            variant="outline"
+                                            size="sm"
+                                            onClick={() => {
+                                                setShowNewCategoryInput(false);
+                                                setNewCategoryName('');
+                                            }}
+                                            className="text-xs px-3 py-1"
+                                        >
+                                            Cancelar
+                                        </Button>
+                                    </div>
+                                )}
                             </div>
                             <div>
                                 <label className="block text-sm font-medium text-slate-700 mb-1">Fecha límite</label>
