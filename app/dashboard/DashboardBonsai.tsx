@@ -180,8 +180,8 @@ export default function DashboardBonsai({
             ] = await Promise.all([
                 supabase.from('clients').select('*').eq('user_id', user.id),
                 supabase.from('projects').select('*').eq('user_id', user.id),
-                supabase.from('time_entries').select('duration_minutes, is_billable').eq('user_id', user.id),
-                supabase.from('time_entries').select('duration_minutes, is_billable').eq('user_id', user.id)
+                supabase.from('time_entries').select('duration_seconds').eq('user_id', user.id),
+                supabase.from('time_entries').select('duration_seconds').eq('user_id', user.id)
             ]);
 
             const activeProjects = allProjects?.filter(p => 
@@ -192,15 +192,15 @@ export default function DashboardBonsai({
                 p.status === 'completed'
             ) || [];
 
-            const totalMinutesThisWeek = weeklyTimeData?.reduce((sum: number, entry: any) => sum + entry.duration_minutes, 0) || 0;
+            const totalMinutesThisWeek = weeklyTimeData?.reduce((sum: number, entry: any) => sum + (entry.duration_seconds / 60), 0) || 0;
             const billableMinutesThisWeek = weeklyTimeData?.reduce((sum: number, entry: any) =>
-                sum + (entry.is_billable ? entry.duration_minutes : 0), 0) || 0;
+                sum + (entry.duration_seconds ? entry.duration_seconds / 60 : 0), 0) || 0;
 
             const totalRevenue = allProjects?.reduce((sum: number, project: any) => {
                 return sum + (project.budget || 0);
             }, 0) || 0;
 
-            const totalMinutesThisMonth = monthlyTimeData?.reduce((sum: number, entry: any) => sum + entry.duration_minutes, 0) || 0;
+            const totalMinutesThisMonth = monthlyTimeData?.reduce((sum: number, entry: any) => sum + (entry.duration_seconds / 60), 0) || 0;
 
             setMetrics({
                 totalClients: clients?.length || 0,

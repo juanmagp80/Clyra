@@ -112,6 +112,18 @@ export default async function DashboardPage() {
 
         console.log('✅ Valid session found - rendering dashboard');
         return <DashboardBonsai userEmail={session.user.email} />;
+        // ...existing code...
+        // Mostrar estadísticas de tiempo arriba del dashboard principal
+        // Import dinámico para evitar problemas SSR
+        const DashboardTimeStats = (await import('@/components/DashboardTimeStats')).default;
+        return (
+            <>
+                <div className="max-w-4xl mx-auto mt-8">
+                    <DashboardTimeStats />
+                </div>
+                <DashboardBonsai userEmail={session.user.email} />
+            </>
+        );
     } catch (error) {
         console.error('❌ Error in dashboard page:', error);
         redirect('/login');

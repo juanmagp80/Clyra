@@ -21,6 +21,7 @@ import {
     User
 } from 'lucide-react';
 import { useRouter } from 'next/navigation';
+import ReactDOM from 'react-dom';
 import { useEffect, useState } from 'react';
 
 // Tipos básicos
@@ -58,6 +59,8 @@ interface TasksPageClientProps {
 }
 
 export default function TasksPageClient({ userEmail }: TasksPageClientProps) {
+    const [menuTaskId, setMenuTaskId] = useState<string | null>(null);
+    const [menuAnchor, setMenuAnchor] = useState<DOMRect | null>(null);
     const router = useRouter();
     const supabase = createClientComponentClient();
 
@@ -311,11 +314,16 @@ export default function TasksPageClient({ userEmail }: TasksPageClientProps) {
                 return;
             }
 
-            // Actualizar estado local
+            // Obtener el tiempo acumulado de la tarea
+            const task = tasks.find(t => t.id === taskId);
+            const accumulated = task?.total_time_seconds || 0;
+            // Actualizar estado local SOLO la tarea modificada
+            setTasks(prev => prev.map(t => t.id === taskId ? { ...t, is_running: true, last_start: nowIso } : t));
             setActiveTimer(taskId);
             setTimerStartTime(new Date());
-            setElapsedTime(0);
-            await fetchTasks();
+            setElapsedTime(accumulated * 1000); // milisegundos
+            // Feedback visual opcional
+            // toast.success('Timer iniciado');
         } catch (err) {
             console.error('startTimer error:', err);
         }
@@ -352,11 +360,13 @@ export default function TasksPageClient({ userEmail }: TasksPageClientProps) {
                 return;
             }
 
-            // Actualizar estado local
+            // Actualizar estado local SOLO la tarea modificada
+            setTasks(prev => prev.map(t => t.id === taskId ? { ...t, is_running: false, last_stop: nowIso, total_time_seconds: newTotal } : t));
             setActiveTimer(null);
             setTimerStartTime(null);
-            setElapsedTime(0);
-            await fetchTasks();
+            setElapsedTime(newTotal * 1000); // conservar el tiempo acumulado
+            // Feedback visual opcional
+            // toast.success('Timer pausado y guardado');
         } catch (err) {
             console.error('pauseTimer error:', err);
         }
@@ -626,7 +636,7 @@ export default function TasksPageClient({ userEmail }: TasksPageClientProps) {
                                             {activeTimer === task.id ? (
                                                 <div className="flex items-center gap-2">
                                                     <span className="text-sm font-mono text-blue-600 bg-blue-50 px-2 py-1 rounded">
-                                                        {formatTime(elapsedTime)}
+                                                        {formatTime((task.total_time_seconds || 0) * 1000 + (activeTimer === task.id && timerStartTime ? Date.now() - timerStartTime.getTime() : 0))}
                                                     </span>
                                                     <Button
                                                         type="button"
@@ -639,71 +649,101 @@ export default function TasksPageClient({ userEmail }: TasksPageClientProps) {
                                                     </Button>
                                                 </div>
                                             ) : (
-                                                <Button
-                                                    type="button"
-                                                    size="sm"
-                                                    variant="outline"
-                                                    onClick={(e: any) => { e.preventDefault(); e.stopPropagation(); startTimer(task.id); }}
-                                                    className="text-green-600 border-green-300 hover:bg-green-50"
-                                                    disabled={task.status === 'completed'}
-                                                >
-                                                    <Play className="h-4 w-4" />
-                                                </Button>
+                                                <div className="flex items-center gap-2">
+                                                    <span className="text-sm font-mono text-blue-600 bg-blue-50 px-2 py-1 rounded">
+                                                        {formatTime((task.total_time_seconds || 0) * 1000)}
+                                                    </span>
+                                                    <Button
+                                                        type="button"
+                                                        size="sm"
+                                                        variant="outline"
+                                                        onClick={(e: any) => { e.preventDefault(); e.stopPropagation(); startTimer(task.id); }}
+                                                        className="text-green-600 border-green-300 hover:bg-green-50"
+                                                        disabled={task.status === 'completed'}
+                                                    >
+                                                        <Play className="h-4 w-4" />
+                                                    </Button>
+                                                </div>
                                             )}
 
                                             {/* Actions */}
-                                            <div className="relative group">
-                                                <Button size="sm" variant="outline" className="text-slate-600">
+                                            <div className="relative group" style={{overflow: 'visible'}}>
+                                                <Button size="sm" variant="outline" className="text-slate-600"
+                                                    onClick={e => {
+                                                        e.preventDefault();
+                                                        e.stopPropagation();
+                                                        setMenuTaskId(task.id);
+                                                        setMenuAnchor(e.currentTarget.getBoundingClientRect());
+                                                    }}>
                                                     <MoreVertical className="h-4 w-4" />
                                                 </Button>
-                                                <div className="absolute right-0 top-8 bg-white rounded-lg shadow-lg border py-1 min-w-[150px] opacity-0 group-hover:opacity-100 transition-opacity z-10">
-                                                    <button
-                                                        onClick={() => {
-                                                            setEditingTask(task);
-                                                            setShowEditTaskModal(true);
+                                                {menuTaskId === task.id && menuAnchor && ReactDOM.createPortal(
+                                                    <div
+                                                        style={{
+                                                            position: 'fixed',
+                                                            top: menuAnchor.bottom + 4,
+                                                            left: Math.max(16, menuAnchor.left - 200),
+                                                            minWidth: 200,
+                                                            background: 'white',
+                                                            borderRadius: 8,
+                                                            boxShadow: '0 8px 24px rgba(0,0,0,0.15)',
+                                                            border: '1px solid #e2e8f0',
+                                                            zIndex: 99999,
+                                                            padding: '4px 0',
                                                         }}
-                                                        className="w-full text-left px-3 py-2 text-sm text-slate-600 hover:bg-slate-50 flex items-center gap-2"
+                                                        onMouseLeave={() => setMenuTaskId(null)}
                                                     >
-                                                        <Edit3 className="h-4 w-4" />
-                                                        Editar
-                                                    </button>
-                                                    <button
-                                                        onClick={() => {
-                                                            setSelectedTask(task);
-                                                            setShowTaskDetails(true);
-                                                        }}
-                                                        className="w-full text-left px-3 py-2 text-sm text-slate-600 hover:bg-slate-50 flex items-center gap-2"
-                                                    >
-                                                        <CheckCircle className="h-4 w-4" />
-                                                        Ver detalles
-                                                    </button>
-                                                    {task.status !== 'completed' && (
                                                         <button
-                                                            onClick={() => updateTaskStatus(task.id, 'completed')}
-                                                            className="w-full text-left px-3 py-2 text-sm text-green-600 hover:bg-green-50 flex items-center gap-2"
-                                                        >
-                                                            <CheckCircle className="h-4 w-4" />
-                                                            Marcar completada
-                                                        </button>
-                                                    )}
-                                                    {task.status !== 'archived' && (
-                                                        <button
-                                                            onClick={() => updateTaskStatus(task.id, 'archived')}
+                                                            onClick={() => {
+                                                                setEditingTask(task);
+                                                                setShowEditTaskModal(true);
+                                                                setMenuTaskId(null);
+                                                            }}
                                                             className="w-full text-left px-3 py-2 text-sm text-slate-600 hover:bg-slate-50 flex items-center gap-2"
                                                         >
-                                                            <Archive className="h-4 w-4" />
-                                                            Archivar
+                                                            <Edit3 className="h-4 w-4" />
+                                                            Editar
                                                         </button>
-                                                    )}
-                                                    <hr className="my-1" />
-                                                    <button
-                                                        onClick={() => deleteTask(task.id)}
-                                                        className="w-full text-left px-3 py-2 text-sm text-red-600 hover:bg-red-50 flex items-center gap-2"
-                                                    >
-                                                        <Trash2 className="h-4 w-4" />
-                                                        Eliminar
-                                                    </button>
-                                                </div>
+                                                        <button
+                                                            onClick={() => {
+                                                                setSelectedTask(task);
+                                                                setShowTaskDetails(true);
+                                                                setMenuTaskId(null);
+                                                            }}
+                                                            className="w-full text-left px-3 py-2 text-sm text-slate-600 hover:bg-slate-50 flex items-center gap-2"
+                                                        >
+                                                            <CheckCircle className="h-4 w-4" />
+                                                            Ver detalles
+                                                        </button>
+                                                        {task.status !== 'completed' && (
+                                                            <button
+                                                                onClick={() => { updateTaskStatus(task.id, 'completed'); setMenuTaskId(null); }}
+                                                                className="w-full text-left px-3 py-2 text-sm text-green-600 hover:bg-green-50 flex items-center gap-2"
+                                                            >
+                                                                <CheckCircle className="h-4 w-4" />
+                                                                Marcar completada
+                                                            </button>
+                                                        )}
+                                                        {task.status !== 'archived' && (
+                                                            <button
+                                                                onClick={() => { updateTaskStatus(task.id, 'archived'); setMenuTaskId(null); }}
+                                                                className="w-full text-left px-3 py-2 text-sm text-slate-600 hover:bg-slate-50 flex items-center gap-2"
+                                                            >
+                                                                <Archive className="h-4 w-4" />
+                                                                Archivar
+                                                            </button>
+                                                        )}
+                                                        <hr className="my-1" />
+                                                        <button
+                                                            onClick={() => { deleteTask(task.id); setMenuTaskId(null); }}
+                                                            className="w-full text-left px-3 py-2 text-sm text-red-600 hover:bg-red-50 flex items-center gap-2"
+                                                        >
+                                                            <Trash2 className="h-4 w-4" />
+                                                            Eliminar
+                                                        </button>
+                                                    </div>,
+                                                    document.body
+                                                )}
                                             </div>
                                         </div>
                                     </div>

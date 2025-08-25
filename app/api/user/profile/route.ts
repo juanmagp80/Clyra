@@ -4,12 +4,11 @@ import { createSupabaseAdmin } from '@/src/lib/supabase-admin';
 export async function GET(request: NextRequest) {
   try {
     console.log('👤 Getting user profile...');
-
     const { searchParams } = new URL(request.url);
     const email = searchParams.get('email');
-    
+    console.log('🔎 Query params:', { email });
+
     const supabaseAdmin = createSupabaseAdmin();
-    
     let profile;
     let profileError;
 
@@ -21,16 +20,15 @@ export async function GET(request: NextRequest) {
         .select('*')
         .eq('email', email)
         .single();
-      
+      console.log('🔎 Supabase result:', result);
       profile = result.data;
       profileError = result.error;
     } else {
       // Buscar por usuario autenticado (método original)
       const { createServerSupabaseClient } = await import('@/src/lib/supabase-server');
       const supabase = await createServerSupabaseClient();
-      
       const { data: { user }, error: authError } = await supabase.auth.getUser();
-      
+      console.log('🔎 Auth result:', { user, authError });
       if (authError || !user) {
         console.error('❌ No authenticated user:', authError);
         return NextResponse.json(
@@ -38,46 +36,36 @@ export async function GET(request: NextRequest) {
           { status: 401 }
         );
       }
-
       console.log('🔍 Fetching profile for authenticated user:', user.id);
-
       const result = await supabase
         .from('profiles')
         .select('*')
         .eq('id', user.id)
         .single();
-      
+      console.log('🔎 Supabase result:', result);
       profile = result.data;
       profileError = result.error;
     }
 
     if (profileError) {
       console.error('❌ Error fetching profile:', profileError);
-      
       if (profileError.code === 'PGRST116') {
         return NextResponse.json(
-          { success: false, error: 'Profile not found' },
+          { success: false, error: 'Profile not found', details: profileError },
           { status: 404 }
         );
       }
-
       return NextResponse.json(
         { error: 'Error obteniendo perfil', details: profileError },
         { status: 500 }
       );
     }
 
-    console.log('✅ Profile found:', { 
-      email: profile.email, 
-      plan: profile.subscription_plan, 
-      status: profile.subscription_status 
-    });
-    
+    console.log('✅ Profile found:', profile);
     return NextResponse.json({
       success: true,
       profile: profile
     });
-    
   } catch (error) {
     console.error('💥 Error general:', error);
     return NextResponse.json(
