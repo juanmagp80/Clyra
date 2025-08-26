@@ -2,7 +2,7 @@
 
 import Sidebar from '@/components/Sidebar';
 import { Button } from "@/components/ui/Button";
-import { createSupabaseClient } from '@/src/lib/supabase-client';
+import { createClientComponentClient } from '@supabase/auth-helpers-nextjs';
 import {
     Archive,
     Calendar,
@@ -21,7 +21,6 @@ import {
     User
 } from 'lucide-react';
 import { useRouter } from 'next/navigation';
-import ReactDOM from 'react-dom';
 import { useEffect, useState } from 'react';
 
 // Tipos básicos
@@ -38,15 +37,9 @@ interface Task {
     project_id?: string;
     user_id?: string;
     assigned_to?: string;
-    category?: string;
     created_at: string;
     updated_at: string;
     completed_at?: string;
-    // Campos de tiempo (persistencia)
-    is_running?: boolean;
-    total_time_seconds?: number;
-    last_start?: string;
-    last_stop?: string;
 }
 
 interface Project {
@@ -60,10 +53,8 @@ interface TasksPageClientProps {
 }
 
 export default function TasksPageClient({ userEmail }: TasksPageClientProps) {
-    const [menuTaskId, setMenuTaskId] = useState<string | null>(null);
-    const [menuAnchor, setMenuAnchor] = useState<DOMRect | null>(null);
     const router = useRouter();
-    const supabase = createSupabaseClient();
+    const supabase = createClientComponentClient();
 
     // Estados básicos
     const [tasks, setTasks] = useState<Task[]>([]);
@@ -89,39 +80,8 @@ export default function TasksPageClient({ userEmail }: TasksPageClientProps) {
         status: 'pending' as TaskStatus,
         priority: 'medium' as TaskPriority,
         due_date: '',
-        project_id: '',
-        category: 'general'
+        project_id: ''
     });
-
-    // Estados para categorías
-    const [categories] = useState([
-        { value: 'web_development', label: 'Desarrollo Web' },
-        { value: 'frontend_development', label: 'Desarrollo Frontend' },
-        { value: 'backend_development', label: 'Desarrollo Backend' },
-        { value: 'mobile_development', label: 'Desarrollo Móvil' },
-        { value: 'ui_ux_design', label: 'Diseño UI/UX' },
-        { value: 'graphic_design', label: 'Diseño Gráfico' },
-        { value: 'design', label: 'Diseño General' },
-        { value: 'seo_sem', label: 'SEO/SEM' },
-        { value: 'social_media', label: 'Redes Sociales' },
-        { value: 'content_creation', label: 'Creación de Contenido' },
-        { value: 'marketing', label: 'Marketing' },
-        { value: 'consulting', label: 'Consultoría' },
-        { value: 'research_analysis', label: 'Investigación y Análisis' },
-        { value: 'client_meetings', label: 'Reuniones con Clientes' },
-        { value: 'proposals_presentations', label: 'Propuestas y Presentaciones' },
-        { value: 'client_communication', label: 'Comunicación con Clientes' },
-        { value: 'invoicing_payments', label: 'Facturación y Pagos' },
-        { value: 'business_admin', label: 'Administración del Negocio' },
-        { value: 'email_management', label: 'Gestión de Emails' },
-        { value: 'testing_qa', label: 'Testing y QA' },
-        { value: 'learning_training', label: 'Formación y Aprendizaje' },
-        { value: 'general', label: 'General' }
-    ]);
-    
-    const [showNewCategoryInput, setShowNewCategoryInput] = useState(false);
-    const [newCategoryName, setNewCategoryName] = useState('');
-    const [customCategories, setCustomCategories] = useState<Array<{value: string, label: string}>>([]);
 
     // Estados del timer
     const [activeTimer, setActiveTimer] = useState<string | null>(null);
@@ -134,53 +94,6 @@ export default function TasksPageClient({ userEmail }: TasksPageClientProps) {
         router.push('/login');
     };
 
-    // Función para limpiar sesión corrupta
-    const clearCorruptedSession = async () => {
-        try {
-            console.log('🧹 Limpiando sesión corrupta...');
-            
-            // Limpiar cookies de Supabase
-            if (typeof window !== 'undefined') {
-                // Limpiar localStorage
-                Object.keys(localStorage).forEach(key => {
-                    if (key.startsWith('sb-') || key.includes('supabase')) {
-                        localStorage.removeItem(key);
-                    }
-                });
-                
-                // Limpiar sessionStorage
-                Object.keys(sessionStorage).forEach(key => {
-                    if (key.startsWith('sb-') || key.includes('supabase')) {
-                        sessionStorage.removeItem(key);
-                    }
-                });
-                
-                // Limpiar cookies
-                document.cookie.split(";").forEach((c) => {
-                    const eqPos = c.indexOf("=");
-                    const name = eqPos > -1 ? c.substr(0, eqPos) : c;
-                    if (name.trim().startsWith('sb-') || name.includes('supabase')) {
-                        document.cookie = `${name}=;expires=Thu, 01 Jan 1970 00:00:00 GMT;path=/`;
-                    }
-                });
-            }
-            
-            // Intentar cerrar sesión de Supabase
-            if (supabase) {
-                await supabase.auth.signOut();
-            }
-            
-            console.log('✅ Sesión limpiada, redirigiendo al login...');
-            alert('🔧 Se detectó un problema con la sesión. Serás redirigido al login para solucionarlo.');
-            router.push('/login');
-            
-        } catch (error) {
-            console.error('❌ Error limpiando sesión:', error);
-            // Como último recurso, recargar la página
-            window.location.reload();
-        }
-    };
-
     const resetNewTaskForm = () => {
         setNewTask({
             title: '',
@@ -188,31 +101,8 @@ export default function TasksPageClient({ userEmail }: TasksPageClientProps) {
             status: 'pending',
             priority: 'medium',
             due_date: '',
-            project_id: '',
-            category: 'general'
+            project_id: ''
         });
-        setShowNewCategoryInput(false);
-        setNewCategoryName('');
-    };
-
-    const createCustomCategory = () => {
-        if (!newCategoryName.trim()) return;
-        
-        const categoryValue = newCategoryName.toLowerCase().replace(/\s+/g, '_');
-        const newCategory = {
-            value: categoryValue,
-            label: newCategoryName.trim()
-        };
-        
-        // Verificar que no existe ya
-        const allCategories = [...categories, ...customCategories];
-        if (!allCategories.some(cat => cat.value === categoryValue)) {
-            setCustomCategories(prev => [...prev, newCategory]);
-            setNewTask({ ...newTask, category: categoryValue });
-        }
-        
-        setShowNewCategoryInput(false);
-        setNewCategoryName('');
     };
 
     const fetchTasks = async () => {
@@ -240,63 +130,18 @@ export default function TasksPageClient({ userEmail }: TasksPageClientProps) {
     };
 
     const fetchProjects = async () => {
-        if (!supabase) {
-            console.error('❌ Supabase client no disponible');
-            return;
-        }
-        
+        if (!supabase) return;
         try {
-            console.log('🔍 Intentando obtener usuario...');
-            
-            // Intentar obtener el usuario de varias formas
             let uid = userId;
-            
             if (!uid) {
-                // Método 1: getUser (más confiable)
-                const { data: authData, error: authError } = await supabase.auth.getUser();
-                console.log('📋 Respuesta de getUser:', { user: authData?.user?.id, error: authError });
-                
-                if (authError) {
-                    console.error('❌ Error en getUser:', authError);
-                    // Método 2: getSession como fallback
-                    console.log('🔄 Intentando con getSession...');
-                    const { data: sessionData, error: sessionError } = await supabase.auth.getSession();
-                    console.log('📋 Respuesta de getSession:', { user: sessionData?.session?.user?.id, error: sessionError });
-                    
-                    if (sessionError) {
-                        console.error('❌ Error en getSession:', sessionError);
-                        // Método 3: Forzar refresh de la sesión
-                        console.log('🔄 Intentando refresh de sesión...');
-                        const { data: refreshData, error: refreshError } = await supabase.auth.refreshSession();
-                        console.log('📋 Respuesta de refreshSession:', { user: refreshData?.session?.user?.id, error: refreshError });
-                        
-                        if (refreshError) {
-                            console.error('❌ Error en refreshSession:', refreshError);
-                            console.log('🧹 Sesión parece estar corrupta, iniciando limpieza...');
-                            await clearCorruptedSession();
-                            return;
-                        } else {
-                            uid = refreshData?.session?.user?.id || null;
-                        }
-                    } else {
-                        uid = sessionData?.session?.user?.id || null;
-                    }
-                } else {
-                    uid = authData?.user?.id || null;
-                }
-                
+                const { data: authData } = await supabase.auth.getUser();
+                uid = authData.user?.id || null;
                 setUserId(uid);
             }
-
             if (!uid) {
-                console.error('❌ No se pudo obtener user ID después de todos los intentos');
-                alert('⚠️ No se pudo verificar tu identidad. Por favor, recarga la página o inicia sesión nuevamente.');
                 setProjects([]);
                 return;
             }
-
-            console.log('✅ User ID obtenido:', uid);
-            console.log('🔍 Buscando proyectos para user_id:', uid);
 
             const { data, error } = await supabase
                 .from('projects')
@@ -304,35 +149,16 @@ export default function TasksPageClient({ userEmail }: TasksPageClientProps) {
                 .eq('user_id', uid)
                 .order('name');
 
-            console.log('📋 Respuesta de proyectos:', { data, error });
-
-            if (error) {
-                console.error('❌ Error fetching projects:', error);
-                alert('⚠️ Error al cargar proyectos: ' + error.message);
+            if (!error && data) {
+                const activeProjects = data.filter(project => !project.status || project.status === 'active');
+                setProjects(activeProjects as Project[]);
+                console.log('✅ Proyectos cargados:', activeProjects.length);
+            } else {
+                console.error('Error fetching projects:', error);
                 setProjects([]);
-                return;
             }
-
-            if (!data) {
-                console.log('📋 No se encontraron proyectos');
-                setProjects([]);
-                return;
-            }
-
-            console.log('📊 Todos los proyectos encontrados:', data.length);
-            console.log('📋 Estados de proyectos encontrados:', data.map(p => ({ name: p.name, status: p.status })));
-            
-            // TEMPORAL: Mostrar TODOS los proyectos para debugging
-            const activeProjects = data; // Sin filtrar por estado
-            
-            console.log('✅ Proyectos filtrados (todos):', activeProjects.length);
-            console.log('📋 Proyectos activos:', activeProjects.map(p => ({ name: p.name, status: p.status })));
-            
-            setProjects(activeProjects as Project[]);
-
         } catch (error) {
-            console.error('❌ Error crítico en fetchProjects:', error);
-            alert('⚠️ Error crítico al cargar proyectos. Revisa la consola para más detalles.');
+            console.error('Error crítico proyectos:', error);
             setProjects([]);
         }
     };
@@ -342,39 +168,21 @@ export default function TasksPageClient({ userEmail }: TasksPageClientProps) {
             alert('⚠️ El título de la tarea es obligatorio');
             return;
         }
-        if (!newTask.category || newTask.category.trim() === '') {
-            alert('⚠️ Debes seleccionar una categoría');
+        if (!newTask.project_id) {
+            alert('⚠️ Debes seleccionar un proyecto');
             return;
         }
         if (!supabase) return;
 
         try {
-            // Obtener el user_id actual
-            let uid = userId;
-            if (!uid) {
-                const { data: authData, error: authError } = await supabase.auth.getUser();
-                if (authError || !authData?.user?.id) {
-                    alert('⚠️ Error de autenticación. Por favor, recarga la página e intenta nuevamente.');
-                    return;
-                }
-                uid = authData.user.id;
-                setUserId(uid);
-            }
-
-            console.log('🔧 Creando tarea con user_id:', uid);
-
             const taskData = {
                 title: newTask.title,
                 description: newTask.description || null,
                 status: newTask.status,
                 priority: newTask.priority,
-                project_id: newTask.project_id || null, // Convertir string vacío a null
-                category: newTask.category,
-                due_date: newTask.due_date || null,
-                user_id: uid // ¡Añadir el user_id!
+                project_id: newTask.project_id,
+                due_date: newTask.due_date || null
             };
-
-            console.log('📋 Datos de la tarea a crear:', taskData);
 
             const { data, error } = await supabase
                 .from('tasks')
@@ -457,8 +265,7 @@ export default function TasksPageClient({ userEmail }: TasksPageClientProps) {
                     description: editingTask.description,
                     priority: editingTask.priority,
                     status: editingTask.status,
-                    project_id: editingTask.project_id || null, // Convertir string vacío a null
-                    category: editingTask.category,
+                    project_id: editingTask.project_id,
                     due_date: editingTask.due_date,
                     updated_at: new Date().toISOString()
                 })
@@ -478,83 +285,16 @@ export default function TasksPageClient({ userEmail }: TasksPageClientProps) {
         }
     };
 
-    // Timer functions - persistir en Supabase
-    const startTimer = async (taskId: string) => {
-    console.log('DEBUG startTimer called for', taskId);
-        if (!supabase) return;
-        try {
-            // Si hay otro timer activo, pausarlo primero
-            if (activeTimer && activeTimer !== taskId) {
-                await pauseTimer();
-            }
-
-            const nowIso = new Date().toISOString();
-            const { error } = await supabase
-                .from('tasks')
-                .update({ is_running: true, last_start: nowIso })
-                .eq('id', taskId);
-
-            if (error) {
-                console.error('Error starting timer on task:', error);
-                return;
-            }
-
-            // Obtener el tiempo acumulado de la tarea
-            const task = tasks.find(t => t.id === taskId);
-            const accumulated = task?.total_time_seconds || 0;
-            // Actualizar estado local SOLO la tarea modificada
-            setTasks(prev => prev.map(t => t.id === taskId ? { ...t, is_running: true, last_start: nowIso } : t));
-            setActiveTimer(taskId);
-            setTimerStartTime(new Date());
-            setElapsedTime(accumulated * 1000); // milisegundos
-            // Feedback visual opcional
-            // toast.success('Timer iniciado');
-        } catch (err) {
-            console.error('startTimer error:', err);
-        }
+    // Timer functions
+    const startTimer = (taskId: string) => {
+        setActiveTimer(taskId);
+        setTimerStartTime(new Date());
+        setElapsedTime(0);
     };
 
-    const pauseTimer = async () => {
-    console.log('DEBUG pauseTimer called, activeTimer=', activeTimer);
-        if (!supabase) return;
-        if (!activeTimer) return;
-        try {
-            const taskId = activeTimer;
-            const task = tasks.find(t => t.id === taskId);
-
-            // Determinar tiempo transcurrido desde last_start
-            const lastStartIso = task?.last_start || (timerStartTime ? timerStartTime.toISOString() : null);
-            let elapsedSeconds = 0;
-            if (lastStartIso) {
-                const startMs = new Date(lastStartIso.endsWith('Z') ? lastStartIso : lastStartIso + 'Z').getTime();
-                elapsedSeconds = Math.max(0, Math.floor((Date.now() - startMs) / 1000));
-            } else if (timerStartTime) {
-                elapsedSeconds = Math.max(0, Math.floor((Date.now() - timerStartTime.getTime()) / 1000));
-            }
-
-            const newTotal = (task?.total_time_seconds || 0) + elapsedSeconds;
-            const nowIso = new Date().toISOString();
-
-            const { error } = await supabase
-                .from('tasks')
-                .update({ is_running: false, last_stop: nowIso, total_time_seconds: newTotal })
-                .eq('id', taskId);
-
-            if (error) {
-                console.error('Error pausing timer on task:', error);
-                return;
-            }
-
-            // Actualizar estado local SOLO la tarea modificada
-            setTasks(prev => prev.map(t => t.id === taskId ? { ...t, is_running: false, last_stop: nowIso, total_time_seconds: newTotal } : t));
-            setActiveTimer(null);
-            setTimerStartTime(null);
-            setElapsedTime(newTotal * 1000); // conservar el tiempo acumulado
-            // Feedback visual opcional
-            // toast.success('Timer pausado y guardado');
-        } catch (err) {
-            console.error('pauseTimer error:', err);
-        }
+    const pauseTimer = () => {
+        setActiveTimer(null);
+        setTimerStartTime(null);
     };
 
     const formatTime = (milliseconds: number) => {
@@ -742,40 +482,230 @@ export default function TasksPageClient({ userEmail }: TasksPageClientProps) {
                         </div>
                     </div>
 
-                    {/* Lista de tareas */}
-                    <div className="space-y-4">
+                    {/* Lista de tareas Premium */}
+                    <div className="space-y-6">
                         {filteredTasks.length === 0 ? (
-                            <div className="bg-white/80 backdrop-blur-sm rounded-xl p-12 border border-white/20 shadow-lg text-center">
-                                <Tag className="h-16 w-16 text-slate-400 mx-auto mb-4" />
-                                <h3 className="text-lg font-semibold text-slate-700 mb-2">No hay tareas</h3>
-                                <p className="text-slate-500 mb-6">
-                                    {tasks.length === 0
-                                        ? "Aún no has creado ninguna tarea. ¡Comienza creando tu primera tarea!"
-                                        : "No hay tareas que coincidan con los filtros actuales."
-                                    }
-                                </p>
-                                {tasks.length === 0 && (
-                                    <Button
-                                        onClick={() => setShowNewTaskModal(true)}
-                                        className="bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 text-white"
-                                    >
-                                        <Plus className="mr-2 h-4 w-4" />
-                                        Crear primera tarea
-                                    </Button>
-                                )}
+                            <div className="group relative">
+                                <div className="absolute inset-0 bg-gradient-to-r from-slate-400/10 to-blue-500/10 rounded-2xl blur-xl"></div>
+                                <div className="relative bg-white/95 backdrop-blur-xl rounded-2xl p-16 border border-white/40 shadow-2xl text-center">
+                                    <div className="p-4 bg-gradient-to-br from-slate-100 to-slate-200 rounded-2xl inline-block mb-6">
+                                        <Tag className="h-20 w-20 text-slate-400" />
+                                    </div>
+                                    <h3 className="text-2xl font-bold text-slate-700 mb-4">No hay tareas</h3>
+                                    <p className="text-slate-500 text-lg mb-8 max-w-md mx-auto">
+                                        {tasks.length === 0
+                                            ? "Aún no has creado ninguna tarea. ¡Comienza creando tu primera tarea!"
+                                            : "No hay tareas que coincidan con los filtros actuales."
+                                        }
+                                    </p>
+                                    {tasks.length === 0 && (
+                                        <Button
+                                            onClick={() => setShowNewTaskModal(true)}
+                                            className="bg-gradient-to-r from-blue-600 via-indigo-600 to-purple-600 hover:from-blue-700 hover:via-indigo-700 hover:to-purple-700 text-white px-8 py-4 rounded-xl shadow-2xl hover:shadow-purple-500/25 transition-all duration-500 transform hover:scale-105"
+                                        >
+                                            <Plus className="mr-2 h-5 w-5" />
+                                            Crear primera tarea
+                                        </Button>
+                                    )}
+                                </div>
                             </div>
                         ) : (
-                            filteredTasks.map((task) => (
+                            filteredTasks.map((task) => {
+                                const getStatusColor = (status: TaskStatus) => {
+                                    const colors = {
+                                        pending: 'from-amber-400/20 to-orange-500/20 border-amber-200/50',
+                                        in_progress: 'from-blue-400/20 to-indigo-500/20 border-blue-200/50',
+                                        paused: 'from-slate-400/20 to-gray-500/20 border-slate-200/50',
+                                        completed: 'from-green-400/20 to-emerald-500/20 border-green-200/50',
+                                        archived: 'from-purple-400/20 to-violet-500/20 border-purple-200/50'
+                                    };
+                                    return colors[status] || colors.pending;
+                                };
+
+                                const getPriorityColor = (priority: TaskPriority) => {
+                                    const colors = {
+                                        low: 'bg-green-100 text-green-800 border-green-200',
+                                        medium: 'bg-yellow-100 text-yellow-800 border-yellow-200',
+                                        high: 'bg-orange-100 text-orange-800 border-orange-200',
+                                        urgent: 'bg-red-100 text-red-800 border-red-200 animate-pulse'
+                                    };
+                                    return colors[priority] || colors.medium;
+                                };
+
+                                return (
+                                    <div key={task.id} className="group relative">
+                                        <div className={`absolute inset-0 bg-gradient-to-r ${getStatusColor(task.status)} rounded-2xl blur-xl transition-all duration-500 group-hover:blur-2xl opacity-0 group-hover:opacity-100`}></div>
+                                        <div className="relative bg-white/95 backdrop-blur-xl rounded-2xl p-8 border border-white/40 shadow-2xl hover:shadow-3xl transition-all duration-500 transform hover:scale-[1.02] hover:-translate-y-1">
+                                            <div className="flex items-start justify-between mb-6">
+                                                <div className="flex-1 space-y-4">
+                                                    <div className="flex items-start justify-between">
+                                                        <h3 className="text-xl font-bold bg-gradient-to-r from-slate-900 via-slate-700 to-slate-900 bg-clip-text text-transparent group-hover:from-blue-900 group-hover:via-indigo-700 group-hover:to-purple-900 transition-all duration-500">
+                                                            {task.title}
+                                                        </h3>
+                                                        <div className="flex items-center gap-3">
+                                                            <span className={`px-3 py-1.5 rounded-full text-xs font-semibold border ${getPriorityColor(task.priority)} shadow-lg`}>
+                                                                {task.priority === 'urgent' && '🔥'} {task.priority.toUpperCase()}
+                                                            </span>
+                                                        </div>
+                                                    </div>
+                                                    
+                                                    {task.description && (
+                                                        <p className="text-slate-600 leading-relaxed bg-slate-50/50 rounded-xl p-4 border border-slate-100">
+                                                            {task.description}
+                                                        </p>
+                                                    )}
+                                                    
+                                                    <div className="flex items-center gap-6">
+                                                        <div className="flex items-center gap-2">
+                                                            <div className={`w-3 h-3 rounded-full bg-gradient-to-r ${
+                                                                task.status === 'completed' ? 'from-green-400 to-emerald-500' :
+                                                                task.status === 'in_progress' ? 'from-blue-400 to-indigo-500' :
+                                                                task.status === 'paused' ? 'from-slate-400 to-gray-500' :
+                                                                'from-amber-400 to-orange-500'
+                                                            } shadow-lg`}></div>
+                                                            <span className="text-sm font-medium text-slate-700 capitalize">
+                                                                {task.status === 'pending' ? 'Pendiente' :
+                                                                task.status === 'in_progress' ? 'En progreso' :
+                                                                task.status === 'paused' ? 'Pausada' :
+                                                                task.status === 'completed' ? 'Completada' :
+                                                                task.status === 'archived' ? 'Archivada' : task.status}
+                                                            </span>
+                                                        </div>
+                                                        
+                                                        {task.project_id && (
+                                                            <div className="flex items-center gap-2 bg-indigo-50 px-3 py-1.5 rounded-full border border-indigo-100">
+                                                                <User className="h-4 w-4 text-indigo-600" />
+                                                                <span className="text-sm font-medium text-indigo-700">
+                                                                    {projects.find(p => p.id === task.project_id)?.name || 'Proyecto'}
+                                                                </span>
+                                                            </div>
+                                                        )}
+                                                        
+                                                        {task.category && (
+                                                            <div className="flex items-center gap-2 bg-purple-50 px-3 py-1.5 rounded-full border border-purple-100">
+                                                                <Tag className="h-4 w-4 text-purple-600" />
+                                                                <span className="text-sm font-medium text-purple-700 capitalize">
+                                                                    {task.category}
+                                                                </span>
+                                                            </div>
+                                                        )}
+                                                        
+                                                        {task.due_date && (
+                                                            <div className="flex items-center gap-2 bg-rose-50 px-3 py-1.5 rounded-full border border-rose-100">
+                                                                <Calendar className="h-4 w-4 text-rose-600" />
+                                                                <span className="text-sm font-medium text-rose-700">
+                                                                    {new Date(task.due_date).toLocaleDateString('es-ES')}
+                                                                </span>
+                                                            </div>
+                                                        )}
+                                                    </div>
+                                                </div>
+                                                
+                                                <div className="flex flex-col items-end gap-3 ml-6">
+                                                    <div className="relative">
+                                                        <Button 
+                                                            size="sm" 
+                                                            variant="outline"
+                                                            onClick={(e) => {
+                                                                const rect = e.currentTarget.getBoundingClientRect();
+                                                                setMenuAnchor(rect);
+                                                                setMenuTaskId(task.id);
+                                                            }}
+                                                            className="p-3 rounded-xl border-2 border-slate-200 hover:border-slate-300 bg-white/80 backdrop-blur-sm transition-all duration-300 hover:shadow-lg group"
+                                                        >
+                                                            <MoreVertical className="h-5 w-5 text-slate-600 group-hover:text-slate-800 transition-colors" />
+                                                        </Button>
+                                                    </div>
+                                                    
+                                                    <div className="flex gap-2">
+                                                        {task.status !== 'completed' && (
+                                                            <Button
+                                                                size="sm"
+                                                                onClick={() => updateTaskStatus(task.id, 'completed')}
+                                                                className="bg-gradient-to-r from-green-500 to-emerald-600 hover:from-green-600 hover:to-emerald-700 text-white px-4 py-2 rounded-xl shadow-lg hover:shadow-green-500/25 transition-all duration-300 transform hover:scale-105"
+                                                            >
+                                                                <CheckCircle className="h-4 w-4" />
+                                                            </Button>
+                                                        )}
+                                                        
+                                                        {task.status === 'pending' && (
+                                                            <Button
+                                                                size="sm"
+                                                                onClick={() => {
+                                                                    updateTaskStatus(task.id, 'in_progress');
+                                                                    startTimer(task.id);
+                                                                }}
+                                                                className="bg-gradient-to-r from-blue-500 to-indigo-600 hover:from-blue-600 hover:to-indigo-700 text-white px-4 py-2 rounded-xl shadow-lg hover:shadow-blue-500/25 transition-all duration-300 transform hover:scale-105"
+                                                            >
+                                                                <Play className="h-4 w-4" />
+                                                            </Button>
+                                                        )}
+                                                        
+                                                        {(task.status === 'in_progress' || task.status === 'paused') && (
+                                                            <Button
+                                                                size="sm"
+                                                                onClick={() => {
+                                                                    if (activeTimer === task.id) {
+                                                                        pauseTimer();
+                                                                        updateTaskStatus(task.id, 'paused');
+                                                                    } else {
+                                                                        startTimer(task.id);
+                                                                        updateTaskStatus(task.id, 'in_progress');
+                                                                    }
+                                                                }}
+                                                                className={`${
+                                                                    activeTimer === task.id 
+                                                                        ? 'bg-gradient-to-r from-orange-500 to-red-600 hover:from-orange-600 hover:to-red-700' 
+                                                                        : 'bg-gradient-to-r from-blue-500 to-indigo-600 hover:from-blue-600 hover:to-indigo-700'
+                                                                } text-white px-4 py-2 rounded-xl shadow-lg transition-all duration-300 transform hover:scale-105`}
+                                                            >
+                                                                <Timer className="h-4 w-4" />
+                                                            </Button>
+                                                        )}
+                                                    </div>
+                                                    
+                                                    {task.total_time_seconds && task.total_time_seconds > 0 && (
+                                                        <div className="bg-slate-50 px-3 py-1.5 rounded-full border border-slate-200">
+                                                            <span className="text-xs font-mono text-slate-700">
+                                                                {formatTime(task.total_time_seconds * 1000)}
+                                                            </span>
+                                                        </div>
+                                                    )}
+                                                </div>
+                                            </div>
+                                            
+                                            {/* Progress bar para tareas en progreso */}
+                                            {task.status === 'in_progress' && (
+                                                <div className="mt-4 pt-4 border-t border-slate-100">
+                                                    <div className="flex items-center gap-3">
+                                                        <div className="flex-1 bg-slate-200 rounded-full h-2 overflow-hidden">
+                                                            <div className="h-full bg-gradient-to-r from-blue-500 to-indigo-600 rounded-full animate-pulse" style={{width: '65%'}}></div>
+                                                        </div>
+                                                        <span className="text-xs font-medium text-slate-600">En progreso</span>
+                                                        {activeTimer === task.id && (
+                                                            <div className="flex items-center gap-1 text-xs text-blue-600 font-mono">
+                                                                <div className="w-2 h-2 bg-blue-500 rounded-full animate-pulse"></div>
+                                                                {timerStartTime && formatTime(Date.now() - timerStartTime.getTime())}
+                                                            </div>
+                                                        )}
+                                                    </div>
+                                                </div>
+                                            )}
+                                        </div>
+                                    </div>
+                                );
+                            })
+                        )}
                                 <div key={task.id} className="bg-white/80 backdrop-blur-sm rounded-xl p-6 border border-white/20 shadow-lg hover:shadow-xl transition-all duration-300">
                                     <div className="flex items-start justify-between">
                                         <div className="flex-1">
                                             <div className="flex items-center gap-3 mb-2">
                                                 <h3 className="text-lg font-semibold text-slate-900">{task.title}</h3>
                                                 <span className={`px-2 py-1 rounded-full text-xs font-medium ${task.status === 'completed' ? 'bg-green-100 text-green-800' :
-                                                        task.status === 'in_progress' ? 'bg-blue-100 text-blue-800' :
-                                                            task.status === 'paused' ? 'bg-yellow-100 text-yellow-800' :
-                                                                task.status === 'archived' ? 'bg-gray-100 text-gray-800' :
-                                                                    'bg-slate-100 text-slate-800'
+                                                    task.status === 'in_progress' ? 'bg-blue-100 text-blue-800' :
+                                                        task.status === 'paused' ? 'bg-yellow-100 text-yellow-800' :
+                                                            task.status === 'archived' ? 'bg-gray-100 text-gray-800' :
+                                                                'bg-slate-100 text-slate-800'
                                                     }`}>
                                                     {task.status === 'pending' ? 'Pendiente' :
                                                         task.status === 'in_progress' ? 'En progreso' :
@@ -784,9 +714,9 @@ export default function TasksPageClient({ userEmail }: TasksPageClientProps) {
                                                                     task.status === 'archived' ? 'Archivada' : task.status}
                                                 </span>
                                                 <span className={`px-2 py-1 rounded-full text-xs font-medium ${task.priority === 'urgent' ? 'bg-red-100 text-red-800' :
-                                                        task.priority === 'high' ? 'bg-orange-100 text-orange-800' :
-                                                            task.priority === 'medium' ? 'bg-blue-100 text-blue-800' :
-                                                                'bg-gray-100 text-gray-800'
+                                                    task.priority === 'high' ? 'bg-orange-100 text-orange-800' :
+                                                        task.priority === 'medium' ? 'bg-blue-100 text-blue-800' :
+                                                            'bg-gray-100 text-gray-800'
                                                     }`}>
                                                     {task.priority === 'urgent' ? '🔥 Urgente' :
                                                         task.priority === 'high' ? '⚠️ Alta' :
@@ -821,114 +751,82 @@ export default function TasksPageClient({ userEmail }: TasksPageClientProps) {
                                             {activeTimer === task.id ? (
                                                 <div className="flex items-center gap-2">
                                                     <span className="text-sm font-mono text-blue-600 bg-blue-50 px-2 py-1 rounded">
-                                                        {formatTime((task.total_time_seconds || 0) * 1000 + (activeTimer === task.id && timerStartTime ? Date.now() - timerStartTime.getTime() : 0))}
+                                                        {formatTime(elapsedTime)}
                                                     </span>
                                                     <Button
-                                                        type="button"
                                                         size="sm"
                                                         variant="outline"
-                                                        onClick={(e: any) => { e.preventDefault(); e.stopPropagation(); pauseTimer(); }}
+                                                        onClick={pauseTimer}
                                                         className="text-orange-600 border-orange-300 hover:bg-orange-50"
                                                     >
                                                         <Square className="h-4 w-4" />
                                                     </Button>
                                                 </div>
                                             ) : (
-                                                <div className="flex items-center gap-2">
-                                                    <span className="text-sm font-mono text-blue-600 bg-blue-50 px-2 py-1 rounded">
-                                                        {formatTime((task.total_time_seconds || 0) * 1000)}
-                                                    </span>
-                                                    <Button
-                                                        type="button"
-                                                        size="sm"
-                                                        variant="outline"
-                                                        onClick={(e: any) => { e.preventDefault(); e.stopPropagation(); startTimer(task.id); }}
-                                                        className="text-green-600 border-green-300 hover:bg-green-50"
-                                                        disabled={task.status === 'completed'}
-                                                    >
-                                                        <Play className="h-4 w-4" />
-                                                    </Button>
-                                                </div>
+                                                <Button
+                                                    size="sm"
+                                                    variant="outline"
+                                                    onClick={() => startTimer(task.id)}
+                                                    className="text-green-600 border-green-300 hover:bg-green-50"
+                                                    disabled={task.status === 'completed'}
+                                                >
+                                                    <Play className="h-4 w-4" />
+                                                </Button>
                                             )}
 
                                             {/* Actions */}
-                                            <div className="relative group" style={{overflow: 'visible'}}>
-                                                <Button size="sm" variant="outline" className="text-slate-600"
-                                                    onClick={e => {
-                                                        e.preventDefault();
-                                                        e.stopPropagation();
-                                                        setMenuTaskId(task.id);
-                                                        setMenuAnchor(e.currentTarget.getBoundingClientRect());
-                                                    }}>
+                                            <div className="relative group">
+                                                <Button size="sm" variant="outline" className="text-slate-600">
                                                     <MoreVertical className="h-4 w-4" />
                                                 </Button>
-                                                {menuTaskId === task.id && menuAnchor && ReactDOM.createPortal(
-                                                    <div
-                                                        style={{
-                                                            position: 'fixed',
-                                                            top: menuAnchor.bottom + 4,
-                                                            left: Math.max(16, menuAnchor.left - 200),
-                                                            minWidth: 200,
-                                                            background: 'white',
-                                                            borderRadius: 8,
-                                                            boxShadow: '0 8px 24px rgba(0,0,0,0.15)',
-                                                            border: '1px solid #e2e8f0',
-                                                            zIndex: 99999,
-                                                            padding: '4px 0',
+                                                <div className="absolute right-0 top-8 bg-white rounded-lg shadow-lg border py-1 min-w-[150px] opacity-0 group-hover:opacity-100 transition-opacity z-10">
+                                                    <button
+                                                        onClick={() => {
+                                                            setEditingTask(task);
+                                                            setShowEditTaskModal(true);
                                                         }}
-                                                        onMouseLeave={() => setMenuTaskId(null)}
+                                                        className="w-full text-left px-3 py-2 text-sm text-slate-600 hover:bg-slate-50 flex items-center gap-2"
                                                     >
+                                                        <Edit3 className="h-4 w-4" />
+                                                        Editar
+                                                    </button>
+                                                    <button
+                                                        onClick={() => {
+                                                            setSelectedTask(task);
+                                                            setShowTaskDetails(true);
+                                                        }}
+                                                        className="w-full text-left px-3 py-2 text-sm text-slate-600 hover:bg-slate-50 flex items-center gap-2"
+                                                    >
+                                                        <CheckCircle className="h-4 w-4" />
+                                                        Ver detalles
+                                                    </button>
+                                                    {task.status !== 'completed' && (
                                                         <button
-                                                            onClick={() => {
-                                                                setEditingTask(task);
-                                                                setShowEditTaskModal(true);
-                                                                setMenuTaskId(null);
-                                                            }}
-                                                            className="w-full text-left px-3 py-2 text-sm text-slate-600 hover:bg-slate-50 flex items-center gap-2"
-                                                        >
-                                                            <Edit3 className="h-4 w-4" />
-                                                            Editar
-                                                        </button>
-                                                        <button
-                                                            onClick={() => {
-                                                                setSelectedTask(task);
-                                                                setShowTaskDetails(true);
-                                                                setMenuTaskId(null);
-                                                            }}
-                                                            className="w-full text-left px-3 py-2 text-sm text-slate-600 hover:bg-slate-50 flex items-center gap-2"
+                                                            onClick={() => updateTaskStatus(task.id, 'completed')}
+                                                            className="w-full text-left px-3 py-2 text-sm text-green-600 hover:bg-green-50 flex items-center gap-2"
                                                         >
                                                             <CheckCircle className="h-4 w-4" />
-                                                            Ver detalles
+                                                            Marcar completada
                                                         </button>
-                                                        {task.status !== 'completed' && (
-                                                            <button
-                                                                onClick={() => { updateTaskStatus(task.id, 'completed'); setMenuTaskId(null); }}
-                                                                className="w-full text-left px-3 py-2 text-sm text-green-600 hover:bg-green-50 flex items-center gap-2"
-                                                            >
-                                                                <CheckCircle className="h-4 w-4" />
-                                                                Marcar completada
-                                                            </button>
-                                                        )}
-                                                        {task.status !== 'archived' && (
-                                                            <button
-                                                                onClick={() => { updateTaskStatus(task.id, 'archived'); setMenuTaskId(null); }}
-                                                                className="w-full text-left px-3 py-2 text-sm text-slate-600 hover:bg-slate-50 flex items-center gap-2"
-                                                            >
-                                                                <Archive className="h-4 w-4" />
-                                                                Archivar
-                                                            </button>
-                                                        )}
-                                                        <hr className="my-1" />
+                                                    )}
+                                                    {task.status !== 'archived' && (
                                                         <button
-                                                            onClick={() => { deleteTask(task.id); setMenuTaskId(null); }}
-                                                            className="w-full text-left px-3 py-2 text-sm text-red-600 hover:bg-red-50 flex items-center gap-2"
+                                                            onClick={() => updateTaskStatus(task.id, 'archived')}
+                                                            className="w-full text-left px-3 py-2 text-sm text-slate-600 hover:bg-slate-50 flex items-center gap-2"
                                                         >
-                                                            <Trash2 className="h-4 w-4" />
-                                                            Eliminar
+                                                            <Archive className="h-4 w-4" />
+                                                            Archivar
                                                         </button>
-                                                    </div>,
-                                                    document.body
-                                                )}
+                                                    )}
+                                                    <hr className="my-1" />
+                                                    <button
+                                                        onClick={() => deleteTask(task.id)}
+                                                        className="w-full text-left px-3 py-2 text-sm text-red-600 hover:bg-red-50 flex items-center gap-2"
+                                                    >
+                                                        <Trash2 className="h-4 w-4" />
+                                                        Eliminar
+                                                    </button>
+                                                </div>
                                             </div>
                                         </div>
                                     </div>
@@ -993,84 +891,19 @@ export default function TasksPageClient({ userEmail }: TasksPageClientProps) {
                                 </div>
                             </div>
                             <div>
-                                <label className="block text-sm font-medium text-slate-700 mb-1">Proyecto</label>
+                                <label className="block text-sm font-medium text-slate-700 mb-1">Proyecto *</label>
                                 <select
                                     className="w-full px-3 py-2 border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
                                     value={newTask.project_id}
                                     onChange={(e) => setNewTask({ ...newTask, project_id: e.target.value })}
                                 >
-                                    <option value="">Sin proyecto asignado</option>
-                                    {projects.length === 0 ? (
-                                        <option disabled>🔍 Cargando proyectos... o no hay proyectos</option>
-                                    ) : (
-                                        projects.map(project => (
-                                            <option key={project.id} value={project.id}>
-                                                {project.name} {project.status ? `(${project.status})` : '(sin estado)'}
-                                            </option>
-                                        ))
-                                    )}
-                                </select>
-                                {projects.length === 0 && (
-                                    <div className="text-xs text-amber-600 mt-1 p-2 bg-amber-50 rounded">
-                                        <p>📝 <strong>No hay proyectos disponibles.</strong></p>
-                                        <p>• Verifica la consola del navegador (F12) para logs de debugging</p>
-                                        <p>• Crea proyectos desde la sección de Proyectos</p>
-                                        <p>• O continúa sin proyecto asignado</p>
-                                    </div>
-                                )}
-                            </div>
-                            <div>
-                                <label className="block text-sm font-medium text-slate-700 mb-1">Categoría *</label>
-                                <select
-                                    className="w-full px-3 py-2 border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
-                                    value={newTask.category}
-                                    onChange={(e) => {
-                                        if (e.target.value === 'new_category') {
-                                            setShowNewCategoryInput(true);
-                                        } else {
-                                            setNewTask({ ...newTask, category: e.target.value });
-                                        }
-                                    }}
-                                >
-                                    <option value="" disabled>Selecciona una categoría...</option>
-                                    {[...categories, ...customCategories].map(category => (
-                                        <option key={category.value} value={category.value}>
-                                            {category.label}
+                                    <option value="">Selecciona un proyecto...</option>
+                                    {projects.map(project => (
+                                        <option key={project.id} value={project.id}>
+                                            {project.name}
                                         </option>
                                     ))}
-                                    <option value="new_category">+ Crear nueva categoría</option>
                                 </select>
-                                
-                                {showNewCategoryInput && (
-                                    <div className="mt-2 flex gap-2">
-                                        <input
-                                            type="text"
-                                            placeholder="Nombre de la nueva categoría"
-                                            className="flex-1 px-3 py-2 border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm"
-                                            value={newCategoryName}
-                                            onChange={(e) => setNewCategoryName(e.target.value)}
-                                            onKeyPress={(e) => e.key === 'Enter' && createCustomCategory()}
-                                        />
-                                        <Button
-                                            size="sm"
-                                            onClick={createCustomCategory}
-                                            className="bg-green-600 hover:bg-green-700 text-white text-xs px-3 py-1"
-                                        >
-                                            Crear
-                                        </Button>
-                                        <Button
-                                            variant="outline"
-                                            size="sm"
-                                            onClick={() => {
-                                                setShowNewCategoryInput(false);
-                                                setNewCategoryName('');
-                                            }}
-                                            className="text-xs px-3 py-1"
-                                        >
-                                            Cancelar
-                                        </Button>
-                                    </div>
-                                )}
                             </div>
                             <div>
                                 <label className="block text-sm font-medium text-slate-700 mb-1">Fecha límite</label>
@@ -1171,70 +1004,6 @@ export default function TasksPageClient({ userEmail }: TasksPageClientProps) {
                                 </select>
                             </div>
                             <div>
-                                <label className="block text-sm font-medium text-slate-700 mb-1">Categoría</label>
-                                <select
-                                    className="w-full px-3 py-2 border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
-                                    value={editingTask.category || 'general'}
-                                    onChange={(e) => {
-                                        if (e.target.value === 'new_category') {
-                                            setShowNewCategoryInput(true);
-                                        } else {
-                                            setEditingTask({ ...editingTask, category: e.target.value });
-                                        }
-                                    }}
-                                >
-                                    {[...categories, ...customCategories].map(category => (
-                                        <option key={category.value} value={category.value}>
-                                            {category.label}
-                                        </option>
-                                    ))}
-                                    <option value="new_category">+ Crear nueva categoría</option>
-                                </select>
-                                
-                                {showNewCategoryInput && (
-                                    <div className="mt-2 flex gap-2">
-                                        <input
-                                            type="text"
-                                            placeholder="Nombre de la nueva categoría"
-                                            className="flex-1 px-3 py-2 border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm"
-                                            value={newCategoryName}
-                                            onChange={(e) => setNewCategoryName(e.target.value)}
-                                            onKeyPress={(e) => e.key === 'Enter' && createCustomCategory()}
-                                        />
-                                        <Button
-                                            size="sm"
-                                            onClick={() => {
-                                                if (newCategoryName.trim()) {
-                                                    const categoryValue = newCategoryName.toLowerCase().replace(/\s+/g, '_');
-                                                    const newCategory = { value: categoryValue, label: newCategoryName.trim() };
-                                                    const allCategories = [...categories, ...customCategories];
-                                                    if (!allCategories.some(cat => cat.value === categoryValue)) {
-                                                        setCustomCategories(prev => [...prev, newCategory]);
-                                                        setEditingTask({ ...editingTask, category: categoryValue });
-                                                    }
-                                                }
-                                                setShowNewCategoryInput(false);
-                                                setNewCategoryName('');
-                                            }}
-                                            className="bg-green-600 hover:bg-green-700 text-white text-xs px-3 py-1"
-                                        >
-                                            Crear
-                                        </Button>
-                                        <Button
-                                            variant="outline"
-                                            size="sm"
-                                            onClick={() => {
-                                                setShowNewCategoryInput(false);
-                                                setNewCategoryName('');
-                                            }}
-                                            className="text-xs px-3 py-1"
-                                        >
-                                            Cancelar
-                                        </Button>
-                                    </div>
-                                )}
-                            </div>
-                            <div>
                                 <label className="block text-sm font-medium text-slate-700 mb-1">Fecha límite</label>
                                 <input
                                     type="date"
@@ -1292,10 +1061,10 @@ export default function TasksPageClient({ userEmail }: TasksPageClientProps) {
                                 <div>
                                     <h4 className="font-medium text-slate-700 mb-2">Estado</h4>
                                     <span className={`inline-flex items-center px-3 py-1 rounded-full text-sm font-medium ${selectedTask.status === 'completed' ? 'bg-green-100 text-green-800' :
-                                            selectedTask.status === 'in_progress' ? 'bg-blue-100 text-blue-800' :
-                                                selectedTask.status === 'paused' ? 'bg-yellow-100 text-yellow-800' :
-                                                    selectedTask.status === 'archived' ? 'bg-gray-100 text-gray-800' :
-                                                        'bg-slate-100 text-slate-800'
+                                        selectedTask.status === 'in_progress' ? 'bg-blue-100 text-blue-800' :
+                                            selectedTask.status === 'paused' ? 'bg-yellow-100 text-yellow-800' :
+                                                selectedTask.status === 'archived' ? 'bg-gray-100 text-gray-800' :
+                                                    'bg-slate-100 text-slate-800'
                                         }`}>
                                         {selectedTask.status === 'pending' ? 'Pendiente' :
                                             selectedTask.status === 'in_progress' ? 'En progreso' :
@@ -1307,9 +1076,9 @@ export default function TasksPageClient({ userEmail }: TasksPageClientProps) {
                                 <div>
                                     <h4 className="font-medium text-slate-700 mb-2">Prioridad</h4>
                                     <span className={`inline-flex items-center px-3 py-1 rounded-full text-sm font-medium ${selectedTask.priority === 'urgent' ? 'bg-red-100 text-red-800' :
-                                            selectedTask.priority === 'high' ? 'bg-orange-100 text-orange-800' :
-                                                selectedTask.priority === 'medium' ? 'bg-blue-100 text-blue-800' :
-                                                    'bg-gray-100 text-gray-800'
+                                        selectedTask.priority === 'high' ? 'bg-orange-100 text-orange-800' :
+                                            selectedTask.priority === 'medium' ? 'bg-blue-100 text-blue-800' :
+                                                'bg-gray-100 text-gray-800'
                                         }`}>
                                         {selectedTask.priority === 'urgent' ? '🔥 Urgente' :
                                             selectedTask.priority === 'high' ? '⚠️ Alta' :
