@@ -1,6 +1,6 @@
 import { createServerSupabaseClient } from '@/src/lib/supabase-server';
 import { redirect } from 'next/navigation';
-import DashboardBonsai from './DashBoardClient';
+import DashboardBonsai from './DashboardBonsai';
 
 export default async function DashboardPage() {
     try {

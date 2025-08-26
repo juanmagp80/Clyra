@@ -20,15 +20,20 @@ export const createSupabaseClient = () => {
     if (!isSupabaseConfigured()) {
         console.warn('⚠️ Supabase no está configurado. La funcionalidad estará limitada.');
         // Devolvemos un objeto mock para evitar errores de 'null'
+        const mockQuery = {
+            select: () => mockQuery,
+            insert: () => mockQuery,
+            update: () => mockQuery,
+            delete: () => mockQuery,
+            eq: () => mockQuery,
+            order: () => mockQuery,
+            then: () => Promise.resolve({ data: [], error: { message: 'Supabase not configured' } })
+        };
+        
         return {
-            from: () => ({
-                select: async () => ({ data: [], error: { message: 'Supabase not configured' } }),
-                insert: async () => ({ data: [], error: { message: 'Supabase not configured' } }),
-                update: async () => ({ data: [], error: { message: 'Supabase not configured' } }),
-                delete: async () => ({ data: [], error: { message: 'Supabase not configured' } }),
-            }),
+            from: () => mockQuery,
             auth: {
-                getUser: async () => ({ data: { user: null }, error: null }),
+                getUser: async () => ({ data: { user: null }, error: { message: 'Supabase not configured' } }),
                 signInWithPassword: async () => ({ data: { user: null }, error: { message: 'Supabase not configured' } }),
                 signOut: async () => ({ error: null }),
             },

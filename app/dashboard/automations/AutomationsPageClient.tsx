@@ -59,7 +59,7 @@ const Modal: React.FC<ModalProps> = ({ isOpen, onClose, children }) => {
 
     return (
         <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-50 p-4">
-            <div className="bg-white/95 backdrop-blur-xl rounded-2xl shadow-2xl max-w-2xl w-full max-h-[90vh] overflow-y-auto border border-white/20">
+            <div className="bg-white rounded-lg shadow-xl max-w-2xl w-full max-h-[90vh] overflow-y-auto border border-gray-200">
                 {children}
             </div>
         </div>
@@ -112,14 +112,177 @@ export default function AutomationsPageClient({ userEmail }: AutomationsPageClie
     };
 
     // Función para manejar ejecución de automaciones
-    const handleAutomationClick = (automation: Automation) => {
+    const handleAutomationClick = async (automation: Automation) => {
+        console.log('🚀 Preparando ejecución de automatización:', automation.name);
+
         if (!canUseFeatures) {
             alert('Tu periodo de prueba ha expirado. Actualiza tu plan para continuar usando automaciones.');
             return;
         }
+
+        if (!supabase) {
+            console.error('❌ Cliente Supabase no disponible');
+            alert('Error: Cliente Supabase no disponible');
+            return;
+        }
+
+        console.log('✅ Cliente Supabase disponible');
+
+        // Verificar configuración de Supabase
+        const isConfigured = typeof supabase.from === 'function' && 
+                           typeof supabase.auth?.getUser === 'function';
         
+        if (!isConfigured) {
+            console.error('❌ Supabase no está configurado correctamente');
+            setModalAutomation(automation);
+            setModalOpen(true);
+            setEntityOptions([]);
+            setSelectedEntity('');
+            setExecutionLogs([
+                '❌ Error de configuración de Supabase',
+                '🔧 Verifica las variables de entorno NEXT_PUBLIC_SUPABASE_URL y NEXT_PUBLIC_SUPABASE_ANON_KEY',
+                '📋 La funcionalidad de automatizaciones requiere conexión a la base de datos'
+            ]);
+            setEntityLoading(false);
+            setExecuting(false);
+            return;
+        }
+
+        const { data: userData, error: userError } = await supabase.auth.getUser();
+        console.log('👤 Resultado de getUser:', { userData, userError });
+        
+        const user_id = userData?.user?.id || '';
+
+        if (!user_id) {
+            console.error('❌ Usuario no autenticado - user_id:', user_id);
+            alert('Error: Usuario no autenticado');
+            return;
+        }
+
+        console.log('✅ Usuario autenticado con ID:', user_id);
+
+        // Abrir modal y resetear estado
         setModalAutomation(automation);
         setModalOpen(true);
+        setEntityOptions([]);
+        setSelectedEntity('');
+        setExecutionLogs([]);
+        setEntityLoading(true);
+        setExecuting(false);
+
+        // Cargar clientes con información adicional
+        console.log('🔍 Cargando clientes disponibles...');
+        console.log('🔍 User ID:', user_id);
+
+        try {
+            console.log('🔍 Iniciando query de clientes...');
+            
+            const clientsQuery = supabase
+                .from('clients')
+                .select('id, name, email, company, phone, created_at')
+                .eq('user_id', user_id)
+                .order('name');
+                
+            console.log('📝 Query de clientes configurada');
+            
+            const { data: clientsData, error: clientsError } = await clientsQuery;
+
+            console.log('📊 Respuesta de clientes:', { 
+                clientsData, 
+                clientsError,
+                dataLength: clientsData?.length,
+                dataType: typeof clientsData,
+                isArray: Array.isArray(clientsData)
+            });
+
+            if (clientsError) {
+                console.error('❌ Error cargando clientes:', clientsError);
+                setExecutionLogs([
+                    '❌ Error cargando clientes: ' + clientsError.message,
+                    `🔍 User ID: ${user_id}`,
+                    `🔧 Error code: ${clientsError.code || 'N/A'}`,
+                    '🔧 Verifica la configuración de Supabase y permisos RLS'
+                ]);
+                setEntityOptions([]);
+            } else if (!clientsData || clientsData.length === 0) {
+                console.log('⚠️ No se encontraron clientes para el usuario:', user_id);
+                setExecutionLogs([
+                    '🔍 Cargando clientes disponibles...',
+                    `⚠️ No se encontraron clientes para el usuario: ${user_id}`,
+                    '📋 Verifica que tengas clientes creados en tu cuenta',
+                    '👤 Ve a la sección de Clientes para crear uno',
+                    `🔧 Query ejecutada: SELECT * FROM clients WHERE user_id = '${user_id}'`
+                ]);
+                setEntityOptions([]);
+            } else {
+                console.log('✅ Clientes encontrados:', clientsData);
+                
+                // Obtener información adicional para cada cliente
+                const clientsWithInfo = await Promise.all(
+                    clientsData.map(async (client: any) => {
+                        try {
+                            const { count: projectCount } = await supabase
+                                .from('projects')
+                                .select('*', { count: 'exact', head: true })
+                                .eq('client_id', client.id)
+                                .eq('user_id', user_id);
+
+                            const { count: invoiceCount } = await supabase
+                                .from('invoices')
+                                .select('*', { count: 'exact', head: true })
+                                .eq('client_id', client.id)
+                                .eq('user_id', user_id);
+
+                            return {
+                                ...client,
+                                projectCount: projectCount || 0,
+                                invoiceCount: invoiceCount || 0,
+                                displayInfo: [
+                                    client.company || '',
+                                    client.email || '',
+                                    `${projectCount || 0} proyectos`,
+                                    `${invoiceCount || 0} facturas`
+                                ].filter(Boolean).join(' • ')
+                            };
+                        } catch (err) {
+                            console.error('Error obteniendo info adicional para cliente:', client.id, err);
+                            return {
+                                ...client,
+                                projectCount: 0,
+                                invoiceCount: 0,
+                                displayInfo: [
+                                    client.company || '',
+                                    client.email || '',
+                                    '0 proyectos',
+                                    '0 facturas'
+                                ].filter(Boolean).join(' • ')
+                            };
+                        }
+                    })
+                );
+
+                console.log('✅ Clientes con información adicional:', clientsWithInfo);
+                setEntityOptions(clientsWithInfo);
+                setExecutionLogs([
+                    '🔍 Cargando clientes disponibles...',
+                    `✅ ${clientsWithInfo.length} clientes encontrados`,
+                    `📋 Automatización: ${automation.name}`,
+                    '👤 Selecciona un cliente para aplicar la automatización'
+                ]);
+            }
+        } catch (error) {
+            console.error('❌ Error en catch:', error);
+            const errorMessage = error instanceof Error ? error.message : String(error);
+            setExecutionLogs([
+                '❌ Error: ' + errorMessage,
+                `🔍 User ID: ${user_id}`,
+                '🔧 Verifica la conexión a la base de datos',
+                '🔧 Verifica las variables de entorno de Supabase'
+            ]);
+            setEntityOptions([]);
+        }
+
+        setEntityLoading(false);
     };
 
     const loadAutomations = async () => {
@@ -191,17 +354,45 @@ export default function AutomationsPageClient({ userEmail }: AutomationsPageClie
         console.log('🚀 Preparando ejecución de automatización:', automation.name);
 
         if (!supabase) {
+            console.error('❌ Cliente Supabase no disponible');
             alert('Error: Cliente Supabase no disponible');
             return;
         }
 
-        const { data: userData } = await supabase.auth.getUser();
+        console.log('✅ Cliente Supabase disponible');
+
+        // Verificar configuración de Supabase
+        const isConfigured = typeof supabase.from === 'function' && 
+                           typeof supabase.auth?.getUser === 'function';
+        
+        if (!isConfigured) {
+            console.error('❌ Supabase no está configurado correctamente');
+            setModalAutomation(automation);
+            setModalOpen(true);
+            setEntityOptions([]);
+            setSelectedEntity('');
+            setExecutionLogs([
+                '❌ Error de configuración de Supabase',
+                '🔧 Verifica las variables de entorno NEXT_PUBLIC_SUPABASE_URL y NEXT_PUBLIC_SUPABASE_ANON_KEY',
+                '📋 La funcionalidad de automatizaciones requiere conexión a la base de datos'
+            ]);
+            setEntityLoading(false);
+            setExecuting(false);
+            return;
+        }
+
+        const { data: userData, error: userError } = await supabase.auth.getUser();
+        console.log('👤 Resultado de getUser:', { userData, userError });
+        
         const user_id = userData?.user?.id || '';
 
         if (!user_id) {
+            console.error('❌ Usuario no autenticado - user_id:', user_id);
             alert('Error: Usuario no autenticado');
             return;
         }
+
+        console.log('✅ Usuario autenticado con ID:', user_id);
 
         // Abrir modal y resetear estado
         setModalAutomation(automation);
@@ -214,47 +405,96 @@ export default function AutomationsPageClient({ userEmail }: AutomationsPageClie
 
         // Cargar clientes con información adicional
         console.log('🔍 Cargando clientes disponibles...');
+        console.log('🔍 User ID:', user_id);
 
         try {
-            const { data: clientsData, error: clientsError } = await supabase
+            console.log('🔍 Iniciando query de clientes...');
+            
+            const clientsQuery = supabase
                 .from('clients')
                 .select('id, name, email, company, phone, created_at')
                 .eq('user_id', user_id)
                 .order('name');
+                
+            console.log('� Query de clientes configurada');
+            
+            const { data: clientsData, error: clientsError } = await clientsQuery;
+
+            console.log('📊 Respuesta de clientes:', { 
+                clientsData, 
+                clientsError,
+                dataLength: clientsData?.length,
+                dataType: typeof clientsData,
+                isArray: Array.isArray(clientsData)
+            });
 
             if (clientsError) {
                 console.error('❌ Error cargando clientes:', clientsError);
-                setExecutionLogs(['❌ Error cargando clientes: ' + clientsError.message]);
+                setExecutionLogs([
+                    '❌ Error cargando clientes: ' + clientsError.message,
+                    `🔍 User ID: ${user_id}`,
+                    `🔧 Error code: ${clientsError.code || 'N/A'}`,
+                    '🔧 Verifica la configuración de Supabase y permisos RLS'
+                ]);
+                setEntityOptions([]);
+            } else if (!clientsData || clientsData.length === 0) {
+                console.log('⚠️ No se encontraron clientes para el usuario:', user_id);
+                setExecutionLogs([
+                    '🔍 Cargando clientes disponibles...',
+                    `⚠️ No se encontraron clientes para el usuario: ${user_id}`,
+                    '📋 Verifica que tengas clientes creados en tu cuenta',
+                    '👤 Ve a la sección de Clientes para crear uno',
+                    `🔧 Query ejecutada: SELECT * FROM clients WHERE user_id = '${user_id}'`
+                ]);
+                setEntityOptions([]);
             } else {
+                console.log('✅ Clientes encontrados:', clientsData);
+                
                 // Obtener información adicional para cada cliente
                 const clientsWithInfo = await Promise.all(
-                    (clientsData || []).map(async (client: any) => {
-                        const { count: projectCount } = await supabase
-                            .from('projects')
-                            .select('*', { count: 'exact', head: true })
-                            .eq('client_id', client.id)
-                            .eq('user_id', user_id);
+                    clientsData.map(async (client: any) => {
+                        try {
+                            const { count: projectCount } = await supabase
+                                .from('projects')
+                                .select('*', { count: 'exact', head: true })
+                                .eq('client_id', client.id)
+                                .eq('user_id', user_id);
 
-                        const { count: invoiceCount } = await supabase
-                            .from('invoices')
-                            .select('*', { count: 'exact', head: true })
-                            .eq('client_id', client.id)
-                            .eq('user_id', user_id);
+                            const { count: invoiceCount } = await supabase
+                                .from('invoices')
+                                .select('*', { count: 'exact', head: true })
+                                .eq('client_id', client.id)
+                                .eq('user_id', user_id);
 
-                        return {
-                            ...client,
-                            projectCount: projectCount || 0,
-                            invoiceCount: invoiceCount || 0,
-                            displayInfo: [
-                                client.company || '',
-                                client.email || '',
-                                `${projectCount || 0} proyectos`,
-                                `${invoiceCount || 0} facturas`
-                            ].filter(Boolean).join(' • ')
-                        };
+                            return {
+                                ...client,
+                                projectCount: projectCount || 0,
+                                invoiceCount: invoiceCount || 0,
+                                displayInfo: [
+                                    client.company || '',
+                                    client.email || '',
+                                    `${projectCount || 0} proyectos`,
+                                    `${invoiceCount || 0} facturas`
+                                ].filter(Boolean).join(' • ')
+                            };
+                        } catch (err) {
+                            console.error('Error obteniendo info adicional para cliente:', client.id, err);
+                            return {
+                                ...client,
+                                projectCount: 0,
+                                invoiceCount: 0,
+                                displayInfo: [
+                                    client.company || '',
+                                    client.email || '',
+                                    '0 proyectos',
+                                    '0 facturas'
+                                ].filter(Boolean).join(' • ')
+                            };
+                        }
                     })
                 );
 
+                console.log('✅ Clientes con información adicional:', clientsWithInfo);
                 setEntityOptions(clientsWithInfo);
                 setExecutionLogs([
                     '🔍 Cargando clientes disponibles...',
@@ -264,8 +504,15 @@ export default function AutomationsPageClient({ userEmail }: AutomationsPageClie
                 ]);
             }
         } catch (error) {
-            console.error('❌ Error:', error);
-            setExecutionLogs(['❌ Error: ' + error]);
+            console.error('❌ Error en catch:', error);
+            const errorMessage = error instanceof Error ? error.message : String(error);
+            setExecutionLogs([
+                '❌ Error: ' + errorMessage,
+                `🔍 User ID: ${user_id}`,
+                '🔧 Verifica la conexión a la base de datos',
+                '🔧 Verifica las variables de entorno de Supabase'
+            ]);
+            setEntityOptions([]);
         }
 
         setEntityLoading(false);
@@ -499,22 +746,20 @@ export default function AutomationsPageClient({ userEmail }: AutomationsPageClie
 
     if (connectionError) {
         return (
-            <div className="flex h-screen overflow-hidden bg-gradient-to-br from-slate-50 via-blue-50 to-indigo-100">
+            <div className="min-h-screen bg-gray-50">
                 <Sidebar userEmail={userEmail} onLogout={handleLogout} />
-                <div className="flex-1 ml-56 overflow-hidden">
-                    <div className="h-full overflow-y-auto">
-                        <div className="flex items-center justify-center h-96">
-                            <div className="text-center bg-white p-8 rounded-xl shadow-lg max-w-md">
-                                <div className="text-red-500 text-6xl mb-4">⚠️</div>
-                                <h2 className="text-2xl font-bold text-red-800 mb-4">Error de Conexión</h2>
-                                <p className="text-red-600 mb-4">{connectionError}</p>
-                                <button 
-                                    onClick={() => window.location.reload()} 
-                                    className="bg-red-600 text-white px-4 py-2 rounded hover:bg-red-700"
-                                >
-                                    Reintentar
-                                </button>
-                            </div>
+                <div className="flex-1 ml-56">
+                    <div className="max-w-7xl mx-auto px-6 py-12">
+                        <div className="text-center bg-white p-8 rounded-lg shadow max-w-md mx-auto">
+                            <div className="text-red-500 text-6xl mb-4">⚠️</div>
+                            <h2 className="text-xl font-semibold text-red-800 mb-4">Error de Conexión</h2>
+                            <p className="text-red-600 mb-4">{connectionError}</p>
+                            <button 
+                                onClick={() => window.location.reload()} 
+                                className="bg-red-600 text-white px-4 py-2 rounded hover:bg-red-700"
+                            >
+                                Reintentar
+                            </button>
                         </div>
                     </div>
                 </div>
@@ -524,15 +769,13 @@ export default function AutomationsPageClient({ userEmail }: AutomationsPageClie
 
     if (loading) {
         return (
-            <div className="flex h-screen overflow-hidden bg-gradient-to-br from-slate-50 via-blue-50 to-indigo-100">
+            <div className="min-h-screen bg-gray-50">
                 <Sidebar userEmail={userEmail} onLogout={handleLogout} />
-                <div className="flex-1 ml-56 overflow-hidden">
-                    <div className="h-full overflow-y-auto">
-                        <div className="flex items-center justify-center h-96">
-                            <div className="text-center">
-                                <div className="w-16 h-16 border-4 border-blue-600 border-t-transparent rounded-full animate-spin mx-auto mb-4"></div>
-                                <p className="text-slate-600">Cargando automatizaciones...</p>
-                            </div>
+                <div className="flex-1 ml-56">
+                    <div className="max-w-7xl mx-auto px-6 py-12">
+                        <div className="text-center">
+                            <div className="w-16 h-16 border-4 border-blue-600 border-t-transparent rounded-full animate-spin mx-auto mb-4"></div>
+                            <p className="text-gray-600">Cargando automatizaciones...</p>
                         </div>
                     </div>
                 </div>
@@ -541,242 +784,312 @@ export default function AutomationsPageClient({ userEmail }: AutomationsPageClie
     }
 
     return (
-        <div className={"min-h-screen bg-gradient-to-br from-slate-50/80 via-blue-50/40 to-indigo-50/60 dark:from-slate-900 dark:to-slate-800"}>
-            {/* Trial Banner */}
+        <div className="min-h-screen bg-gray-50">
             <TrialBanner userEmail={userEmail} />
-            
-            {/* Elementos decorativos de fondo mejorados */}
-            <div className="absolute inset-0 overflow-hidden pointer-events-none">
-                <div className="absolute top-0 left-0 w-96 h-96 bg-gradient-to-br from-blue-500/4 via-purple-500/4 to-indigo-500/4 dark:from-blue-400/3 dark:via-purple-400/3 dark:to-indigo-400/3 rounded-full blur-3xl animate-pulse"></div>
-                <div className="absolute top-20 right-20 w-64 h-64 bg-gradient-to-br from-purple-500/4 via-pink-500/4 to-indigo-500/4 dark:from-purple-400/3 dark:via-pink-400/3 dark:to-indigo-400/3 rounded-full blur-3xl animate-pulse" style={{ animationDelay: '2s' }}></div>
-                <div className="absolute bottom-20 left-20 w-80 h-80 bg-gradient-to-br from-indigo-500/4 via-blue-500/4 to-purple-500/4 dark:from-indigo-400/3 dark:via-blue-400/3 dark:to-purple-400/3 rounded-full blur-3xl animate-pulse" style={{ animationDelay: '4s' }}></div>
-            </div>
-
-            {/* Sidebar */}
             <Sidebar userEmail={userEmail} onLogout={handleLogout} />
 
-            {/* Main Content */}
-            <div className="flex-1 ml-56 overflow-hidden relative">
-                <div className="h-full overflow-y-auto">
-                    <div className={"min-h-screen bg-gradient-to-br from-slate-50 to-blue-50 dark:from-slate-900 dark:to-slate-800"}>
-                        <div className="container mx-auto px-6 py-8">
-                            {/* Header Premium con Animaciones */}
-                            <div className="mb-8 animate-slideInDown">
-                                <div className={"group p-8 hover:scale-[1.01] transition-all duration-500 relative overflow-hidden bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl shadow-sm"}>
-                                    <div className="absolute inset-0 bg-gradient-to-r from-blue-500/5 via-indigo-500/5 to-purple-500/5 dark:from-blue-400/5 dark:via-indigo-400/5 dark:to-purple-400/5 opacity-0 group-hover:opacity-100 transition-opacity duration-500"></div>
-                                    <div className="relative z-10">
-                                        <div className="flex items-center justify-between">
-                                            <div className="flex items-center gap-4">
-                                                <div className="w-16 h-16 bg-gradient-to-br from-blue-500 to-indigo-600 dark:from-blue-400 dark:to-indigo-500 rounded-2xl flex items-center justify-center shadow-xl shadow-blue-500/20 dark:shadow-blue-400/20 transform group-hover:rotate-6 transition-transform duration-500">
-                                                    <Zap className="w-8 h-8 text-white" />
-                                                </div>
-                                                <div>
-                                                    <h1 className="text-3xl font-black text-slate-800 dark:text-slate-100 group-hover:text-blue-600 dark:group-hover:text-blue-400 transition-colors duration-300">
-                                                        Automatizaciones
-                                                    </h1>
-                                                    <p className="text-slate-600 dark:text-slate-400 text-lg font-medium">
-                                                        Automatiza tareas y flujos de trabajo
-                                                    </p>
-                                                </div>
-                                            </div>
-                                            
-                                            <div className="flex items-center gap-3">
-                                                <button
-                                                    onClick={() => router.push('/dashboard/automations/create')}
-                                                    disabled={!canUseFeatures}
-                                                    className={`group/btn relative px-8 py-4 rounded-2xl font-bold shadow-2xl transform transition-all duration-300 flex items-center gap-3 overflow-hidden ${
-                                                        !canUseFeatures
-                                                            ? 'bg-gray-400 cursor-not-allowed opacity-50'
-                                                            : 'bg-gradient-to-r from-blue-600 via-indigo-600 to-purple-600 text-white shadow-blue-500/25 hover:shadow-blue-500/40 hover:scale-110 hover:rotate-1'
-                                                    }`}
-                                                >
-                                                    {!canUseFeatures ? (
-                                                        <>
-                                                            <div className="absolute inset-0 bg-gray-400"></div>
-                                                            <X className="w-5 h-5 relative z-10 text-white" />
-                                                            <span className="relative z-10 text-white">Trial Expirado</span>
-                                                        </>
-                                                    ) : (
-                                                        <>
-                                                            <div className="absolute inset-0 bg-gradient-to-r from-purple-600 via-blue-600 to-indigo-600 opacity-0 group-hover/btn:opacity-100 transition-opacity duration-300"></div>
-                                                            <Plus className="w-5 h-5 group-hover/btn:rotate-180 transition-transform duration-300 relative z-10" />
-                                                            <span className="relative z-10">Crear Automatización</span>
-                                                            <div className="absolute -top-2 -right-2 w-4 h-4 bg-yellow-400 rounded-full animate-ping"></div>
-                                                        </>
-                                                    )}
-                                                </button>
-                                            </div>
-                                        </div>
+            <div className="flex-1 ml-56">
+                <div className="max-w-7xl mx-auto">
+                    {/* Header Bonsai Style */}
+                    <div className="bg-white border-b border-gray-200 px-6 py-6">
+                        <div className="flex items-center justify-between">
+                            <div>
+                                <h1 className="text-2xl font-semibold text-gray-900">Automatizaciones</h1>
+                                <p className="mt-1 text-sm text-gray-600">
+                                    Gestiona tus {automations.length} automatizaciones
+                                </p>
+                            </div>
+                            <button
+                                onClick={() => router.push('/dashboard/automations/create')}
+                                disabled={trialLoading || !canUseFeatures}
+                                className={`inline-flex items-center px-4 py-2 text-sm font-medium rounded-lg border transition-colors ${trialLoading
+                                        ? 'bg-gray-100 border-gray-300 text-gray-500 cursor-wait'
+                                        : !canUseFeatures
+                                            ? 'bg-gray-100 border-gray-300 text-gray-400 cursor-not-allowed'
+                                            : 'bg-blue-600 border-blue-600 text-white hover:bg-blue-700 hover:border-blue-700'
+                                    }`}
+                            >
+                                {trialLoading ? (
+                                    <>
+                                        <div className="w-4 h-4 mr-2 border-2 border-gray-400 border-t-transparent rounded-full animate-spin"></div>
+                                        Cargando...
+                                    </>
+                                ) : !canUseFeatures ? (
+                                    <>
+                                        <X className="w-4 h-4 mr-2" />
+                                        Trial Expirado
+                                    </>
+                                ) : (
+                                    <>
+                                        <Plus className="w-4 h-4 mr-2" />
+                                        Nueva Automatización
+                                    </>
+                                )}
+                            </button>
+                        </div>
+                    </div>
+
+                    {/* Stats Section */}
+                    <div className="bg-white border-b border-gray-200 px-6 py-6">
+                        <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
+                            <div className="bg-gray-50 rounded-lg p-4">
+                                <div className="flex items-center">
+                                    <div className="flex-shrink-0">
+                                        <Zap className="h-6 w-6 text-gray-400" />
+                                    </div>
+                                    <div className="ml-4">
+                                        <p className="text-sm font-medium text-gray-600">Total</p>
+                                        <p className="text-2xl font-semibold text-gray-900">{automations.length}</p>
                                     </div>
                                 </div>
                             </div>
-
-                            {/* Search */}
-                            <div className="mb-8">
-                                <div className="bg-white/60 backdrop-blur-xl rounded-2xl border border-white/60 shadow-xl p-6">
-                                    <div className="flex items-center gap-4">
-                                        <div className="flex-1 max-w-md">
-                                            <div className="relative">
-                                                <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-slate-400 w-5 h-5" />
-                                                <Input
-                                                    type="text"
-                                                    placeholder="Buscar automatizaciones..."
-                                                    value={searchQuery}
-                                                    onChange={(e) => setSearchQuery(e.target.value)}
-                                                    className="pl-10 bg-white/80 border-slate-200/60 focus:border-blue-400 focus:ring-blue-400/20"
-                                                />
-                                            </div>
-                                        </div>
+                            <div className="bg-gray-50 rounded-lg p-4">
+                                <div className="flex items-center">
+                                    <div className="flex-shrink-0">
+                                        <CheckCircle className="h-6 w-6 text-gray-400" />
+                                    </div>
+                                    <div className="ml-4">
+                                        <p className="text-sm font-medium text-gray-600">Activas</p>
+                                        <p className="text-2xl font-semibold text-gray-900">
+                                            {automations.filter(auto => auto.is_active).length}
+                                        </p>
                                     </div>
                                 </div>
                             </div>
+                            <div className="bg-gray-50 rounded-lg p-4">
+                                <div className="flex items-center">
+                                    <div className="flex-shrink-0">
+                                        <Play className="h-6 w-6 text-gray-400" />
+                                    </div>
+                                    <div className="ml-4">
+                                        <p className="text-sm font-medium text-gray-600">Ejecuciones</p>
+                                        <p className="text-2xl font-semibold text-gray-900">
+                                            {automations.reduce((total, auto) => total + (auto.execution_count || 0), 0)}
+                                        </p>
+                                    </div>
+                                </div>
+                            </div>
+                            <div className="bg-gray-50 rounded-lg p-4">
+                                <div className="flex items-center">
+                                    <div className="flex-shrink-0">
+                                        <Clock className="h-6 w-6 text-gray-400" />
+                                    </div>
+                                    <div className="ml-4">
+                                        <p className="text-sm font-medium text-gray-600">Inactivas</p>
+                                        <p className="text-2xl font-semibold text-gray-900">
+                                            {automations.filter(auto => !auto.is_active).length}
+                                        </p>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
 
-                            {/* Automatizaciones Grid */}
-                            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                    {/* Search and Filters */}
+                    <div className="bg-white border-b border-gray-200 px-6 py-4">
+                        <div className="flex items-center justify-between">
+                            <div className="flex-1 max-w-lg">
+                                <div className="relative">
+                                    <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                                        <Search className="h-5 w-5 text-gray-400" />
+                                    </div>
+                                    <input
+                                        type="text"
+                                        placeholder="Buscar automatizaciones por nombre, descripción..."
+                                        value={searchQuery}
+                                        onChange={(e) => setSearchQuery(e.target.value)}
+                                        className="block w-full pl-10 pr-3 py-2 border border-gray-300 rounded-lg leading-5 bg-white placeholder-gray-500 focus:outline-none focus:placeholder-gray-400 focus:ring-1 focus:ring-blue-500 focus:border-blue-500 text-sm"
+                                    />
+                                    {searchQuery && (
+                                        <button
+                                            onClick={() => setSearchQuery('')}
+                                            className="absolute inset-y-0 right-0 pr-3 flex items-center"
+                                        >
+                                            <X className="h-4 w-4 text-gray-400 hover:text-gray-600" />
+                                        </button>
+                                    )}
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    {/* Automations Content */}
+                    <div className="bg-white px-6 py-6">
+                        {loading ? (
+                            <div className="flex items-center justify-center py-12">
+                                <div className="flex items-center space-x-2">
+                                    <div className="w-4 h-4 bg-blue-600 rounded-full animate-pulse"></div>
+                                    <div className="w-4 h-4 bg-blue-600 rounded-full animate-pulse" style={{ animationDelay: '0.1s' }}></div>
+                                    <div className="w-4 h-4 bg-blue-600 rounded-full animate-pulse" style={{ animationDelay: '0.2s' }}></div>
+                                </div>
+                            </div>
+                        ) : filteredAutomations.length === 0 ? (
+                            <div className="text-center py-12">
+                                <Zap className="mx-auto h-12 w-12 text-gray-400" />
+                                <h3 className="mt-2 text-sm font-medium text-gray-900">
+                                    {searchQuery ? 'No se encontraron automatizaciones' : 'No hay automatizaciones'}
+                                </h3>
+                                <p className="mt-1 text-sm text-gray-500">
+                                    {searchQuery
+                                        ? `No hay automatizaciones que coincidan con "${searchQuery}"`
+                                        : 'Comienza creando tu primera automatización para optimizar tu flujo de trabajo.'
+                                    }
+                                </p>
+                                {!searchQuery && (
+                                    <div className="mt-6">
+                                        <button
+                                            onClick={() => router.push('/dashboard/automations/create')}
+                                            disabled={trialLoading || !canUseFeatures}
+                                            className={`inline-flex items-center px-4 py-2 border border-transparent shadow-sm text-sm font-medium rounded-md text-white ${trialLoading
+                                                    ? 'bg-gray-400 cursor-wait'
+                                                    : !canUseFeatures
+                                                        ? 'bg-gray-400 cursor-not-allowed'
+                                                        : 'bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500'
+                                                }`}
+                                        >
+                                            {trialLoading ? (
+                                                <>
+                                                    <div className="w-4 h-4 mr-2 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
+                                                    Cargando...
+                                                </>
+                                            ) : (
+                                                <>
+                                                    <Plus className="w-4 h-4 mr-2" />
+                                                    Nueva Automatización
+                                                </>
+                                            )}
+                                        </button>
+                                    </div>
+                                )}
+                            </div>
+                        ) : (
+                            /* Vista Cards */
+                            <div className="grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-3">
                                 {filteredAutomations.map((automation) => {
                                     const IconComponent = getAutomationIcon(automation.trigger_type);
                                     const iconColor = getAutomationColor(automation.trigger_type);
 
                                     return (
-                                        <Card
-                                            key={automation.id}
-                                            className="group bg-white/60 backdrop-blur-xl border border-white/60 shadow-xl hover:shadow-2xl hover:scale-105 transition-all duration-300"
-                                        >
-                                            <CardHeader>
-                                                <div className="flex items-start justify-between mb-4">
-                                                    <div className="flex items-center gap-3 flex-1">
-                                                        <div className="w-12 h-12 bg-gradient-to-br from-slate-100 to-slate-200 rounded-xl flex items-center justify-center shadow-lg group-hover:scale-110 transition-transform duration-300">
-                                                            <IconComponent className={`w-6 h-6 ${iconColor}`} />
-                                                        </div>
-                                                        <div>
-                                                            <CardTitle className="text-lg font-bold text-slate-900 group-hover:text-blue-900 transition-colors">
-                                                                {automation.name}
-                                                            </CardTitle>
-                                                            <p className="text-sm text-slate-600 capitalize">
-                                                                {automation.trigger_type.replace('_', ' ')}
-                                                            </p>
+                                        <div key={automation.id} className="bg-white overflow-hidden shadow rounded-lg border border-gray-200 hover:shadow-md transition-shadow">
+                                            <div className="p-6">
+                                                <div className="flex items-center">
+                                                    <div className="flex-shrink-0">
+                                                        <div className="h-10 w-10 rounded-full bg-blue-100 flex items-center justify-center">
+                                                            <IconComponent className={`h-5 w-5 ${iconColor}`} />
                                                         </div>
                                                     </div>
-
-                                                    <div className="flex items-center gap-2">
+                                                    <div className="ml-4 flex-1">
+                                                        <h3 className="text-lg font-medium text-gray-900 truncate">
+                                                            {automation.name}
+                                                        </h3>
+                                                        <p className="text-sm text-gray-500 capitalize truncate">
+                                                            {automation.trigger_type.replace('_', ' ')}
+                                                        </p>
+                                                    </div>
+                                                    <div className="flex items-center">
                                                         <div className={`w-3 h-3 rounded-full ${automation.is_active
-                                                                ? 'bg-green-500 shadow-lg shadow-green-500/50'
-                                                                : 'bg-slate-300'
+                                                                ? 'bg-green-500'
+                                                                : 'bg-gray-300'
                                                             }`}></div>
-                                                        <button
-                                                            onClick={() => toggleAutomation(automation.id, automation.is_active)}
-                                                            className="text-xs text-slate-500 hover:text-slate-700 transition-colors"
-                                                        >
+                                                        <span className={`ml-2 text-xs font-medium ${automation.is_active
+                                                                ? 'text-green-600'
+                                                                : 'text-gray-500'
+                                                            }`}>
                                                             {automation.is_active ? 'Activa' : 'Inactiva'}
-                                                        </button>
+                                                        </span>
                                                     </div>
                                                 </div>
 
-                                                <p className="text-sm text-slate-600 mb-4 line-clamp-2">
-                                                    {automation.description}
-                                                </p>
+                                                <div className="mt-4">
+                                                    <p className="text-sm text-gray-600 line-clamp-2">
+                                                        {automation.description}
+                                                    </p>
+                                                </div>
 
-                                                <div className="space-y-3 mb-6">
-                                                    <div className="flex items-center justify-between text-sm">
-                                                        <span className="text-slate-600">Acciones:</span>
-                                                        <span className="font-semibold text-slate-900">
+                                                <div className="mt-4 space-y-2">
+                                                    <div className="flex items-center justify-between text-sm text-gray-600">
+                                                        <span>Acciones:</span>
+                                                        <span className="font-medium text-gray-900">
                                                             {automation.actions?.length || 0}
                                                         </span>
                                                     </div>
-                                                    <div className="flex items-center justify-between text-sm">
-                                                        <span className="text-slate-600">Ejecuciones:</span>
-                                                        <span className="font-semibold text-slate-900">
+                                                    <div className="flex items-center justify-between text-sm text-gray-600">
+                                                        <span>Ejecuciones:</span>
+                                                        <span className="font-medium text-gray-900">
                                                             {automation.execution_count || 0}
                                                         </span>
                                                     </div>
                                                     {automation.last_executed && (
-                                                        <div className="flex items-center justify-between text-sm">
-                                                            <span className="text-slate-600">Última ejecución:</span>
-                                                            <span className="font-semibold text-slate-900">
+                                                        <div className="flex items-center justify-between text-sm text-gray-600">
+                                                            <span>Última ejecución:</span>
+                                                            <span className="font-medium text-gray-900">
                                                                 {new Date(automation.last_executed).toLocaleDateString('es-ES')}
                                                             </span>
                                                         </div>
                                                     )}
                                                 </div>
-                                            </CardHeader>
 
-                                            <CardContent className="pt-0">
-                                                <div className="flex items-center gap-2">
-                                                    <Button
-                                                        onClick={() => handleAutomationClick(automation)}
-                                                        disabled={!automation.is_active || !canUseFeatures}
-                                                        className={`flex-1 bg-gradient-to-r from-blue-600 to-indigo-600 text-white hover:from-blue-700 hover:to-indigo-700 shadow-lg hover:shadow-xl transition-all duration-200 disabled:opacity-50 ${
-                                                            !canUseFeatures ? 'cursor-not-allowed' : ''
-                                                        }`}
-                                                        size="sm"
-                                                    >
-                                                        {!canUseFeatures ? (
-                                                            <AlertTriangle className="w-4 h-4 mr-2" />
-                                                        ) : (
-                                                            <Play className="w-4 h-4 mr-2" />
-                                                        )}
-                                                        {!canUseFeatures ? 'Trial Expirado' : 'Ejecutar'}
-                                                    </Button>
-
-                                                    <Button
-                                                        onClick={() => router.push(`/dashboard/automations/${automation.id}/edit`)}
-                                                        variant="outline"
-                                                        size="sm"
-                                                        className="border-slate-200 hover:bg-slate-50"
-                                                    >
-                                                        <Settings className="w-4 h-4" />
-                                                    </Button>
+                                                <div className="mt-4 flex items-center justify-between">
+                                                    <span className="text-xs text-gray-500">
+                                                        {new Date(automation.created_at).toLocaleDateString('es-ES')}
+                                                    </span>
+                                                    <div className="flex space-x-2">
+                                                        <button
+                                                            onClick={() => handleAutomationClick(automation)}
+                                                            disabled={!automation.is_active || !canUseFeatures}
+                                                            className={`text-sm px-3 py-1 rounded-md font-medium transition-colors ${
+                                                                !canUseFeatures
+                                                                    ? 'bg-gray-100 text-gray-400 cursor-not-allowed'
+                                                                    : !automation.is_active
+                                                                        ? 'bg-gray-100 text-gray-400 cursor-not-allowed'
+                                                                        : 'bg-blue-600 text-white hover:bg-blue-700'
+                                                            }`}
+                                                        >
+                                                            {!canUseFeatures ? 'Trial Expirado' : 'Ejecutar'}
+                                                        </button>
+                                                        <button
+                                                            onClick={() => router.push(`/dashboard/automations/${automation.id}/edit`)}
+                                                            className="text-gray-400 hover:text-gray-600"
+                                                        >
+                                                            <Settings className="h-4 w-4" />
+                                                        </button>
+                                                        <button
+                                                            onClick={() => toggleAutomation(automation.id, automation.is_active)}
+                                                            className="text-gray-400 hover:text-gray-600"
+                                                        >
+                                                            {automation.is_active ? (
+                                                                <AlertCircle className="h-4 w-4" />
+                                                            ) : (
+                                                                <Play className="h-4 w-4" />
+                                                            )}
+                                                        </button>
+                                                    </div>
                                                 </div>
-                                            </CardContent>
-                                        </Card>
+                                            </div>
+                                        </div>
                                     );
                                 })}
                             </div>
-
-                            {/* Empty State */}
-                            {filteredAutomations.length === 0 && (
-                                <div className="text-center py-16">
-                                    <div className="w-24 h-24 bg-gradient-to-br from-slate-100 to-slate-200 rounded-3xl flex items-center justify-center mx-auto mb-6">
-                                        <Zap className="w-12 h-12 text-slate-400" />
-                                    </div>
-                                    <h3 className="text-xl font-bold text-slate-900 mb-2">
-                                        No se encontraron automatizaciones
-                                    </h3>
-                                    <p className="text-slate-600 mb-6 max-w-md mx-auto">
-                                        {searchQuery
-                                            ? 'Intenta ajustar los filtros de búsqueda'
-                                            : 'Comienza creando tu primera automatización para optimizar tu flujo de trabajo'
-                                        }
-                                    </p>
-                                    <Button
-                                        onClick={() => router.push('/dashboard/automations/create')}
-                                        className="bg-gradient-to-r from-blue-600 to-indigo-600 text-white"
-                                    >
-                                        <Plus className="w-5 h-5 mr-2" />
-                                        Crear Primera Automatización
-                                    </Button>
-                                </div>
-                            )}
-                        </div>
+                        )}
                     </div>
                 </div>
             </div>
 
             {/* Modal para ejecutar automatización */}
             <Modal isOpen={modalOpen} onClose={() => setModalOpen(false)}>
-                <div className="sticky top-0 bg-white/95 backdrop-blur-xl border-b border-slate-200/60 p-6">
+                <div className="border-b border-gray-200 p-6">
                     <div className="flex items-center justify-between">
                         <div>
-                            <h3 className="text-xl font-bold text-slate-900">
+                            <h3 className="text-lg font-medium text-gray-900">
                                 Ejecutar Automatización
                             </h3>
-                            <p className="text-slate-600 mt-1">
+                            <p className="text-sm text-gray-600 mt-1">
                                 {modalAutomation?.name}
                             </p>
                         </div>
                         <button
                             onClick={() => setModalOpen(false)}
-                            className="text-slate-400 hover:text-slate-600 transition-colors"
+                            className="text-gray-400 hover:text-gray-600 transition-colors"
                         >
                             <X className="h-5 w-5" />
                         </button>
@@ -788,7 +1101,7 @@ export default function AutomationsPageClient({ userEmail }: AutomationsPageClie
                         <div className="space-y-6">
                             {/* Selección de cliente */}
                             <div>
-                                <label className="block text-sm font-semibold text-slate-700 mb-3">
+                                <label className="block text-sm font-medium text-gray-700 mb-3">
                                     <Users className="h-4 w-4 inline mr-2" />
                                     Selecciona un cliente para aplicar la automatización
                                 </label>
@@ -796,7 +1109,7 @@ export default function AutomationsPageClient({ userEmail }: AutomationsPageClie
                                 {entityLoading ? (
                                     <div className="text-center py-8">
                                         <div className="w-8 h-8 border-2 border-blue-600 border-t-transparent rounded-full animate-spin mx-auto mb-2"></div>
-                                        <p className="text-slate-600 text-sm">Cargando clientes...</p>
+                                        <p className="text-gray-600 text-sm">Cargando clientes...</p>
                                     </div>
                                 ) : (
                                     <div className="space-y-2">
@@ -837,8 +1150,8 @@ export default function AutomationsPageClient({ userEmail }: AutomationsPageClie
                                             ))
                                         ) : (
                                             <div className="text-center py-8">
-                                                <Users className="h-12 w-12 text-slate-300 mx-auto mb-3" />
-                                                <p className="text-slate-500">
+                                                <Users className="h-12 w-12 text-gray-300 mx-auto mb-3" />
+                                                <p className="text-gray-500">
                                                     No se encontraron clientes disponibles
                                                 </p>
                                             </div>
@@ -849,8 +1162,8 @@ export default function AutomationsPageClient({ userEmail }: AutomationsPageClie
 
                             {/* Logs de ejecución */}
                             {executionLogs.length > 0 && (
-                                <div className="bg-slate-900 rounded-lg p-4 font-mono text-sm">
-                                    <h4 className="text-slate-300 font-semibold mb-3 flex items-center">
+                                <div className="bg-gray-900 rounded-lg p-4 font-mono text-sm">
+                                    <h4 className="text-gray-300 font-medium mb-3 flex items-center">
                                         <Settings className="h-4 w-4 mr-2" />
                                         Estado de Ejecución
                                     </h4>
@@ -858,11 +1171,11 @@ export default function AutomationsPageClient({ userEmail }: AutomationsPageClie
                                         {executionLogs.map((log, index) => (
                                             <div
                                                 key={index}
-                                                className={`text-slate-300 ${log.includes('❌') ? 'text-red-400' :
+                                                className={`text-gray-300 ${log.includes('❌') ? 'text-red-400' :
                                                         log.includes('✅') ? 'text-green-400' :
                                                             log.includes('🚀') ? 'text-blue-400' :
                                                                 log.includes('🔍') ? 'text-yellow-400' :
-                                                                    'text-slate-300'
+                                                                    'text-gray-300'
                                                     }`}
                                             >
                                                 {log}
@@ -877,14 +1190,14 @@ export default function AutomationsPageClient({ userEmail }: AutomationsPageClie
                                 <button
                                     type="button"
                                     onClick={() => setModalOpen(false)}
-                                    className="px-6 py-3 text-slate-600 hover:text-slate-800 font-medium transition-colors"
+                                    className="px-4 py-2 text-gray-600 hover:text-gray-800 font-medium transition-colors"
                                 >
                                     Cancelar
                                 </button>
                                 <button
                                     type="submit"
                                     disabled={!selectedEntity || entityLoading || executing}
-                                    className="inline-flex items-center px-6 py-3 bg-gradient-to-r from-blue-600 to-indigo-600 text-white font-semibold rounded-lg hover:from-blue-700 hover:to-indigo-700 transition-all duration-200 shadow-lg hover:shadow-xl disabled:opacity-50 disabled:cursor-not-allowed"
+                                    className="inline-flex items-center px-4 py-2 bg-blue-600 text-white font-medium rounded-lg hover:bg-blue-700 transition-colors shadow-sm disabled:opacity-50 disabled:cursor-not-allowed"
                                 >
                                     {executing ? (
                                         <>

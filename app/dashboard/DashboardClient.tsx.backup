@@ -202,18 +202,18 @@ export default function DashboardClient({
             const activeProjects = projectsData?.filter((p: any) => p.status === 'active').length || 0;
             const completedProjects = projectsData?.filter((p: any) => p.status === 'completed').length || 0;
 
-            // Calcular ingresos del mes (proyectos completados)
+            // Calcular ingresos del mes (facturas pagadas)
             const currentMonth = new Date().getMonth();
             const currentYear = new Date().getFullYear();
 
-            const { data: monthlyData } = await supabase
-                .from('projects')
-                .select('budget, created_at')
+            const { data: paidInvoices } = await supabase
+                .from('invoices')
+                .select('amount, paid_at')
                 .eq('user_id', user.id)
-                .eq('status', 'completed')
-                .gte('created_at', `${currentYear}-${String(currentMonth + 1).padStart(2, '0')}-01`);
+                .eq('status', 'paid')
+                .gte('paid_at', `${currentYear}-${String(currentMonth + 1).padStart(2, '0')}-01`);
 
-            const monthlyRevenue = monthlyData?.reduce((sum: number, project: any) => sum + (project.budget || 0), 0) || 0;
+            const monthlyRevenue = paidInvoices?.reduce((sum: number, invoice: any) => sum + (invoice.amount || 0), 0) || 0;
 
             // Calcular horas de esta semana
             const startOfWeek = new Date();

@@ -28,6 +28,7 @@ export default function DashboardBonsai({
     isDemo?: boolean;
     totalTaskTime?: number;
 }) {
+    console.log('🚀 DashboardBonsai INICIADO:', { userEmail, isDemo, totalTaskTime });
     const supabase = createSupabaseClient();
     const router = useRouter();
 
@@ -44,6 +45,16 @@ export default function DashboardBonsai({
         hoursThisMonth: 0,
         billableHoursThisWeek: 0
     });
+    
+    // Estado para los datos de la gráfica mensual
+    const [monthlyChartData, setMonthlyChartData] = useState([
+        { month: 'Mar', value: 0, amount: 0 },
+        { month: 'Abr', value: 0, amount: 0 },
+        { month: 'May', value: 0, amount: 0 },
+        { month: 'Jun', value: 0, amount: 0 },
+        { month: 'Jul', value: 0, amount: 0 },
+        { month: 'Ago', value: 0, amount: 0 }
+    ]);
 
     // Estados para datos dinámicos
     const [realProjects, setRealProjects] = useState<any[]>([]);
@@ -76,11 +87,13 @@ export default function DashboardBonsai({
 
     // Cargar métricas del dashboard
     const loadDashboardData = async () => {
+        console.log('🔥 loadDashboardData EJECUTÁNDOSE');
         try {
             setLoading(true);
 
             // ✅ Si está en modo demo, usar datos ficticios
             if (isDemo) {
+                console.log('🎭 Modo DEMO activado - usando datos ficticios');
                 setMetrics({
                     totalClients: 12,
                     activeProjects: 5,
@@ -158,6 +171,9 @@ export default function DashboardBonsai({
                 return;
             }
 
+            console.log('💼 Modo REAL activado - cargando datos de Supabase');
+            console.log('🔍 isDemo =', isDemo);
+
             if (!supabase) {
                 console.error('Supabase client not available');
                 setLoading(false);
@@ -176,11 +192,13 @@ export default function DashboardBonsai({
             const [
                 { data: clients },
                 { data: allProjects },
+                { data: invoices },
                 { data: weeklyTimeData },
                 { data: monthlyTimeData }
             ] = await Promise.all([
                 supabase.from('clients').select('*').eq('user_id', user.id),
                 supabase.from('projects').select('*').eq('user_id', user.id),
+                supabase.from('invoices').select('amount, created_at, issue_date, paid_date').eq('status', 'paid').eq('user_id', user.id),
                 supabase.from('time_entries').select('duration_seconds').eq('user_id', user.id),
                 supabase.from('time_entries').select('duration_seconds').eq('user_id', user.id)
             ]);
@@ -197,9 +215,60 @@ export default function DashboardBonsai({
             const billableMinutesThisWeek = weeklyTimeData?.reduce((sum: number, entry: any) =>
                 sum + (entry.duration_seconds ? entry.duration_seconds / 60 : 0), 0) || 0;
 
-            const totalRevenue = allProjects?.reduce((sum: number, project: any) => {
-                return sum + (project.budget || 0);
+            const totalRevenue = invoices?.reduce((sum: number, invoice: any) => {
+                return sum + (invoice.amount || 0);
             }, 0) || 0;
+
+            console.log('💰 Facturas encontradas:', invoices?.length || 0);
+            console.log('💰 Total ingresos calculado:', totalRevenue);
+            console.log('🔍 Facturas para gráfica:', invoices);
+
+            // Calcular ingresos por mes para la gráfica
+            const monthlyData = [
+                { month: 'Mar', value: 0, amount: 0 },
+                { month: 'Abr', value: 0, amount: 0 },
+                { month: 'May', value: 0, amount: 0 },
+                { month: 'Jun', value: 0, amount: 0 },
+                { month: 'Jul', value: 0, amount: 0 },
+                { month: 'Ago', value: 0, amount: 0 }
+            ];
+
+            // Sumar facturas por mes usando issue_date (fecha de emisión)
+            invoices?.forEach((invoice: any) => {
+                // Usar issue_date si existe, sino created_at
+                const dateStr = invoice.issue_date || invoice.created_at;
+                const invoiceDate = new Date(dateStr);
+                const month = invoiceDate.getMonth(); // 0-11
+                const year = invoiceDate.getFullYear();
+                
+                console.log('📅 Procesando factura:', {
+                    amount: invoice.amount,
+                    issue_date: invoice.issue_date,
+                    created_at: invoice.created_at,
+                    month: invoiceDate.getMonth() + 1,
+                    year
+                });
+                
+                if (year === 2025) {
+                    const monthNames = ['Ene', 'Feb', 'Mar', 'Abr', 'May', 'Jun', 'Jul', 'Ago', 'Sep', 'Oct', 'Nov', 'Dic'];
+                    const monthName = monthNames[month];
+                    const chartMonth = monthlyData.find(m => m.month === monthName);
+                    if (chartMonth) {
+                        chartMonth.amount += parseFloat(invoice.amount) || 0;
+                        console.log(`💰 Agregando €${invoice.amount} a ${monthName}. Total: €${chartMonth.amount}`);
+                    }
+                }
+            });
+
+            console.log('📊 Datos mensuales finales:', monthlyData);
+
+            // Calcular valores relativos para la gráfica (basado en el máximo)
+            const maxAmount = Math.max(...monthlyData.map(m => m.amount));
+            monthlyData.forEach(month => {
+                month.value = maxAmount > 0 ? Math.round((month.amount / maxAmount) * 100) : 0;
+            });
+
+            setMonthlyChartData(monthlyData);
 
             const totalMinutesThisMonth = monthlyTimeData?.reduce((sum: number, entry: any) => sum + (entry.duration_seconds / 60), 0) || 0;
 
@@ -443,14 +512,7 @@ export default function DashboardBonsai({
                                     {/* Gráfico de barras limpio */}
                                     <div className="space-y-4">
                                         <div className="flex items-end justify-between h-40 gap-3 px-2">
-                                            {[
-                                                { month: 'Mar', value: 85, amount: 8500 },
-                                                { month: 'Abr', value: 70, amount: 7200 },
-                                                { month: 'May', value: 95, amount: 12300 },
-                                                { month: 'Jun', value: 80, amount: 9800 },
-                                                { month: 'Jul', value: 60, amount: 6400 },
-                                                { month: 'Ago', value: 100, amount: metrics.monthlyRevenue }
-                                            ].map((bar, index) => (
+                                            {monthlyChartData.map((bar, index) => (
                                                 <div key={bar.month} className="flex flex-col items-center flex-1 group">
                                                     <div className="relative w-full h-32 mb-2">
                                                         {/* Fondo de la barra */}

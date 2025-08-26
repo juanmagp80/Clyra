@@ -13,9 +13,11 @@ export async function GET(request: NextRequest) {
     let profileError;
 
     if (email) {
-      // Buscar por email usando admin client
+      // Buscar por email usando server client (temporal fix para API key issue)
       console.log('🔍 Fetching profile by email:', email);
-      const result = await supabaseAdmin
+      const { createServerSupabaseClient } = await import('@/src/lib/supabase-server');
+      const supabase = await createServerSupabaseClient();
+      const result = await supabase
         .from('profiles')
         .select('*')
         .eq('email', email)
