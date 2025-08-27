@@ -1,5 +1,5 @@
 'use client'
-import { createSupabaseClient } from '@/src/lib/supabase-client';
+import { createSupabaseClient } from '@/src/lib/supabase';
 import {
     AlertCircle,
     AlertTriangle,
@@ -10,9 +10,7 @@ import {
     Edit,
     Eye,
     FileText,
-    MoreHorizontal,
     Plus,
-    Receipt,
     Search,
     Send
 } from 'lucide-react';
@@ -192,261 +190,235 @@ export default function InvoicesPageClient({ userEmail }: ClientsPageClientProps
 
     if (loading) {
         return (
-            <div className={"min-h-screen bg-gradient-to-br from-slate-50 to-blue-50 dark:from-slate-900 dark:to-slate-800"}>
-                <div className="text-center">
-                    <div className="w-16 h-16 border-4 border-blue-600 border-t-transparent rounded-full animate-spin mx-auto mb-4"></div>
-                    <p className="text-slate-600 font-medium">Cargando facturas...</p>
+            <div className="min-h-screen bg-gray-50">
+                <div className="flex items-center justify-center min-h-screen">
+                    <div className="text-center">
+                        <div className="w-16 h-16 border-4 border-blue-600 border-t-transparent rounded-full animate-spin mx-auto mb-4"></div>
+                        <p className="text-gray-600 font-medium">Cargando facturas...</p>
+                    </div>
                 </div>
             </div>
         );
     }
 
     return (
-        <div className={"min-h-screen bg-gradient-to-br from-slate-50 to-blue-50 dark:from-slate-900 dark:to-slate-800"}>
-            {/* Sidebar */}
+        <div className="min-h-screen bg-gray-50">
+            <TrialBanner userEmail={userEmail} />
             <SideBar userEmail={userEmail} onLogout={handleLogout} />
-            
-            {/* Main Content */}
-            <div className="flex-1 ml-56 overflow-hidden">
-                <div className="h-full overflow-y-auto">
-                    <div className={"min-h-screen bg-gradient-to-br from-slate-50 to-blue-50 dark:from-slate-900 dark:to-slate-800"}>
-                        <div className="container mx-auto px-6 py-8">
-                            {/* Trial Banner */}
-                            <div className="mb-8">
-                                <TrialBanner userEmail={userEmail} />
+
+            <div className="flex-1 ml-56">
+                <div className="max-w-7xl mx-auto">
+                    {/* Header Bonsai Style */}
+                    <div className="bg-white border-b border-gray-200 px-6 py-6">
+                        <div className="flex items-center justify-between">
+                            <div>
+                                <h1 className="text-2xl font-semibold text-gray-900">Facturas</h1>
+                                <p className="mt-1 text-sm text-gray-600">
+                                    Gestiona tus {filteredInvoices.length} facturas
+                                </p>
+                            </div>
+                            <button
+                                onClick={handleNewInvoiceClick}
+                                disabled={trialLoading || !canUseFeatures}
+                                className={`inline-flex items-center px-4 py-2 text-sm font-medium rounded-lg border transition-colors ${
+                                    trialLoading
+                                        ? 'bg-gray-100 border-gray-300 text-gray-500 cursor-wait'
+                                        : !canUseFeatures 
+                                        ? 'bg-gray-100 border-gray-300 text-gray-400 cursor-not-allowed'
+                                        : 'bg-blue-600 border-blue-600 text-white hover:bg-blue-700 hover:border-blue-700'
+                                }`}
+                            >
+                                {trialLoading ? (
+                                    <>
+                                        <div className="w-4 h-4 mr-2 border-2 border-gray-400 border-t-transparent rounded-full animate-spin"></div>
+                                        Cargando...
+                                    </>
+                                ) : !canUseFeatures ? (
+                                    <>
+                                        <AlertTriangle className="w-4 h-4 mr-2" />
+                                        Trial Expirado
+                                    </>
+                                ) : (
+                                    <>
+                                        <Plus className="w-4 h-4 mr-2" />
+                                        Nueva Factura
+                                    </>
+                                )}
+                            </button>
+                        </div>
+                    </div>
+
+                    {/* Stats Cards Bonsai Style */}
+                    <div className="px-6 py-6 bg-gray-50">
+                        <div className="grid grid-cols-1 md:grid-cols-5 gap-6">
+                            <div className="bg-white border border-gray-200 rounded-lg p-4">
+                                <div className="flex items-center">
+                                    <div className="flex-shrink-0">
+                                        <FileText className="h-6 w-6 text-blue-600" />
+                                    </div>
+                                    <div className="ml-3">
+                                        <p className="text-sm font-medium text-gray-600">Total</p>
+                                        <p className="text-lg font-semibold text-gray-900">{stats.total}</p>
+                                    </div>
+                                </div>
                             </div>
 
-                            {/* Header Premium */}
-                            <div className="mb-8">
-                                <div className="bg-white/40 backdrop-blur-2xl rounded-3xl border border-white/60 shadow-2xl shadow-indigo-500/10 p-8">
-                                    <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-6">
-                                        <div>
-                                            <div className="flex items-center gap-3 mb-3">
-                                                <div className="p-2 bg-gradient-to-r from-blue-600 to-indigo-600 rounded-xl shadow-lg">
-                                                    <Receipt className="w-6 h-6 text-white" />
-                                                </div>
-                                                <h1 className="text-4xl font-bold bg-gradient-to-r from-slate-900 via-blue-900 to-indigo-900 dark:from-slate-100 dark:via-blue-200 dark:to-indigo-200 bg-clip-text text-transparent">
-                                                    Gestión de Facturas
-                                                </h1>
-                                            </div>
-                                            <p className="text-slate-600 text-lg font-medium">
-                                                Controla y gestiona todas tus facturas desde un solo lugar
-                                            </p>
-                                        </div>
-                                        <button
-                                            onClick={handleNewInvoiceClick}
-                                            disabled={trialLoading || !canUseFeatures}
-                                            className={`group relative px-8 py-4 bg-gradient-to-r from-blue-600 to-indigo-600 text-white rounded-2xl font-semibold shadow-2xl shadow-blue-500/25 hover:shadow-blue-500/40 hover:scale-105 transform transition-all duration-200 flex items-center gap-3 ${
-                                                trialLoading
-                                                    ? 'opacity-75 cursor-wait'
-                                                    : !canUseFeatures 
-                                                    ? 'opacity-50 cursor-not-allowed !bg-gray-400 hover:!bg-gray-400 !shadow-gray-400/25 hover:!shadow-gray-400/25 hover:!scale-100' 
-                                                    : ''
-                                            }`}
+                            <div className="bg-white border border-gray-200 rounded-lg p-4">
+                                <div className="flex items-center">
+                                    <div className="flex-shrink-0">
+                                        <CheckCircle className="h-6 w-6 text-green-600" />
+                                    </div>
+                                    <div className="ml-3">
+                                        <p className="text-sm font-medium text-gray-600">Pagadas</p>
+                                        <p className="text-lg font-semibold text-green-600">{stats.paid}</p>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <div className="bg-white border border-gray-200 rounded-lg p-4">
+                                <div className="flex items-center">
+                                    <div className="flex-shrink-0">
+                                        <Clock className="h-6 w-6 text-amber-600" />
+                                    </div>
+                                    <div className="ml-3">
+                                        <p className="text-sm font-medium text-gray-600">Pendientes</p>
+                                        <p className="text-lg font-semibold text-amber-600">{stats.pending}</p>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <div className="bg-white border border-gray-200 rounded-lg p-4">
+                                <div className="flex items-center">
+                                    <div className="flex-shrink-0">
+                                        <Edit className="h-6 w-6 text-gray-600" />
+                                    </div>
+                                    <div className="ml-3">
+                                        <p className="text-sm font-medium text-gray-600">Borradores</p>
+                                        <p className="text-lg font-semibold text-gray-600">{stats.draft}</p>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <div className="bg-white border border-gray-200 rounded-lg p-4">
+                                <div className="flex items-center">
+                                    <div className="flex-shrink-0">
+                                        <DollarSign className="h-6 w-6 text-emerald-600" />
+                                    </div>
+                                    <div className="ml-3">
+                                        <p className="text-sm font-medium text-gray-600">Ingresos</p>
+                                        <p className="text-lg font-semibold text-emerald-600">{formatCurrency(stats.paidAmount)}</p>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    {/* Search and Filters Bonsai Style */}
+                    <div className="bg-white border-b border-gray-200 px-6 py-4">
+                        <div className="flex flex-col sm:flex-row gap-4 items-center">
+                            <div className="relative flex-1">
+                                <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-4 h-4" />
+                                <input
+                                    type="text"
+                                    placeholder="Buscar facturas..."
+                                    value={searchTerm}
+                                    onChange={(e) => setSearchTerm(e.target.value)}
+                                    className="pl-10 w-full px-4 py-2 bg-white border border-gray-300 rounded-lg focus:border-blue-500 focus:ring-1 focus:ring-blue-500 transition-colors placeholder-gray-400"
+                                />
+                            </div>
+                            <select
+                                value={statusFilter}
+                                onChange={(e) => setStatusFilter(e.target.value)}
+                                className="px-4 py-2 bg-white border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-1 focus:ring-blue-500 focus:border-blue-500 transition-colors"
+                            >
+                                <option value="all">Todas</option>
+                                <option value="paid">Pagadas</option>
+                                <option value="sent">Enviadas</option>
+                                <option value="draft">Borradores</option>
+                                <option value="overdue">Vencidas</option>
+                            </select>
+                        </div>
+                    </div>
+
+                    {/* Invoices List Bonsai Style */}
+                    <div className="bg-white">
+                        <div className="px-6 py-6">
+                            {filteredInvoices.length === 0 ? (
+                                <div className="text-center py-12">
+                                    <FileText className="w-16 h-16 text-gray-300 mx-auto mb-4" />
+                                    <p className="text-gray-500 text-lg">No se encontraron facturas</p>
+                                </div>
+                            ) : (
+                                <div className="space-y-4">
+                                    {filteredInvoices.map((invoice) => (
+                                        <div
+                                            key={invoice.id}
+                                            className="border border-gray-200 rounded-lg p-4 hover:border-gray-300 transition-colors"
                                         >
-                                            {trialLoading ? (
-                                                <div className="w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
-                                            ) : !canUseFeatures ? (
-                                                <AlertTriangle className="w-5 h-5" />
-                                            ) : (
-                                                <Plus className="w-5 h-5 group-hover:rotate-90 transition-transform duration-200" />
-                                            )}
-                                            {trialLoading ? 'Cargando...' : (!canUseFeatures ? 'Trial Expirado' : 'Nueva Factura')}
-                                        </button>
-                                    </div>
-                                </div>
-                            </div>
-
-                            {/* Stats Premium */}
-                            <div className="mb-8">
-                                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-6">
-                                    <div className="bg-white/40 backdrop-blur-2xl rounded-2xl border border-white/60 shadow-xl shadow-blue-500/5 p-6 hover:shadow-2xl hover:scale-105 transition-all duration-300">
-                                        <div className="flex items-center justify-between">
-                                            <div>
-                                                <p className="text-sm font-medium text-slate-600 mb-1">Total Facturas</p>
-                                                <p className="text-3xl font-bold bg-gradient-to-r from-slate-700 to-slate-900 bg-clip-text text-transparent">
-                                                    {stats.total}
-                                                </p>
-                                            </div>
-                                            <div className="p-3 bg-gradient-to-br from-blue-500 to-blue-600 rounded-xl shadow-lg">
-                                                <FileText className="w-6 h-6 text-white" />
-                                            </div>
-                                        </div>
-                                    </div>
-
-                                    <div className="bg-white/40 backdrop-blur-2xl rounded-2xl border border-white/60 shadow-xl shadow-green-500/5 p-6 hover:shadow-2xl hover:scale-105 transition-all duration-300">
-                                        <div className="flex items-center justify-between">
-                                            <div>
-                                                <p className="text-sm font-medium text-slate-600 mb-1">Pagadas</p>
-                                                <p className="text-3xl font-bold bg-gradient-to-r from-green-600 to-green-700 bg-clip-text text-transparent">
-                                                    {stats.paid}
-                                                </p>
-                                            </div>
-                                            <div className="p-3 bg-gradient-to-br from-green-500 to-green-600 rounded-xl shadow-lg">
-                                                <CheckCircle className="w-6 h-6 text-white" />
-                                            </div>
-                                        </div>
-                                    </div>
-
-                                    <div className="bg-white/40 backdrop-blur-2xl rounded-2xl border border-white/60 shadow-xl shadow-amber-500/5 p-6 hover:shadow-2xl hover:scale-105 transition-all duration-300">
-                                        <div className="flex items-center justify-between">
-                                            <div>
-                                                <p className="text-sm font-medium text-slate-600 mb-1">Pendientes</p>
-                                                <p className="text-3xl font-bold bg-gradient-to-r from-amber-600 to-amber-700 bg-clip-text text-transparent">
-                                                    {stats.pending}
-                                                </p>
-                                            </div>
-                                            <div className="p-3 bg-gradient-to-br from-amber-500 to-amber-600 rounded-xl shadow-lg">
-                                                <Clock className="w-6 h-6 text-white" />
-                                            </div>
-                                        </div>
-                                    </div>
-
-                                    <div className="bg-white/40 backdrop-blur-2xl rounded-2xl border border-white/60 shadow-xl shadow-slate-500/5 p-6 hover:shadow-2xl hover:scale-105 transition-all duration-300">
-                                        <div className="flex items-center justify-between">
-                                            <div>
-                                                <p className="text-sm font-medium text-slate-600 mb-1">Borradores</p>
-                                                <p className="text-3xl font-bold bg-gradient-to-r from-slate-600 to-slate-700 bg-clip-text text-transparent">
-                                                    {stats.draft}
-                                                </p>
-                                            </div>
-                                            <div className="p-3 bg-gradient-to-br from-slate-500 to-slate-600 rounded-xl shadow-lg">
-                                                <Edit className="w-6 h-6 text-white" />
-                                            </div>
-                                        </div>
-                                    </div>
-
-                                    <div className="bg-white/40 backdrop-blur-2xl rounded-2xl border border-white/60 shadow-xl shadow-emerald-500/5 p-6 hover:shadow-2xl hover:scale-105 transition-all duration-300">
-                                        <div className="flex items-center justify-between">
-                                            <div>
-                                                <p className="text-sm font-medium text-slate-600 mb-1">Total Ingresos</p>
-                                                <p className="text-2xl font-bold bg-gradient-to-r from-emerald-600 to-emerald-700 bg-clip-text text-transparent">
-                                                    {formatCurrency(stats.paidAmount)}
-                                                </p>
-                                            </div>
-                                            <div className="p-3 bg-gradient-to-br from-emerald-500 to-emerald-600 rounded-xl shadow-lg">
-                                                <DollarSign className="w-6 h-6 text-white" />
-                                            </div>
-                                        </div>
-                                    </div>
-                                </div>
-                            </div>
-
-                            {/* Search and Filters */}
-                            <div className="mb-8">
-                                <div className="bg-white/40 backdrop-blur-2xl rounded-2xl border border-white/60 shadow-xl shadow-slate-500/5 p-6">
-                                    <div className="flex flex-col sm:flex-row gap-4 items-center">
-                                        <div className="relative flex-1 sm:flex-none">
-                                            <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-slate-400 w-4 h-4" />
-                                            <input
-                                                type="text"
-                                                placeholder="Buscar facturas..."
-                                                value={searchTerm}
-                                                onChange={(e) => setSearchTerm(e.target.value)}
-                                                className="pl-10 w-full sm:w-64 px-4 py-3 bg-white/50 backdrop-blur-xl border border-white/60 rounded-xl focus:border-indigo-500 focus:ring-2 focus:ring-indigo-500/20 transition-all duration-200 placeholder-slate-400"
-                                            />
-                                        </div>
-                                        <select
-                                            value={statusFilter}
-                                            onChange={(e) => setStatusFilter(e.target.value)}
-                                            className="px-4 py-3 bg-white/50 backdrop-blur-xl border border-white/60 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 transition-all duration-200"
-                                        >
-                                            <option value="all">Todas</option>
-                                            <option value="paid">Pagadas</option>
-                                            <option value="sent">Enviadas</option>
-                                            <option value="draft">Borradores</option>
-                                            <option value="overdue">Vencidas</option>
-                                        </select>
-                                    </div>
-                                </div>
-                            </div>
-
-                            {/* Invoices List */}
-                            <div className="bg-white/40 backdrop-blur-2xl rounded-2xl border border-white/60 shadow-xl shadow-slate-500/5 overflow-hidden">
-                                <div className="p-6">
-                                    <h2 className="text-xl font-semibold bg-gradient-to-r from-slate-700 to-slate-900 bg-clip-text text-transparent mb-6">
-                                        Lista de Facturas ({filteredInvoices.length})
-                                    </h2>
-                                    {filteredInvoices.length === 0 ? (
-                                        <div className="text-center py-12">
-                                            <FileText className="w-16 h-16 text-slate-300 mx-auto mb-4" />
-                                            <p className="text-slate-500 text-lg">No se encontraron facturas</p>
-                                        </div>
-                                    ) : (
-                                        <div className="space-y-4">
-                                            {filteredInvoices.map((invoice) => (
-                                                <div
-                                                    key={invoice.id}
-                                                    className={"p-6 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl shadow-sm"}
-                                                >
-                                                    <div className="flex flex-col sm:flex-row justify-between items-start gap-4">
-                                                        <div className="flex-1">
-                                                            <div className="flex items-center gap-3 mb-2">
-                                                                <h3 className="font-semibold text-slate-900">
-                                                                    {invoice.invoice_number || 'Sin número'}
-                                                                </h3>
-                                                                <span className={`px-3 py-1 rounded-full text-xs font-medium border ${getStatusColor(invoice.status)} flex items-center gap-1`}>
-                                                                    {getStatusIcon(invoice.status)}
-                                                                    {invoice.status.charAt(0).toUpperCase() + invoice.status.slice(1)}
-                                                                </span>
-                                                            </div>
-                                                            <p className="text-slate-600 mb-1">
-                                                                <strong>Cliente:</strong> {invoice.client?.name || invoice.client_name || 'Sin cliente'}
-                                                            </p>
-                                                            <p className="text-slate-500 text-sm">
-                                                                <strong>Email:</strong> {invoice.client?.email || invoice.client_email || 'Sin email'}
-                                                            </p>
-                                                            <div className="flex items-center gap-4 mt-3 text-sm text-slate-500">
-                                                                <span>Creada: {formatDate(invoice.created_at)}</span>
-                                                                <span>Vence: {formatDate(invoice.due_date)}</span>
-                                                                <span className="font-semibold text-slate-700">
-                                                                    {formatCurrency(invoice.total_amount)}
-                                                                </span>
-                                                            </div>
-                                                        </div>
-                                                        <div className="flex flex-wrap gap-2">
-                                                            {invoice.status !== 'paid' && (
-                                                                <button
-                                                                    onClick={() => updateInvoiceStatus(invoice.id, 'paid')}
-                                                                    className="px-3 py-2 text-sm bg-green-600 hover:bg-green-700 text-white rounded-md dark:bg-green-700 dark:hover:bg-green-600"
-                                                                >
-                                                                    <CheckCircle className="w-4 h-4" />
-                                                                    Marcar Pagada
-                                                                </button>
-                                                            )}
-                                                            
-                                                            {/* Botón Descargar PDF */}
-                                                            <button
-                                                                onClick={async () => {
-                                                                    try {
-                                                                        window.open(`/api/invoices/${invoice.id}/spanish-pdf`, '_blank');
-                                                                    } catch (error) {
-                                                                        console.error('Error descargando PDF:', error);
-                                                                    }
-                                                                }}
-                                                                className="px-3 py-2 text-sm bg-gradient-to-r from-red-500 to-red-600 hover:from-red-600 hover:to-red-700 text-white rounded-xl flex items-center gap-1 transition-all duration-200 shadow-lg hover:shadow-xl hover:scale-105"
-                                                                title="Descargar factura en PDF"
-                                                            >
-                                                                <Download className="w-4 h-4" />
-                                                                <span className="hidden sm:inline">Descargar PDF</span>
-                                                                <span className="sm:hidden">PDF</span>
-                                                            </button>
-                                                            
-                                                            <button
-                                                                onClick={() => router.push(`/dashboard/invoices/${invoice.id}`)}
-                                                                className="px-3 py-2 text-sm bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 text-white rounded-xl flex items-center gap-1 transition-all duration-200 shadow-lg hover:shadow-xl hover:scale-105"
-                                                            >
-                                                                <Eye className="w-4 h-4" />
-                                                                <span className="hidden sm:inline">Ver Detalle</span>
-                                                            </button>
-                                                        </div>
+                                            <div className="flex flex-col sm:flex-row justify-between items-start gap-4">
+                                                <div className="flex-1">
+                                                    <div className="flex items-center gap-3 mb-2">
+                                                        <h3 className="font-medium text-gray-900">
+                                                            {invoice.invoice_number || 'Sin número'}
+                                                        </h3>
+                                                        <span className={`px-2 py-1 rounded-full text-xs font-medium border ${getStatusColor(invoice.status)} flex items-center gap-1`}>
+                                                            {getStatusIcon(invoice.status)}
+                                                            {invoice.status.charAt(0).toUpperCase() + invoice.status.slice(1)}
+                                                        </span>
+                                                    </div>
+                                                    <p className="text-gray-600 text-sm mb-1">
+                                                        <strong>Cliente:</strong> {invoice.client?.name || invoice.client_name || 'Sin cliente'}
+                                                    </p>
+                                                    <p className="text-gray-500 text-sm mb-2">
+                                                        <strong>Email:</strong> {invoice.client?.email || invoice.client_email || 'Sin email'}
+                                                    </p>
+                                                    <div className="flex items-center gap-4 text-sm text-gray-500">
+                                                        <span>Creada: {formatDate(invoice.created_at)}</span>
+                                                        <span>Vence: {formatDate(invoice.due_date)}</span>
+                                                        <span className="font-medium text-gray-700">
+                                                            {formatCurrency(invoice.total_amount)}
+                                                        </span>
                                                     </div>
                                                 </div>
-                                            ))}
+                                                <div className="flex flex-wrap gap-2">
+                                                    {invoice.status !== 'paid' && (
+                                                        <button
+                                                            onClick={() => updateInvoiceStatus(invoice.id, 'paid')}
+                                                            className="inline-flex items-center px-3 py-1 text-sm font-medium text-green-700 bg-green-100 border border-green-200 rounded-lg hover:bg-green-200 transition-colors"
+                                                        >
+                                                            <CheckCircle className="w-4 h-4 mr-1" />
+                                                            Marcar Pagada
+                                                        </button>
+                                                    )}
+                                                    
+                                                    <button
+                                                        onClick={async () => {
+                                                            try {
+                                                                window.open(`/api/invoices/${invoice.id}/spanish-pdf`, '_blank');
+                                                            } catch (error) {
+                                                                console.error('Error descargando PDF:', error);
+                                                            }
+                                                        }}
+                                                        className="inline-flex items-center px-3 py-1 text-sm font-medium text-red-700 bg-red-100 border border-red-200 rounded-lg hover:bg-red-200 transition-colors"
+                                                        title="Descargar factura en PDF"
+                                                    >
+                                                        <Download className="w-4 h-4 mr-1" />
+                                                        <span className="hidden sm:inline">PDF</span>
+                                                    </button>
+                                                    
+                                                    <button
+                                                        onClick={() => router.push(`/dashboard/invoices/${invoice.id}`)}
+                                                        className="inline-flex items-center px-3 py-1 text-sm font-medium text-blue-700 bg-blue-100 border border-blue-200 rounded-lg hover:bg-blue-200 transition-colors"
+                                                    >
+                                                        <Eye className="w-4 h-4 mr-1" />
+                                                        <span className="hidden sm:inline">Ver</span>
+                                                    </button>
+                                                </div>
+                                            </div>
                                         </div>
-                                    )}
+                                    ))}
                                 </div>
-                            </div>
+                            )}
                         </div>
                     </div>
                 </div>
