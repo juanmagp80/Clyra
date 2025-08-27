@@ -10,31 +10,17 @@ interface TrialBannerProps {
 }
 
 export default function TrialBanner({ userEmail }: TrialBannerProps) {
-    const trialStatus = useTrialStatus(userEmail);
+    const { trialInfo, loading, redirectToUpgrade } = useTrialStatus(userEmail);
     const [dismissed, setDismissed] = useState(false);
 
-    // Extracting values from the hook
-    const { loading, status, plan, canUseFeatures, daysRemaining, isExpired } = trialStatus || {};
-
-    console.log('🎯 TrialBanner - datos del hook:', {
-        loading,
-        status,
-        plan,
-        canUseFeatures,
-        daysRemaining,
-        isExpired,
-        userEmail
-    });
-
-    if (loading || dismissed) return null;
+    if (loading || !trialInfo || dismissed) return null;
 
     // No mostrar banner si tiene suscripción activa O si puede usar funciones (incluye suscripción de Stripe)
-    if (status === 'active' || canUseFeatures) {
-        console.log('🚫 No mostrar banner - usuario con acceso activo');
-        return null;
-    }
+    if (trialInfo.status === 'active' || trialInfo.canUseFeatures) return null;
 
     const getBannerConfig = () => {
+        const { daysRemaining, isExpired } = trialInfo;
+
         if (isExpired) {
             return {
                 bgGradient: 'from-red-500 to-red-600',
@@ -47,7 +33,7 @@ export default function TrialBanner({ userEmail }: TrialBannerProps) {
                 buttonVariant: 'secondary' as const,
                 urgent: true
             };
-        } else if ((daysRemaining || 0) <= 3) {
+        } else if (daysRemaining <= 3) {
             return {
                 bgGradient: 'from-orange-500 to-red-500',
                 bgSecondary: 'from-orange-50 to-red-50',
@@ -59,7 +45,7 @@ export default function TrialBanner({ userEmail }: TrialBannerProps) {
                 buttonVariant: 'secondary' as const,
                 urgent: true
             };
-        } else if ((daysRemaining || 0) <= 7) {
+        } else if (daysRemaining <= 7) {
             return {
                 bgGradient: 'from-yellow-500 to-orange-500',
                 bgSecondary: 'from-yellow-50 to-orange-50',
@@ -90,7 +76,7 @@ export default function TrialBanner({ userEmail }: TrialBannerProps) {
     const IconComponent = config.icon;
 
     return (
-        <div className={`relative bg-gradient-to-r ${config.bgGradient} shadow-lg ml-56 ${config.urgent ? 'animate-pulse' : ''}`}>
+        <div className={`relative bg-gradient-to-r ${config.bgGradient} shadow-lg ${config.urgent ? 'animate-pulse' : ''}`}>
             {/* Patrón de fondo sutil */}
             <div className="absolute inset-0 bg-white/10 opacity-20">
                 <div className="absolute inset-0" style={{
@@ -120,29 +106,27 @@ export default function TrialBanner({ userEmail }: TrialBannerProps) {
                             </p>
                         </div>
 
-                        {/* Stats rápidas - comentadas por ahora ya que no tenemos datos de uso */}
-                        {/* 
+                        {/* Stats rápidas */}
                         <div className="hidden lg:flex items-center space-x-6 text-sm">
                             <div className={`${config.textColor} opacity-90 text-center`}>
-                                <div className="font-bold text-lg">0</div>
+                                <div className="font-bold text-lg">{trialInfo.usage.clients}</div>
                                 <div className="text-xs">Clientes</div>
                             </div>
                             <div className={`${config.textColor} opacity-90 text-center`}>
-                                <div className="font-bold text-lg">0</div>
+                                <div className="font-bold text-lg">{trialInfo.usage.projects}</div>
                                 <div className="text-xs">Proyectos</div>
                             </div>
                             <div className={`${config.textColor} opacity-90 text-center`}>
-                                <div className="font-bold text-lg">0</div>
+                                <div className="font-bold text-lg">{Math.round(trialInfo.usage.storage / 1024 * 100) / 100}</div>
                                 <div className="text-xs">GB Usados</div>
                             </div>
                         </div>
-                        */}
                     </div>
 
                     {/* Botones de acción */}
                     <div className="flex items-center space-x-3 ml-4">
                         <Button
-                            onClick={() => window.location.href = '/dashboard/pricing'}
+                            onClick={redirectToUpgrade}
                             variant={config.buttonVariant}
                             className={`
                                 font-semibold transition-all duration-200 hover:scale-105 shadow-lg
@@ -176,14 +160,14 @@ export default function TrialBanner({ userEmail }: TrialBannerProps) {
                             Progreso del trial
                         </span>
                         <span className={`text-xs ${config.textColor} opacity-80 font-medium`}>
-                            {daysRemaining} de 14 días restantes
+                            {trialInfo.daysRemaining} de 14 días restantes
                         </span>
                     </div>
                     <div className="w-full bg-white/20 rounded-full h-2">
                         <div
                             className="bg-white rounded-full h-2 transition-all duration-300 shadow-sm"
                             style={{
-                                width: `${Math.max(5, ((14 - (daysRemaining || 0)) / 14) * 100)}%`
+                                width: `${Math.max(5, ((14 - trialInfo.daysRemaining) / 14) * 100)}%`
                             }}
                         />
                     </div>

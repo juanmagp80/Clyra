@@ -47,7 +47,7 @@ interface Invoice {
 export default function InvoicesPageClient({ userEmail }: ClientsPageClientProps) {
     // Hook de trial status
     const { trialInfo, loading: trialLoading, hasReachedLimit, canUseFeatures } = useTrialStatus(userEmail);
-    
+
     // Estados
     const [invoices, setInvoices] = useState<Invoice[]>([]);
     const [loading, setLoading] = useState(true);
@@ -64,7 +64,7 @@ export default function InvoicesPageClient({ userEmail }: ClientsPageClientProps
         try {
             setLoading(true);
             if (!supabase) return;
-            
+
             const { data, error } = await supabase
                 .from('invoices')
                 .select(`
@@ -98,14 +98,14 @@ export default function InvoicesPageClient({ userEmail }: ClientsPageClientProps
             alert('Tu periodo de prueba ha expirado. Actualiza tu plan para continuar creando facturas.');
             return;
         }
-        
+
         router.push('/dashboard/invoices/new');
     };
 
     const updateInvoiceStatus = async (id: string, status: string) => {
         try {
             if (!supabase) return;
-            
+
             const { error } = await supabase
                 .from('invoices')
                 .update({ status })
@@ -220,13 +220,12 @@ export default function InvoicesPageClient({ userEmail }: ClientsPageClientProps
                             <button
                                 onClick={handleNewInvoiceClick}
                                 disabled={trialLoading || !canUseFeatures}
-                                className={`inline-flex items-center px-4 py-2 text-sm font-medium rounded-lg border transition-colors ${
-                                    trialLoading
+                                className={`inline-flex items-center px-4 py-2 text-sm font-medium rounded-lg border transition-colors ${trialLoading
                                         ? 'bg-gray-100 border-gray-300 text-gray-500 cursor-wait'
-                                        : !canUseFeatures 
-                                        ? 'bg-gray-100 border-gray-300 text-gray-400 cursor-not-allowed'
-                                        : 'bg-blue-600 border-blue-600 text-white hover:bg-blue-700 hover:border-blue-700'
-                                }`}
+                                        : !canUseFeatures
+                                            ? 'bg-gray-100 border-gray-300 text-gray-400 cursor-not-allowed'
+                                            : 'bg-blue-600 border-blue-600 text-white hover:bg-blue-700 hover:border-blue-700'
+                                    }`}
                             >
                                 {trialLoading ? (
                                     <>
@@ -390,7 +389,7 @@ export default function InvoicesPageClient({ userEmail }: ClientsPageClientProps
                                                             Marcar Pagada
                                                         </button>
                                                     )}
-                                                    
+
                                                     <button
                                                         onClick={async () => {
                                                             try {
@@ -405,7 +404,7 @@ export default function InvoicesPageClient({ userEmail }: ClientsPageClientProps
                                                         <Download className="w-4 h-4 mr-1" />
                                                         <span className="hidden sm:inline">PDF</span>
                                                     </button>
-                                                    
+
                                                     <button
                                                         onClick={() => router.push(`/dashboard/invoices/${invoice.id}`)}
                                                         className="inline-flex items-center px-3 py-1 text-sm font-medium text-blue-700 bg-blue-100 border border-blue-200 rounded-lg hover:bg-blue-200 transition-colors"

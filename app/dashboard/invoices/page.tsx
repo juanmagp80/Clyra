@@ -1,20 +1,21 @@
 import { createServerSupabaseClient } from '@/src/lib/supabase-server';
+import { Metadata } from 'next';
 import { redirect } from 'next/navigation';
 import InvoicesPageClient from './InvoicesPageClient';
 
-export default async function InvoicesPage() {
-    try {
-        // Crear cliente SSR y obtener usuario autenticado
-        const supabase = await createServerSupabaseClient();
-        const { data: { user }, error } = await supabase.auth.getUser();
-        
-        if (error || !user?.email) {
-            redirect('/login');
-        }
+export const metadata: Metadata = {
+    title: 'Facturas | Taskelio CRM',
+    description: 'Gestiona tus facturas y pagos',
+};
 
-        return <InvoicesPageClient userEmail={user.email} />;
-    } catch (error) {
-        console.error('Error en InvoicesPage:', error);
+export default async function InvoicesPage() {
+    const supabase = await createServerSupabaseClient();
+
+    const { data: { user }, error } = await supabase.auth.getUser();
+
+    if (error || !user) {
         redirect('/login');
     }
+
+    return <InvoicesPageClient userEmail={user.email!} />;
 }

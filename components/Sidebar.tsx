@@ -2,7 +2,6 @@
 
 import { Button } from '@/components/ui/Button';
 import { cn } from '@/src/lib/utils';
-import SubscriptionStatus from '@/components/SubscriptionStatus';
 import {
   BarChart3,
   Bot,
@@ -70,7 +69,7 @@ const navigation = [
   },
   {
     name: 'Tiempo',
-    href: '/dashboard/tiempo',
+    href: '/dashboard/time-tracking',
     icon: Clock,
   },
   {
@@ -261,12 +260,6 @@ export default function Sidebar({ userEmail, onLogout }: SidebarProps) {
 
       {/* Premium User section - Más compacto */}
       <div className="border-t border-slate-200/60 dark:border-slate-700/60 p-3 bg-gradient-to-r from-slate-50/50 to-indigo-50/30 dark:from-slate-900/50 dark:to-indigo-900/30 transition-all duration-300">
-        {/* Estado de la suscripción */}
-        <div className="mb-3">
-          <SubscriptionStatus userEmail={userEmail} />
-        </div>
-
-        {/* Información del usuario */}
         <div className="flex items-center mb-3 p-2 rounded-lg bg-slate-100/80 dark:bg-slate-800/80 backdrop-blur-sm border border-slate-200/60 dark:border-slate-700/60 shadow-md shadow-slate-900/3 dark:shadow-black/10 transition-all duration-300">
           <div className="flex-shrink-0">
             <div className="h-8 w-8 rounded-lg bg-gradient-to-br from-indigo-600 via-blue-600 to-violet-600 flex items-center justify-center shadow-lg shadow-indigo-500/25 dark:shadow-indigo-400/30">

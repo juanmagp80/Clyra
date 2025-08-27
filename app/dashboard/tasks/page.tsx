@@ -13,5 +13,5 @@ export default async function TasksPage() {
         redirect('/login');
     }
 
-    return <TasksPageClient userEmail={session.user.email} />;
+    return <TasksPageClient />;
 }

@@ -830,9 +830,9 @@ export default function DashboardClient({
                                                             key={project.id}
                                                             onClick={() => router.push(`/dashboard/projects/${project.id}`)}
                                                             className={`group p-4 rounded-xl border-l-4 cursor-pointer transition-all duration-200 hover:scale-[1.02] hover:shadow-lg ${project.status === 'active' ? 'border-green-500 bg-green-50/50 dark:bg-green-900/20 hover:bg-green-50/70 dark:hover:bg-green-900/30' :
-                                                                project.status === 'paused' ? 'border-orange-500 bg-orange-50/50 dark:bg-orange-900/20 hover:bg-orange-50/70 dark:hover:bg-orange-900/30' :
-                                                                    project.status === 'completed' ? 'border-blue-500 bg-blue-50/50 dark:bg-blue-900/20 hover:bg-blue-50/70 dark:hover:bg-blue-900/30' :
-                                                                        'border-red-500 bg-red-50/50 dark:bg-red-900/20 hover:bg-red-50/70 dark:hover:bg-red-900/30'
+                                                                    project.status === 'paused' ? 'border-orange-500 bg-orange-50/50 dark:bg-orange-900/20 hover:bg-orange-50/70 dark:hover:bg-orange-900/30' :
+                                                                        project.status === 'completed' ? 'border-blue-500 bg-blue-50/50 dark:bg-blue-900/20 hover:bg-blue-50/70 dark:hover:bg-blue-900/30' :
+                                                                            'border-red-500 bg-red-50/50 dark:bg-red-900/20 hover:bg-red-50/70 dark:hover:bg-red-900/30'
                                                                 }`}
                                                         >
                                                             <div className="flex justify-between items-start mb-2">

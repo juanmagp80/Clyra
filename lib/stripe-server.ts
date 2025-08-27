@@ -16,8 +16,8 @@ if (!stripeSecretKey) {
 
 export const stripe = stripeSecretKey
   ? new Stripe(stripeSecretKey, {
-      apiVersion: '2025-07-30.basil',
-    })
+    apiVersion: '2025-07-30.basil',
+  })
   : stripeMock;
 
 export const createCheckoutSession = async (
@@ -47,8 +47,7 @@ export const createCheckoutSession = async (
       client_reference_id: userId,
       subscription_data: {
         metadata: {
-          user_id: userId || '',
-          customer_email: customerEmail || '',
+          userId: userId || '',
         },
       },
     });

@@ -3,7 +3,7 @@ import { Button } from '@/components/ui/Button';
 import { Input } from '@/components/ui/Input';
 import { getBaseUrl } from '@/lib/url';
 import { createSupabaseClient } from '@/src/lib/supabase-client';
-import { AlertCircle, ArrowRight, CheckCircle, Chrome, Eye, EyeOff, Lock, Mail, Sparkles, TrendingUp, X } from 'lucide-react';
+import { AlertCircle, ArrowRight, CheckCircle, Chrome, Eye, EyeOff, Github, Lock, Mail, Sparkles, TrendingUp, X } from 'lucide-react';
 import Link from 'next/link';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { Suspense, useEffect, useState } from 'react';
@@ -24,6 +24,34 @@ function LoginPageContent() {
 
     // Crear instancia del cliente de Supabase
     const supabase = createSupabaseClient();
+
+    // ✅ Función para login con GitHub
+    const loginWithGitHub = async (e: React.MouseEvent<HTMLButtonElement>) => {
+        e.preventDefault();
+        e.stopPropagation();
+
+        if (!supabase) {
+            setError('Para usar autenticación, configura Supabase en las variables de entorno.');
+            return;
+        }
+
+        try {
+            setLoading(true);
+            const { error } = await supabase.auth.signInWithOAuth({
+                provider: 'github',
+                options: {
+                    redirectTo: `${getBaseUrl()}/auth/callback`
+                }
+            });
+
+            if (error) {
+                setError('Error al conectar con GitHub: ' + error.message);
+            }
+        } catch (err) {
+            setError('Error de conexión con GitHub');
+        }
+        setLoading(false);
+    };
 
     // ✅ Función para login con Google
     const loginWithGoogle = async (e: React.MouseEvent<HTMLButtonElement>) => {
@@ -356,16 +384,26 @@ function LoginPageContent() {
                                 </div>
                                 <div className="flex-1 h-px bg-gradient-to-r from-transparent via-white/30 to-transparent"></div>
                             </div>
-                            <div className="mb-8">
+                            <div className="grid grid-cols-2 gap-4 mb-8">
+                                <Button
+                                    type="button"
+                                    onClick={loginWithGitHub}
+                                    disabled={true}
+                                    variant="ghost"
+                                    className="border border-white/20 text-white/40 bg-white/10 cursor-not-allowed h-11 rounded-xl group transition-all duration-300 font-medium relative z-10 opacity-50"
+                                >
+                                    <Github className="w-4 h-4 mr-2" />
+                                    GitHub
+                                </Button>
                                 <Button
                                     type="button"
                                     onClick={loginWithGoogle}
-                                    disabled={loading}
+                                    disabled={true}
                                     variant="ghost"
-                                    className="w-full border border-white/20 text-white hover:bg-white/10 hover:text-white h-11 rounded-xl group transition-all duration-300 font-medium relative z-10 hover:border-white/40"
+                                    className="border border-white/20 text-white/40 bg-white/10 cursor-not-allowed h-11 rounded-xl group transition-all duration-300 font-medium relative z-10 opacity-50"
                                 >
-                                    <Chrome className="w-4 h-4 mr-2 group-hover:scale-110 transition-transform" />
-                                    Continuar con Google
+                                    <Chrome className="w-4 h-4 mr-2" />
+                                    Google
                                 </Button>
                             </div>
                             <div className="text-center relative z-10">
