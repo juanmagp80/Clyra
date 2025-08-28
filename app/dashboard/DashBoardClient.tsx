@@ -6,9 +6,7 @@ import TrialBanner from '@/components/TrialBanner';
 import { createSupabaseClient } from '@/src/lib/supabase-client';
 import { useTrialStatus } from '@/src/lib/useTrialStatus';
 import {
-    ArrowRight,
     Briefcase,
-    CheckCircle,
     Clock,
     DollarSign,
     Target,
@@ -18,16 +16,13 @@ import {
 } from 'lucide-react';
 import { useRouter } from 'next/navigation';
 import { useEffect, useState } from 'react';
-import TasksTimeBreakdown from './DashBoardClient.tasksTime';
 
-export default function DashboardBonsai({
+export default function DashboardClient({
     userEmail,
-    isDemo = false,
-    totalTaskTime = 0
+    isDemo = false
 }: {
     userEmail: string;
     isDemo?: boolean;
-    totalTaskTime?: number;
 }) {
     const supabase = createSupabaseClient();
     const router = useRouter();
@@ -46,15 +41,6 @@ export default function DashboardBonsai({
         billableHoursThisWeek: 0
     });
 
-    // Estado para las categorías reales
-    const [categoryData, setCategoryData] = useState<Array<{
-        category: string;
-        hours: number;
-        percentage: number;
-        color: string;
-        displayName: string;
-    }>>([]);
-
     // Estados para datos dinámicos
     const [realProjects, setRealProjects] = useState<any[]>([]);
     const [realClients, setRealClients] = useState<any[]>([]);
@@ -70,17 +56,22 @@ export default function DashboardBonsai({
     }>>([]);
 
     const handleLogout = async () => {
+        console.log('🔧 handleLogout called'); // Debug log
         try {
             if (isDemo) {
+                console.log('🔧 Demo mode - redirecting to login'); // Debug log
                 router.push('/login');
                 return;
             }
+            console.log('🔧 Calling supabase signOut'); // Debug log
             if (supabase) {
                 await supabase.auth.signOut();
+                console.log('🔧 Supabase signOut completed'); // Debug log
             }
+            console.log('🔧 Redirecting to login'); // Debug log
             router.push('/login');
         } catch (error) {
-            console.error('Error in handleLogout:', error);
+            console.error('🔧 Error in handleLogout:', error); // Debug log
         }
     };
 
@@ -114,117 +105,96 @@ export default function DashboardBonsai({
                         id: '2',
                         type: 'client',
                         title: 'Cliente agregado',
-                        subtitle: 'María González - Consultoría Digital',
+                        subtitle: 'María González - Startup Local',
                         date: '1 día',
                         icon: 'user'
                     },
                     {
                         id: '3',
-                        type: 'task',
-                        title: 'Tarea completada',
-                        subtitle: 'Wireframes de la landing page',
+                        type: 'time',
+                        title: 'Tiempo registrado',
+                        subtitle: '4.5 horas en desarrollo frontend',
                         date: '2 días',
                         icon: 'clock'
                     }
                 ]);
 
-                setRealProjects([
-                    {
-                        id: '1',
-                        name: 'Rediseño Web Corporativo',
-                        status: 'active',
-                        client_name: 'TechCorp Solutions',
-                        budget: 8500,
-                        created_at: '2024-01-15'
-                    },
-                    {
-                        id: '2',
-                        name: 'App Móvil E-commerce',
-                        status: 'in_progress',
-                        client_name: 'Digital Store SA',
-                        budget: 12000,
-                        created_at: '2024-01-10'
-                    }
-                ]);
-
-                setRealClients([
-                    {
-                        id: '1',
-                        name: 'TechCorp Solutions',
-                        email: 'contact@techcorp.com',
-                        company: 'TechCorp',
-                        created_at: '2024-01-01'
-                    },
-                    {
-                        id: '2',
-                        name: 'María González',
-                        email: 'maria@consultoria.com',
-                        company: 'Consultoría Digital',
-                        created_at: '2024-01-05'
-                    }
-                ]);
-
                 setLoading(false);
                 return;
             }
 
+            // Verificar que supabase esté disponible
             if (!supabase) {
-                console.error('Supabase client not available');
                 setLoading(false);
                 return;
             }
 
-            // Obtener usuario actual
-            const { data: { user } } = await supabase.auth.getUser();
-            if (!user) {
-                console.error('No user found');
-                setLoading(false);
-                return;
-            }
+            const user = (await supabase.auth.getUser()).data.user;
+            if (!user) return;
 
-            // Cargar métricas reales
-            const [
-                { data: clients },
-                { data: allProjects },
-                { data: weeklyTimeData },
-                { data: monthlyTimeData }
-            ] = await Promise.all([
-                supabase.from('clients').select('*').eq('user_id', user.id),
-                supabase.from('projects').select('*').eq('user_id', user.id),
-                supabase.from('time_entries').select('duration_seconds').eq('user_id', user.id),
-                supabase.from('time_entries').select('duration_seconds').eq('user_id', user.id)
-            ]);
+            // Contar clientes
+            const { count: clientsCount } = await supabase
+                .from('clients')
+                .select('*', { count: 'exact', head: true })
+                .eq('user_id', user.id);
 
-            const activeProjects = allProjects?.filter(p =>
-                p.status === 'active' || p.status === 'in_progress'
-            ) || [];
+            // Contar proyectos por estado
+            const { data: projectsData } = await supabase
+                .from('projects')
+                .select('status')
+                .eq('user_id', user.id);
 
-            const completedProjects = allProjects?.filter(p =>
-                p.status === 'completed'
-            ) || [];
+            const activeProjects = projectsData?.filter((p: any) => p.status === 'active').length || 0;
+            const completedProjects = projectsData?.filter((p: any) => p.status === 'completed').length || 0;
 
-            const totalMinutesThisWeek = weeklyTimeData?.reduce((sum: number, entry: any) => sum + (entry.duration_seconds / 60), 0) || 0;
+            // Calcular ingresos del mes (facturas pagadas)
+            const currentMonth = new Date().getMonth();
+            const currentYear = new Date().getFullYear();
+
+            const { data: paidInvoicesData } = await supabase
+                .from('invoices')
+                .select('total_amount, issue_date, status')
+                .eq('user_id', user.id)
+                .eq('status', 'paid')
+                .gte('issue_date', `${currentYear}-${String(currentMonth + 1).padStart(2, '0')}-01`);
+
+            const monthlyRevenue = paidInvoicesData?.reduce((sum: number, invoice: any) => sum + (invoice.total_amount || 0), 0) || 0;
+
+            // Calcular horas de esta semana
+            const startOfWeek = new Date();
+            startOfWeek.setDate(startOfWeek.getDate() - startOfWeek.getDay());
+            startOfWeek.setHours(0, 0, 0, 0);
+
+            const { data: weeklyTimeData } = await supabase
+                .from('time_entries')
+                .select('duration_minutes, is_billable')
+                .eq('user_id', user.id)
+                .gte('created_at', startOfWeek.toISOString());
+
+            const totalMinutesThisWeek = weeklyTimeData?.reduce((sum: number, entry: any) => sum + entry.duration_minutes, 0) || 0;
             const billableMinutesThisWeek = weeklyTimeData?.reduce((sum: number, entry: any) =>
-                sum + (entry.duration_seconds ? entry.duration_seconds / 60 : 0), 0) || 0;
+                sum + (entry.is_billable ? entry.duration_minutes : 0), 0) || 0;
 
-            const totalRevenue = allProjects?.reduce((sum: number, project: any) => {
-                return sum + (project.budget || 0);
-            }, 0) || 0;
+            // Calcular horas de este mes
+            const startOfMonth = new Date(currentYear, currentMonth, 1);
+            const { data: monthlyTimeData } = await supabase
+                .from('time_entries')
+                .select('duration_minutes')
+                .eq('user_id', user.id)
+                .gte('created_at', startOfMonth.toISOString());
 
-            const totalMinutesThisMonth = monthlyTimeData?.reduce((sum: number, entry: any) => sum + (entry.duration_seconds / 60), 0) || 0;
+            const totalMinutesThisMonth = monthlyTimeData?.reduce((sum: number, entry: any) => sum + entry.duration_minutes, 0) || 0;
 
+            // Actualizar todas las métricas
             setMetrics({
-                totalClients: clients?.length || 0,
-                activeProjects: activeProjects.length,
-                completedProjects: completedProjects.length,
-                monthlyRevenue: totalRevenue,
+                totalClients: clientsCount || 0,
+                activeProjects,
+                completedProjects,
+                monthlyRevenue,
                 hoursThisWeek: Math.round((totalMinutesThisWeek / 60) * 10) / 10,
                 hoursThisMonth: Math.round((totalMinutesThisMonth / 60) * 10) / 10,
                 billableHoursThisWeek: Math.round((billableMinutesThisWeek / 60) * 10) / 10
             });
-
-            setRealProjects(allProjects?.slice(0, 5) || []);
-            setRealClients(clients?.slice(0, 5) || []);
 
         } catch (error) {
             console.error('Error loading dashboard data:', error);
@@ -233,105 +203,30 @@ export default function DashboardBonsai({
         }
     };
 
-    // Función para cargar datos de categorías reales
-    const loadCategoryData = async () => {
-        if (isDemo) return;
 
-        try {
-            if (!supabase) return;
-
-            const { data: { user } } = await supabase.auth.getUser();
-            if (!user) return;
-
-            // Consultar tareas con tiempo registrado agrupadas por categoría
-            const { data: tasks } = await supabase
-                .from('tasks')
-                .select('category, total_time_seconds')
-                .eq('user_id', user.id)
-                .not('total_time_seconds', 'is', null)
-                .gt('total_time_seconds', 0);
-
-            if (!tasks || tasks.length === 0) {
-                setCategoryData([]);
-                return;
-            }
-
-            // Agrupar por categoría y sumar tiempos
-            const categoryTotals: { [key: string]: number } = {};
-            tasks.forEach(task => {
-                const category = task.category || 'general';
-                categoryTotals[category] = (categoryTotals[category] || 0) + (task.total_time_seconds || 0);
-            });
-
-            // Calcular total de horas para porcentajes
-            const totalSeconds = Object.values(categoryTotals).reduce((sum, seconds) => sum + seconds, 0);
-            
-            // Mapear categorías con nombres y colores
-            const categoryMapping: { [key: string]: { name: string; color: string } } = {
-                'web_development': { name: 'Desarrollo Web', color: 'bg-blue-600' },
-                'frontend_development': { name: 'Frontend', color: 'bg-cyan-600' },
-                'backend_development': { name: 'Backend', color: 'bg-blue-800' },
-                'mobile_development': { name: 'Desarrollo Móvil', color: 'bg-purple-600' },
-                'ui_ux_design': { name: 'Diseño UI/UX', color: 'bg-pink-600' },
-                'graphic_design': { name: 'Diseño Gráfico', color: 'bg-purple-500' },
-                'design': { name: 'Diseño', color: 'bg-purple-600' },
-                'seo_sem': { name: 'SEO/SEM', color: 'bg-green-600' },
-                'social_media': { name: 'Redes Sociales', color: 'bg-blue-500' },
-                'content_creation': { name: 'Contenido', color: 'bg-yellow-600' },
-                'marketing': { name: 'Marketing', color: 'bg-green-600' },
-                'consulting': { name: 'Consultoría', color: 'bg-indigo-600' },
-                'research_analysis': { name: 'Investigación', color: 'bg-teal-600' },
-                'client_meetings': { name: 'Reuniones', color: 'bg-orange-600' },
-                'proposals_presentations': { name: 'Propuestas', color: 'bg-amber-600' },
-                'client_communication': { name: 'Comunicación', color: 'bg-orange-500' },
-                'invoicing_payments': { name: 'Facturación', color: 'bg-emerald-600' },
-                'business_admin': { name: 'Administración', color: 'bg-gray-600' },
-                'email_management': { name: 'Emails', color: 'bg-slate-600' },
-                'testing_qa': { name: 'Testing', color: 'bg-red-600' },
-                'learning_training': { name: 'Formación', color: 'bg-violet-600' },
-                'general': { name: 'General', color: 'bg-gray-500' },
-                // Backward compatibility
-                'development': { name: 'Desarrollo', color: 'bg-blue-600' },
-                'meetings': { name: 'Reuniones', color: 'bg-orange-600' },
-                'administration': { name: 'Administración', color: 'bg-gray-600' }
-            };
-
-            // Convertir a formato del componente
-            const categoryArray = Object.entries(categoryTotals)
-                .map(([category, seconds]) => ({
-                    category,
-                    hours: Math.round((seconds / 3600) * 10) / 10,
-                    percentage: Math.round((seconds / totalSeconds) * 100),
-                    color: categoryMapping[category]?.color || 'bg-gray-500',
-                    displayName: categoryMapping[category]?.name || category
-                }))
-                .sort((a, b) => b.hours - a.hours); // Ordenar por horas descendente
-
-            setCategoryData(categoryArray);
-
-        } catch (error) {
-            console.error('Error loading category data:', error);
-        }
-    };
-
+    // Cargar actividad reciente
     const loadRecentActivity = async () => {
-        // En modo demo ya está cargado
-        if (isDemo) return;
-
         try {
+            // Verificar que supabase esté disponible
             if (!supabase) return;
 
-            const { data: { user } } = await supabase.auth.getUser();
+            const user = (await supabase.auth.getUser()).data.user;
             if (!user) return;
 
-            // Obtener actividad reciente simulada basada en datos reales
+            // Últimos proyectos creados
             const { data: recentProjects } = await supabase
                 .from('projects')
-                .select('id, name, created_at, client_id')
+                .select(`
+                id,
+                name,
+                created_at,
+                clients!inner(name)
+            `)
                 .eq('user_id', user.id)
                 .order('created_at', { ascending: false })
-                .limit(3);
+                .limit(2);
 
+            // Últimos clientes añadidos
             const { data: recentClients } = await supabase
                 .from('clients')
                 .select('id, name, created_at')
@@ -339,627 +234,751 @@ export default function DashboardBonsai({
                 .order('created_at', { ascending: false })
                 .limit(2);
 
-            const activity: Array<{
-                id: string;
-                type: string;
-                title: string;
-                subtitle: string;
-                date: string;
-                icon: string;
-            }> = [];
+            // Últimas entradas de tiempo
+            const { data: recentTimeEntries } = await supabase
+                .from('time_entries')
+                .select(`
+                id,
+                description,
+                duration_minutes,
+                created_at,
+                projects!left(name),
+                clients!left(name)
+            `)
+                .eq('user_id', user.id)
+                .order('created_at', { ascending: false })
+                .limit(3);
 
-            // Agregar proyectos recientes
-            recentProjects?.forEach(project => {
-                activity.push({
+            // Combinar y ordenar actividad
+            const activity = [
+                ...(recentProjects?.map((project: any) => ({
                     id: project.id,
                     type: 'project',
-                    title: 'Proyecto creado',
-                    subtitle: project.name,
-                    date: new Date(project.created_at).toLocaleDateString('es-ES'),
+                    title: `Nuevo proyecto: ${project.name}`,
+                    subtitle: `Cliente: ${project.clients?.[0]?.name || 'Sin cliente'}`,
+                    date: project.created_at,
                     icon: 'briefcase'
-                });
-            });
-
-            // Agregar clientes recientes
-            recentClients?.forEach(client => {
-                activity.push({
+                })) || []),
+                ...(recentClients?.map((client: any) => ({
                     id: client.id,
                     type: 'client',
-                    title: 'Cliente agregado',
-                    subtitle: client.name,
-                    date: new Date(client.created_at).toLocaleDateString('es-ES'),
+                    title: `Nuevo cliente: ${client.name}`,
+                    subtitle: 'Cliente añadido',
+                    date: client.created_at,
                     icon: 'user'
-                });
-            });
+                })) || []),
+                ...(recentTimeEntries?.map((entry: any) => ({
+                    id: entry.id,
+                    type: 'time',
+                    title: entry.description,
+                    subtitle: `${Math.floor(entry.duration_minutes / 60)}h ${entry.duration_minutes % 60}m${(entry.projects as any)?.name ? ` • ${(entry.projects as any).name}` : ''}`,
+                    date: entry.created_at,
+                    icon: 'clock'
+                })) || [])
+            ].sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime())
+                .slice(0, 6);
 
-            // Ordenar por fecha más reciente
-            activity.sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
-
-            setRecentActivity(activity.slice(0, 5));
-
+            setRecentActivity(activity);
         } catch (error) {
             console.error('Error loading recent activity:', error);
+        }
+    };
+
+    // Cargar proyectos reales para las alertas
+    const loadRealProjects = async () => {
+        try {
+            if (!supabase) return;
+
+            const user = (await supabase.auth.getUser()).data.user;
+            if (!user) return;
+
+            const { data: projects } = await supabase
+                .from('projects')
+                .select('*')
+                .eq('user_id', user.id)
+                .limit(5)
+                .order('created_at', { ascending: false });
+
+            setRealProjects(projects || []);
+        } catch (error) {
+            console.error('Error loading real projects:', error);
         }
     };
 
     useEffect(() => {
         loadDashboardData();
         loadRecentActivity();
-        loadCategoryData();
+        loadRealProjects();
     }, []);
-
     return (
-        <div className="min-h-screen bg-gray-50">
+        <div className="flex h-screen overflow-hidden bg-gradient-to-br from-slate-50 via-blue-50/30 to-indigo-50/40">
+            {/* Elementos decorativos de fondo mejorados con colores más suaves */}
+            <div className="absolute inset-0 overflow-hidden pointer-events-none">
+                <div className="absolute top-0 left-0 w-96 h-96 bg-gradient-to-br from-blue-500/4 via-purple-500/4 to-indigo-500/4 dark:from-blue-400/3 dark:via-purple-400/3 dark:to-indigo-400/3 rounded-full blur-3xl animate-pulse"></div>
+                <div className="absolute top-20 right-20 w-64 h-64 bg-gradient-to-br from-purple-500/4 via-pink-500/4 to-indigo-500/4 dark:from-purple-400/3 dark:via-pink-400/3 dark:to-indigo-400/3 rounded-full blur-3xl animate-pulse" style={{ animationDelay: '2s' }}></div>
+                <div className="absolute bottom-20 left-20 w-80 h-80 bg-gradient-to-br from-indigo-500/4 via-blue-500/4 to-purple-500/4 dark:from-indigo-400/3 dark:via-blue-400/3 dark:to-purple-400/3 rounded-full blur-3xl animate-pulse" style={{ animationDelay: '4s' }}></div>
+            </div>
+
+            {/* Sidebar */}
             <Sidebar userEmail={userEmail} onLogout={handleLogout} />
 
-            <div className="ml-56 min-h-screen">
-                {/* Trial Banner - Solo si no es demo */}
-                {!isDemo && <TrialBanner userEmail={userEmail} />}
+            {/* Main Content - Responsive with proper spacing */}
+            <div className="flex-1 pl-56 overflow-hidden relative">
+                <div className="h-full overflow-y-auto">
+                    {/* Trial Banner - Solo si no es demo */}
+                    {!isDemo && <TrialBanner userEmail={userEmail} />}
 
-                {/* Header estilo Bonsai */}
-                <div className="bg-white border-b border-gray-200">
-                    <div className="px-6 py-6">
-                        <div className="flex items-center justify-between">
-                            <div>
-                                <h1 className="text-2xl font-semibold text-gray-900">
-                                    Hola, {userEmail?.split('@')[0] || 'Usuario'}
-                                </h1>
-                                <p className="mt-1 text-sm text-gray-600">
-                                    Aquí tienes el resumen de tu actividad
-                                </p>
-                            </div>
-                            <div className="flex items-center gap-2 px-3 py-1 bg-green-100 rounded-full">
-                                <div className="w-2 h-2 bg-green-500 rounded-full"></div>
-                                <span className="text-sm font-medium text-green-700">En línea</span>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-
-                <div className="p-6">
-                    {loading ? (
-                        <div className="flex items-center justify-center h-64">
-                            <div className="text-center">
-                                <div className="w-8 h-8 border-3 border-gray-300 border-t-blue-600 rounded-full animate-spin mx-auto mb-4"></div>
-                                <p className="text-sm text-gray-600">Cargando dashboard...</p>
-                            </div>
-                        </div>
-                    ) : (
-                        <>
-                            {/* Estadísticas Principales */}
-                            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-6 mb-8">
-                                {/* Total Clients */}
-                                <div
-                                    onClick={() => router.push('/dashboard/clients')}
-                                    className="bg-white rounded-lg shadow-sm border border-gray-200 p-6 hover:shadow-md transition-shadow cursor-pointer"
-                                >
-                                    <div className="flex items-center">
-                                        <div className="flex-shrink-0">
-                                            <Users className="h-8 w-8 text-blue-600" />
-                                        </div>
-                                        <div className="ml-4 flex-1">
-                                            <div className="flex items-center justify-between">
-                                                <div>
-                                                    <p className="text-sm font-medium text-gray-600">Clientes</p>
-                                                    <p className="text-2xl font-semibold text-gray-900">{metrics.totalClients}</p>
-                                                </div>
-                                                <ArrowRight className="h-4 w-4 text-gray-400" />
-                                            </div>
-                                        </div>
-                                    </div>
-                                </div>
-
-                                {/* Active Projects */}
-                                <div
-                                    onClick={() => router.push('/dashboard/projects')}
-                                    className="bg-white rounded-lg shadow-sm border border-gray-200 p-6 hover:shadow-md transition-shadow cursor-pointer"
-                                >
-                                    <div className="flex items-center">
-                                        <div className="flex-shrink-0">
-                                            <Briefcase className="h-8 w-8 text-green-600" />
-                                        </div>
-                                        <div className="ml-4 flex-1">
-                                            <div className="flex items-center justify-between">
-                                                <div>
-                                                    <p className="text-sm font-medium text-gray-600">Proyectos Activos</p>
-                                                    <p className="text-2xl font-semibold text-gray-900">{metrics.activeProjects}</p>
-                                                </div>
-                                                <ArrowRight className="h-4 w-4 text-gray-400" />
-                                            </div>
-                                        </div>
-                                    </div>
-                                </div>
-
-                                {/* Completed Projects */}
-                                <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
-                                    <div className="flex items-center">
-                                        <div className="flex-shrink-0">
-                                            <CheckCircle className="h-8 w-8 text-purple-600" />
-                                        </div>
-                                        <div className="ml-4">
-                                            <p className="text-sm font-medium text-gray-600">Completados</p>
-                                            <p className="text-2xl font-semibold text-gray-900">{metrics.completedProjects}</p>
-                                        </div>
-                                    </div>
-                                </div>
-
-                                {/* Monthly Revenue */}
-                                <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
-                                    <div className="flex items-center">
-                                        <div className="flex-shrink-0">
-                                            <DollarSign className="h-8 w-8 text-amber-600" />
-                                        </div>
-                                        <div className="ml-4">
-                                            <p className="text-sm font-medium text-gray-600">Ingresos</p>
-                                            <p className="text-2xl font-semibold text-gray-900">
-                                                €{metrics.monthlyRevenue.toLocaleString()}
+                    <div className="min-h-screen relative bg-gradient-to-b from-transparent via-slate-50/20 to-blue-50/30">
+                        <div className="container mx-auto px-4 lg:px-6 py-8">
+                            {/* Header Premium con Animaciones */}
+                            <div className="relative mb-8 overflow-hidden">
+                                <div className="absolute inset-0 bg-gradient-to-r from-blue-500/5 via-purple-500/5 to-pink-500/5 blur-3xl"></div>
+                                <div className="relative backdrop-blur-sm bg-white/70 dark:bg-slate-800/60 rounded-3xl p-8 border border-white/80 dark:border-slate-700/80 shadow-2xl shadow-blue-500/5 dark:shadow-purple-500/20 transition-all duration-300">
+                                    <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between">
+                                        <div className="space-y-2">
+                                            <h1 className="text-4xl lg:text-5xl font-black bg-gradient-to-r from-blue-600 via-purple-600 to-pink-600 bg-clip-text text-transparent">
+                                                ¡Hola {userEmail?.split('@')[0] || 'Usuario'}! 👋
+                                            </h1>
+                                            <p className="text-lg text-slate-600 dark:text-slate-300 font-medium">
+                                                Aquí tienes el resumen de tu actividad
                                             </p>
                                         </div>
-                                    </div>
-                                </div>
-
-                                {/* Total Task Time */}
-                                <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
-                                    <div className="flex items-center">
-                                        <div className="flex-shrink-0">
-                                            <Clock className="h-8 w-8 text-blue-600" />
-                                        </div>
-                                        <div className="ml-4">
-                                            <p className="text-sm font-medium text-gray-600">TIEMPO ACUMULADO (Clyra)</p>
-                                            <p className="text-2xl font-semibold text-gray-900">
-                                                {(() => {
-                                                    const h = Math.floor(totalTaskTime / 3600);
-                                                    const m = Math.floor((totalTaskTime % 3600) / 60);
-                                                    return `${h}h ${m}m`;
-                                                })()}
-                                            </p>
+                                        <div className="mt-4 lg:mt-0 flex items-center gap-4">
+                                            <div className="flex items-center gap-2 px-4 py-2 bg-green-100 dark:bg-green-900/30 rounded-full">
+                                                <div className="w-2 h-2 bg-green-500 rounded-full animate-pulse"></div>
+                                                <span className="text-sm font-bold text-green-700 dark:text-green-300">En línea</span>
+                                            </div>
                                         </div>
                                     </div>
                                 </div>
                             </div>
 
-                            {/* Componente de desglose de tiempo por proyectos y tareas */}
-                            <TasksTimeBreakdown />
-
-                            {/* Gráficos y Estadísticas Adicionales - Estilo Bonsai */}
-                            <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-8">
-                                {/* Gráfico de Ingresos por Mes - Estilo Bonsai */}
-                                <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
-                                    <div className="flex items-center gap-4 mb-6">
-                                        <div className="w-12 h-12 bg-blue-600 rounded-lg flex items-center justify-center">
-                                            <TrendingUp className="w-6 h-6 text-white" />
-                                        </div>
-                                        <div>
-                                            <h3 className="text-lg font-semibold text-gray-900">Ingresos Mensuales</h3>
-                                            <p className="text-sm text-gray-600">Últimos 6 meses</p>
-                                        </div>
+                            {loading ? (
+                                <div className="flex flex-col items-center justify-center h-96 space-y-4">
+                                    <div className="relative">
+                                        <div className="w-20 h-20 border-4 border-purple-100 dark:border-purple-900/30 rounded-full"></div>
+                                        <div className="absolute top-0 left-0 w-20 h-20 border-4 border-transparent border-t-gradient-to-r from-blue-500 to-purple-600 rounded-full animate-spin"></div>
                                     </div>
-
-                                    {/* Gráfico de barras limpio */}
-                                    <div className="space-y-4">
-                                        <div className="flex items-end justify-between h-40 gap-3 px-2">
-                                            {[
-                                                { month: 'Mar', value: 85, amount: 8500 },
-                                                { month: 'Abr', value: 70, amount: 7200 },
-                                                { month: 'May', value: 95, amount: 12300 },
-                                                { month: 'Jun', value: 80, amount: 9800 },
-                                                { month: 'Jul', value: 60, amount: 6400 },
-                                                { month: 'Ago', value: 100, amount: metrics.monthlyRevenue }
-                                            ].map((bar, index) => (
-                                                <div key={bar.month} className="flex flex-col items-center flex-1 group">
-                                                    <div className="relative w-full h-32 mb-2">
-                                                        {/* Fondo de la barra */}
-                                                        <div className="absolute bottom-0 w-full h-32 bg-gray-100 rounded"></div>
-                                                        {/* Barra de datos */}
-                                                        <div
-                                                            className="absolute bottom-0 w-full bg-blue-600 rounded transition-all duration-700 ease-out group-hover:bg-blue-700"
-                                                            style={{
-                                                                height: `${Math.max(bar.value, 10)}%`,
-                                                                minHeight: '8px'
-                                                            }}
-                                                        ></div>
-                                                        {/* Tooltip hover */}
-                                                        <div className="absolute -top-8 left-1/2 transform -translate-x-1/2 bg-gray-800 text-white text-xs px-2 py-1 rounded opacity-0 group-hover:opacity-100 transition-opacity duration-200 whitespace-nowrap">
-                                                            €{bar.amount.toLocaleString()}
-                                                        </div>
+                                    <div className="space-y-2 text-center">
+                                        <h3 className="text-2xl font-bold bg-gradient-to-r from-blue-600 to-purple-600 bg-clip-text text-transparent">
+                                            Cargando dashboard
+                                        </h3>
+                                        <p className="text-slate-500 dark:text-slate-400">Preparando tus métricas...</p>
+                                    </div>
+                                </div>
+                            ) : (
+                                <>
+                                    {/* Estadísticas Principales - Diseño Premium */}
+                                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-12">
+                                        {/* Total Clients */}
+                                        <div
+                                            onClick={() => router.push('/dashboard/clients')}
+                                            className="group relative bg-white/80 dark:bg-slate-800/80 backdrop-blur-sm rounded-3xl p-8 border border-white/60 dark:border-slate-700/60 shadow-2xl shadow-blue-500/10 dark:shadow-blue-500/20 hover:shadow-blue-500/20 dark:hover:shadow-blue-500/30 transition-all duration-300 cursor-pointer hover:scale-105"
+                                        >
+                                            <div className="absolute inset-0 bg-gradient-to-br from-blue-500/10 via-transparent to-blue-600/10 rounded-3xl blur-xl group-hover:blur-2xl transition-all duration-300"></div>
+                                            <div className="relative">
+                                                <div className="flex items-center justify-between mb-6">
+                                                    <div className="w-14 h-14 bg-gradient-to-br from-blue-400 to-blue-600 rounded-2xl flex items-center justify-center shadow-xl shadow-blue-500/25 group-hover:shadow-blue-500/40 group-hover:scale-110 transition-all duration-300">
+                                                        <Users className="w-7 h-7 text-white" />
                                                     </div>
-                                                    <div className="text-center">
-                                                        <p className="text-xs font-medium text-gray-700">{bar.month}</p>
-                                                        <p className="text-xs text-gray-500">€{(bar.amount / 1000).toFixed(1)}k</p>
+                                                    <div className="text-right">
+                                                        <p className="text-xs font-bold text-blue-600 dark:text-blue-400 uppercase tracking-wider">
+                                                            Total
+                                                        </p>
                                                     </div>
                                                 </div>
-                                            ))}
-                                        </div>
-                                    </div>
-                                </div>
-
-                                {/* Distribución de Tiempo - Estilo Bonsai */}
-                                <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
-                                    <div className="flex items-center gap-4 mb-6">
-                                        <div className="w-12 h-12 bg-green-600 rounded-lg flex items-center justify-center">
-                                            <Clock className="w-6 h-6 text-white" />
-                                        </div>
-                                        <div>
-                                            <h3 className="text-lg font-semibold text-gray-900">Tiempo por Categoría</h3>
-                                            <p className="text-sm text-gray-600">
-                                                {isDemo ? 'Distribución estimada esta semana' : 
-                                                 categoryData.length > 0 ? 'Distribución real basada en tareas' : 'No hay datos registrados'}
-                                            </p>
-                                        </div>
-                                    </div>
-
-                                    {/* Distribución de tiempo */}
-                                    {isDemo ? (
-                                        <div className="space-y-4">
-                                            {[
-                                                { category: 'Desarrollo', hours: Math.round(metrics.hoursThisWeek * 0.4 * 10) / 10, color: 'bg-blue-600', percentage: 40 },
-                                                { category: 'Diseño', hours: Math.round(metrics.hoursThisWeek * 0.25 * 10) / 10, color: 'bg-purple-600', percentage: 25 },
-                                                { category: 'Reuniones', hours: Math.round(metrics.hoursThisWeek * 0.2 * 10) / 10, color: 'bg-orange-600', percentage: 20 },
-                                                { category: 'Administración', hours: Math.round(metrics.hoursThisWeek * 0.15 * 10) / 10, color: 'bg-gray-600', percentage: 15 }
-                                            ].map((item, index) => (
-                                                <div key={item.category} className="space-y-2">
-                                                    <div className="flex justify-between items-center">
-                                                        <span className="text-sm font-medium text-gray-700">{item.category}</span>
-                                                        <span className="text-sm text-gray-600">{item.hours}h ({item.percentage}%)</span>
-                                                    </div>
-                                                    <div className="w-full bg-gray-100 rounded-full h-3 overflow-hidden">
-                                                        <div
-                                                            className={`h-full ${item.color} transition-all duration-500 rounded-full`}
-                                                            style={{
-                                                                width: `${item.percentage}%`,
-                                                                animationDelay: `${index * 200}ms`
-                                                            }}
-                                                        ></div>
+                                                <div className="space-y-3">
+                                                    <h3 className="text-4xl font-black text-slate-900 dark:text-white group-hover:text-blue-600 dark:group-hover:text-blue-400 transition-colors duration-300">
+                                                        {metrics.totalClients}
+                                                    </h3>
+                                                    <p className="text-slate-600 dark:text-slate-400 font-semibold">
+                                                        Clientes
+                                                    </p>
+                                                    <div className="flex items-center gap-2 text-sm">
+                                                        <TrendingUp className="w-4 h-4 text-emerald-500" />
+                                                        <span className="text-emerald-600 dark:text-emerald-400 font-bold">Cartera activa</span>
                                                     </div>
                                                 </div>
-                                            ))}
+                                            </div>
                                         </div>
-                                    ) : categoryData.length > 0 ? (
-                                        <div className="space-y-4">
-                                            {categoryData.map((item, index) => (
-                                                <div key={item.category} className="space-y-2">
-                                                    <div className="flex justify-between items-center">
-                                                        <span className="text-sm font-medium text-gray-700">{item.displayName}</span>
-                                                        <span className="text-sm text-gray-600">{item.hours}h ({item.percentage}%)</span>
+
+                                        {/* Active Projects */}
+                                        <div
+                                            onClick={() => router.push('/dashboard/projects')}
+                                            className="group relative bg-white/80 dark:bg-slate-800/80 backdrop-blur-sm rounded-3xl p-8 border border-white/60 dark:border-slate-700/60 shadow-2xl shadow-emerald-500/10 dark:shadow-emerald-500/20 hover:shadow-emerald-500/20 dark:hover:shadow-emerald-500/30 transition-all duration-300 cursor-pointer hover:scale-105"
+                                        >
+                                            <div className="absolute inset-0 bg-gradient-to-br from-emerald-500/10 via-transparent to-emerald-600/10 rounded-3xl blur-xl group-hover:blur-2xl transition-all duration-300"></div>
+                                            <div className="relative">
+                                                <div className="flex items-center justify-between mb-6">
+                                                    <div className="w-14 h-14 bg-gradient-to-br from-emerald-400 to-emerald-600 rounded-2xl flex items-center justify-center shadow-xl shadow-emerald-500/25 group-hover:shadow-emerald-500/40 group-hover:scale-110 transition-all duration-300">
+                                                        <Target className="w-7 h-7 text-white" />
                                                     </div>
-                                                    <div className="w-full bg-gray-100 rounded-full h-3 overflow-hidden">
-                                                        <div
-                                                            className={`h-full ${item.color} transition-all duration-500 rounded-full`}
-                                                            style={{
-                                                                width: `${item.percentage}%`,
-                                                                animationDelay: `${index * 200}ms`
-                                                            }}
-                                                        ></div>
+                                                    <div className="text-right">
+                                                        <p className="text-xs font-bold text-emerald-600 dark:text-emerald-400 uppercase tracking-wider">
+                                                            Activos
+                                                        </p>
                                                     </div>
                                                 </div>
-                                            ))}
-                                        </div>
-                                    ) : (
-                                        <div className="text-center py-6 bg-gray-50 rounded-lg">
-                                            <Clock className="w-8 h-8 text-gray-400 mx-auto mb-2" />
-                                            <p className="text-sm text-gray-500 mb-1">No hay tiempo registrado por categorías</p>
-                                            <p className="text-xs text-gray-400">
-                                                Crea tareas con categorías y registra tiempo para ver la distribución
-                                            </p>
-                                        </div>
-                                    )}
-                                </div>
-                            </div>
-
-                            {/* Estadísticas Adicionales - Estilo Bonsai */}
-                            <div className="grid grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
-                                {/* Proyectos Completados */}
-                                <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6 text-center">
-                                    <div className="w-12 h-12 bg-green-600 rounded-lg mx-auto mb-4 flex items-center justify-center">
-                                        <Briefcase className="w-6 h-6 text-white" />
-                                    </div>
-                                    <h4 className="text-2xl font-bold text-gray-900">{metrics.completedProjects}</h4>
-                                    <p className="text-sm text-gray-600">Completados</p>
-                                </div>
-
-                                {/* Facturación Promedio */}
-                                <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6 text-center">
-                                    <div className="w-12 h-12 bg-purple-600 rounded-lg mx-auto mb-4 flex items-center justify-center">
-                                        <DollarSign className="w-6 h-6 text-white" />
-                                    </div>
-                                    <h4 className="text-2xl font-bold text-gray-900">
-                                        €{metrics.completedProjects > 0 ? Math.round(metrics.monthlyRevenue / metrics.completedProjects).toLocaleString() : '0'}
-                                    </h4>
-                                    <p className="text-sm text-gray-600">Por proyecto</p>
-                                </div>
-
-                                {/* Horas Facturables */}
-                                <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6 text-center">
-                                    <div className="w-12 h-12 bg-blue-600 rounded-lg mx-auto mb-4 flex items-center justify-center">
-                                        <Clock className="w-6 h-6 text-white" />
-                                    </div>
-                                    <h4 className="text-2xl font-bold text-gray-900">{metrics.billableHoursThisWeek}h</h4>
-                                    <p className="text-sm text-gray-600">Facturables</p>
-                                </div>
-
-                                {/* Eficiencia */}
-                                <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6 text-center">
-                                    <div className="w-12 h-12 bg-orange-600 rounded-lg mx-auto mb-4 flex items-center justify-center">
-                                        <Target className="w-6 h-6 text-white" />
-                                    </div>
-                                    <h4 className="text-2xl font-bold text-gray-900">
-                                        {metrics.hoursThisWeek > 0 ? Math.round((metrics.billableHoursThisWeek / metrics.hoursThisWeek) * 100) : 0}%
-                                    </h4>
-                                    <p className="text-sm text-gray-600">Eficiencia</p>
-                                </div>
-                            </div>
-
-                            {/* Productividad Semanal - Estilo Bonsai */}
-                            <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6 mb-8">
-                                <div className="flex items-center gap-4 mb-6">
-                                    <div className="w-12 h-12 bg-emerald-600 rounded-lg flex items-center justify-center">
-                                        <Clock className="w-6 h-6 text-white" />
-                                    </div>
-                                    <div>
-                                        <h3 className="text-lg font-semibold text-gray-900">Productividad Semanal</h3>
-                                        <p className="text-sm text-gray-600">Horas por día</p>
-                                    </div>
-                                </div>
-
-                                <div className="flex items-end justify-between h-40 gap-3">
-                                    {[
-                                        { day: 'Lun', hours: 8.5, percentage: 85 },
-                                        { day: 'Mar', hours: 7.2, percentage: 72 },
-                                        { day: 'Mié', hours: 9.1, percentage: 91 },
-                                        { day: 'Jue', hours: 6.8, percentage: 68 },
-                                        { day: 'Vie', hours: 7.5, percentage: 75 },
-                                        { day: 'Sáb', hours: 3.2, percentage: 32 },
-                                        { day: 'Dom', hours: 1.5, percentage: 15 }
-                                    ].map((day, index) => (
-                                        <div key={day.day} className="flex-1 flex flex-col items-center">
-                                            <div className="w-full bg-gray-100 rounded-t overflow-hidden mb-2 relative group" style={{ height: '120px' }}>
-                                                <div
-                                                    className="w-full bg-emerald-600 transition-all duration-700 rounded-t relative group-hover:bg-emerald-700"
-                                                    style={{
-                                                        height: `${day.percentage}%`,
-                                                        animationDelay: `${index * 150}ms`
-                                                    }}
-                                                ></div>
-                                                {/* Tooltip */}
-                                                <div className="absolute -top-8 left-1/2 transform -translate-x-1/2 bg-gray-900 text-white text-xs px-2 py-1 rounded opacity-0 group-hover:opacity-100 transition-opacity duration-200 pointer-events-none whitespace-nowrap">
-                                                    {day.hours}h
+                                                <div className="space-y-3">
+                                                    <h3 className="text-4xl font-black text-slate-900 dark:text-white group-hover:text-emerald-600 dark:group-hover:text-emerald-400 transition-colors duration-300">
+                                                        {metrics.activeProjects}
+                                                    </h3>
+                                                    <p className="text-slate-600 dark:text-slate-400 font-semibold">
+                                                        Proyectos
+                                                    </p>
+                                                    <div className="flex items-center gap-2 text-sm">
+                                                        <div className="w-3 h-3 bg-emerald-500 rounded-full animate-pulse"></div>
+                                                        <span className="text-emerald-600 dark:text-emerald-400 font-bold">En progreso</span>
+                                                    </div>
                                                 </div>
                                             </div>
-                                            <div className="text-center">
-                                                <p className="text-xs font-medium text-gray-700">{day.day}</p>
-                                                <p className="text-xs font-bold text-gray-900 mt-1">{day.hours}h</p>
-                                            </div>
                                         </div>
-                                    ))}
-                                </div>
-                            </div>
 
-                            <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-                                {/* Proyectos Recientes */}
-                                <div className="bg-white rounded-lg shadow-sm border border-gray-200">
-                                    <div className="p-6 border-b border-gray-200">
-                                        <div className="flex items-center justify-between">
-                                            <h3 className="text-lg font-medium text-gray-900">Proyectos Recientes</h3>
-                                            <button
-                                                onClick={() => router.push('/dashboard/projects')}
-                                                className="text-sm text-blue-600 hover:text-blue-700 font-medium"
-                                            >
-                                                Ver todos
-                                            </button>
-                                        </div>
-                                    </div>
-                                    <div className="p-6">
-                                        {realProjects.length === 0 ? (
-                                            <div className="text-center py-6">
-                                                <Briefcase className="h-12 w-12 text-gray-300 mx-auto mb-4" />
-                                                <h4 className="text-sm font-medium text-gray-900 mb-2">No hay proyectos</h4>
-                                                <p className="text-sm text-gray-600 mb-4">
-                                                    Crea tu primer proyecto para comenzar
-                                                </p>
-                                                <button
-                                                    onClick={() => router.push('/dashboard/projects')}
-                                                    className="text-sm text-blue-600 hover:text-blue-700 font-medium"
-                                                >
-                                                    Crear proyecto
-                                                </button>
-                                            </div>
-                                        ) : (
-                                            <div className="space-y-3">
-                                                {realProjects.slice(0, 5).map((project) => (
-                                                    <div key={project.id} className="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
-                                                        <div className="flex items-center gap-3">
-                                                            <div className="w-8 h-8 bg-blue-600 rounded-lg flex items-center justify-center">
-                                                                <span className="text-white text-sm font-medium">
-                                                                    {project.name?.charAt(0).toUpperCase() || 'P'}
-                                                                </span>
-                                                            </div>
-                                                            <div>
-                                                                <h4 className="text-sm font-medium text-gray-900">{project.name}</h4>
-                                                                <p className="text-xs text-gray-600">
-                                                                    {project.client_name || 'Sin cliente'}
-                                                                </p>
-                                                            </div>
-                                                        </div>
-                                                        <div className="text-right">
-                                                            <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${project.status === 'active' ? 'bg-green-100 text-green-800' :
-                                                                project.status === 'completed' ? 'bg-blue-100 text-blue-800' :
-                                                                    project.status === 'paused' ? 'bg-yellow-100 text-yellow-800' :
-                                                                        'bg-gray-100 text-gray-800'
-                                                                }`}>
-                                                                {project.status === 'active' ? 'Activo' :
-                                                                    project.status === 'completed' ? 'Completado' :
-                                                                        project.status === 'paused' ? 'Pausado' :
-                                                                            project.status === 'in_progress' ? 'En progreso' : 'Planificación'}
-                                                            </span>
-                                                            {project.budget && (
-                                                                <p className="text-xs text-gray-600 mt-1">
-                                                                    €{project.budget.toLocaleString()}
-                                                                </p>
-                                                            )}
-                                                        </div>
+                                        {/* Monthly Revenue */}
+                                        <div
+                                            onClick={() => router.push('/dashboard/invoices')}
+                                            className="group relative bg-white/80 dark:bg-slate-800/80 backdrop-blur-sm rounded-3xl p-8 border border-white/60 dark:border-slate-700/60 shadow-2xl shadow-purple-500/10 dark:shadow-purple-500/20 hover:shadow-purple-500/20 dark:hover:shadow-purple-500/30 transition-all duration-300 cursor-pointer hover:scale-105"
+                                        >
+                                            <div className="absolute inset-0 bg-gradient-to-br from-purple-500/10 via-transparent to-purple-600/10 rounded-3xl blur-xl group-hover:blur-2xl transition-all duration-300"></div>
+                                            <div className="relative">
+                                                <div className="flex items-center justify-between mb-6">
+                                                    <div className="w-14 h-14 bg-gradient-to-br from-purple-400 to-purple-600 rounded-2xl flex items-center justify-center shadow-xl shadow-purple-500/25 group-hover:shadow-purple-500/40 group-hover:scale-110 transition-all duration-300">
+                                                        <DollarSign className="w-7 h-7 text-white" />
                                                     </div>
-                                                ))}
-                                            </div>
-                                        )}
-                                    </div>
-                                </div>
-
-                                {/* Actividad Reciente */}
-                                <div className="bg-white rounded-lg shadow-sm border border-gray-200">
-                                    <div className="p-6 border-b border-gray-200">
-                                        <h3 className="text-lg font-medium text-gray-900">Actividad Reciente</h3>
-                                    </div>
-                                    <div className="p-6">
-                                        {recentActivity.length === 0 ? (
-                                            <div className="text-center py-6">
-                                                <Clock className="h-12 w-12 text-gray-300 mx-auto mb-4" />
-                                                <h4 className="text-sm font-medium text-gray-900 mb-2">Sin actividad reciente</h4>
-                                                <p className="text-sm text-gray-600">
-                                                    La actividad aparecerá aquí cuando comiences a trabajar
-                                                </p>
-                                            </div>
-                                        ) : (
-                                            <div className="space-y-4">
-                                                {recentActivity.map((activity) => {
-                                                    const IconComponent = activity.icon === 'briefcase' ? Briefcase :
-                                                        activity.icon === 'clock' ? Clock : User;
-
-                                                    return (
-                                                        <div key={`${activity.type}-${activity.id}`} className="flex items-start gap-3">
-                                                            <div className={`w-8 h-8 rounded-lg flex items-center justify-center ${activity.icon === 'briefcase' ? 'bg-blue-100 text-blue-600' :
-                                                                activity.icon === 'clock' ? 'bg-green-100 text-green-600' :
-                                                                    'bg-purple-100 text-purple-600'
-                                                                }`}>
-                                                                <IconComponent className="w-4 h-4" />
-                                                            </div>
-                                                            <div className="flex-1 min-w-0">
-                                                                <p className="text-sm font-medium text-gray-900">
-                                                                    {activity.title}
-                                                                </p>
-                                                                <p className="text-sm text-gray-600 truncate">
-                                                                    {activity.subtitle}
-                                                                </p>
-                                                                <p className="text-xs text-gray-500 mt-1">
-                                                                    {activity.date}
-                                                                </p>
-                                                            </div>
-                                                        </div>
-                                                    );
-                                                })}
-                                            </div>
-                                        )}
-                                    </div>
-                                </div>
-                            </div>
-
-                            {/* Top Clientes por Ingresos - Estilo Bonsai */}
-                            <div className="mt-6">
-                                <div className="bg-white rounded-lg shadow-sm border border-gray-200">
-                                    <div className="p-6 border-b border-gray-200">
-                                        <div className="flex items-center justify-between">
-                                            <h3 className="text-lg font-medium text-gray-900">Top Clientes por Ingresos</h3>
-                                            <button
-                                                onClick={() => router.push('/dashboard/clients')}
-                                                className="text-sm text-blue-600 hover:text-blue-700 font-medium"
-                                            >
-                                                Ver todos
-                                            </button>
-                                        </div>
-                                    </div>
-                                    <div className="p-6">
-                                        <div className="space-y-4">
-                                            {[
-                                                { name: 'TechCorp Solutions', revenue: Math.round(metrics.monthlyRevenue * 0.35) || 5250, percentage: 100 },
-                                                { name: 'Digital Innovations', revenue: Math.round(metrics.monthlyRevenue * 0.25) || 3750, percentage: 75 },
-                                                { name: 'StartupHub', revenue: Math.round(metrics.monthlyRevenue * 0.20) || 3000, percentage: 60 },
-                                                { name: 'Creative Agency', revenue: Math.round(metrics.monthlyRevenue * 0.15) || 2250, percentage: 45 },
-                                                { name: 'Local Business', revenue: Math.round(metrics.monthlyRevenue * 0.05) || 750, percentage: 20 }
-                                            ].map((client, index) => (
-                                                <div key={client.name} className="group hover:bg-gray-50 rounded-lg p-3 transition-all duration-200">
-                                                    <div className="flex items-center justify-between mb-2">
-                                                        <div className="flex items-center gap-3">
-                                                            <div className="w-8 h-8 bg-blue-600 rounded-lg flex items-center justify-center text-white font-bold text-sm">
-                                                                {index + 1}
-                                                            </div>
-                                                            <span className="text-sm font-medium text-gray-700 group-hover:text-blue-700 transition-colors">
-                                                                {client.name}
-                                                            </span>
-                                                        </div>
-                                                        <span className="text-sm font-bold text-gray-900">
-                                                            €{client.revenue.toLocaleString()}
+                                                    <div className="text-right">
+                                                        <p className="text-xs font-bold text-purple-600 dark:text-purple-400 uppercase tracking-wider">
+                                                            Este mes
+                                                        </p>
+                                                    </div>
+                                                </div>
+                                                <div className="space-y-3">
+                                                    <h3 className="text-4xl font-black text-slate-900 dark:text-white group-hover:text-purple-600 dark:group-hover:text-purple-400 transition-colors duration-300">
+                                                        €{metrics.monthlyRevenue.toLocaleString()}
+                                                    </h3>
+                                                    <p className="text-slate-600 dark:text-slate-400 font-semibold">
+                                                        Ingresos
+                                                    </p>
+                                                    <div className="flex items-center gap-2 text-sm">
+                                                        <TrendingUp className="w-4 h-4 text-emerald-500" />
+                                                        <span className="text-purple-600 dark:text-purple-400 font-bold">
+                                                            {metrics.completedProjects} completados
                                                         </span>
                                                     </div>
-                                                    <div className="w-full bg-gray-100 rounded-full h-2 overflow-hidden">
-                                                        <div
-                                                            className="h-full bg-blue-600 transition-all duration-1000 rounded-full"
-                                                            style={{
-                                                                width: `${client.percentage}%`,
-                                                                animationDelay: `${index * 200}ms`
-                                                            }}
-                                                        ></div>
+                                                </div>
+                                            </div>
+                                        </div>
+
+                                        {/* Hours This Month */}
+                                        <div
+                                            onClick={() => router.push('/dashboard/time-tracking')}
+                                            className="group relative bg-white/80 dark:bg-slate-800/80 backdrop-blur-sm rounded-3xl p-8 border border-white/60 dark:border-slate-700/60 shadow-2xl shadow-orange-500/10 dark:shadow-orange-500/20 hover:shadow-orange-500/20 dark:hover:shadow-orange-500/30 transition-all duration-300 cursor-pointer hover:scale-105"
+                                        >
+                                            <div className="absolute inset-0 bg-gradient-to-br from-orange-500/10 via-transparent to-orange-600/10 rounded-3xl blur-xl group-hover:blur-2xl transition-all duration-300"></div>
+                                            <div className="relative">
+                                                <div className="flex items-center justify-between mb-6">
+                                                    <div className="w-14 h-14 bg-gradient-to-br from-orange-400 to-orange-600 rounded-2xl flex items-center justify-center shadow-xl shadow-orange-500/25 group-hover:shadow-orange-500/40 group-hover:scale-110 transition-all duration-300">
+                                                        <Clock className="w-7 h-7 text-white" />
+                                                    </div>
+                                                    <div className="text-right">
+                                                        <p className="text-xs font-bold text-orange-600 dark:text-orange-400 uppercase tracking-wider">
+                                                            Trabajadas
+                                                        </p>
                                                     </div>
                                                 </div>
-                                            ))}
-                                        </div>
-                                    </div>
-                                </div>
-                            </div>
-
-                            {/* Clientes Recientes */}
-                            <div className="mt-6">
-                                <div className="bg-white rounded-lg shadow-sm border border-gray-200">
-                                    <div className="p-6 border-b border-gray-200">
-                                        <div className="flex items-center justify-between">
-                                            <h3 className="text-lg font-medium text-gray-900">Clientes Recientes</h3>
-                                            <button
-                                                onClick={() => router.push('/dashboard/clients')}
-                                                className="text-sm text-blue-600 hover:text-blue-700 font-medium"
-                                            >
-                                                Ver todos
-                                            </button>
-                                        </div>
-                                    </div>
-                                    <div className="p-6">
-                                        {realClients.length === 0 ? (
-                                            <div className="text-center py-6">
-                                                <Users className="h-12 w-12 text-gray-300 mx-auto mb-4" />
-                                                <h4 className="text-sm font-medium text-gray-900 mb-2">No hay clientes</h4>
-                                                <p className="text-sm text-gray-600 mb-4">
-                                                    Agrega tu primer cliente para comenzar
-                                                </p>
-                                                <button
-                                                    onClick={() => router.push('/dashboard/clients')}
-                                                    className="text-sm text-blue-600 hover:text-blue-700 font-medium"
-                                                >
-                                                    Agregar cliente
-                                                </button>
+                                                <div className="space-y-3">
+                                                    <h3 className="text-4xl font-black text-slate-900 dark:text-white group-hover:text-orange-600 dark:group-hover:text-orange-400 transition-colors duration-300">
+                                                        {metrics.hoursThisMonth}h
+                                                    </h3>
+                                                    <p className="text-slate-600 dark:text-slate-400 font-semibold">
+                                                        Este mes
+                                                    </p>
+                                                    <div className="flex items-center gap-2 text-sm">
+                                                        <div className="w-3 h-3 bg-orange-500 rounded-full animate-pulse"></div>
+                                                        <span className="text-orange-600 dark:text-orange-400 font-bold">
+                                                            {metrics.hoursThisWeek}h esta semana
+                                                        </span>
+                                                    </div>
+                                                </div>
                                             </div>
-                                        ) : (
-                                            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
-                                                {realClients.slice(0, 6).map((client) => (
-                                                    <div key={client.id} className="flex items-center gap-3 p-3 bg-gray-50 rounded-lg">
-                                                        <div className="w-10 h-10 bg-blue-600 rounded-lg flex items-center justify-center">
-                                                            <span className="text-white font-medium">
-                                                                {client.name?.charAt(0).toUpperCase() || 'C'}
-                                                            </span>
+                                        </div>
+                                    </div>
+
+                                    {/* Gráficos y Estadísticas Adicionales */}
+                                    <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 mb-12">
+                                        {/* Gráfico de Ingresos por Mes */}
+                                        <div className="relative bg-white/80 dark:bg-slate-800/80 backdrop-blur-sm rounded-3xl p-8 border border-white/60 dark:border-slate-700/60 shadow-2xl shadow-indigo-500/10 dark:shadow-indigo-500/20">
+                                            <div className="absolute inset-0 bg-gradient-to-br from-indigo-500/10 via-transparent to-indigo-600/10 rounded-3xl blur-xl"></div>
+                                            <div className="relative">
+                                                <div className="flex items-center justify-between mb-6">
+                                                    <div className="flex items-center gap-4">
+                                                        <div className="w-12 h-12 bg-gradient-to-br from-indigo-400 to-indigo-600 rounded-2xl flex items-center justify-center shadow-xl shadow-indigo-500/25">
+                                                            <TrendingUp className="w-6 h-6 text-white" />
                                                         </div>
-                                                        <div className="flex-1 min-w-0">
-                                                            <h4 className="text-sm font-medium text-gray-900 truncate">
-                                                                {client.name}
-                                                            </h4>
-                                                            <p className="text-xs text-gray-600 truncate">
-                                                                {client.company || client.email}
-                                                            </p>
+                                                        <div>
+                                                            <h3 className="text-xl font-black text-slate-900 dark:text-white">Ingresos Mensuales</h3>
+                                                            <p className="text-slate-500 dark:text-slate-400 font-medium">Últimos 6 meses</p>
                                                         </div>
                                                     </div>
-                                                ))}
+                                                </div>
+
+                                                {/* Gráfico de barras mejorado */}
+                                                <div className="space-y-4">
+                                                    <div className="flex items-end justify-between h-40 gap-3 px-2">
+                                                        {[
+                                                            { month: 'Mar', value: 85, amount: 8500 },
+                                                            { month: 'Abr', value: 70, amount: 7200 },
+                                                            { month: 'May', value: 95, amount: 12300 },
+                                                            { month: 'Jun', value: 80, amount: 9800 },
+                                                            { month: 'Jul', value: 60, amount: 6400 },
+                                                            { month: 'Ago', value: 100, amount: metrics.monthlyRevenue }
+                                                        ].map((bar, index) => (
+                                                            <div key={bar.month} className="flex flex-col items-center flex-1 group">
+                                                                <div className="relative w-full h-32 mb-2">
+                                                                    {/* Fondo de la barra */}
+                                                                    <div className="absolute bottom-0 w-full h-32 bg-gradient-to-t from-slate-200 to-slate-100 dark:from-slate-700 dark:to-slate-600 rounded-lg opacity-30"></div>
+                                                                    {/* Barra de datos */}
+                                                                    <div
+                                                                        className="absolute bottom-0 w-full bg-gradient-to-t from-indigo-600 via-indigo-500 to-indigo-400 rounded-lg shadow-lg transition-all duration-700 ease-out group-hover:shadow-indigo-500/50 group-hover:scale-105"
+                                                                        style={{
+                                                                            height: `${Math.max(bar.value, 10)}%`,
+                                                                            animationDelay: `${index * 150}ms`,
+                                                                            minHeight: '8px'
+                                                                        }}
+                                                                    >
+                                                                        {/* Brillo en la parte superior */}
+                                                                        <div className="absolute top-0 left-0 right-0 h-2 bg-white/20 rounded-t-lg"></div>
+                                                                    </div>
+                                                                    {/* Tooltip hover */}
+                                                                    <div className="absolute -top-8 left-1/2 transform -translate-x-1/2 bg-slate-800 text-white text-xs px-2 py-1 rounded opacity-0 group-hover:opacity-100 transition-opacity duration-200 whitespace-nowrap">
+                                                                        €{bar.amount.toLocaleString()}
+                                                                    </div>
+                                                                </div>
+                                                                <div className="text-center">
+                                                                    <p className="text-xs font-bold text-slate-700 dark:text-slate-300 mb-1">{bar.month}</p>
+                                                                    <p className="text-xs text-slate-500 dark:text-slate-400">€{(bar.amount / 1000).toFixed(1)}k</p>
+                                                                </div>
+                                                            </div>
+                                                        ))}
+                                                    </div>
+                                                </div>
                                             </div>
-                                        )}
+                                        </div>
+
+                                        {/* Distribución de Tiempo */}
+                                        <div className="relative bg-white/80 dark:bg-slate-800/80 backdrop-blur-sm rounded-3xl p-8 border border-white/60 dark:border-slate-700/60 shadow-2xl shadow-emerald-500/10 dark:shadow-emerald-500/20">
+                                            <div className="absolute inset-0 bg-gradient-to-br from-emerald-500/10 via-transparent to-emerald-600/10 rounded-3xl blur-xl"></div>
+                                            <div className="relative">
+                                                <div className="flex items-center justify-between mb-6">
+                                                    <div className="flex items-center gap-4">
+                                                        <div className="w-12 h-12 bg-gradient-to-br from-emerald-400 to-emerald-600 rounded-2xl flex items-center justify-center shadow-xl shadow-emerald-500/25">
+                                                            <Clock className="w-6 h-6 text-white" />
+                                                        </div>
+                                                        <div>
+                                                            <h3 className="text-xl font-black text-slate-900 dark:text-white">Tiempo por Categoría</h3>
+                                                            <p className="text-slate-500 dark:text-slate-400 font-medium">Esta semana</p>
+                                                        </div>
+                                                    </div>
+                                                </div>
+
+                                                {/* Distribución de tiempo */}
+                                                <div className="space-y-4">
+                                                    {[
+                                                        { category: 'Desarrollo', hours: Math.round(metrics.hoursThisWeek * 0.4), color: 'from-blue-500 to-blue-600', percentage: 40 },
+                                                        { category: 'Diseño', hours: Math.round(metrics.hoursThisWeek * 0.25), color: 'from-purple-500 to-purple-600', percentage: 25 },
+                                                        { category: 'Reuniones', hours: Math.round(metrics.hoursThisWeek * 0.2), color: 'from-orange-500 to-orange-600', percentage: 20 },
+                                                        { category: 'Administración', hours: Math.round(metrics.hoursThisWeek * 0.15), color: 'from-slate-500 to-slate-600', percentage: 15 }
+                                                    ].map((item, index) => (
+                                                        <div key={item.category} className="space-y-2">
+                                                            <div className="flex justify-between items-center">
+                                                                <span className="text-sm font-bold text-slate-700 dark:text-slate-300">{item.category}</span>
+                                                                <span className="text-sm text-slate-500 dark:text-slate-400">{item.hours}h ({item.percentage}%)</span>
+                                                            </div>
+                                                            <div className="w-full bg-slate-100 dark:bg-slate-700 rounded-full h-3 overflow-hidden">
+                                                                <div
+                                                                    className={`h-full bg-gradient-to-r ${item.color} transition-all duration-500 rounded-full`}
+                                                                    style={{
+                                                                        width: `${item.percentage}%`,
+                                                                        animationDelay: `${index * 200}ms`
+                                                                    }}
+                                                                ></div>
+                                                            </div>
+                                                        </div>
+                                                    ))}
+                                                </div>
+                                            </div>
+                                        </div>
                                     </div>
-                                </div>
-                            </div>
-                        </>
-                    )}
+
+                                    {/* Estadísticas Rápidas */}
+                                    <div className="grid grid-cols-2 lg:grid-cols-4 gap-6 mb-12">
+                                        {/* Proyectos Completados */}
+                                        <div className="relative bg-white/80 dark:bg-slate-800/80 backdrop-blur-sm rounded-2xl p-6 border border-white/60 dark:border-slate-700/60 shadow-xl shadow-emerald-500/10">
+                                            <div className="text-center">
+                                                <div className="w-12 h-12 bg-gradient-to-br from-emerald-400 to-emerald-600 rounded-xl mx-auto mb-4 flex items-center justify-center">
+                                                    <Briefcase className="w-6 h-6 text-white" />
+                                                </div>
+                                                <h4 className="text-2xl font-black text-slate-900 dark:text-white">{metrics.completedProjects}</h4>
+                                                <p className="text-sm font-medium text-slate-600 dark:text-slate-400">Completados</p>
+                                            </div>
+                                        </div>
+
+                                        {/* Facturación Promedio */}
+                                        <div className="relative bg-white/80 dark:bg-slate-800/80 backdrop-blur-sm rounded-2xl p-6 border border-white/60 dark:border-slate-700/60 shadow-xl shadow-purple-500/10">
+                                            <div className="text-center">
+                                                <div className="w-12 h-12 bg-gradient-to-br from-purple-400 to-purple-600 rounded-xl mx-auto mb-4 flex items-center justify-center">
+                                                    <DollarSign className="w-6 h-6 text-white" />
+                                                </div>
+                                                <h4 className="text-2xl font-black text-slate-900 dark:text-white">
+                                                    €{metrics.completedProjects > 0 ? Math.round(metrics.monthlyRevenue / metrics.completedProjects).toLocaleString() : '0'}
+                                                </h4>
+                                                <p className="text-sm font-medium text-slate-600 dark:text-slate-400">Por proyecto</p>
+                                            </div>
+                                        </div>
+
+                                        {/* Horas Facturables */}
+                                        <div className="relative bg-white/80 dark:bg-slate-800/80 backdrop-blur-sm rounded-2xl p-6 border border-white/60 dark:border-slate-700/60 shadow-xl shadow-blue-500/10">
+                                            <div className="text-center">
+                                                <div className="w-12 h-12 bg-gradient-to-br from-blue-400 to-blue-600 rounded-xl mx-auto mb-4 flex items-center justify-center">
+                                                    <Clock className="w-6 h-6 text-white" />
+                                                </div>
+                                                <h4 className="text-2xl font-black text-slate-900 dark:text-white">{metrics.billableHoursThisWeek}h</h4>
+                                                <p className="text-sm font-medium text-slate-600 dark:text-slate-400">Facturables</p>
+                                            </div>
+                                        </div>
+
+                                        {/* Eficiencia */}
+                                        <div className="relative bg-white/80 dark:bg-slate-800/80 backdrop-blur-sm rounded-2xl p-6 border border-white/60 dark:border-slate-700/60 shadow-xl shadow-orange-500/10">
+                                            <div className="text-center">
+                                                <div className="w-12 h-12 bg-gradient-to-br from-orange-400 to-orange-600 rounded-xl mx-auto mb-4 flex items-center justify-center">
+                                                    <Target className="w-6 h-6 text-white" />
+                                                </div>
+                                                <h4 className="text-2xl font-black text-slate-900 dark:text-white">
+                                                    {metrics.hoursThisWeek > 0 ? Math.round((metrics.billableHoursThisWeek / metrics.hoursThisWeek) * 100) : 0}%
+                                                </h4>
+                                                <p className="text-sm font-medium text-slate-600 dark:text-slate-400">Eficiencia</p>
+                                            </div>
+                                        </div>
+                                    </div>
+
+                                    {/* Estadísticas Avanzadas con Gráficos de Barras */}
+                                    <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 mb-12">
+                                        {/* Proyectos por Estado - Con barras de progreso */}
+                                        <div className="relative bg-white/80 dark:bg-slate-800/80 backdrop-blur-sm rounded-3xl p-8 border border-white/60 dark:border-slate-700/60 shadow-2xl shadow-blue-500/10 dark:shadow-blue-500/20">
+                                            <div className="absolute inset-0 bg-gradient-to-br from-blue-500/10 via-transparent to-blue-600/10 rounded-3xl blur-xl"></div>
+                                            <div className="relative">
+                                                <div className="flex items-center gap-4 mb-6">
+                                                    <div className="w-12 h-12 bg-gradient-to-br from-blue-400 to-blue-600 rounded-2xl flex items-center justify-center shadow-xl shadow-blue-500/25">
+                                                        <Target className="w-6 h-6 text-white" />
+                                                    </div>
+                                                    <div>
+                                                        <h3 className="text-xl font-black text-slate-900 dark:text-white">Estado de Proyectos</h3>
+                                                        <p className="text-slate-500 dark:text-slate-400 font-medium">Progreso actual</p>
+                                                    </div>
+                                                </div>
+
+                                                <div className="space-y-6">
+                                                    {[
+                                                        { status: 'En Progreso', count: metrics.activeProjects, color: 'from-emerald-500 to-emerald-600', percentage: 70 },
+                                                        { status: 'Completados', count: metrics.completedProjects, color: 'from-blue-500 to-blue-600', percentage: 90 },
+                                                        { status: 'En Revisión', count: Math.max(1, Math.floor(metrics.activeProjects * 0.3)), color: 'from-orange-500 to-orange-600', percentage: 45 },
+                                                        { status: 'Pausados', count: Math.max(0, Math.floor(metrics.activeProjects * 0.1)), color: 'from-slate-500 to-slate-600', percentage: 15 }
+                                                    ].map((item, index) => (
+                                                        <div key={item.status} className="space-y-3">
+                                                            <div className="flex justify-between items-center">
+                                                                <span className="text-sm font-bold text-slate-700 dark:text-slate-300">{item.status}</span>
+                                                                <div className="text-right">
+                                                                    <span className="text-lg font-black text-slate-900 dark:text-white">{item.count}</span>
+                                                                    <span className="text-sm text-slate-500 dark:text-slate-400 ml-1">proyectos</span>
+                                                                </div>
+                                                            </div>
+                                                            <div className="relative w-full bg-slate-100 dark:bg-slate-700 rounded-full h-4 overflow-hidden">
+                                                                <div
+                                                                    className={`h-full bg-gradient-to-r ${item.color} transition-all duration-1000 rounded-full shadow-lg`}
+                                                                    style={{
+                                                                        width: `${item.percentage}%`,
+                                                                        animationDelay: `${index * 300}ms`
+                                                                    }}
+                                                                ></div>
+                                                                <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/20 to-transparent animate-pulse"></div>
+                                                            </div>
+                                                        </div>
+                                                    ))}
+                                                </div>
+                                            </div>
+                                        </div>
+
+                                        {/* Top Clientes por Ingresos */}
+                                        <div className="relative bg-white/80 dark:bg-slate-800/80 backdrop-blur-sm rounded-3xl p-8 border border-white/60 dark:border-slate-700/60 shadow-2xl shadow-purple-500/10 dark:shadow-purple-500/20">
+                                            <div className="absolute inset-0 bg-gradient-to-br from-purple-500/10 via-transparent to-purple-600/10 rounded-3xl blur-xl"></div>
+                                            <div className="relative">
+                                                <div className="flex items-center gap-4 mb-6">
+                                                    <div className="w-12 h-12 bg-gradient-to-br from-purple-400 to-purple-600 rounded-2xl flex items-center justify-center shadow-xl shadow-purple-500/25">
+                                                        <Users className="w-6 h-6 text-white" />
+                                                    </div>
+                                                    <div>
+                                                        <h3 className="text-xl font-black text-slate-900 dark:text-white">Top Clientes</h3>
+                                                        <p className="text-slate-500 dark:text-slate-400 font-medium">Por ingresos generados</p>
+                                                    </div>
+                                                </div>
+
+                                                <div className="space-y-4">
+                                                    {[
+                                                        { name: 'TechCorp Solutions', revenue: Math.round(metrics.monthlyRevenue * 0.35) || 5250, percentage: 100 },
+                                                        { name: 'Digital Innovations', revenue: Math.round(metrics.monthlyRevenue * 0.25) || 3750, percentage: 75 },
+                                                        { name: 'StartupHub', revenue: Math.round(metrics.monthlyRevenue * 0.20) || 3000, percentage: 60 },
+                                                        { name: 'Creative Agency', revenue: Math.round(metrics.monthlyRevenue * 0.15) || 2250, percentage: 45 },
+                                                        { name: 'Local Business', revenue: Math.round(metrics.monthlyRevenue * 0.05) || 750, percentage: 20 }
+                                                    ].map((client, index) => (
+                                                        <div key={client.name} className="group hover:bg-purple-50/50 dark:hover:bg-purple-900/20 rounded-xl p-3 transition-all duration-200">
+                                                            <div className="flex items-center justify-between mb-2">
+                                                                <div className="flex items-center gap-3">
+                                                                    <div className="w-8 h-8 bg-gradient-to-br from-purple-400 to-purple-600 rounded-lg flex items-center justify-center text-white font-black text-sm">
+                                                                        {index + 1}
+                                                                    </div>
+                                                                    <span className="text-sm font-bold text-slate-700 dark:text-slate-300 group-hover:text-purple-700 dark:group-hover:text-purple-300 transition-colors">
+                                                                        {client.name}
+                                                                    </span>
+                                                                </div>
+                                                                <span className="text-sm font-black text-slate-900 dark:text-white">
+                                                                    €{client.revenue.toLocaleString()}
+                                                                </span>
+                                                            </div>
+                                                            <div className="w-full bg-slate-100 dark:bg-slate-700 rounded-full h-2 overflow-hidden">
+                                                                <div
+                                                                    className="h-full bg-gradient-to-r from-purple-400 to-purple-600 transition-all duration-1000 rounded-full"
+                                                                    style={{
+                                                                        width: `${client.percentage}%`,
+                                                                        animationDelay: `${index * 200}ms`
+                                                                    }}
+                                                                ></div>
+                                                            </div>
+                                                        </div>
+                                                    ))}
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+
+                                    {/* Productividad y Alertas */}
+                                    <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 mb-12">
+                                        {/* Productividad por Día */}
+                                        <div className="relative bg-white/80 dark:bg-slate-800/80 backdrop-blur-sm rounded-3xl p-8 border border-white/60 dark:border-slate-700/60 shadow-2xl shadow-emerald-500/10 dark:shadow-emerald-500/20">
+                                            <div className="absolute inset-0 bg-gradient-to-br from-emerald-500/10 via-transparent to-emerald-600/10 rounded-3xl blur-xl"></div>
+                                            <div className="relative">
+                                                <div className="flex items-center gap-4 mb-6">
+                                                    <div className="w-12 h-12 bg-gradient-to-br from-emerald-400 to-emerald-600 rounded-2xl flex items-center justify-center shadow-xl shadow-emerald-500/25">
+                                                        <Clock className="w-6 h-6 text-white" />
+                                                    </div>
+                                                    <div>
+                                                        <h3 className="text-xl font-black text-slate-900 dark:text-white">Productividad Semanal</h3>
+                                                        <p className="text-slate-500 dark:text-slate-400 font-medium">Horas por día</p>
+                                                    </div>
+                                                </div>
+
+                                                <div className="flex items-end justify-between h-40 gap-3">
+                                                    {[
+                                                        { day: 'Lun', hours: 8.5, percentage: 85 },
+                                                        { day: 'Mar', hours: 7.2, percentage: 72 },
+                                                        { day: 'Mié', hours: 9.1, percentage: 91 },
+                                                        { day: 'Jue', hours: 6.8, percentage: 68 },
+                                                        { day: 'Vie', hours: 7.5, percentage: 75 },
+                                                        { day: 'Sáb', hours: 3.2, percentage: 32 },
+                                                        { day: 'Dom', hours: 1.5, percentage: 15 }
+                                                    ].map((day, index) => (
+                                                        <div key={day.day} className="flex-1 flex flex-col items-center">
+                                                            <div className="w-full bg-slate-100 dark:bg-slate-700 rounded-t-lg overflow-hidden mb-2 relative group" style={{ height: '120px' }}>
+                                                                <div
+                                                                    className="w-full bg-gradient-to-t from-emerald-600 to-emerald-400 transition-all duration-700 rounded-t-lg relative"
+                                                                    style={{
+                                                                        height: `${day.percentage}%`,
+                                                                        animationDelay: `${index * 150}ms`
+                                                                    }}
+                                                                >
+                                                                    <div className="absolute inset-0 bg-gradient-to-t from-transparent via-white/10 to-white/20 opacity-0 group-hover:opacity-100 transition-opacity duration-200"></div>
+                                                                </div>
+                                                                {/* Tooltip */}
+                                                                <div className="absolute -top-8 left-1/2 transform -translate-x-1/2 bg-slate-900 text-white text-xs px-2 py-1 rounded opacity-0 group-hover:opacity-100 transition-opacity duration-200 pointer-events-none whitespace-nowrap">
+                                                                    {day.hours}h
+                                                                </div>
+                                                            </div>
+                                                            <div className="text-center">
+                                                                <p className="text-xs font-bold text-slate-700 dark:text-slate-300">{day.day}</p>
+                                                            </div>
+                                                        </div>
+                                                    ))}
+                                                </div>
+                                            </div>
+                                        </div>
+
+                                        {/* Proyectos Críticos */}
+                                        <div className="relative bg-white/80 dark:bg-slate-800/80 backdrop-blur-sm rounded-3xl p-8 border border-white/60 dark:border-slate-700/60 shadow-2xl shadow-red-500/10 dark:shadow-red-500/20">
+                                            <div className="absolute inset-0 bg-gradient-to-br from-red-500/10 via-transparent to-red-600/10 rounded-3xl blur-xl"></div>
+                                            <div className="relative">
+                                                <div className="flex items-center gap-4 mb-6">
+                                                    <div className="w-12 h-12 bg-gradient-to-br from-red-400 to-red-600 rounded-2xl flex items-center justify-center shadow-xl shadow-red-500/25">
+                                                        <TrendingUp className="w-6 h-6 text-white" />
+                                                    </div>
+                                                    <div>
+                                                        <h3 className="text-xl font-black text-slate-900 dark:text-white">Alertas de Proyectos</h3>
+                                                        <p className="text-slate-500 dark:text-slate-400 font-medium">Requieren atención</p>
+                                                    </div>
+                                                </div>
+
+                                                <div className="space-y-4">
+                                                    {realProjects.length > 0 ? realProjects.slice(0, 3).map((project, index) => (
+                                                        <div
+                                                            key={project.id}
+                                                            onClick={() => router.push(`/dashboard/projects/${project.id}`)}
+                                                            className={`group p-4 rounded-xl border-l-4 cursor-pointer transition-all duration-200 hover:scale-[1.02] hover:shadow-lg ${project.status === 'active' ? 'border-green-500 bg-green-50/50 dark:bg-green-900/20 hover:bg-green-50/70 dark:hover:bg-green-900/30' :
+                                                                project.status === 'paused' ? 'border-orange-500 bg-orange-50/50 dark:bg-orange-900/20 hover:bg-orange-50/70 dark:hover:bg-orange-900/30' :
+                                                                    project.status === 'completed' ? 'border-blue-500 bg-blue-50/50 dark:bg-blue-900/20 hover:bg-blue-50/70 dark:hover:bg-blue-900/30' :
+                                                                        'border-red-500 bg-red-50/50 dark:bg-red-900/20 hover:bg-red-50/70 dark:hover:bg-red-900/30'
+                                                                }`}
+                                                        >
+                                                            <div className="flex justify-between items-start mb-2">
+                                                                <div className="flex-1">
+                                                                    <h4 className="font-bold text-slate-900 dark:text-white group-hover:text-slate-700 dark:group-hover:text-slate-200 transition-colors">
+                                                                        {project.name}
+                                                                    </h4>
+                                                                    <p className="text-sm text-slate-600 dark:text-slate-400 mt-1">
+                                                                        Estado: {project.status === 'active' ? '🟢 Activo' :
+                                                                            project.status === 'paused' ? '⏸️ Pausado' :
+                                                                                project.status === 'completed' ? '✅ Completado' : '❌ Cancelado'}
+                                                                    </p>
+                                                                    {project.budget && (
+                                                                        <p className="text-xs text-slate-500 dark:text-slate-400 mt-1">
+                                                                            Presupuesto: €{project.budget.toLocaleString()}
+                                                                        </p>
+                                                                    )}
+                                                                </div>
+                                                                <div className="ml-4 flex items-center gap-2">
+                                                                    <div className="w-2 h-2 rounded-full bg-gradient-to-r from-indigo-500 to-purple-600 animate-pulse"></div>
+                                                                    <span className="text-xs font-bold text-slate-700 dark:text-slate-300">Hacer clic para ver</span>
+                                                                </div>
+                                                            </div>
+                                                        </div>
+                                                    )) : (
+                                                        <div className="text-center py-8">
+                                                            <div className="w-16 h-16 bg-gradient-to-br from-slate-100 to-slate-200 rounded-2xl flex items-center justify-center mx-auto mb-3">
+                                                                <div className="text-2xl">📋</div>
+                                                            </div>
+                                                            <h3 className="font-semibold text-slate-900 dark:text-white mb-1">No hay proyectos</h3>
+                                                            <p className="text-slate-500 dark:text-slate-400 text-sm mb-3">
+                                                                Crea tu primer proyecto para comenzar
+                                                            </p>
+                                                            <button
+                                                                onClick={() => router.push('/dashboard/projects')}
+                                                                className="px-4 py-2 bg-gradient-to-r from-blue-600 to-blue-700 text-white rounded-lg hover:from-blue-700 hover:to-blue-800 transition-all text-sm font-medium"
+                                                            >
+                                                                Ir a Proyectos
+                                                            </button>
+                                                        </div>
+                                                    )}
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+
+                                    {/* Actividad Reciente - Diseño Premium */}
+                                    <div className="relative bg-white/80 dark:bg-slate-800/80 backdrop-blur-sm rounded-3xl border border-white/60 dark:border-slate-700/60 shadow-2xl shadow-slate-500/10 dark:shadow-slate-500/20 overflow-hidden">
+                                        <div className="absolute inset-0 bg-gradient-to-br from-slate-50/50 via-transparent to-slate-100/50 dark:from-slate-800/50 dark:to-slate-900/50"></div>
+
+                                        {/* Header con gradiente */}
+                                        <div className="relative p-8 border-b border-slate-200/60 dark:border-slate-700/60 bg-gradient-to-r from-slate-50/80 via-white/80 to-slate-50/80 dark:from-slate-800/80 dark:via-slate-800/80 dark:to-slate-800/80">
+                                            <div className="flex items-center justify-between">
+                                                <div className="flex items-center gap-4">
+                                                    <div className="w-12 h-12 bg-gradient-to-br from-indigo-500 to-purple-600 rounded-2xl flex items-center justify-center shadow-xl shadow-indigo-500/25">
+                                                        <Clock className="w-6 h-6 text-white" />
+                                                    </div>
+                                                    <div>
+                                                        <h3 className="text-2xl font-black text-slate-900 dark:text-white">
+                                                            Actividad Reciente
+                                                        </h3>
+                                                        <p className="text-slate-500 dark:text-slate-400 font-medium">
+                                                            Últimas acciones en tu workspace
+                                                        </p>
+                                                    </div>
+                                                </div>
+                                                <div className="flex items-center gap-2 px-4 py-2 bg-emerald-100/80 dark:bg-emerald-900/30 rounded-full backdrop-blur-sm">
+                                                    <div className="w-2 h-2 bg-emerald-500 rounded-full animate-pulse"></div>
+                                                    <span className="text-xs font-bold text-emerald-700 dark:text-emerald-300 uppercase tracking-wider">
+                                                        En tiempo real
+                                                    </span>
+                                                </div>
+                                            </div>
+                                        </div>
+
+                                        <div className="relative p-8">
+                                            {recentActivity.length === 0 ? (
+                                                <div className="text-center py-16">
+                                                    <div className="w-20 h-20 bg-gradient-to-br from-slate-100 to-slate-200 dark:from-slate-700 dark:to-slate-800 rounded-3xl flex items-center justify-center mx-auto mb-6 shadow-2xl">
+                                                        <Clock className="w-10 h-10 text-slate-400 dark:text-slate-500" />
+                                                    </div>
+                                                    <h4 className="text-2xl font-bold text-slate-900 dark:text-white mb-3">
+                                                        Aún no hay actividad
+                                                    </h4>
+                                                    <p className="text-slate-500 dark:text-slate-400 max-w-md mx-auto leading-relaxed">
+                                                        Cuando comiences a trabajar con clientes y proyectos,
+                                                        la actividad aparecerá aquí en tiempo real
+                                                    </p>
+                                                </div>
+                                            ) : (
+                                                <div className="space-y-4">
+                                                    {recentActivity.map((activity, index) => {
+                                                        const IconComponent = activity.icon === 'briefcase' ? Briefcase :
+                                                            activity.icon === 'clock' ? Clock : User;
+
+                                                        const gradientColors: { [key: string]: string } = {
+                                                            briefcase: 'from-blue-400 to-blue-600',
+                                                            clock: 'from-emerald-400 to-emerald-600',
+                                                            user: 'from-purple-400 to-purple-600'
+                                                        };
+
+                                                        const bgColors: { [key: string]: string } = {
+                                                            briefcase: 'bg-blue-50 dark:bg-blue-900/30',
+                                                            clock: 'bg-emerald-50 dark:bg-emerald-900/30',
+                                                            user: 'bg-purple-50 dark:bg-purple-900/30'
+                                                        };
+
+                                                        return (
+                                                            <div key={`${activity.type}-${activity.id}`}
+                                                                className={`group flex items-center gap-6 p-6 rounded-2xl ${bgColors[activity.icon] || bgColors.user} border border-white/60 dark:border-slate-700/60 hover:shadow-lg transition-all duration-300 hover:scale-[1.02] backdrop-blur-sm`}>
+                                                                <div className={`w-16 h-16 bg-gradient-to-br ${gradientColors[activity.icon] || gradientColors.user} rounded-2xl flex items-center justify-center shadow-xl group-hover:shadow-2xl group-hover:scale-110 transition-all duration-300`}>
+                                                                    <IconComponent className="w-8 h-8 text-white" />
+                                                                </div>
+                                                                <div className="flex-1 min-w-0">
+                                                                    <p className="font-bold text-slate-900 dark:text-white text-lg mb-1 truncate">
+                                                                        {activity.title}
+                                                                    </p>
+                                                                    <p className="text-slate-600 dark:text-slate-400 font-medium truncate">
+                                                                        {activity.subtitle}
+                                                                    </p>
+                                                                </div>
+                                                                <div className="text-right">
+                                                                    <div className="text-sm font-bold text-slate-900 dark:text-white mb-1">
+                                                                        {new Date(activity.date).toLocaleDateString('es-ES', {
+                                                                            day: 'numeric',
+                                                                            month: 'short'
+                                                                        })}
+                                                                    </div>
+                                                                    <div className="text-xs text-slate-500 dark:text-slate-400 font-medium">
+                                                                        {new Date(activity.date).toLocaleTimeString('es-ES', {
+                                                                            hour: '2-digit',
+                                                                            minute: '2-digit'
+                                                                        })}
+                                                                    </div>
+                                                                </div>
+                                                            </div>
+                                                        );
+                                                    })}
+                                                </div>
+                                            )}
+                                        </div>
+                                    </div>
+                                </>
+                            )}
+                        </div>
+                    </div>
                 </div>
             </div>
         </div>

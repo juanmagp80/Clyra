@@ -8,7 +8,7 @@ const supabase = createClient(supabaseUrl, supabaseServiceKey);
 async function finalVerification() {
     try {
         console.log('🔍 Verificación final completa...\n');
-        
+
         // Consultar el estado actual
         const { data: profile, error } = await supabase
             .from('profiles')
@@ -28,15 +28,15 @@ async function finalVerification() {
         console.log('Subscription Plan:', profile.subscription_plan);
         console.log('Stripe Customer ID:', profile.stripe_customer_id || 'NULL');
         console.log('Stripe Subscription ID:', profile.stripe_subscription_id || 'NULL');
-        
+
         // Verificar qué debería mostrar la aplicación
         const hasActiveSubscription = profile.subscription_status === 'active';
         const isExpired = profile.subscription_status === 'expired';
         const canUseFeatures = hasActiveSubscription;
-        
+
         console.log('\n🎯 Comportamiento esperado en la aplicación:');
         console.log('=============================================');
-        
+
         if (hasActiveSubscription) {
             console.log('✅ ESTADO: Usuario PRO activo');
             console.log('✅ Banner trial: NO se muestra');
@@ -54,21 +54,21 @@ async function finalVerification() {
         } else {
             console.log('🟡 ESTADO: Otro estado');
         }
-        
+
         console.log('\n🛠️ Problemas solucionados:');
         console.log('===========================');
         console.log('✅ TypeError hasReachedLimit is not a function - SOLUCIONADO');
         console.log('✅ Property limits does not exist - SOLUCIONADO');
         console.log('✅ Hook useTrialStatus actualizado con funciones requeridas');
         console.log('✅ Tipo TrialInfo actualizado con propiedades necesarias');
-        
+
         if (hasActiveSubscription) {
             console.log('\n🎉 TODO CORRECTO: El usuario tiene acceso PRO');
         } else {
             console.log('\n⚠️ PENDIENTE: Si ya pagó, ejecutar el webhook manualmente');
             console.log('   Comando: node simulate-successful-payment.js');
         }
-        
+
     } catch (err) {
         console.error('❌ Error general:', err);
     }

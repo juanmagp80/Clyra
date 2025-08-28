@@ -10,29 +10,29 @@ const supabase = createClient(supabaseUrl, supabaseServiceKey);
 
 async function updateSubscriptionToPro() {
     console.log('🔄 Actualizando suscripción a PRO...');
-    
+
     const userEmail = 'amazonjgp80@gmail.com'; // Cambia por tu email si es diferente
-    
+
     try {
         // Primero, buscar el usuario en auth.users por email
         const { data: authUsers, error: authError } = await supabase
             .from('auth.users')
             .select('id')
             .eq('email', userEmail);
-            
+
         if (authError) {
             console.error('❌ Error buscando usuario en auth:', authError);
             return;
         }
-        
+
         if (!authUsers || authUsers.length === 0) {
             console.error('❌ No se encontró usuario autenticado con email:', userEmail);
             return;
         }
-        
+
         const userId = authUsers[0].id;
         console.log('✅ Usuario encontrado:', userId);
-        
+
         // Actualizar el perfil a PRO con suscripción activa
         const { data, error } = await supabase
             .from('profiles')
@@ -44,7 +44,7 @@ async function updateSubscriptionToPro() {
             })
             .eq('email', userEmail)
             .select();
-        
+
         if (error) {
             console.error('❌ Error actualizando suscripción:', error);
         } else if (data && data.length > 0) {
@@ -53,7 +53,7 @@ async function updateSubscriptionToPro() {
             console.log('🎉 Ya puedes recargar la página y verás tu estado PRO!');
         } else {
             console.log('⚠️ No se encontró el perfil. Creando perfil...');
-            
+
             // Si no existe, crear el perfil
             const { data: newProfile, error: createError } = await supabase
                 .from('profiles')
@@ -69,7 +69,7 @@ async function updateSubscriptionToPro() {
                     updated_at: new Date().toISOString()
                 })
                 .select();
-            
+
             if (createError) {
                 console.error('❌ Error creando perfil:', createError);
             } else {
@@ -77,7 +77,7 @@ async function updateSubscriptionToPro() {
                 console.log('🎉 Ya puedes recargar la página y verás tu estado PRO!');
             }
         }
-        
+
     } catch (error) {
         console.error('💥 Error general:', error);
     }

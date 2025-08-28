@@ -1,0 +1,332 @@
+/* Estilos globales para react-datepicker con diseño Bonsai */
+
+/* Asegurar z-index para páginas específicas */
+.invoice-page-container .react-datepicker-popper,
+.calendar-page-container .react-datepicker-popper {
+  z-index: 99999 !important;
+  position: relative !important;
+}
+
+.invoice-page-container .react-datepicker-wrapper,
+.calendar-page-container .react-datepicker-wrapper {
+  z-index: 99999 !important;
+  position: relative !important;
+}
+
+.bonsai-datepicker-calendar {
+  font-family: system-ui, -apple-system, sans-serif !important;
+  border: 1px solid #e2e8f0 !important;
+  border-radius: 20px !important;
+  box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.25), 0 0 0 1px rgba(255, 255, 255, 0.05) !important;
+  backdrop-filter: blur(16px) !important;
+  background: rgba(255, 255, 255, 0.98) !important;
+  overflow: hidden !important;
+  min-width: 320px !important;
+  z-index: 99999 !important;
+  position: relative !important;
+}
+
+/* Contenedor del popper con z-index alto */
+.react-datepicker-popper {
+  z-index: 99999 !important;
+}
+
+.react-datepicker-wrapper {
+  z-index: 99999 !important;
+}
+
+/* Modal overlays específicos */
+.modal-overlay {
+  z-index: 9998 !important;
+}
+
+/* Header del calendario */
+.bonsai-datepicker-calendar .react-datepicker__header {
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%) !important;
+  border-bottom: none !important;
+  border-radius: 20px 20px 0 0 !important;
+  padding: 24px 20px !important;
+}
+
+.bonsai-datepicker-calendar .react-datepicker__current-month {
+  color: white !important;
+  font-weight: 700 !important;
+  font-size: 1.125rem !important;
+  margin-bottom: 10px !important;
+  letter-spacing: 0.5px !important;
+}
+
+/* Navegación */
+.bonsai-datepicker-calendar .react-datepicker__navigation {
+  top: 26px !important;
+  width: 32px !important;
+  height: 32px !important;
+  border-radius: 50% !important;
+  background: rgba(255, 255, 255, 0.2) !important;
+  backdrop-filter: blur(8px) !important;
+  transition: all 0.2s ease !important;
+}
+
+.bonsai-datepicker-calendar .react-datepicker__navigation--previous {
+  left: 20px !important;
+}
+
+.bonsai-datepicker-calendar .react-datepicker__navigation--next {
+  right: 20px !important;
+}
+
+.bonsai-datepicker-calendar .react-datepicker__navigation:hover {
+  background: rgba(255, 255, 255, 0.3) !important;
+  transform: scale(1.1) !important;
+}
+
+.bonsai-datepicker-calendar .react-datepicker__navigation:hover *::before {
+  border-color: white !important;
+}
+
+/* Nombres de días */
+.bonsai-datepicker-calendar .react-datepicker__day-names {
+  background: rgba(102, 126, 234, 0.08) !important;
+  margin: 0 !important;
+  padding: 16px 20px !important;
+  border-top: 1px solid rgba(102, 126, 234, 0.15) !important;
+}
+
+.bonsai-datepicker-calendar .react-datepicker__day-name {
+  color: #4f46e5 !important;
+  font-weight: 700 !important;
+  font-size: 0.75rem !important;
+  text-transform: uppercase !important;
+  letter-spacing: 1px !important;
+  width: 40px !important;
+  line-height: 20px !important;
+}
+
+/* Contenedor del mes */
+.bonsai-datepicker-calendar .react-datepicker__month {
+  margin: 0 !important;
+  padding: 20px !important;
+  background: rgba(255, 255, 255, 0.98) !important;
+}
+
+.bonsai-datepicker-calendar .react-datepicker__week {
+  display: flex !important;
+  justify-content: space-between !important;
+  margin-bottom: 4px !important;
+}
+
+/* Días del calendario */
+.bonsai-datepicker-calendar .react-datepicker__day {
+  margin: 2px !important;
+  width: 40px !important;
+  height: 40px !important;
+  line-height: 40px !important;
+  border-radius: 12px !important;
+  color: #374151 !important;
+  font-weight: 600 !important;
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1) !important;
+  cursor: pointer !important;
+  font-size: 0.875rem !important;
+  display: flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+}
+
+.bonsai-datepicker-calendar .react-datepicker__day:hover {
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%) !important;
+  color: white !important;
+  transform: scale(1.1) !important;
+  box-shadow: 0 6px 20px rgba(102, 126, 234, 0.4) !important;
+}
+
+.bonsai-datepicker-calendar .react-datepicker__day--selected {
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%) !important;
+  color: white !important;
+  font-weight: 700 !important;
+  transform: scale(1.1) !important;
+  box-shadow: 0 8px 25px rgba(102, 126, 234, 0.5) !important;
+}
+
+.bonsai-datepicker-calendar .react-datepicker__day--keyboard-selected {
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%) !important;
+  color: white !important;
+  transform: scale(1.05) !important;
+}
+
+.bonsai-datepicker-calendar .react-datepicker__day--today {
+  background: rgba(102, 126, 234, 0.15) !important;
+  color: #4f46e5 !important;
+  font-weight: 700 !important;
+  border: 2px solid rgba(102, 126, 234, 0.4) !important;
+  box-shadow: 0 2px 8px rgba(102, 126, 234, 0.2) !important;
+}
+
+.bonsai-datepicker-calendar .react-datepicker__day--outside-month {
+  color: #cbd5e0 !important;
+}
+
+.bonsai-datepicker-calendar .react-datepicker__day--disabled {
+  color: #e2e8f0 !important;
+  cursor: not-allowed !important;
+}
+
+.bonsai-datepicker-calendar .react-datepicker__day--disabled:hover {
+  background: transparent !important;
+  transform: none !important;
+  box-shadow: none !important;
+}
+
+/* === ESTILOS MEJORADOS PARA EL TIME PICKER === */
+
+/* Contenedor principal del time picker */
+.bonsai-datepicker-calendar .react-datepicker__time-container {
+  border-left: 1px solid #e2e8f0 !important;
+  background: linear-gradient(180deg, rgba(255, 255, 255, 0.98) 0%, rgba(248, 250, 252, 0.98) 100%) !important;
+  border-radius: 0 20px 20px 0 !important;
+  width: 120px !important;
+  display: flex !important;
+  flex-direction: column !important;
+}
+
+/* Header del time picker */
+.bonsai-datepicker-calendar .react-datepicker__header--time {
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%) !important;
+  color: white !important;
+  border-radius: 0 !important;
+  padding: 12px 16px !important;
+  font-weight: 700 !important;
+  font-size: 0.875rem !important;
+  text-align: center !important;
+  letter-spacing: 0.5px !important;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.2) !important;
+}
+
+/* Contenedor de la lista de horas */
+.bonsai-datepicker-calendar .react-datepicker__time-box {
+  width: 120px !important;
+  display: flex !important;
+  flex-direction: column !important;
+  flex: 1 !important;
+}
+
+/* Lista de horas */
+.bonsai-datepicker-calendar .react-datepicker__time-list {
+  height: 200px !important;
+  overflow-y: auto !important;
+  padding: 8px 0 !important;
+  margin: 0 !important;
+  background: transparent !important;
+}
+
+/* Items individuales de hora */
+.bonsai-datepicker-calendar .react-datepicker__time-list-item {
+  padding: 10px 16px !important;
+  transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1) !important;
+  font-size: 0.875rem !important;
+  font-weight: 600 !important;
+  color: #374151 !important;
+  text-align: center !important;
+  cursor: pointer !important;
+  margin: 2px 8px !important;
+  border-radius: 8px !important;
+  background: transparent !important;
+}
+
+.bonsai-datepicker-calendar .react-datepicker__time-list-item:hover {
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%) !important;
+  color: white !important;
+  transform: translateX(4px) !important;
+  box-shadow: 0 4px 12px rgba(102, 126, 234, 0.3) !important;
+}
+
+.bonsai-datepicker-calendar .react-datepicker__time-list-item--selected {
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%) !important;
+  color: white !important;
+  font-weight: 700 !important;
+  transform: translateX(4px) !important;
+  box-shadow: 0 4px 16px rgba(102, 126, 234, 0.4) !important;
+}
+
+.bonsai-datepicker-calendar .react-datepicker__time-list-item--disabled {
+  color: #d1d5db !important;
+  cursor: not-allowed !important;
+}
+
+.bonsai-datepicker-calendar .react-datepicker__time-list-item--disabled:hover {
+  background: transparent !important;
+  transform: none !important;
+  box-shadow: none !important;
+}
+
+/* === SCROLLBAR PERSONALIZADA PARA TIME PICKER === */
+.bonsai-datepicker-calendar .react-datepicker__time-list::-webkit-scrollbar {
+  width: 6px !important;
+}
+
+.bonsai-datepicker-calendar .react-datepicker__time-list::-webkit-scrollbar-track {
+  background: rgba(226, 232, 240, 0.3) !important;
+  border-radius: 3px !important;
+  margin: 8px 0 !important;
+}
+
+.bonsai-datepicker-calendar .react-datepicker__time-list::-webkit-scrollbar-thumb {
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%) !important;
+  border-radius: 3px !important;
+  box-shadow: 0 2px 4px rgba(102, 126, 234, 0.2) !important;
+}
+
+.bonsai-datepicker-calendar .react-datepicker__time-list::-webkit-scrollbar-thumb:hover {
+  background: linear-gradient(135deg, #5a67d8 0%, #6b46c1 100%) !important;
+  box-shadow: 0 2px 8px rgba(102, 126, 234, 0.3) !important;
+}
+
+/* === ANIMACIONES === */
+.bonsai-datepicker-calendar {
+  animation: fadeInScale 0.3s cubic-bezier(0.4, 0, 0.2, 1) !important;
+}
+
+@keyframes fadeInScale {
+  from {
+    opacity: 0;
+    transform: scale(0.95) translateY(-10px);
+  }
+  to {
+    opacity: 1;
+    transform: scale(1) translateY(0);
+  }
+}
+
+/* === RESPONSIVE === */
+@media (max-width: 640px) {
+  .bonsai-datepicker-calendar {
+    min-width: 300px !important;
+  }
+  
+  .bonsai-datepicker-calendar .react-datepicker__time-container {
+    width: 100px !important;
+  }
+  
+  .bonsai-datepicker-calendar .react-datepicker__time-box {
+    width: 100px !important;
+  }
+  
+  .bonsai-datepicker-calendar .react-datepicker__time-list {
+    height: 180px !important;
+  }
+}
+
+/* Asegurar que el input del datepicker tenga el icono de calendario */
+.datepicker-input-container {
+  position: relative;
+}
+
+.datepicker-input-container .calendar-icon {
+  position: absolute;
+  right: 12px;
+  top: 50%;
+  transform: translateY(-50%);
+  pointer-events: none;
+  color: #94a3b8;
+  width: 16px;
+  height: 16px;
+}

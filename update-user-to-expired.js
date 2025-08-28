@@ -8,7 +8,7 @@ const supabase = createClient(supabaseUrl, supabaseServiceKey);
 async function updateUserToExpired() {
     try {
         console.log('🔧 Actualizando usuario a estado "expired"...\n');
-        
+
         // Verificar estado actual
         const { data: before, error: fetchError } = await supabase
             .from('profiles')
@@ -27,7 +27,7 @@ async function updateUserToExpired() {
         console.log('Subscription Plan:', before.subscription_plan);
         console.log('Trial Started At:', before.trial_started_at);
         console.log('Trial Ends At:', before.trial_ends_at);
-        
+
         // Actualizar a "expired"
         const { data, error } = await supabase
             .from('profiles')
@@ -48,18 +48,18 @@ async function updateUserToExpired() {
         console.log('==================');
         console.log('Subscription Status:', data[0].subscription_status);
         console.log('Updated At:', data[0].updated_at);
-        
+
         // Verificar fechas del trial
         const now = new Date();
         const trialEnd = new Date(before.trial_ends_at);
         const daysExpired = Math.floor((now - trialEnd) / (1000 * 60 * 60 * 24));
-        
+
         console.log('\n📅 Verificación del trial:');
         console.log('==========================');
         console.log('Fecha actual:', now.toISOString());
         console.log('Fin del trial:', trialEnd.toISOString());
         console.log('Días desde expiración:', daysExpired);
-        
+
         console.log('\n🎯 Resultado final:');
         console.log('===================');
         console.log('✅ Usuario marcado como "expired" (trial expirado)');
@@ -67,14 +67,14 @@ async function updateUserToExpired() {
         console.log('✅ El usuario verá la interfaz de trial expirado');
         console.log('✅ Podrá proceder con el upgrade a PRO');
         console.log('✅ Los webhooks de Stripe funcionarán correctamente');
-        
+
         console.log('\n🔄 Próximos pasos:');
         console.log('==================');
         console.log('1. Refrescar la aplicación o hacer logout/login');
         console.log('2. Verificar que aparezca la interfaz de "Trial Expirado"');
         console.log('3. Intentar el upgrade a PRO nuevamente');
         console.log('4. Los webhooks de Stripe deberían actualizar a "active" tras el pago');
-        
+
     } catch (err) {
         console.error('❌ Error general:', err);
     }

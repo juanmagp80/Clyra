@@ -1,6 +1,8 @@
 import type { Metadata } from 'next';
 import './globals.css';
 import './fallback.css';
+import '../styles/datepicker.css';
+import '../styles/datepicker-fix.css';
 import { ThemeProvider } from '@/components/providers/ThemeProvider';
 
 export const metadata: Metadata = {

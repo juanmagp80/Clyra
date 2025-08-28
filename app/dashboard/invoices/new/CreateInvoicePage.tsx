@@ -3,6 +3,7 @@
 import Sidebar from '@/components/Sidebar';
 import { Button } from '@/components/ui/Button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/Card';
+import CustomDatePicker from '@/components/ui/DatePicker';
 import { Input } from '@/components/ui/Input';
 import { createSupabaseClient } from '@/src/lib/supabase-client';
 import {
@@ -400,10 +401,13 @@ export default function CreateInvoicePage({ userEmail }: CreateInvoicePageProps)
                                             <label className="text-sm font-semibold text-slate-700 mb-2 block">
                                                 Fecha de Emisión
                                             </label>
-                                            <Input
-                                                type="date"
-                                                value={formData.issue_date}
-                                                onChange={(e) => setFormData({ ...formData, issue_date: e.target.value })}
+                                            <CustomDatePicker
+                                                selected={formData.issue_date ? new Date(formData.issue_date) : null}
+                                                onChange={(date) => setFormData({ 
+                                                    ...formData, 
+                                                    issue_date: date ? date.toISOString().split('T')[0] : '' 
+                                                })}
+                                                placeholderText="Seleccionar fecha de emisión"
                                                 className="rounded-xl border-slate-200"
                                             />
                                         </div>
@@ -411,10 +415,14 @@ export default function CreateInvoicePage({ userEmail }: CreateInvoicePageProps)
                                             <label className="text-sm font-semibold text-slate-700 mb-2 block">
                                                 Fecha de Vencimiento
                                             </label>
-                                            <Input
-                                                type="date"
-                                                value={formData.due_date}
-                                                onChange={(e) => setFormData({ ...formData, due_date: e.target.value })}
+                                            <CustomDatePicker
+                                                selected={formData.due_date ? new Date(formData.due_date) : null}
+                                                onChange={(date) => setFormData({ 
+                                                    ...formData, 
+                                                    due_date: date ? date.toISOString().split('T')[0] : '' 
+                                                })}
+                                                placeholderText="Seleccionar fecha de vencimiento"
+                                                minDate={formData.issue_date ? new Date(formData.issue_date) : new Date()}
                                                 className="rounded-xl border-slate-200"
                                             />
                                         </div>

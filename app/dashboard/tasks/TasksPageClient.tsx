@@ -2,6 +2,7 @@
 
 import Sidebar from '@/components/Sidebar';
 import { Button } from "@/components/ui/Button";
+import CustomDatePicker from '@/components/ui/DatePicker';
 import { createSupabaseClient } from '@/src/lib/supabase-client';
 import {
     Archive,
@@ -74,6 +75,7 @@ export default function TasksPageClient({ userEmail }: TasksPageClientProps) {
     const [priorityFilter, setPriorityFilter] = useState<string>('all');
     const [projectFilter, setProjectFilter] = useState<string>('all');
     const [userId, setUserId] = useState<string | null>(null);
+    const [currentUserEmail, setCurrentUserEmail] = useState<string>(userEmail || '');
 
     // Estados para modales
     const [showNewTaskModal, setShowNewTaskModal] = useState(false);
@@ -127,6 +129,29 @@ export default function TasksPageClient({ userEmail }: TasksPageClientProps) {
     const [activeTimer, setActiveTimer] = useState<string | null>(null);
     const [timerStartTime, setTimerStartTime] = useState<Date | null>(null);
     const [elapsedTime, setElapsedTime] = useState(0);
+
+    // Función para obtener el email del usuario
+    const getCurrentUserEmail = async () => {
+        if (currentUserEmail) return currentUserEmail; // Ya lo tenemos
+        
+        try {
+            const { data: { user }, error } = await supabase.auth.getUser();
+            if (error) {
+                console.error('Error getting user:', error);
+                return '';
+            }
+            
+            if (user?.email) {
+                setCurrentUserEmail(user.email);
+                return user.email;
+            }
+            
+            return '';
+        } catch (error) {
+            console.error('Error in getCurrentUserEmail:', error);
+            return '';
+        }
+    };
 
     const handleLogout = async () => {
         if (!supabase) return;
@@ -330,6 +355,18 @@ export default function TasksPageClient({ userEmail }: TasksPageClientProps) {
 
             setProjects(activeProjects as Project[]);
 
+            // Preseleccionar el proyecto "General" si existe y no hay proyecto seleccionado
+            if (!newTask.project_id && activeProjects.length > 0) {
+                const generalProject = activeProjects.find((p: any) => p.name === 'General');
+                if (generalProject) {
+                    console.log('🏷️ Preseleccionando proyecto General:', generalProject.id);
+                    setNewTask(prev => ({
+                        ...prev,
+                        project_id: generalProject.id
+                    }));
+                }
+            }
+
         } catch (error) {
             console.error('❌ Error crítico en fetchProjects:', error);
             alert('⚠️ Error crítico al cargar proyectos. Revisa la consola para más detalles.');
@@ -363,12 +400,30 @@ export default function TasksPageClient({ userEmail }: TasksPageClientProps) {
 
             console.log('🔧 Creando tarea con user_id:', uid);
 
+            // Si no hay project_id seleccionado, buscar el proyecto "General"
+            let projectId = newTask.project_id;
+            if (!projectId) {
+                const { data: defaultProject, error: defaultError } = await supabase
+                    .from('projects')
+                    .select('id')
+                    .eq('user_id', uid)
+                    .eq('name', 'General')
+                    .single();
+                    
+                if (defaultError || !defaultProject) {
+                    alert('⚠️ No se encontró un proyecto por defecto. Por favor, selecciona un proyecto.');
+                    return;
+                }
+                projectId = defaultProject.id;
+                console.log('📁 Usando proyecto por defecto:', projectId);
+            }
+
             const taskData = {
                 title: newTask.title,
                 description: newTask.description || null,
                 status: newTask.status,
                 priority: newTask.priority,
-                project_id: newTask.project_id || null, // Convertir string vacío a null
+                project_id: projectId, // Usar el project_id válido
                 category: newTask.category,
                 due_date: newTask.due_date || null,
                 user_id: uid // ¡Añadir el user_id!
@@ -587,6 +642,13 @@ export default function TasksPageClient({ userEmail }: TasksPageClientProps) {
         fetchProjects();
     }, []);
 
+    // useEffect para cargar el email si no se pasó como prop
+    useEffect(() => {
+        if (!currentUserEmail) {
+            getCurrentUserEmail();
+        }
+    }, []);
+
     useEffect(() => {
         let interval: NodeJS.Timeout;
         if (activeTimer && timerStartTime) {
@@ -613,7 +675,7 @@ export default function TasksPageClient({ userEmail }: TasksPageClientProps) {
             <div className="flex min-h-screen">
                 {/* Sidebar Premium */}
                 <Sidebar
-                    userEmail={userEmail}
+                    userEmail={currentUserEmail}
                     onLogout={handleLogout}
                 />
 
@@ -999,7 +1061,7 @@ export default function TasksPageClient({ userEmail }: TasksPageClientProps) {
                                     value={newTask.project_id}
                                     onChange={(e) => setNewTask({ ...newTask, project_id: e.target.value })}
                                 >
-                                    <option value="">Sin proyecto asignado</option>
+                                    <option value="">Seleccionar proyecto...</option>
                                     {projects.length === 0 ? (
                                         <option disabled>🔍 Cargando proyectos... o no hay proyectos</option>
                                     ) : (
@@ -1074,11 +1136,13 @@ export default function TasksPageClient({ userEmail }: TasksPageClientProps) {
                             </div>
                             <div>
                                 <label className="block text-sm font-medium text-slate-700 mb-1">Fecha límite</label>
-                                <input
-                                    type="date"
-                                    className="w-full px-3 py-2 border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
-                                    value={newTask.due_date}
-                                    onChange={(e) => setNewTask({ ...newTask, due_date: e.target.value })}
+                                <CustomDatePicker
+                                    selected={newTask.due_date ? new Date(newTask.due_date) : null}
+                                    onChange={(date) => setNewTask({ 
+                                        ...newTask, 
+                                        due_date: date ? date.toISOString().split('T')[0] : '' 
+                                    })}
+                                    placeholderText="Seleccionar fecha límite"
                                 />
                             </div>
                         </div>
@@ -1236,11 +1300,13 @@ export default function TasksPageClient({ userEmail }: TasksPageClientProps) {
                             </div>
                             <div>
                                 <label className="block text-sm font-medium text-slate-700 mb-1">Fecha límite</label>
-                                <input
-                                    type="date"
-                                    className="w-full px-3 py-2 border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
-                                    value={editingTask.due_date || ''}
-                                    onChange={(e) => setEditingTask({ ...editingTask, due_date: e.target.value })}
+                                <CustomDatePicker
+                                    selected={editingTask.due_date ? new Date(editingTask.due_date) : null}
+                                    onChange={(date) => setEditingTask({ 
+                                        ...editingTask, 
+                                        due_date: date ? date.toISOString().split('T')[0] : '' 
+                                    })}
+                                    placeholderText="Seleccionar fecha límite"
                                 />
                             </div>
                         </div>

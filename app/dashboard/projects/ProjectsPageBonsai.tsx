@@ -2,6 +2,7 @@
 
 import Sidebar from '@/components/Sidebar';
 import TrialBanner from '@/components/TrialBanner';
+import CustomDatePicker from '@/components/ui/DatePicker';
 import { createSupabaseClient } from '@/src/lib/supabase-client';
 import { useTrialStatus } from '@/src/lib/useTrialStatus';
 import {
@@ -904,11 +905,14 @@ export default function ProjectsPageBonsai({ userEmail }: ProjectsPageClientProp
                                     <label className="block text-sm font-medium text-gray-700 mb-2">
                                         Fecha de Inicio
                                     </label>
-                                    <input
-                                        type="date"
-                                        value={formData.start_date}
-                                        onChange={(e) => setFormData({ ...formData, start_date: e.target.value })}
-                                        className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                                    <CustomDatePicker
+                                        selected={formData.start_date ? new Date(formData.start_date) : null}
+                                        onChange={(date) => setFormData({ 
+                                            ...formData, 
+                                            start_date: date ? date.toISOString().split('T')[0] : '' 
+                                        })}
+                                        placeholderText="Seleccionar fecha de inicio"
+                                        className="px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                                     />
                                 </div>
 
@@ -916,11 +920,15 @@ export default function ProjectsPageBonsai({ userEmail }: ProjectsPageClientProp
                                     <label className="block text-sm font-medium text-gray-700 mb-2">
                                         Fecha de Fin
                                     </label>
-                                    <input
-                                        type="date"
-                                        value={formData.end_date}
-                                        onChange={(e) => setFormData({ ...formData, end_date: e.target.value })}
-                                        className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                                    <CustomDatePicker
+                                        selected={formData.end_date ? new Date(formData.end_date) : null}
+                                        onChange={(date) => setFormData({ 
+                                            ...formData, 
+                                            end_date: date ? date.toISOString().split('T')[0] : '' 
+                                        })}
+                                        placeholderText="Seleccionar fecha de fin"
+                                        minDate={formData.start_date ? new Date(formData.start_date) : undefined}
+                                        className="px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                                     />
                                 </div>
                             </div>
@@ -1041,11 +1049,14 @@ export default function ProjectsPageBonsai({ userEmail }: ProjectsPageClientProp
                                     <label className="block text-sm font-medium text-gray-700 mb-2">
                                         Fecha de Inicio
                                     </label>
-                                    <input
-                                        type="date"
-                                        value={editFormData.start_date}
-                                        onChange={(e) => setEditFormData({ ...editFormData, start_date: e.target.value })}
-                                        className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                                    <CustomDatePicker
+                                        selected={editFormData.start_date ? new Date(editFormData.start_date) : null}
+                                        onChange={(date) => setEditFormData({ 
+                                            ...editFormData, 
+                                            start_date: date ? date.toISOString().split('T')[0] : '' 
+                                        })}
+                                        placeholderText="Seleccionar fecha de inicio"
+                                        className="px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                                     />
                                 </div>
 
@@ -1053,11 +1064,15 @@ export default function ProjectsPageBonsai({ userEmail }: ProjectsPageClientProp
                                     <label className="block text-sm font-medium text-gray-700 mb-2">
                                         Fecha de Fin
                                     </label>
-                                    <input
-                                        type="date"
-                                        value={editFormData.end_date}
-                                        onChange={(e) => setEditFormData({ ...editFormData, end_date: e.target.value })}
-                                        className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                                    <CustomDatePicker
+                                        selected={editFormData.end_date ? new Date(editFormData.end_date) : null}
+                                        onChange={(date) => setEditFormData({ 
+                                            ...editFormData, 
+                                            end_date: date ? date.toISOString().split('T')[0] : '' 
+                                        })}
+                                        placeholderText="Seleccionar fecha de fin"
+                                        minDate={editFormData.start_date ? new Date(editFormData.start_date) : undefined}
+                                        className="px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                                     />
                                 </div>
                             </div>

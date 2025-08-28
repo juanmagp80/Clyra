@@ -26,11 +26,30 @@ export default function TasksTimeBreakdown() {
             setLoading(true);
             
             try {
-                // Obtener proyectos
-                const { data: projectsData } = await supabase.from('projects').select('id, name');
+                const { data: { user } } = await supabase.auth.getUser();
+                if (!user) {
+                    setLoading(false);
+                    return;
+                }
+
+                // Obtener proyectos del usuario
+                const { data: projectsData } = await supabase
+                    .from('projects')
+                    .select('id, name')
+                    .eq('user_id', user.id);
                 
-                // Obtener tareas con tiempo
-                const { data: tasksData } = await supabase.from('tasks').select('id, title, project_id, total_time_seconds');
+                // Obtener tareas con tiempo del usuario
+                const { data: tasksData } = await supabase
+                    .from('tasks')
+                    .select('id, title, project_id, total_time_seconds')
+                    .eq('user_id', user.id)
+                    .not('total_time_seconds', 'is', null);
+                
+                console.log('🔍 Datos de tiempo:', {
+                    proyectos: projectsData?.length || 0,
+                    tareasConTiempo: tasksData?.length || 0,
+                    tareas: tasksData
+                });
                 
                 // Procesar datos
                 const projectsMap = new Map<string, Project>();
@@ -45,27 +64,52 @@ export default function TasksTimeBreakdown() {
                     });
                 });
                 
+                // Agregar tareas sin proyecto a un proyecto especial
+                const tasksWithoutProject: Task[] = [];
+                
                 // Agregar tareas y calcular tiempo total por proyecto
                 (tasksData || []).forEach((task: any) => {
-                    const project = projectsMap.get(task.project_id);
-                    if (project) {
-                        project.tasks.push({
-                            id: task.id,
-                            title: task.title,
-                            total_time_seconds: task.total_time_seconds || 0
-                        });
+                    const taskObj: Task = {
+                        id: task.id,
+                        title: task.title,
+                        total_time_seconds: task.total_time_seconds || 0
+                    };
+
+                    if (task.project_id && projectsMap.has(task.project_id)) {
+                        const project = projectsMap.get(task.project_id)!;
+                        project.tasks.push(taskObj);
                         project.totalTime += task.total_time_seconds || 0;
+                    } else {
+                        // Tareas sin proyecto
+                        tasksWithoutProject.push(taskObj);
                     }
                 });
                 
-                const projectsArray = Array.from(projectsMap.values());
+                // Si hay tareas sin proyecto, crear un proyecto especial
+                if (tasksWithoutProject.length > 0) {
+                    const totalTimeWithoutProject = tasksWithoutProject.reduce((sum, task) => sum + task.total_time_seconds, 0);
+                    projectsMap.set('no-project', {
+                        id: 'no-project',
+                        name: '⚡ Tareas sin proyecto',
+                        totalTime: totalTimeWithoutProject,
+                        tasks: tasksWithoutProject
+                    });
+                }
+                
+                const projectsArray = Array.from(projectsMap.values())
+                    .filter(p => p.totalTime > 0) // Solo proyectos con tiempo
+                    .sort((a, b) => b.totalTime - a.totalTime); // Ordenar por tiempo descendente
+                
                 setProjects(projectsArray);
                 
-                // Seleccionar automáticamente el primer proyecto que tenga tiempo
-                const projectWithTime = projectsArray.find(p => p.totalTime > 0);
-                if (projectWithTime) {
-                    setSelectedProjectId(projectWithTime.id);
-                }
+                // No seleccionar ningún proyecto por defecto
+                setSelectedProjectId('');
+
+                console.log('📈 Proyectos procesados:', {
+                    total: projectsArray.length,
+                    conTiempo: projectsArray.filter(p => p.totalTime > 0).length,
+                    tiempoTotal: projectsArray.reduce((sum, p) => sum + p.totalTime, 0)
+                });
             } catch (error) {
                 console.error('Error fetching data:', error);
             } finally {

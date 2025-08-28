@@ -97,12 +97,15 @@ export default async function DashboardPage() {
         console.log('👤 Getting session...');
         const {
             data: { session },
+            error: sessionError
         } = await supabase.auth.getSession();
 
         console.log('📋 Session check:', {
             hasSession: !!session,
             hasUser: !!session?.user,
             hasEmail: !!session?.user?.email,
+            sessionError: sessionError,
+            userId: session?.user?.id
         });
 
         if (!session || !session.user?.email) {

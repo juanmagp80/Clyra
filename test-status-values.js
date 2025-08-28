@@ -8,10 +8,10 @@ const supabase = createClient(supabaseUrl, supabaseServiceKey);
 async function testDifferentStatuses() {
     try {
         console.log('🔍 Probando diferentes valores para subscription_status...\n');
-        
+
         const statusesToTry = [
             'active',
-            'inactive', 
+            'inactive',
             'canceled',
             'cancelled',
             'trial',
@@ -19,10 +19,10 @@ async function testDifferentStatuses() {
             'free',
             'pro'
         ];
-        
+
         for (const status of statusesToTry) {
             console.log(`🧪 Probando status: "${status}"`);
-            
+
             try {
                 const { data, error } = await supabase
                     .from('profiles')
@@ -37,7 +37,7 @@ async function testDifferentStatuses() {
                     console.log(`   ❌ Error: ${error.message}`);
                 } else {
                     console.log(`   ✅ Éxito: Se pudo actualizar a "${status}"`);
-                    
+
                     // Volver al estado original para continuar probando
                     await supabase
                         .from('profiles')
@@ -48,7 +48,7 @@ async function testDifferentStatuses() {
                 console.log(`   ❌ Error: ${err.message}`);
             }
         }
-        
+
     } catch (err) {
         console.error('❌ Error general:', err);
     }

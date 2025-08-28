@@ -2,6 +2,7 @@
 
 import { Button } from '@/components/ui/Button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/Card';
+import CustomDatePicker from '@/components/ui/DatePicker';
 import { Input } from '@/components/ui/Input';
 import { Label } from '@/components/ui/Label';
 import { SpanishCompanyData, SpanishInvoiceData, validateSpanishCIF, validateSpanishNIF } from '@/lib/spanish-invoice-utils';
@@ -423,21 +424,20 @@ export default function CreateSpanishInvoice({ userEmail }: CreateSpanishInvoice
                                 </div>
                                 <div>
                                     <Label htmlFor="date">Fecha</Label>
-                                    <Input
-                                        id="date"
-                                        type="date"
-                                        value={invoiceData.date}
-                                        onChange={(e) => updateInvoiceField('date', e.target.value)}
+                                    <CustomDatePicker
+                                        selected={invoiceData.date ? new Date(invoiceData.date) : null}
+                                        onChange={(date) => updateInvoiceField('date', date ? date.toISOString().split('T')[0] : '')}
+                                        placeholderText="Seleccionar fecha"
                                     />
                                 </div>
                             </div>
                             <div>
                                 <Label htmlFor="dueDate">Fecha de Vencimiento</Label>
-                                <Input
-                                    id="dueDate"
-                                    type="date"
-                                    value={invoiceData.dueDate}
-                                    onChange={(e) => updateInvoiceField('dueDate', e.target.value)}
+                                <CustomDatePicker
+                                    selected={invoiceData.dueDate ? new Date(invoiceData.dueDate) : null}
+                                    onChange={(date) => updateInvoiceField('dueDate', date ? date.toISOString().split('T')[0] : '')}
+                                    placeholderText="Seleccionar fecha de vencimiento"
+                                    minDate={invoiceData.date ? new Date(invoiceData.date) : new Date()}
                                 />
                             </div>
                         </CardContent>

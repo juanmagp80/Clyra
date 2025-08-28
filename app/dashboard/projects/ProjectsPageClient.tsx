@@ -1,6 +1,7 @@
 'use client';
 import Sidebar from '@/components/Sidebar';
 import TrialBanner from '@/components/TrialBanner';
+import CustomDatePicker from '@/components/ui/DatePicker';
 import { createSupabaseClient } from '@/src/lib/supabase-client';
 import { useTrialStatus } from '@/src/lib/useTrialStatus';
 import {
@@ -833,20 +834,27 @@ export default function ProjectsPageClient({ userEmail }: ProjectsPageClientProp
                                                 <div className="space-y-4">
                                                     <div>
                                                         <label className="text-xs font-semibold text-slate-500 mb-2 block">Fecha de Inicio</label>
-                                                        <input
-                                                            type="date"
-                                                            value={formData.start_date}
-                                                            onChange={(e) => setFormData({ ...formData, start_date: e.target.value })}
-                                                            className="w-full px-4 py-3 text-base font-semibold bg-white/70 backdrop-blur-xl border-2 border-white/80 rounded-xl focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20 transition-all duration-300 shadow-md"
+                                                        <CustomDatePicker
+                                                            selected={formData.start_date ? new Date(formData.start_date) : null}
+                                                            onChange={(date) => setFormData({ 
+                                                                ...formData, 
+                                                                start_date: date ? date.toISOString().split('T')[0] : '' 
+                                                            })}
+                                                            placeholderText="Seleccionar fecha de inicio"
+                                                            className="px-4 py-3 text-base font-semibold bg-white/70 backdrop-blur-xl border-2 border-white/80 rounded-xl focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20 transition-all duration-300 shadow-md"
                                                         />
                                                     </div>
                                                     <div>
                                                         <label className="text-xs font-semibold text-slate-500 mb-2 block">Fecha de Fin</label>
-                                                        <input
-                                                            type="date"
-                                                            value={formData.end_date}
-                                                            onChange={(e) => setFormData({ ...formData, end_date: e.target.value })}
-                                                            className="w-full px-4 py-3 text-base font-semibold bg-white/70 backdrop-blur-xl border-2 border-white/80 rounded-xl focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20 transition-all duration-300 shadow-md"
+                                                        <CustomDatePicker
+                                                            selected={formData.end_date ? new Date(formData.end_date) : null}
+                                                            onChange={(date) => setFormData({ 
+                                                                ...formData, 
+                                                                end_date: date ? date.toISOString().split('T')[0] : '' 
+                                                            })}
+                                                            placeholderText="Seleccionar fecha de fin"
+                                                            minDate={formData.start_date ? new Date(formData.start_date) : undefined}
+                                                            className="px-4 py-3 text-base font-semibold bg-white/70 backdrop-blur-xl border-2 border-white/80 rounded-xl focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20 transition-all duration-300 shadow-md"
                                                         />
                                                     </div>
                                                 </div>
@@ -1446,11 +1454,14 @@ export default function ProjectsPageClient({ userEmail }: ProjectsPageClientProp
                                                 <label className="block text-sm font-black text-slate-700 mb-3 group-focus-within:text-orange-600 transition-colors duration-300">
                                                     Fecha de Inicio
                                                 </label>
-                                                <input
-                                                    type="date"
-                                                    value={formData.start_date}
-                                                    onChange={(e) => setFormData(prev => ({ ...prev, start_date: e.target.value }))}
-                                                    className="w-full px-4 py-4 bg-white/80 backdrop-blur-xl border-2 border-slate-200 hover:border-orange-300 focus:border-orange-500 rounded-2xl focus:outline-none focus:ring-4 focus:ring-orange-500/20 transition-all duration-300 text-slate-900 font-semibold shadow-lg focus:shadow-2xl focus:shadow-orange-500/10 transform focus:scale-[1.02]"
+                                                <CustomDatePicker
+                                                    selected={formData.start_date ? new Date(formData.start_date) : null}
+                                                    onChange={(date) => setFormData(prev => ({ 
+                                                        ...prev, 
+                                                        start_date: date ? date.toISOString().split('T')[0] : '' 
+                                                    }))}
+                                                    placeholderText="Seleccionar fecha de inicio"
+                                                    className="px-4 py-4 bg-white/80 backdrop-blur-xl border-2 border-slate-200 hover:border-orange-300 focus:border-orange-500 rounded-2xl focus:outline-none focus:ring-4 focus:ring-orange-500/20 transition-all duration-300 text-slate-900 font-semibold shadow-lg focus:shadow-2xl focus:shadow-orange-500/10 transform focus:scale-[1.02]"
                                                 />
                                             </div>
 
@@ -1458,11 +1469,15 @@ export default function ProjectsPageClient({ userEmail }: ProjectsPageClientProp
                                                 <label className="block text-sm font-black text-slate-700 mb-3 group-focus-within:text-red-600 transition-colors duration-300">
                                                     Fecha de Entrega
                                                 </label>
-                                                <input
-                                                    type="date"
-                                                    value={formData.end_date}
-                                                    onChange={(e) => setFormData(prev => ({ ...prev, end_date: e.target.value }))}
-                                                    className="w-full px-4 py-4 bg-white/80 backdrop-blur-xl border-2 border-slate-200 hover:border-red-300 focus:border-red-500 rounded-2xl focus:outline-none focus:ring-4 focus:ring-red-500/20 transition-all duration-300 text-slate-900 font-semibold placeholder-slate-400 shadow-lg focus:shadow-2xl focus:shadow-red-500/10 transform focus:scale-[1.02]"
+                                                <CustomDatePicker
+                                                    selected={formData.end_date ? new Date(formData.end_date) : null}
+                                                    onChange={(date) => setFormData(prev => ({ 
+                                                        ...prev, 
+                                                        end_date: date ? date.toISOString().split('T')[0] : '' 
+                                                    }))}
+                                                    placeholderText="Seleccionar fecha de entrega"
+                                                    minDate={formData.start_date ? new Date(formData.start_date) : undefined}
+                                                    className="px-4 py-4 bg-white/80 backdrop-blur-xl border-2 border-slate-200 hover:border-red-300 focus:border-red-500 rounded-2xl focus:outline-none focus:ring-4 focus:ring-red-500/20 transition-all duration-300 text-slate-900 font-semibold placeholder-slate-400 shadow-lg focus:shadow-2xl focus:shadow-red-500/10 transform focus:scale-[1.02]"
                                                 />
                                             </div>
                                         </div>
