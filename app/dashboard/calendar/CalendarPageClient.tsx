@@ -179,43 +179,43 @@ export default function CalendarPageClient({ userEmail }: CalendarPageClientProp
             const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
             
             const sampleEvents = [
-                {
-                    title: '🎯 Reunión de planificación',
-                    description: 'Revisión de objetivos y planificación semanal',
-                    start_time: new Date(today.getTime() + 10 * 60 * 60 * 1000).toISOString(), // 10:00 AM hoy
-                    end_time: new Date(today.getTime() + 11 * 60 * 60 * 1000).toISOString(), // 11:00 AM hoy
-                    type: 'meeting',
-                    is_billable: true,
-                    hourly_rate: 75,
-                    status: 'scheduled',
-                    client_id: clientData.id,
-                    project_id: projectData.id,
-                    user_id: user.id
-                },
-                {
-                    title: '💻 Desarrollo web',
-                    description: 'Trabajo en la nueva funcionalidad del dashboard',
-                    start_time: new Date(today.getTime() + 14 * 60 * 60 * 1000).toISOString(), // 2:00 PM hoy
-                    end_time: new Date(today.getTime() + 16 * 60 * 60 * 1000).toISOString(), // 4:00 PM hoy
-                    type: 'work',
-                    is_billable: true,
-                    hourly_rate: 65,
-                    status: 'scheduled',
-                    client_id: clientData.id,
-                    project_id: projectData.id,
-                    user_id: user.id
-                },
-                {
-                    title: '☕ Descanso productivo',
-                    description: 'Pausa para recargar energías',
-                    start_time: new Date(today.getTime() + 16 * 60 * 60 * 1000).toISOString(), // 4:00 PM hoy
-                    end_time: new Date(today.getTime() + 16.5 * 60 * 60 * 1000).toISOString(), // 4:30 PM hoy
-                    type: 'break',
-                    is_billable: false,
-                    hourly_rate: 0,
-                    status: 'scheduled',
-                    user_id: user.id
-                }
+                    {
+                        title: '🎯 Reunión de planificación',
+                        description: 'Revisión de objetivos y planificación semanal',
+                        start_time: new Date(today.getTime() + 10 * 60 * 60 * 1000).toISOString(), // 10:00 AM hoy
+                        end_time: new Date(today.getTime() + 11 * 60 * 60 * 1000).toISOString(), // 11:00 AM hoy
+                        type: 'meeting',
+                        is_billable: true,
+                        hourly_rate: 75,
+                        status: 'scheduled',
+                        client_id: clientData.id,
+                        project_id: projectData.id,
+                        user_id: user.id
+                    },
+                    {
+                        title: '💻 Desarrollo web',
+                        description: 'Trabajo en la nueva funcionalidad del dashboard',
+                        start_time: new Date(today.getTime() + 14 * 60 * 60 * 1000).toISOString(), // 2:00 PM hoy
+                        end_time: new Date(today.getTime() + 16 * 60 * 60 * 1000).toISOString(), // 4:00 PM hoy
+                        type: 'work',
+                        is_billable: true,
+                        hourly_rate: 65,
+                        status: 'scheduled',
+                        client_id: clientData.id,
+                        project_id: projectData.id,
+                        user_id: user.id
+                    },
+                    {
+                        title: '☕ Descanso productivo',
+                        description: 'Pausa para recargar energías',
+                        start_time: new Date(today.getTime() + 16 * 60 * 60 * 1000).toISOString(), // 4:00 PM hoy
+                        end_time: new Date(today.getTime() + 16.5 * 60 * 60 * 1000).toISOString(), // 4:30 PM hoy
+                        type: 'break',
+                        is_billable: false,
+                        hourly_rate: 0,
+                        status: 'scheduled',
+                        user_id: user.id
+                    }
             ];
 
             const { error: eventsError } = await supabase
@@ -326,7 +326,7 @@ export default function CalendarPageClient({ userEmail }: CalendarPageClientProp
     // Filtrar proyectos por cliente seleccionado
     useEffect(() => {
         if (newEvent.client_id) {
-            const clientProjects = projects.filter(p => p.client_id === newEvent.client_id);
+            const clientProjects = projects.filter((p: any) => p.client_id === newEvent.client_id);
             setFilteredProjects(clientProjects);
         } else {
             setFilteredProjects([]);
@@ -1018,7 +1018,7 @@ export default function CalendarPageClient({ userEmail }: CalendarPageClientProp
         const today = new Date();
         today.setHours(0, 0, 0, 0);
         
-        const todayEvents = events.filter(e => {
+        const todayEvents = events.filter((e: ExtendedCalendarEvent) => {
             const eventDate = new Date(e.start_time);
             eventDate.setHours(0, 0, 0, 0);
             return eventDate.getTime() === today.getTime();
@@ -1029,13 +1029,13 @@ export default function CalendarPageClient({ userEmail }: CalendarPageClientProp
         const weekEnd = new Date(weekStart);
         weekEnd.setDate(weekStart.getDate() + 6);
 
-        const weekEvents = events.filter(e => {
+        const weekEvents = events.filter((e: ExtendedCalendarEvent) => {
             const eventDate = new Date(e.start_time);
             return eventDate >= weekStart && eventDate <= weekEnd;
         });
 
-        const billableEvents = events.filter(e => e.is_billable);
-        const totalRevenue = billableEvents.reduce((sum, event) => {
+        const billableEvents = events.filter((e: ExtendedCalendarEvent) => e.is_billable);
+        const totalRevenue = billableEvents.reduce((sum: number, event: ExtendedCalendarEvent) => {
             const duration = (new Date(event.end_time).getTime() - new Date(event.start_time).getTime()) / (1000 * 60 * 60);
             return sum + (duration * (event.hourly_rate || 0));
         }, 0);
@@ -1044,10 +1044,10 @@ export default function CalendarPageClient({ userEmail }: CalendarPageClientProp
             totalEvents: events.length,
             todayEvents: todayEvents.length,
             weekEvents: weekEvents.length,
-            completedEvents: events.filter(e => e.status === 'completed').length,
+            completedEvents: events.filter((e: ExtendedCalendarEvent) => e.status === 'completed').length,
             billableEvents: billableEvents.length,
             totalRevenue,
-            activeTracking: activeTracking ? events.find(e => e.id === activeTracking) : null
+            activeTracking: activeTracking ? events.find((e: ExtendedCalendarEvent) => e.id === activeTracking) : null
         };
     };
 
@@ -1141,13 +1141,13 @@ export default function CalendarPageClient({ userEmail }: CalendarPageClientProp
             endOfWeek.setDate(startOfWeek.getDate() + 6);
             endOfWeek.setHours(23, 59, 59, 999);
             
-            return events.filter(event => {
+            return events.filter((event: ExtendedCalendarEvent) => {
                 const eventDate = new Date(event.start_time);
                 return eventDate >= startOfWeek && eventDate <= endOfWeek;
             });
         }
         
-        return events.filter(event => {
+        return events.filter((event: ExtendedCalendarEvent) => {
             const eventDate = new Date(event.start_time);
             return eventDate >= startOfDay && eventDate <= endOfDay;
         });

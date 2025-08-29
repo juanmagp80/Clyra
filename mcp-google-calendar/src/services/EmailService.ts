@@ -2,7 +2,7 @@ import nodemailer from 'nodemailer';
 import { config } from '../config/index.js';
 
 export class EmailService {
-  private transporter: nodemailer.Transporter;
+  public transporter: nodemailer.Transporter;
 
   constructor() {
     this.transporter = nodemailer.createTransporter({

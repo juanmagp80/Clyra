@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import Stripe from 'stripe';
 
 const stripe = new Stripe(process.env.STRIPE_SECRET_KEY!, {
-    apiVersion: '2024-11-20.acacia',
+    apiVersion: '2025-07-30.basil',
 });
 
 export async function POST(req: NextRequest) {
@@ -21,7 +21,9 @@ export async function POST(req: NextRequest) {
         if (subscriptionId) {
             // Verificar suscripción específica
             try {
-                const subscription = await stripe.subscriptions.retrieve(subscriptionId);
+                const subscription = await stripe.subscriptions.retrieve(subscriptionId, {
+                    expand: ['customer', 'items.data.price.product']
+                });
                 subscriptions = [subscription];
             } catch (error) {
                 console.error('Error obteniendo suscripción específica:', error);
@@ -31,7 +33,8 @@ export async function POST(req: NextRequest) {
             const response = await stripe.subscriptions.list({
                 customer: customerId,
                 status: 'all',
-                limit: 10
+                limit: 10,
+                expand: ['data.customer', 'data.items.data.price.product']
             });
             subscriptions = response.data;
         }
@@ -48,22 +51,29 @@ export async function POST(req: NextRequest) {
 
         const result = {
             customer,
-            subscriptions: subscriptions.map(sub => ({
-                id: sub.id,
-                status: sub.status,
-                current_period_start: new Date(sub.current_period_start * 1000).toISOString(),
-                current_period_end: new Date(sub.current_period_end * 1000).toISOString(),
-                cancel_at_period_end: sub.cancel_at_period_end,
-                canceled_at: sub.canceled_at ? new Date(sub.canceled_at * 1000).toISOString() : null,
-                created: new Date(sub.created * 1000).toISOString(),
-                items: sub.items.data.map(item => ({
-                    price_id: item.price.id,
-                    product_id: item.price.product,
-                    amount: item.price.unit_amount,
-                    currency: item.price.currency,
-                    interval: item.price.recurring?.interval
-                }))
-            })),
+            subscriptions: subscriptions.map(sub => {
+                const subWithPeriod = sub as Stripe.Subscription & {
+                    current_period_start: number;
+                    current_period_end: number;
+                };
+                
+                return {
+                    id: subWithPeriod.id,
+                    status: subWithPeriod.status,
+                    current_period_start: new Date(subWithPeriod.current_period_start * 1000).toISOString(),
+                    current_period_end: new Date(subWithPeriod.current_period_end * 1000).toISOString(),
+                    cancel_at_period_end: subWithPeriod.cancel_at_period_end,
+                    canceled_at: subWithPeriod.canceled_at ? new Date(subWithPeriod.canceled_at * 1000).toISOString() : null,
+                    created: new Date(subWithPeriod.created * 1000).toISOString(),
+                    items: subWithPeriod.items.data.map(item => ({
+                        price_id: item.price.id,
+                        product_id: typeof item.price.product === 'string' ? item.price.product : item.price.product.id,
+                        amount: item.price.unit_amount,
+                        currency: item.price.currency,
+                        interval: item.price.recurring?.interval
+                    }))
+                };
+            }),
             hasActiveSubscription: subscriptions.some(sub => sub.status === 'active'),
             activeSubscriptions: subscriptions.filter(sub => sub.status === 'active').length
         };

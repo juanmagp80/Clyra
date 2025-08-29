@@ -239,7 +239,7 @@ export default function TemplatesPageBonsai({ userEmail }: TemplatesPageBonsaiPr
     };
 
     // Función para usar template (nueva)
-    const useTemplate = async (template: Template) => {
+    const applyTemplate = async (template: Template) => {
         try {
             if (!supabase) return;
             
@@ -273,6 +273,11 @@ export default function TemplatesPageBonsai({ userEmail }: TemplatesPageBonsaiPr
         } catch (error) {
             console.error('Error:', error);
         }
+    };
+
+    // Función wrapper para manejar useTemplate en onClick
+    const handleUseTemplate = (template: Template) => {
+        applyTemplate(template);
     };
 
     // Función para crear proyecto desde template
@@ -749,7 +754,7 @@ export default function TemplatesPageBonsai({ userEmail }: TemplatesPageBonsaiPr
 
                                                         <div className="flex gap-2">
                                                             <button
-                                                                onClick={() => useTemplate(template)}
+                                                                onClick={() => handleUseTemplate(template)}
                                                                 className="flex-1 inline-flex items-center justify-center px-3 py-2 text-sm font-medium text-white bg-blue-600 border border-transparent rounded-lg hover:bg-blue-700"
                                                             >
                                                                 <Play className="w-4 h-4 mr-2" />
@@ -839,7 +844,7 @@ export default function TemplatesPageBonsai({ userEmail }: TemplatesPageBonsaiPr
                                                             
                                                             <div className="flex items-center gap-2 ml-4">
                                                                 <button
-                                                                    onClick={() => useTemplate(template)}
+                                                                    onClick={() => handleUseTemplate(template)}
                                                                     className="inline-flex items-center px-3 py-2 text-sm font-medium text-white bg-blue-600 border border-transparent rounded-lg hover:bg-blue-700"
                                                                 >
                                                                     <Play className="w-4 h-4 mr-2" />

@@ -345,13 +345,13 @@ export default function TasksPageClient({ userEmail }: TasksPageClientProps) {
             }
 
             console.log('📊 Todos los proyectos encontrados:', data.length);
-            console.log('📋 Estados de proyectos encontrados:', data.map(p => ({ name: p.name, status: p.status })));
+            console.log('📋 Estados de proyectos encontrados:', data.map((p: Project) => ({ name: p.name, status: p.status })));
 
             // TEMPORAL: Mostrar TODOS los proyectos para debugging
             const activeProjects = data; // Sin filtrar por estado
 
             console.log('✅ Proyectos filtrados (todos):', activeProjects.length);
-            console.log('📋 Proyectos activos:', activeProjects.map(p => ({ name: p.name, status: p.status })));
+            console.log('📋 Proyectos activos:', activeProjects.map((p: Project) => ({ name: p.name, status: p.status })));
 
             setProjects(activeProjects as Project[]);
 

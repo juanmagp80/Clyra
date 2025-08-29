@@ -40,7 +40,7 @@ export async function POST(request: NextRequest) {
         }
 
         try {
-            let updateData: any = {};
+            const updateData: any = {};
 
             // Preparar datos para actualización
             if (newEmail && newEmail !== email) {

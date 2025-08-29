@@ -146,7 +146,11 @@ export default function UpdateUserForm({ email }: { email: string }) {
                 <Button
                     type="submit"
                     className="w-full"
-                    disabled={isLoading || (!newEmail && !password) || (password && !confirmPassword)}
+                    disabled={
+                        isLoading ||
+                        (!Boolean(newEmail) && !Boolean(password)) ||
+                        (Boolean(password) && !Boolean(confirmPassword))
+                    }
                 >
                     {isLoading ? 'Actualizando...' : 'Actualizar Usuario'}
                 </Button>

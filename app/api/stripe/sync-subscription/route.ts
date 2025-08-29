@@ -3,7 +3,7 @@ import Stripe from 'stripe';
 import { createServerSupabaseClient } from '@/src/lib/supabase-server';
 
 const stripe = new Stripe(process.env.STRIPE_SECRET_KEY!, {
-  apiVersion: '2024-12-18.acacia',
+  apiVersion: '2025-07-30.basil',
 });
 
 export async function POST(request: NextRequest) {
@@ -42,10 +42,13 @@ export async function POST(request: NextRequest) {
       limit: 10,
     });
 
-    const activeSubscription = subscriptions.data.find(sub => 
-      sub.status === 'active' && 
-      new Date(sub.current_period_end * 1000) > new Date()
-    );
+    const activeSubscription = subscriptions.data.find(sub => {
+      const subWithPeriod = sub as Stripe.Subscription & {
+        current_period_end: number;
+      };
+      return sub.status === 'active' && 
+        new Date(subWithPeriod.current_period_end * 1000) > new Date();
+    });
 
     // Obtener usuario de Supabase
     const supabase = await createServerSupabaseClient();
@@ -78,7 +81,7 @@ export async function POST(request: NextRequest) {
         subscription: {
           id: activeSubscription.id,
           status: activeSubscription.status,
-          current_period_end: activeSubscription.current_period_end,
+          current_period_end: (activeSubscription as any).current_period_end,
         },
       });
     } else {

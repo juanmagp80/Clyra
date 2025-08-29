@@ -26,7 +26,7 @@ export default function SubscriptionStatus({ userEmail }: SubscriptionStatusProp
     useEffect(() => {
         console.log('🔄 SubscriptionStatus useEffect triggered');
         let unsubAuth: (() => void) | undefined;
-        let channel: ReturnType<typeof supabase.channel> | null = null;
+        const channel: ReturnType<typeof supabase.channel> | null = null;
 
         async function fetchProfile(userId: string, email: string) {
             console.log('🔍 fetchProfile called with:', { userId, email });

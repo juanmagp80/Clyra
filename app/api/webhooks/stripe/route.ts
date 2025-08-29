@@ -3,7 +3,7 @@ import Stripe from 'stripe';
 import { createSupabaseAdmin } from '@/src/lib/supabase-admin';
 
 const stripe = new Stripe(process.env.STRIPE_SECRET_KEY!, {
-  apiVersion: '2024-12-18.acacia',
+  apiVersion: '2025-07-30.basil',
 });
 
 const webhookSecret = process.env.STRIPE_WEBHOOK_SECRET!;
@@ -99,8 +99,8 @@ async function handleSubscriptionChange(subscription: Stripe.Subscription, supab
   });
 
   // Buscar usuario por customer_id o email en metadata
-  let targetEmail = subscription.metadata?.customer_email;
-  let userId = subscription.metadata?.user_id;
+  let targetEmail: string | null = subscription.metadata?.customer_email || null;
+  const userId = subscription.metadata?.user_id;
   
   console.log('🔍 Buscando usuario con metadata:', {
     targetEmail,

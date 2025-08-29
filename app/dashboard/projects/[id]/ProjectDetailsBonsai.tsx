@@ -237,7 +237,7 @@ export default function ProjectDetailsBonsai({ projectId, userEmail }: ProjectDe
             }
 
             console.log('📋 Tasks fetched - RAW DATA:', tasksData);
-            console.log('📋 Tasks analyzed:', tasksData?.map(task => ({
+            console.log('📋 Tasks analyzed:', tasksData?.map((task: Task) => ({
                 id: task.id,
                 title: task.title,
                 is_running: task.is_running,

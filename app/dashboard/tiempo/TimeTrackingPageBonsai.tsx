@@ -261,8 +261,8 @@ export default function TimeTrackingPage({ userEmail }: TimeTrackingPageProps) {
         }
     };
 
-    // Función para formatear duración en tiempo real
-    const formatLiveTime = (startTime: string) => {
+    // Hook personalizado para formatear duración en tiempo real
+    const useLiveTime = (startTime: string) => {
         const [time, setTime] = useState(0);
         
         useEffect(() => {

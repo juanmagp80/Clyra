@@ -100,7 +100,7 @@ async function handleSubscriptionChange(subscription: Stripe.Subscription, supab
 
   // Buscar usuario por customer_id o email en metadata
   let targetEmail = subscription.metadata?.customer_email;
-  let userId = subscription.metadata?.user_id;
+  const userId = subscription.metadata?.user_id;
   
   console.log('🔍 Buscando usuario con metadata:', {
     targetEmail,

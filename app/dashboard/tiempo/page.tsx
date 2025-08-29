@@ -3,6 +3,12 @@
 import { createSupabaseClient } from '@/src/lib/supabase-client';
 import { redirect } from 'next/navigation';
 import { useEffect, useState } from 'react';
+import dynamic from 'next/dynamic';
+
+// Import dinámico del componente para evitar problemas de SSR
+const TimeTrackingPageBonsai = dynamic(() => import('./TimeTrackingPageBonsai'), {
+    loading: () => <div>Cargando...</div>
+});
 
 export default function TiempoPage() {
     const [loading, setLoading] = useState(true);
@@ -37,10 +43,5 @@ export default function TiempoPage() {
         );
     }
 
-    // Importar el componente real de cronómetros
-    // ...existing code...
-    // Import dinámico para evitar problemas de SSR
-    const TimeTrackingPageBonsai = require('./TimeTrackingPageBonsai').default;
-
-    return <TimeTrackingPageBonsai userEmail={user.email} />;
+    return <TimeTrackingPageBonsai userEmail={user?.email} />;
 }
