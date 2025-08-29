@@ -6,6 +6,7 @@ import Sidebar from '@/components/Sidebar';
 import { Button } from '@/components/ui/Button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/Card';
 import { Input } from '@/components/ui/Input';
+import CustomDatePicker from '@/components/ui/DatePicker';
 import { createSupabaseClient } from '@/src/lib/supabase';
 import { calendarAI, type CalendarEvent, type AIInsight, type DashboardMetrics, type SmartSuggestion, type EventType } from '@/src/lib/calendar-ai-local';
 import {
@@ -1360,6 +1361,9 @@ export default function CalendarPageClient({ userEmail }: CalendarPageClientProp
                                                                         {event.status === 'in_progress' && (
                                                                             <div className="w-2 h-2 bg-red-400 rounded-full animate-pulse ml-auto"></div>
                                                                         )}
+                                                                        {event.status === 'completed' && (
+                                                                            <CheckCircle className="w-3 h-3 ml-auto" />
+                                                                        )}
                                                                     </div>
                                                                 </div>
                                                             );
@@ -1526,6 +1530,12 @@ export default function CalendarPageClient({ userEmail }: CalendarPageClientProp
                                                                     En progreso
                                                                 </span>
                                                             )}
+                                                            {event.status === 'completed' && (
+                                                                <span className="text-xs bg-green-100 text-green-700 px-2 py-1 rounded-full font-medium flex items-center gap-1">
+                                                                    <CheckCircle className="w-3 h-3" />
+                                                                    Completado
+                                                                </span>
+                                                            )}
                                                         </div>
 
                                                         {/* Información de CRM */}
@@ -1582,26 +1592,32 @@ export default function CalendarPageClient({ userEmail }: CalendarPageClientProp
                                                     
                                                     <div className="flex items-center gap-2">
                                                         {/* Time Tracking */}
-                                                        <Button
-                                                            variant="ghost"
-                                                            size="sm"
-                                                            title={activeTracking === event.id ? 'Parar time tracking' : 'Iniciar time tracking'}
-                                                            onClick={(e) => {
-                                                                e.stopPropagation(); // Evitar que se active el click del div padre
-                                                                toggleTimeTracking(event.id);
-                                                            }}
-                                                            className={`h-9 w-9 p-0 rounded-lg transition-all duration-200 ${
-                                                                activeTracking === event.id
-                                                                    ? 'bg-red-100 text-red-600 hover:bg-red-200 shadow-lg shadow-red-100'
-                                                                    : 'bg-emerald-100 text-emerald-600 hover:bg-emerald-200'
-                                                            }`}
-                                                        >
-                                                            {activeTracking === event.id ? (
-                                                                <Square className="w-4 h-4" />
-                                                            ) : (
-                                                                <Play className="w-4 h-4" />
-                                                            )}
-                                                        </Button>
+                                                        {event.status === 'completed' ? (
+                                                            <div className="h-9 w-9 p-0 rounded-lg bg-green-100 text-green-600 flex items-center justify-center">
+                                                                <CheckCircle className="w-4 h-4" />
+                                                            </div>
+                                                        ) : (
+                                                            <Button
+                                                                variant="ghost"
+                                                                size="sm"
+                                                                title={activeTracking === event.id ? 'Parar time tracking' : 'Iniciar time tracking'}
+                                                                onClick={(e) => {
+                                                                    e.stopPropagation(); // Evitar que se active el click del div padre
+                                                                    toggleTimeTracking(event.id);
+                                                                }}
+                                                                className={`h-9 w-9 p-0 rounded-lg transition-all duration-200 ${
+                                                                    activeTracking === event.id
+                                                                        ? 'bg-red-100 text-red-600 hover:bg-red-200 shadow-lg shadow-red-100'
+                                                                        : 'bg-emerald-100 text-emerald-600 hover:bg-emerald-200'
+                                                                }`}
+                                                            >
+                                                                {activeTracking === event.id ? (
+                                                                    <Square className="w-4 h-4" />
+                                                                ) : (
+                                                                    <Play className="w-4 h-4" />
+                                                                )}
+                                                            </Button>
+                                                        )}
 
                                                         {/* Ver detalles */}
                                                         <Button
@@ -1825,19 +1841,65 @@ export default function CalendarPageClient({ userEmail }: CalendarPageClientProp
                                         <div className="grid grid-cols-2 gap-4">
                                             <div>
                                                 <label className="text-sm font-semibold text-slate-700 mb-2 block">Fecha y Hora de Inicio</label>
-                                                <Input
-                                                    type="datetime-local"
-                                                    value={newEvent.start_time}
-                                                    onChange={(e) => setNewEvent({...newEvent, start_time: e.target.value})}
+                                                <CustomDatePicker
+                                                    selected={newEvent.start_time ? new Date(newEvent.start_time) : null}
+                                                    onChange={(date) => {
+                                                        if (date) {
+                                                            // Formatear la fecha para mantener la hora local seleccionada
+                                                            const year = date.getFullYear();
+                                                            const month = (date.getMonth() + 1).toString().padStart(2, '0');
+                                                            const day = date.getDate().toString().padStart(2, '0');
+                                                            const hours = date.getHours().toString().padStart(2, '0');
+                                                            const minutes = date.getMinutes().toString().padStart(2, '0');
+                                                            const localDateTime = `${year}-${month}-${day}T${hours}:${minutes}`;
+                                                            
+                                                            setNewEvent({
+                                                                ...newEvent,
+                                                                start_time: localDateTime
+                                                            });
+                                                        } else {
+                                                            setNewEvent({
+                                                                ...newEvent,
+                                                                start_time: ''
+                                                            });
+                                                        }
+                                                    }}
+                                                    showTimeSelect
+                                                    dateFormat="dd/MM/yyyy HH:mm"
+                                                    timeFormat="HH:mm"
+                                                    placeholderText="Seleccionar fecha y hora de inicio"
                                                     className="w-full"
                                                 />
                                             </div>
                                             <div>
                                                 <label className="text-sm font-semibold text-slate-700 mb-2 block">Fecha y Hora de Fin</label>
-                                                <Input
-                                                    type="datetime-local"
-                                                    value={newEvent.end_time}
-                                                    onChange={(e) => setNewEvent({...newEvent, end_time: e.target.value})}
+                                                <CustomDatePicker
+                                                    selected={newEvent.end_time ? new Date(newEvent.end_time) : null}
+                                                    onChange={(date) => {
+                                                        if (date) {
+                                                            // Formatear la fecha para mantener la hora local seleccionada
+                                                            const year = date.getFullYear();
+                                                            const month = (date.getMonth() + 1).toString().padStart(2, '0');
+                                                            const day = date.getDate().toString().padStart(2, '0');
+                                                            const hours = date.getHours().toString().padStart(2, '0');
+                                                            const minutes = date.getMinutes().toString().padStart(2, '0');
+                                                            const localDateTime = `${year}-${month}-${day}T${hours}:${minutes}`;
+                                                            
+                                                            setNewEvent({
+                                                                ...newEvent,
+                                                                end_time: localDateTime
+                                                            });
+                                                        } else {
+                                                            setNewEvent({
+                                                                ...newEvent,
+                                                                end_time: ''
+                                                            });
+                                                        }
+                                                    }}
+                                                    showTimeSelect
+                                                    dateFormat="dd/MM/yyyy HH:mm"
+                                                    timeFormat="HH:mm"
+                                                    placeholderText="Seleccionar fecha y hora de fin"
                                                     className="w-full"
                                                 />
                                             </div>
@@ -2716,18 +2778,66 @@ export default function CalendarPageClient({ userEmail }: CalendarPageClientProp
                                     <div className="grid grid-cols-2 gap-4">
                                         <div>
                                             <label className="block text-sm font-medium text-slate-700 mb-1">Inicio</label>
-                                            <Input
-                                                type="datetime-local"
-                                                value={editingEvent.start_time.slice(0, 16)}
-                                                onChange={(e) => setEditingEvent({...editingEvent, start_time: e.target.value + ':00'})}
+                                            <CustomDatePicker
+                                                selected={editingEvent.start_time ? new Date(editingEvent.start_time) : null}
+                                                onChange={(date) => {
+                                                    if (date) {
+                                                        // Formatear la fecha para mantener la hora local seleccionada
+                                                        const year = date.getFullYear();
+                                                        const month = (date.getMonth() + 1).toString().padStart(2, '0');
+                                                        const day = date.getDate().toString().padStart(2, '0');
+                                                        const hours = date.getHours().toString().padStart(2, '0');
+                                                        const minutes = date.getMinutes().toString().padStart(2, '0');
+                                                        const localDateTime = `${year}-${month}-${day}T${hours}:${minutes}`;
+                                                        
+                                                        setEditingEvent({
+                                                            ...editingEvent,
+                                                            start_time: localDateTime
+                                                        });
+                                                    } else {
+                                                        setEditingEvent({
+                                                            ...editingEvent,
+                                                            start_time: ''
+                                                        });
+                                                    }
+                                                }}
+                                                showTimeSelect
+                                                dateFormat="dd/MM/yyyy HH:mm"
+                                                timeFormat="HH:mm"
+                                                placeholderText="Seleccionar fecha y hora de inicio"
+                                                className="w-full"
                                             />
                                         </div>
                                         <div>
                                             <label className="block text-sm font-medium text-slate-700 mb-1">Fin</label>
-                                            <Input
-                                                type="datetime-local"
-                                                value={editingEvent.end_time.slice(0, 16)}
-                                                onChange={(e) => setEditingEvent({...editingEvent, end_time: e.target.value + ':00'})}
+                                            <CustomDatePicker
+                                                selected={editingEvent.end_time ? new Date(editingEvent.end_time) : null}
+                                                onChange={(date) => {
+                                                    if (date) {
+                                                        // Formatear la fecha para mantener la hora local seleccionada
+                                                        const year = date.getFullYear();
+                                                        const month = (date.getMonth() + 1).toString().padStart(2, '0');
+                                                        const day = date.getDate().toString().padStart(2, '0');
+                                                        const hours = date.getHours().toString().padStart(2, '0');
+                                                        const minutes = date.getMinutes().toString().padStart(2, '0');
+                                                        const localDateTime = `${year}-${month}-${day}T${hours}:${minutes}`;
+                                                        
+                                                        setEditingEvent({
+                                                            ...editingEvent,
+                                                            end_time: localDateTime
+                                                        });
+                                                    } else {
+                                                        setEditingEvent({
+                                                            ...editingEvent,
+                                                            end_time: ''
+                                                        });
+                                                    }
+                                                }}
+                                                showTimeSelect
+                                                dateFormat="dd/MM/yyyy HH:mm"
+                                                timeFormat="HH:mm"
+                                                placeholderText="Seleccionar fecha y hora de fin"
+                                                className="w-full"
                                             />
                                         </div>
                                     </div>
