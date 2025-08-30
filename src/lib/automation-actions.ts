@@ -13,7 +13,8 @@ export type ActionType =
     | 'assign_task'
     | 'send_whatsapp'
     | 'generate_report'
-    | 'create_proposal';
+    | 'create_proposal'
+    | 'create_notification';
 
 // Interfaz para una acción de automatización
 export interface AutomationAction {
@@ -378,6 +379,119 @@ const notImplementedAction: ActionExecutor = async (action, payload) => {
     };
 };
 
+// Implementación específica para crear notificaciones internas
+const createNotificationAction: ActionExecutor = async (action, payload) => {
+    try {
+        const notificationData = action.parameters;
+        
+        // Validar parámetros requeridos
+        if (!notificationData.title || !notificationData.message) {
+            return {
+                success: false,
+                message: "Faltan parámetros requeridos: title y message",
+                error: "Missing required parameters"
+            };
+        }
+
+        // Preparar variables para el template
+        const variables = {
+            client_name: payload.client.name,
+            client_email: payload.client.email,
+            client_company: payload.client.company || payload.client.name,
+            user_name: payload.user?.user_metadata?.full_name || payload.user?.email?.split('@')[0] || 'Usuario',
+            project_name: (payload as any).project_name || '',
+            project_status: (payload as any).project_status || '',
+            end_date: (payload as any).end_date || '',
+            days_overdue: (payload as any).days_overdue || '0',
+            budget: (payload as any).budget || '0',
+        };
+
+        // Reemplazar variables en el título y mensaje
+        let processedTitle = notificationData.title;
+        let processedMessage = notificationData.message;
+
+        Object.entries(variables).forEach(([key, value]) => {
+            const placeholder = `{{${key}}}`;
+            processedTitle = processedTitle.replace(new RegExp(placeholder, 'g'), String(value));
+            processedMessage = processedMessage.replace(new RegExp(placeholder, 'g'), String(value));
+        });
+
+        // Crear la notificación en Supabase con estructura mínima
+        const notificationInsert: any = {
+            user_id: payload.user.id,
+            title: processedTitle,
+            message: processedMessage,
+            is_read: false
+        };
+
+        // Solo agregar columnas opcionales si están disponibles
+        try {
+            // Intentar agregar type si existe
+            if (notificationData.type) {
+                notificationInsert.type = notificationData.type;
+            }
+        } catch (error) {
+            console.warn('⚠️ Columna type no disponible');
+        }
+
+        try {
+            // Intentar agregar route si existe
+            if (notificationData.route) {
+                notificationInsert.route = notificationData.route;
+            }
+        } catch (error) {
+            console.warn('⚠️ Columna route no disponible');
+        }
+
+        try {
+            // Intentar agregar action_data si existe
+            if (notificationData.action_data || Object.keys(variables).length > 0) {
+                notificationInsert.action_data = {
+                    automationId: payload.automation.id,
+                    clientId: payload.client.id,
+                    executionId: payload.executionId,
+                    ...(notificationData.action_data || {})
+                };
+            }
+        } catch (error) {
+            console.warn('⚠️ Columna action_data no disponible');
+        }
+
+        const { data, error } = await payload.supabase
+            .from('user_notifications')
+            .insert(notificationInsert)
+            .select()
+            .single();
+
+        if (error) {
+            console.error('❌ Error creando notificación:', error);
+            return {
+                success: false,
+                message: `Error creando notificación: ${error.message}`,
+                error: error.code
+            };
+        }
+
+        return {
+            success: true,
+            message: `Notificación creada: ${processedTitle}`,
+            data: {
+                notificationId: data.id,
+                title: processedTitle,
+                message: processedMessage
+            }
+        };
+
+    } catch (error) {
+        console.error('❌ Error crítico en createNotificationAction:', error);
+        return {
+            success: false,
+            message: "Error crítico creando notificación",
+            error: error instanceof Error ? error.message : String(error)
+        };
+    }
+};
+
 // =============================================================================
 // REGISTRO DE EJECUTORES DE ACCIONES
 // =============================================================================
@@ -386,6 +500,7 @@ const actionExecutors: Record<ActionType, ActionExecutor> = {
     send_email: sendEmailAction,
     assign_task: assignTaskAction,
     update_project_status: updateProjectStatusAction,
+    create_notification: createNotificationAction,
     create_invoice: notImplementedAction,
     create_calendar_event: notImplementedAction,
     send_whatsapp: notImplementedAction,

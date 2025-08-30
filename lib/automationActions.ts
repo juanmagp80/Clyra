@@ -1,5 +1,7 @@
 // lib/automationActions.ts
 
+import { createSupabaseClient } from '@/src/lib/supabase-client';
+
 // Simulación de envío de email (reemplaza por tu integración real)
 async function sendEmail(to: string, subject: string, body: string, priority: 'low' | 'medium' | 'high' = 'medium') {
   console.log(`📧 [${priority.toUpperCase()}] Enviando email a ${to}`);
@@ -17,10 +19,48 @@ async function createTask(title: string, description: string, assignee?: string,
   console.log('---');
 }
 
-// Simulación de notificación (reemplaza por tu integración real)
-async function sendNotification(userId: string, title: string, message: string) {
-  console.log(`🔔 Notificación para ${userId}: ${title} - ${message}`);
-  console.log('---');
+// Nueva función para crear notificaciones internas en Supabase
+async function sendNotification(
+  userId: string, 
+  title: string, 
+  message: string, 
+  type: 'info' | 'warning' | 'error' | 'success' = 'info',
+  route?: string,
+  actionData?: Record<string, any>
+) {
+  try {
+    console.log(`🔔 Creando notificación para ${userId}: ${title} - ${message}`);
+    
+    const supabase = createSupabaseClient();
+    if (!supabase) {
+      console.error('❌ No se pudo crear cliente de Supabase');
+      return;
+    }
+
+    const { data, error } = await supabase
+      .from('user_notifications')
+      .insert({
+        user_id: userId,
+        title,
+        message,
+        type,
+        route,
+        action_data: actionData,
+        is_read: false
+      })
+      .select()
+      .single();
+
+    if (error) {
+      console.error('❌ Error creando notificación:', error);
+      return;
+    }
+
+    console.log('✅ Notificación creada exitosamente:', data);
+    return data;
+  } catch (error) {
+    console.error('❌ Error en sendNotification:', error);
+  }
 }
 
 // === AUTOMACIONES DE CLIENTES ===
@@ -61,9 +101,16 @@ export async function handleClientCommunicationCheck(payload: any, user_id: stri
 }
 
 export async function handleClientInactive(payload: any, user_id: string) {
-  const { clientEmail, clientName } = payload;
+  const { clientEmail, clientName, clientId } = payload;
   
-  await sendNotification(user_id, 'Cliente inactivo', `${clientName} no ha tenido actividad en 30 días. Considera hacer seguimiento.`);
+  await sendNotification(
+    user_id, 
+    'Cliente inactivo', 
+    `${clientName} no ha tenido actividad en 30 días. Considera hacer seguimiento.`,
+    'warning',
+    '/dashboard/clients',
+    { clientId, clientName, clientEmail, reason: 'inactive_30_days' }
+  );
   
   await createTask(
     `Reactivar cliente - ${clientName}`,
@@ -129,9 +176,16 @@ export async function handleProjectDelivery(payload: any, user_id: string) {
 }
 
 export async function handleProjectOverdue(payload: any, user_id: string) {
-  const { projectName, clientEmail, clientName } = payload;
+  const { projectName, clientEmail, clientName, projectId, daysOverdue } = payload;
   
-  await sendNotification(user_id, '⚠️ Proyecto con retraso', `${projectName} ha excedido su fecha límite planificada`);
+  await sendNotification(
+    user_id, 
+    '⚠️ Proyecto con retraso', 
+    `${projectName} ha excedido su fecha límite planificada por ${daysOverdue || ''} días`,
+    'error',
+    '/dashboard/projects',
+    { projectId, projectName, clientName, daysOverdue, reason: 'project_overdue' }
+  );
   
   await sendEmail(
     clientEmail,
@@ -156,16 +210,23 @@ export async function handleBudgetExceeded(payload: any, user_id: string) {
 
 // === AUTOMACIONES DE FACTURACIÓN ===
 export async function handleInvoiceOverdue(payload: any, user_id: string) {
-  const { invoiceNumber, clientEmail, clientName, daysOverdue } = payload;
+  const { invoiceNumber, clientEmail, clientName, daysOverdue, invoiceId, amount } = payload;
   
   await sendEmail(
     clientEmail,
     `Recordatorio: Factura ${invoiceNumber} vencida`,
-    `Hola ${clientName},\n\nEspero que estés bien. Te escribo para recordarte que la factura ${invoiceNumber} lleva ${daysOverdue} días vencida.\n\nMonto: [Cantidad]\nFecha de vencimiento: [Fecha]\n\nPor favor, si hay algún problema o necesitas una extensión, no dudes en contactarme.\n\n¡Gracias!`,
+    `Hola ${clientName},\n\nEspero que estés bien. Te escribo para recordarte que la factura ${invoiceNumber} lleva ${daysOverdue} días vencida.\n\nMonto: ${amount || '[Cantidad]'}\nFecha de vencimiento: [Fecha]\n\nPor favor, si hay algún problema o necesitas una extensión, no dudes en contactarme.\n\n¡Gracias!`,
     'high'
   );
   
-  await sendNotification(user_id, 'Factura vencida', `Factura ${invoiceNumber} - ${clientName} lleva ${daysOverdue} días vencida`);
+  await sendNotification(
+    user_id, 
+    'Factura vencida', 
+    `Factura ${invoiceNumber} - ${clientName} lleva ${daysOverdue} días vencida`,
+    'error',
+    '/dashboard/invoices',
+    { invoiceId, invoiceNumber, clientName, daysOverdue, amount, reason: 'invoice_overdue' }
+  );
 }
 
 export async function handleInvoiceReminder(payload: any, user_id: string) {
