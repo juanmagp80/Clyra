@@ -327,7 +327,7 @@ export default function DashboardBonsai({
             }> = [];
 
             // Agregar proyectos recientes
-            recentProjects?.forEach(project => {
+            recentProjects?.forEach((project: any) => {
                 activity.push({
                     id: project.id,
                     type: 'project',
