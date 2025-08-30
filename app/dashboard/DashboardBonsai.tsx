@@ -203,7 +203,7 @@ export default function DashboardBonsai({
                 supabase.from('time_entries').select('duration_seconds').eq('user_id', user.id)
             ]);
 
-            const activeProjects = allProjects?.filter(p =>
+            const activeProjects = allProjects?.filter((p: any) =>
                 p.status === 'active' || p.status === 'in_progress'
             ) || [];
 
