@@ -207,7 +207,7 @@ export default function DashboardBonsai({
                 p.status === 'active' || p.status === 'in_progress'
             ) || [];
 
-            const completedProjects = allProjects?.filter(p =>
+            const completedProjects = allProjects?.filter((p: any) =>
                 p.status === 'completed'
             ) || [];
 
