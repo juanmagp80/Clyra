@@ -8,6 +8,14 @@ import { ThemeProvider } from '@/components/providers/ThemeProvider';
 export const metadata: Metadata = {
   title: 'Taskelio — Tu CRM ligero para freelancers',
   description: 'Organiza clientes, tareas y proyectos. Todo en uno. El CRM que entiende tu forma de trabajar.',
+  icons: {
+    icon: [
+      { url: '/favicon.svg', type: 'image/svg+xml' },
+      { url: '/favicon-16.svg', type: 'image/svg+xml', sizes: '16x16' },
+    ],
+    shortcut: '/favicon.svg',
+    apple: '/favicon.svg',
+  },
 };
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {
