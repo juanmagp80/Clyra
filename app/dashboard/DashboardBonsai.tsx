@@ -339,7 +339,7 @@ export default function DashboardBonsai({
             });
 
             // Agregar clientes recientes
-            recentClients?.forEach(client => {
+            recentClients?.forEach((client: any) => {
                 activity.push({
                     id: client.id,
                     type: 'client',
