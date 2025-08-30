@@ -1,11 +1,12 @@
 import nodemailer from 'nodemailer';
 import { config } from '../config/index.js';
+import { IEmailService } from '../types/EmailServiceInterface.js';
 
-export class EmailService {
+export class EmailService implements IEmailService {
   public transporter: nodemailer.Transporter;
 
   constructor() {
-    this.transporter = nodemailer.createTransporter({
+    this.transporter = nodemailer.createTransport({
       host: config.email.host,
       port: config.email.port,
       secure: false, // true para 465, false para otros puertos

@@ -7,12 +7,14 @@ export interface AccessRestriction {
 }
 
 export function useAccessControl() {
-  const { status, plan, canUseFeatures, isExpired, daysRemaining } = useTrialStatus();
+  const { trialInfo, canUseFeatures, isTrialExpired, daysRemaining } = useTrialStatus();
 
   // Estados derivados
+  const status = trialInfo?.status;
+  const plan = trialInfo?.plan;
   const isPro = plan === 'pro' && status === 'active';
-  const isTrialActive = status === 'trial' && !isExpired;
-  const isTrialExpired = status === 'trial' && isExpired;
+  const isTrialActive = status === 'trial' && !isTrialExpired;
+  const isTrialExpiredLocal = status === 'trial' && isTrialExpired;
 
   // Funciones de verificación de acceso
   const checkAccess = (feature: string): AccessRestriction => {
@@ -26,7 +28,7 @@ export function useAccessControl() {
     }
 
     // Si el trial está expirado, bloquear todas las funciones premium
-    if (isTrialExpired) {
+    if (isTrialExpiredLocal) {
       return {
         isBlocked: true,
         reason: 'Tu período de prueba ha expirado. Activa tu plan PRO para continuar usando todas las funciones.',
@@ -78,7 +80,7 @@ export function useAccessControl() {
     // Estados generales
     isPro,
     isTrialActive,
-    isTrialExpired,
+    isTrialExpired: isTrialExpiredLocal,
     daysRemaining,
     
     // Verificaciones de acceso
