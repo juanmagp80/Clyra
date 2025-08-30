@@ -207,7 +207,7 @@ export default function DashboardBonsai({
                 p.status === 'active' || p.status === 'in_progress'
             ) || [];
 
-            const completedProjects = allProjects?.filter((p: any) =>
+            const completedProjects = allProjects?.filter(p =>
                 p.status === 'completed'
             ) || [];
 
@@ -327,7 +327,7 @@ export default function DashboardBonsai({
             }> = [];
 
             // Agregar proyectos recientes
-            recentProjects?.forEach((project: any) => {
+            recentProjects?.forEach(project => {
                 activity.push({
                     id: project.id,
                     type: 'project',
