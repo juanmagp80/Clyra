@@ -18,7 +18,7 @@ import {
 } from 'lucide-react';
 import { useRouter } from 'next/navigation';
 import { useEffect, useState } from 'react';
-import TasksTimeBreakdown from './DashBoardClient.tasksTime';
+import TasksTimeBreakdown from './DashboardClient.tasksTime';
 
 export default function DashboardBonsai({
     userEmail,
