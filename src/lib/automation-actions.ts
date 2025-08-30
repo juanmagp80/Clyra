@@ -150,9 +150,25 @@ const sendEmailAction: ActionExecutor = async (action, payload) => {
             // Continuar sin fallar
         }
 
+        // Determinar email de destino basado en el parámetro to_user
+        const recipientEmail = emailData.to_user 
+            ? (payload.user.email || 'noreply@taskelio.app')  // Enviar al usuario (freelancer)
+            : (payload.client.email || ''); // Enviar al cliente (comportamiento por defecto)
+
+        // Validar que tengamos un email válido
+        if (!recipientEmail) {
+            return {
+                success: false,
+                message: "No se encontró email válido para el destinatario",
+                error: "Missing recipient email"
+            };
+        }
+
+        console.log('📧 Enviando email a:', emailData.to_user ? 'Usuario' : 'Cliente', recipientEmail);
+
         // Enviar email usando el servicio real
         const emailResult = await emailService.sendEmail({
-            to: payload.client.email,
+            to: recipientEmail,
             subject: emailSubject, // Usar el asunto con variables reemplazadas
             html: emailContent, // Ya viene como HTML del template
             from: `${variables.user_name} <noreply@taskelio.app>`, // Usar dominio verificado
@@ -215,35 +231,62 @@ const assignTaskAction: ActionExecutor = async (action, payload) => {
         }
 
         // Reemplazar variables en título y descripción
-        const processedTitle = taskData.title.replace(/{{client_name}}/g, payload.client.name);
-        const processedDescription = (taskData.description || `Tarea automática generada para ${payload.client.name}`)
-            .replace(/{{client_name}}/g, payload.client.name)
-            .replace(/{{client_company}}/g, payload.client.company || payload.client.name)
-            .replace(/{{user_name}}/g, payload.user?.user_metadata?.full_name || 'Usuario');
+        let processedTitle = taskData.title;
+        let processedDescription = taskData.description || `Tarea automática generada para ${payload.client.name}`;
+
+        // Reemplazos básicos
+        const replacements = {
+            '{{client_name}}': payload.client.name,
+            '{{client_company}}': payload.client.company || payload.client.name,
+            '{{user_name}}': payload.user?.user_metadata?.full_name || 'Usuario',
+            // Variables específicas de proyecto si están disponibles
+            '{{project_name}}': (payload as any).project_name || '',
+            '{{project_id}}': (payload as any).project_id || '',
+            '{{end_date}}': (payload as any).end_date || '',
+            '{{days_overdue}}': (payload as any).days_overdue || '',
+            '{{project_status}}': (payload as any).project_status || '',
+            '{{budget}}': (payload as any).budget || ''
+        };
+
+        // Aplicar todos los reemplazos
+        for (const [placeholder, value] of Object.entries(replacements)) {
+            processedTitle = processedTitle.replace(new RegExp(placeholder, 'g'), value);
+            processedDescription = processedDescription.replace(new RegExp(placeholder, 'g'), value);
+        }
 
         // Crear la tarea
+        const taskInsert = {
+            user_id: payload.user.id,
+            // NO incluir client_id porque no existe en la tabla tasks
+            project_id: taskData.project_id || (payload as any).project_id || null,
+            title: processedTitle,
+            description: processedDescription,
+            status: taskData.status || 'pending',
+            priority: taskData.priority || 'medium',
+            category: taskData.category || 'general', // Agregar categoría por defecto
+            due_date: dueDate?.toISOString() || null
+        };
+
+        console.log('🔍 DEBUG: Datos para insertar tarea:', taskInsert);
+
         const { data: taskCreated, error: taskError } = await payload.supabase
             .from('tasks')
-            .insert({
-                user_id: payload.user.id,
-                client_id: payload.client.id,
-                project_id: taskData.project_id || null,
-                title: processedTitle,
-                description: processedDescription,
-                status: taskData.status || 'pending',
-                priority: taskData.priority || 'medium',
-                due_date: dueDate?.toISOString(),
-                created_at: new Date().toISOString()
-            })
+            .insert([taskInsert]) // Usar array como en el ejemplo
             .select()
             .single();
 
         if (taskError) {
             console.error('Error creando tarea:', taskError);
+            console.error('Código de error:', taskError.code);
+            console.error('Mensaje de error:', taskError.message);
+            console.error('Detalles del error:', taskError.details);
+            console.error('Hint del error:', taskError.hint);
+            console.error('Datos que se intentaron insertar:', taskInsert);
+            
             return {
                 success: false,
-                message: "Error al crear la tarea",
-                error: taskError.message
+                message: `Error al crear la tarea: ${taskError.message || taskError.code || 'Error desconocido'}`,
+                error: taskError.message || JSON.stringify(taskError)
             };
         }
 
