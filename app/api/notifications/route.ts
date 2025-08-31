@@ -100,7 +100,7 @@ export async function GET(request: NextRequest) {
 
         return NextResponse.json({
             notifications: data,
-            unreadCount: data?.filter(n => !n.is_read).length || 0
+            unreadCount: data?.filter((n: any) => !n.is_read).length || 0
         });
 
     } catch (error) {

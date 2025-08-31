@@ -48,7 +48,7 @@ export function useNotifications(userEmail?: string) {
       }
 
       setNotifications(data || []);
-      setUnreadCount((data || []).filter(n => !n.is_read).length);
+      setUnreadCount((data || []).filter((n: any) => !n.is_read).length);
     } catch (error) {
       console.error('Error in loadNotifications:', error);
     } finally {
@@ -201,7 +201,7 @@ export function useNotifications(userEmail?: string) {
             table: 'user_notifications',
             filter: `user_id=eq.${user.id}`
           },
-          (payload) => {
+          (payload: any) => {
             const newNotification = payload.new as Notification;
             setNotifications(prev => [newNotification, ...prev]);
             setUnreadCount(prev => prev + 1);
@@ -215,7 +215,7 @@ export function useNotifications(userEmail?: string) {
             table: 'user_notifications',
             filter: `user_id=eq.${user.id}`
           },
-          (payload) => {
+          (payload: any) => {
             const updatedNotification = payload.new as Notification;
             setNotifications(prev => 
               prev.map(n => 
@@ -234,7 +234,7 @@ export function useNotifications(userEmail?: string) {
             table: 'user_notifications',
             filter: `user_id=eq.${user.id}`
           },
-          (payload) => {
+          (payload: any) => {
             const deletedId = payload.old.id;
             setNotifications(prev => prev.filter(n => n.id !== deletedId));
             if (!payload.old.is_read) {

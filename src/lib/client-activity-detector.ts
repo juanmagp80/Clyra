@@ -110,7 +110,14 @@ export class ClientActivityDetector {
 
         let hasRecentCommunication = false;
         let hasRecentProjectWork = false;
-        let lastActivityDate: Date | undefined = undefined;
+        let lastActivityDate: Date | null = null;
+
+        // Helper function para actualizar la fecha de última actividad
+        const updateLastActivityDate = (newDate: Date): void => {
+            if (lastActivityDate === null || newDate > lastActivityDate) {
+                lastActivityDate = newDate;
+            }
+        };
 
         // 1. Verificar comunicaciones recientes (si está habilitado)
         if (this.config.checkCommunications) {
@@ -129,9 +136,7 @@ export class ClientActivityDetector {
                     result.lastCommunication = communications[0].created_at;
                     
                     const commDate = new Date(communications[0].created_at);
-                    if (!lastActivityDate || commDate > lastActivityDate) {
-                        lastActivityDate = commDate;
-                    }
+                    updateLastActivityDate(commDate);
                 }
 
                 // Si no hay comunicaciones recientes, buscar la última
@@ -171,9 +176,7 @@ export class ClientActivityDetector {
                     result.lastProjectActivity = projects[0].updated_at;
                     
                     const projectDate = new Date(projects[0].updated_at);
-                    if (!lastActivityDate || projectDate > lastActivityDate) {
-                        lastActivityDate = projectDate;
-                    }
+                    updateLastActivityDate(projectDate);
                 }
 
                 // Si no hay actividad reciente en proyectos, buscar la última
@@ -205,9 +208,7 @@ export class ClientActivityDetector {
                     hasRecentProjectWork = true;
                     
                     const taskDate = new Date(tasks[0].updated_at);
-                    if (!lastActivityDate || taskDate > lastActivityDate) {
-                        lastActivityDate = taskDate;
-                    }
+                    updateLastActivityDate(taskDate);
                 }
             } catch (error) {
                 console.warn(`⚠️ Error verificando proyectos para ${client.name}:`, error);
@@ -238,9 +239,9 @@ export class ClientActivityDetector {
         }
 
         // 4. Calcular días desde la última actividad
-        if (lastActivityDate) {
+        if (lastActivityDate !== null) {
             const now = new Date();
-            result.daysSinceLastActivity = Math.floor((now.getTime() - lastActivityDate.getTime()) / (1000 * 60 * 60 * 24));
+            result.daysSinceLastActivity = Math.floor((now.getTime() - (lastActivityDate as Date).getTime()) / (1000 * 60 * 60 * 24));
         } else {
             // Si no hay actividad registrada, usar la fecha de creación del cliente
             const clientCreated = new Date(client.created_at);
