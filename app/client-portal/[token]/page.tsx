@@ -43,6 +43,7 @@ export default function ClientPortalPage() {
     const [clientInfo, setClientInfo] = useState<ClientInfo | null>(null);
     const [messages, setMessages] = useState<Message[]>([]);
     const [loading, setLoading] = useState(true);
+    const [refreshing, setRefreshing] = useState(false);
     const [error, setError] = useState<string | null>(null);
 
     // Estados para nuevo mensaje
@@ -55,6 +56,20 @@ export default function ClientPortalPage() {
             validateTokenAndLoadData();
         }
     }, [token]);
+
+    // Efecto para polling automático de mensajes
+    useEffect(() => {
+        if (!clientInfo) return; // Solo después de validar el token
+
+        const interval = setInterval(() => {
+            loadMessages(false); // No mostrar indicador durante polling automático
+        }, 10000); // Recargar cada 10 segundos
+
+        return () => clearInterval(interval);
+    }, [clientInfo]);
+
+    // Nota: Para suscripción en tiempo real necesitaríamos una conexión WebSocket o Server-Sent Events
+    // por ahora usamos polling automático que es más sencillo
 
     const validateTokenAndLoadData = async () => {
         try {
@@ -99,7 +114,7 @@ export default function ClientPortalPage() {
             setClientInfo(data.client);
 
             // Cargar mensajes
-            await loadMessages();
+            await loadMessages(false); // Primera carga, no mostrar indicador extra
         } catch (error: any) {
             console.error('❌ Error validating token:', error);
             setError(error.message || 'Error de conexión');
@@ -108,8 +123,12 @@ export default function ClientPortalPage() {
         }
     };
 
-    const loadMessages = async () => {
+    const loadMessages = async (showRefreshIndicator = true) => {
         try {
+            if (showRefreshIndicator && !loading) {
+                setRefreshing(true);
+            }
+
             const response = await fetch('/api/client-portal/messages', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
@@ -123,6 +142,10 @@ export default function ClientPortalPage() {
             }
         } catch (error) {
             console.error('Error loading messages:', error);
+        } finally {
+            if (showRefreshIndicator) {
+                setRefreshing(false);
+            }
         }
     };
 
@@ -153,7 +176,7 @@ export default function ClientPortalPage() {
             setAttachments([]);
 
             // Recargar mensajes
-            await loadMessages();
+            await loadMessages(false); // Después de enviar, recarga sin indicador extra
 
             // Scroll al final
             setTimeout(() => {
@@ -280,9 +303,20 @@ export default function ClientPortalPage() {
                                 )}
                             </div>
                         </div>
-                        <div className="text-right">
-                            <div className="w-3 h-3 bg-green-500 rounded-full animate-pulse"></div>
-                            <p className="text-xs text-slate-500 mt-1">Conectado</p>
+                        <div className="flex items-center gap-2">
+                            <Button
+                                onClick={() => loadMessages(true)}
+                                variant="outline"
+                                size="sm"
+                                disabled={loading || refreshing}
+                                className="text-slate-600 border-slate-300 hover:bg-slate-50"
+                            >
+                                <RefreshCw className={`w-4 h-4 ${refreshing ? 'animate-spin' : ''}`} />
+                            </Button>
+                            <div className="text-right">
+                                <div className="w-3 h-3 bg-green-500 rounded-full animate-pulse"></div>
+                                <p className="text-xs text-slate-500 mt-1">Conectado</p>
+                            </div>
                         </div>
                     </div>
                 </div>
