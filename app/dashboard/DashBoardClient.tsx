@@ -1,6 +1,7 @@
 // src/app/dashboard/DashboardClient.tsx
 'use client';
 
+import MessageBubble from '@/components/MessageBubble';
 import Sidebar from '@/components/Sidebar';
 import TrialBanner from '@/components/TrialBanner';
 import { createSupabaseClient } from '@/src/lib/supabase-client';
@@ -312,6 +313,9 @@ export default function DashboardClient({
     }, []);
     return (
         <div className="flex h-screen overflow-hidden bg-gradient-to-br from-slate-50 via-blue-50/30 to-indigo-50/40">
+            {/* Bocadillo de mensajes */}
+            <MessageBubble userEmail={userEmail} />
+            
             {/* Elementos decorativos de fondo mejorados con colores más suaves */}
             <div className="absolute inset-0 overflow-hidden pointer-events-none">
                 <div className="absolute top-0 left-0 w-96 h-96 bg-gradient-to-br from-blue-500/4 via-purple-500/4 to-indigo-500/4 dark:from-blue-400/3 dark:via-purple-400/3 dark:to-indigo-400/3 rounded-full blur-3xl animate-pulse"></div>

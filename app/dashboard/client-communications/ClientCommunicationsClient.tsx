@@ -559,11 +559,13 @@ export default function ClientCommunications({ userEmail }: ClientCommunications
                                                                 )}
 
                                                                 {lastMessage && (
-                                                                    <div className="text-xs text-slate-600">
-                                                                        <span className="font-medium">
+                                                                    <div className="flex items-center gap-2 text-xs text-slate-600">
+                                                                        {/* Indicador visual del tipo de mensaje */}
+                                                                        <div className={`w-2 h-2 rounded-full ${lastMessage.sender_type === 'client' ? 'bg-emerald-500' : 'bg-blue-500'}`}></div>
+                                                                        <span className={`font-medium ${lastMessage.sender_type === 'client' ? 'text-emerald-600' : 'text-blue-600'}`}>
                                                                             {lastMessage.sender_type === 'client' ? 'Cliente' : 'Tú'}:
                                                                         </span>
-                                                                        <span className="ml-1">
+                                                                        <span className="ml-1 flex-1">
                                                                             {lastMessage.message.length > 30
                                                                                 ? lastMessage.message.substring(0, 30) + '...'
                                                                                 : lastMessage.message
@@ -602,35 +604,63 @@ export default function ClientCommunications({ userEmail }: ClientCommunications
 
                                         <CardContent className="flex-1 p-0 overflow-hidden">
                                             <div className="h-full overflow-y-auto p-4 space-y-4">
-                                                {getClientMessages(selectedClient).map((message) => (
-                                                    <div
-                                                        key={message.id}
-                                                        className={`flex ${message.sender_type === 'freelancer' ? 'justify-end' : 'justify-start'
-                                                            }`}
-                                                    >
+                                                {getClientMessages(selectedClient).map((message) => {
+                                                    const isFreelancer = message.sender_type === 'freelancer';
+                                                    const isClient = message.sender_type === 'client';
+                                                    
+                                                    return (
                                                         <div
-                                                            className={`max-w-xs lg:max-w-md px-4 py-3 rounded-2xl ${message.sender_type === 'freelancer'
-                                                                    ? 'bg-gradient-to-r from-blue-600 to-indigo-600 text-white'
-                                                                    : 'bg-white border border-slate-200 text-slate-900'
-                                                                }`}
+                                                            key={message.id}
+                                                            className={`flex w-full ${isFreelancer ? 'justify-end' : 'justify-start'}`}
                                                         >
-                                                            <p className="text-sm whitespace-pre-wrap">
-                                                                {message.message}
-                                                            </p>
-
-                                                            <div className={`flex items-center gap-1 mt-2 text-xs ${message.sender_type === 'freelancer'
-                                                                    ? 'text-white/70'
-                                                                    : 'text-slate-500'
+                                                            {/* Contenedor del mensaje */}
+                                                            <div className={`flex items-start gap-3 max-w-xs lg:max-w-md ${isFreelancer ? 'flex-row-reverse' : 'flex-row'}`}>
+                                                                {/* Avatar */}
+                                                                <div className={`flex-shrink-0 w-8 h-8 rounded-full flex items-center justify-center shadow-md ${
+                                                                    isFreelancer 
+                                                                        ? 'bg-gradient-to-br from-blue-600 to-indigo-600' 
+                                                                        : 'bg-gradient-to-br from-emerald-500 to-green-600'
                                                                 }`}>
-                                                                <Clock className="w-3 h-3" />
-                                                                {formatTime(message.created_at)}
-                                                                {message.sender_type === 'freelancer' && (
-                                                                    <CheckCircle className="w-3 h-3 ml-1" />
-                                                                )}
+                                                                    <User className="w-4 h-4 text-white" />
+                                                                </div>
+
+                                                                {/* Contenido del mensaje */}
+                                                                <div className="flex flex-col min-w-0">
+                                                                    {/* Nombre del remitente */}
+                                                    <div className={`text-xs font-medium mb-1 ${
+                                                        isFreelancer 
+                                                            ? 'text-right text-blue-600' 
+                                                            : 'text-left text-emerald-600'
+                                                    }`}>
+                                                        {isFreelancer ? 'Tú' : `${clients.find(c => c.id === selectedClient)?.name || 'Cliente'}`}
+                                                    </div>                                                                    {/* Burbuja del mensaje */}
+                                                                    <div className={`px-4 py-3 rounded-2xl shadow-sm ${
+                                                                        isFreelancer
+                                                                            ? 'bg-gradient-to-r from-blue-600 to-indigo-600 text-white'
+                                                                            : 'bg-gradient-to-r from-emerald-50 to-green-50 border border-emerald-200 text-slate-900'
+                                                                    }`}>
+                                                                        <p className="text-sm whitespace-pre-wrap leading-relaxed">
+                                                                            {message.message}
+                                                                        </p>
+
+                                                                        {/* Timestamp */}
+                                                                        <div className={`flex items-center gap-1 mt-2 text-xs ${
+                                                                            isFreelancer
+                                                                                ? 'text-white/70'
+                                                                                : 'text-emerald-600/70'
+                                                                        }`}>
+                                                                            <Clock className="w-3 h-3" />
+                                                                            {formatTime(message.created_at)}
+                                                                            {isFreelancer && (
+                                                                                <CheckCircle className="w-3 h-3 ml-1" />
+                                                                            )}
+                                                                        </div>
+                                                                    </div>
+                                                                </div>
                                                             </div>
                                                         </div>
-                                                    </div>
-                                                ))}
+                                                    );
+                                                })}
                                             </div>
                                         </CardContent>
 

@@ -1,10 +1,13 @@
 'use client';
 
+import ClientMessageAlert from '@/components/ClientMessageAlert';
+import NotificationBell from '@/components/NotificationBell';
 import SubscriptionStatus from '@/components/SubscriptionStatus';
 import { Button } from '@/components/ui/Button';
 import { cn } from '@/src/lib/utils';
 import {
   BarChart3,
+  Bell,
   Bot,
   Briefcase,
   Building2,
@@ -138,15 +141,23 @@ export default function Sidebar({ userEmail, onLogout }: SidebarProps) {
     <div className="flex h-full w-56 flex-col fixed inset-y-0 z-50 bg-slate-50/95 dark:bg-slate-900/95 backdrop-blur-3xl border-r border-slate-200/60 dark:border-slate-700/60 shadow-2xl shadow-slate-900/3 dark:shadow-black/40 transition-all duration-300">
       {/* Premium Logo - Más compacto */}
       <div className="flex h-12 items-center border-b border-slate-200/60 dark:border-slate-700/60 px-4 bg-gradient-to-r from-indigo-50/50 to-violet-50/50 dark:from-slate-900/50 dark:to-slate-800/50 transition-all duration-300">
-        <h1 className="text-lg font-black tracking-tight relative">
-          <span className="relative bg-gradient-to-r from-slate-900 via-indigo-900 to-violet-900 dark:from-slate-100 dark:via-indigo-300 dark:to-violet-300 bg-clip-text text-transparent">
-            Taskelio
-            <div className="absolute -top-0.5 -right-0.5 w-1 h-1 bg-gradient-to-r from-indigo-500 to-violet-500 dark:from-indigo-400 dark:to-violet-400 rounded-full opacity-80"></div>
+        <div className="flex items-center justify-between w-full">
+          <h1 className="text-lg font-black tracking-tight relative">
+            <span className="relative bg-gradient-to-r from-slate-900 via-indigo-900 to-violet-900 dark:from-slate-100 dark:via-indigo-300 dark:to-violet-300 bg-clip-text text-transparent">
+              Taskelio
+              <div className="absolute -top-0.5 -right-0.5 w-1 h-1 bg-gradient-to-r from-indigo-500 to-violet-500 dark:from-indigo-400 dark:to-violet-400 rounded-full opacity-80"></div>
+            </span>
+          </h1>
+          <span className="ml-2 text-xs bg-gradient-to-r from-indigo-50 to-violet-50 dark:from-indigo-900/30 dark:to-violet-900/30 border border-indigo-200 dark:border-indigo-700 text-indigo-700 dark:text-indigo-300 px-1.5 py-0.5 rounded-full font-medium transition-colors duration-300">
+            PRO
           </span>
-        </h1>
-        <span className="ml-2 text-xs bg-gradient-to-r from-indigo-50 to-violet-50 dark:from-indigo-900/30 dark:to-violet-900/30 border border-indigo-200 dark:border-indigo-700 text-indigo-700 dark:text-indigo-300 px-1.5 py-0.5 rounded-full font-medium transition-colors duration-300">
-          PRO
-        </span>
+          
+          {/* Campana de notificaciones */}
+          <div className="flex items-center gap-1">
+            <NotificationBell userEmail={userEmail} />
+            <ClientMessageAlert userEmail={userEmail || ''} />
+          </div>
+        </div>
       </div>
 
       {/* Premium Navigation - Con submenús */}
@@ -261,6 +272,7 @@ export default function Sidebar({ userEmail, onLogout }: SidebarProps) {
 
       {/* Premium User section - Más compacto */}
       <div className="border-t border-slate-200/60 dark:border-slate-700/60 p-3 bg-gradient-to-r from-slate-50/50 to-indigo-50/30 dark:from-slate-900/50 dark:to-indigo-900/30 transition-all duration-300">
+
         {/* Estado de la suscripción */}
         <div className="mb-3">
           <SubscriptionStatus userEmail={userEmail} />

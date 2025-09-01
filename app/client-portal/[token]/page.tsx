@@ -25,6 +25,12 @@ interface ClientInfo {
     is_valid: boolean;
 }
 
+interface FreelancerInfo {
+    name: string;
+    company?: string;
+    email: string;
+}
+
 interface Message {
     id: string;
     message: string;
@@ -41,6 +47,7 @@ export default function ClientPortalPage() {
 
     // Estados principales
     const [clientInfo, setClientInfo] = useState<ClientInfo | null>(null);
+    const [freelancerInfo, setFreelancerInfo] = useState<FreelancerInfo | null>(null);
     const [messages, setMessages] = useState<Message[]>([]);
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState<string | null>(null);
@@ -55,6 +62,23 @@ export default function ClientPortalPage() {
             validateTokenAndLoadData();
         }
     }, [token]);
+
+    // Actualización automática de mensajes cada 3 segundos
+    useEffect(() => {
+        let interval: NodeJS.Timeout;
+        
+        if (clientInfo) {
+            interval = setInterval(() => {
+                loadMessages();
+            }, 3000); // Actualizar cada 3 segundos
+        }
+
+        return () => {
+            if (interval) {
+                clearInterval(interval);
+            }
+        };
+    }, [clientInfo]);
 
     const validateTokenAndLoadData = async () => {
         try {
@@ -91,12 +115,15 @@ export default function ClientPortalPage() {
 
             const data = await response.json();
             console.log('✅ Token validation success:', data);
+            console.log('👤 Freelancer info received:', data.freelancer);
 
             if (!data.client.is_valid) {
                 throw new Error('Este enlace ha expirado o no es válido');
             }
 
             setClientInfo(data.client);
+            setFreelancerInfo(data.freelancer);
+            console.log('💾 FreelancerInfo set to:', data.freelancer);
 
             // Cargar mensajes
             await loadMessages();
@@ -310,51 +337,94 @@ export default function ClientPortalPage() {
                                     </p>
                                 </div>
                             ) : (
-                                messages.map((message) => (
-                                    <div
-                                        key={message.id}
-                                        className={`flex ${
-                                            message.sender_type === 'client' ? 'justify-end' : 'justify-start'
-                                        }`}
-                                    >
+                                messages.map((message) => {
+                                    const isClient = message.sender_type === 'client';
+                                    const isFreelancer = message.sender_type === 'freelancer';
+                                    
+                                                    // Debug info
+                                                    if (isFreelancer) {
+                                                        console.log('🔍 Freelancer message debug:', {
+                                                            freelancerInfo,
+                                                            hasCompany: freelancerInfo?.company,
+                                                            companyTrimmed: freelancerInfo?.company?.trim(),
+                                                            hasName: freelancerInfo?.name
+                                                        });
+                                                    }
+                                                    
+                                                    const freelancerDisplayName = (() => {
+                                                        if (!freelancerInfo) return 'Freelancer';
+                                                        if (freelancerInfo.company && freelancerInfo.company.trim() !== '') {
+                                                            return freelancerInfo.company;
+                                                        }
+                                                        return freelancerInfo.name || 'Freelancer';
+                                                    })();
+                                                    
+                                                    return (
                                         <div
-                                            className={`max-w-xs lg:max-w-md px-4 py-3 rounded-2xl ${
-                                                message.sender_type === 'client'
-                                                    ? 'bg-gradient-to-r from-indigo-600 to-violet-600 text-white'
-                                                    : 'bg-white border border-slate-200 text-slate-900'
+                                            key={message.id}
+                                            className={`flex ${
+                                                isClient ? 'justify-end' : 'justify-start'
                                             }`}
                                         >
-                                            <p className="text-sm whitespace-pre-wrap">
-                                                {message.message}
-                                            </p>
-                                            
-                                            {message.attachments && message.attachments.length > 0 && (
-                                                <div className="mt-2 space-y-1">
-                                                    {message.attachments.map((attachment, index) => (
-                                                        <div key={index} className="flex items-center gap-2 text-xs">
-                                                            <Paperclip className="w-3 h-3" />
-                                                            <span className="underline cursor-pointer">
-                                                                {attachment}
-                                                            </span>
-                                                        </div>
-                                                    ))}
+                                            <div className={`flex items-start gap-3 max-w-xs lg:max-w-md ${isClient ? 'flex-row-reverse' : 'flex-row'}`}>
+                                                {/* Avatar */}
+                                                <div className={`flex-shrink-0 w-8 h-8 rounded-full flex items-center justify-center shadow-md ${
+                                                    isClient 
+                                                        ? 'bg-gradient-to-br from-emerald-500 to-green-600' 
+                                                        : 'bg-gradient-to-br from-blue-600 to-indigo-600'
+                                                }`}>
+                                                    <User className="w-4 h-4 text-white" />
                                                 </div>
-                                            )}
-                                            
-                                            <div className={`flex items-center gap-1 mt-2 text-xs ${
-                                                message.sender_type === 'client' 
-                                                    ? 'text-white/70' 
-                                                    : 'text-slate-500'
-                                            }`}>
-                                                <Clock className="w-3 h-3" />
-                                                {formatMessageTime(message.created_at)}
-                                                {message.sender_type === 'client' && (
-                                                    <CheckCircle className="w-3 h-3 ml-1" />
-                                                )}
+
+                                                <div className="flex flex-col">
+                                                    {/* Nombre del remitente */}
+                                                    <div className={`text-xs font-medium mb-1 ${
+                                                        isClient 
+                                                            ? 'text-right text-emerald-600' 
+                                                            : 'text-left text-blue-600'
+                                                    }`}>
+                                                        {isClient ? clientInfo?.name || 'Tú' : freelancerDisplayName}
+                                                    </div>
+
+                                                    <div className={`px-4 py-3 rounded-2xl shadow-sm ${
+                                                        isClient
+                                                            ? 'bg-gradient-to-r from-emerald-600 to-green-600 text-white rounded-br-md'
+                                                            : 'bg-gradient-to-r from-blue-50 to-indigo-50 border border-blue-200 text-slate-900 rounded-bl-md'
+                                                    }`}>
+                                                        <p className="text-sm whitespace-pre-wrap leading-relaxed">
+                                                            {message.message}
+                                                        </p>
+                                                        
+                                                        {message.attachments && message.attachments.length > 0 && (
+                                                            <div className="mt-2 space-y-1">
+                                                                {message.attachments.map((attachment, index) => (
+                                                                    <div key={index} className="flex items-center gap-2 text-xs">
+                                                                        <Paperclip className="w-3 h-3" />
+                                                                        <span className="underline cursor-pointer">
+                                                                            {attachment}
+                                                                        </span>
+                                                                    </div>
+                                                                ))}
+                                                            </div>
+                                                        )}
+                                                        
+                                                        <div className={`flex items-center gap-1 mt-2 text-xs ${
+                                                            isClient
+                                                                ? 'text-white/70'
+                                                                : 'text-blue-600/70'
+                                                        }`}>
+                                                            <Clock className="w-3 h-3" />
+                                                            {formatMessageTime(message.created_at)}
+                                                            {isClient && (
+                                                                <CheckCircle className="w-3 h-3 ml-1" />
+                                                            )}
+                                                        </div>
+                                                    </div>
+                                                </div>
                                             </div>
                                         </div>
-                                    </div>
-                                ))
+                                    );
+                                })
                             )}
                         </div>
                     </CardContent>
@@ -383,7 +453,7 @@ export default function ClientPortalPage() {
                             <Button
                                 onClick={sendMessage}
                                 disabled={!newMessage.trim() || sending}
-                                className="bg-gradient-to-r from-indigo-600 to-violet-600 hover:from-indigo-700 hover:to-violet-700 text-white px-4"
+                                className="bg-gradient-to-r from-emerald-600 to-green-600 hover:from-emerald-700 hover:to-green-700 text-white px-4"
                             >
                                 {sending ? (
                                     <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" />

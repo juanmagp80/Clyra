@@ -82,6 +82,69 @@ export async function POST(request: NextRequest) {
 
         const clientInfo = data[0];
 
+        // Obtener información del freelancer desde auth.users
+        console.log('🔍 Getting freelancer info for client_id:', clientInfo.client_id);
+        
+        // Primero obtener el user_id del cliente
+        const { data: clientData, error: clientError } = await supabaseService
+            .from('clients')
+            .select('user_id')
+            .eq('id', clientInfo.client_id)
+            .single();
+
+        console.log('📋 Client data result:', { clientData, clientError });
+
+        let freelancerInfo = {
+            name: 'Freelancer',
+            company: '',
+            email: ''
+        };
+
+        if (clientData && !clientError) {
+            // Ahora obtener la información del usuario/freelancer
+            const { data: userData, error: userError } = await supabaseService
+                .from('auth.users')
+                .select('email, raw_user_meta_data')
+                .eq('id', clientData.user_id)
+                .single();
+
+            console.log('👤 User data result:', { userData, userError });
+
+            if (userData && !userError) {
+                freelancerInfo = {
+                    name: userData.raw_user_meta_data?.full_name || 
+                          userData.raw_user_meta_data?.name || 
+                          userData.email?.split('@')[0] || 
+                          'Freelancer',
+                    company: userData.raw_user_meta_data?.company_name || 
+                            userData.raw_user_meta_data?.business_name || 
+                            '',
+                    email: userData.email || ''
+                };
+                console.log('✅ Final freelancer info:', freelancerInfo);
+            } else {
+                console.log('❌ Failed to get user info:', userError);
+                
+                // Fallback: usar datos básicos del email
+                try {
+                    const { data: basicUserData, error: basicError } = await supabaseService.auth.admin.getUserById(clientData.user_id);
+                    console.log('🔄 Fallback user data:', { basicUserData, basicError });
+                    
+                    if (basicUserData.user && !basicError) {
+                        freelancerInfo = {
+                            name: basicUserData.user.email?.split('@')[0] || 'Freelancer',
+                            company: '',
+                            email: basicUserData.user.email || ''
+                        };
+                    }
+                } catch (fallbackError) {
+                    console.log('❌ Fallback also failed:', fallbackError);
+                }
+            }
+        } else {
+            console.log('❌ Failed to get client data:', clientError);
+        }
+
         return NextResponse.json({
             success: true,
             client: {
@@ -89,7 +152,8 @@ export async function POST(request: NextRequest) {
                 name: clientInfo.client_name,
                 company: clientInfo.client_company,
                 is_valid: clientInfo.is_valid
-            }
+            },
+            freelancer: freelancerInfo
         });
     } catch (error: any) {
         console.error('❌ Unexpected error in token validation:', error);
