@@ -16,6 +16,7 @@ import {
 } from 'lucide-react';
 import { useRouter } from 'next/navigation';
 import { useState } from 'react';
+import { showToast } from '@/utils/toast';
 
 interface UpgradePageClientProps {
     userEmail: string;
@@ -93,11 +94,11 @@ export default function UpgradePageClient({ userEmail }: UpgradePageClientProps)
             await new Promise(resolve => setTimeout(resolve, 2000));
 
             // Por ahora, solo mostrar mensaje
-            alert(`¡Próximamente! Procesando suscripción a ${planId} (${selectedInterval})`);
+            showToast.error(`¡Próximamente! Procesando suscripción a ${planId} (${selectedInterval})`);
 
         } catch (error) {
             console.error('Error procesando suscripción:', error);
-            alert('Error procesando la suscripción. Inténtalo de nuevo.');
+            showToast.error('Error procesando la suscripción. Inténtalo de nuevo.');
         } finally {
             setProcessingPlan(null);
         }

@@ -1,5 +1,6 @@
 'use client';
 
+import { showToast } from '@/utils/toast';
 import Sidebar from '@/components/Sidebar';
 import { Button } from "@/components/ui/Button";
 import { createClientComponentClient } from '@supabase/auth-helpers-nextjs';
@@ -165,11 +166,11 @@ export default function TasksPageClient({ userEmail }: TasksPageClientProps) {
 
     const createTask = async () => {
         if (!newTask.title.trim()) {
-            alert('⚠️ El título de la tarea es obligatorio');
+            showToast.warning('El título de la tarea es obligatorio', 'Por favor, ingresa un título válido para continuar');
             return;
         }
         if (!newTask.project_id) {
-            alert('⚠️ Debes seleccionar un proyecto');
+            showToast.warning('Debes seleccionar un proyecto', 'Elige un proyecto donde crear esta tarea');
             return;
         }
         if (!supabase) return;
@@ -192,19 +193,19 @@ export default function TasksPageClient({ userEmail }: TasksPageClientProps) {
 
             if (error) {
                 console.error('Error creating task:', error);
-                alert('Error al crear la tarea: ' + error.message);
+                showToast.error('Error al crear la tarea', error.message);
                 return;
             }
 
             console.log('✅ Tarea creada:', data);
-            alert('¡Tarea creada exitosamente! 🎉');
+            showToast.success('¡Tarea creada exitosamente!', 'La tarea se ha añadido a tu lista');
             setShowNewTaskModal(false);
             resetNewTaskForm();
             await fetchTasks();
 
         } catch (error) {
             console.error('Error:', error);
-            alert('Error crítico al crear la tarea');
+            showToast.error('Error crítico al crear la tarea');
         }
     };
 
@@ -221,7 +222,7 @@ export default function TasksPageClient({ userEmail }: TasksPageClientProps) {
 
             if (error) {
                 console.error('Error updating task:', error);
-                alert('Error al actualizar la tarea');
+                showToast.error('Error al actualizar la tarea');
                 return;
             }
 
@@ -232,7 +233,8 @@ export default function TasksPageClient({ userEmail }: TasksPageClientProps) {
     };
 
     const deleteTask = async (taskId: string) => {
-        if (!confirm('¿Estás seguro de que quieres eliminar esta tarea?')) return;
+        const confirmed = await showToast.confirm('¿Estás seguro de que quieres eliminar esta tarea?');
+        if (!confirmed) return;
         if (!supabase) return;
 
         try {
@@ -243,7 +245,7 @@ export default function TasksPageClient({ userEmail }: TasksPageClientProps) {
 
             if (error) {
                 console.error('Error deleting task:', error);
-                alert('Error al eliminar la tarea');
+                showToast.error('Error al eliminar la tarea');
                 return;
             }
 
@@ -273,7 +275,7 @@ export default function TasksPageClient({ userEmail }: TasksPageClientProps) {
 
             if (error) {
                 console.error('Error updating task:', error);
-                alert('Error al actualizar la tarea');
+                showToast.error('Error al actualizar la tarea');
                 return;
             }
 

@@ -4,6 +4,7 @@ import { Button } from '@/components/ui/Button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/Card';
 import { Input } from '@/components/ui/Input';
 import { createSupabaseClient } from '@/src/lib/supabase-client';
+import { showToast } from '@/utils/toast';
 import {
     ArrowLeft,
     Calendar,
@@ -209,15 +210,15 @@ export default function ProjectDetails({ projectId, userEmail }: ProjectDetailsP
 
             if (error) {
                 console.error('Error updating project:', error);
-                alert('Error al actualizar el proyecto');
+                showToast.error('Error al actualizar el proyecto');
             } else {
                 setIsEditing(false);
                 fetchProject(); // Recargar datos
-                alert('Proyecto actualizado exitosamente');
+                showToast.success('Proyecto actualizado exitosamente');
             }
         } catch (error) {
             console.error('Error:', error);
-            alert('Error al actualizar el proyecto');
+            showToast.error('Error al actualizar el proyecto');
         }
     };
 
@@ -243,7 +244,7 @@ export default function ProjectDetails({ projectId, userEmail }: ProjectDetailsP
 
             if (error) {
                 console.error('Error adding task:', error);
-                alert('Error al crear la tarea');
+                showToast.error('Error al crear la tarea');
             } else {
                 setTaskFormData({
                     title: '',
@@ -257,7 +258,7 @@ export default function ProjectDetails({ projectId, userEmail }: ProjectDetailsP
             }
         } catch (error) {
             console.error('Error:', error);
-            alert('Error al crear la tarea');
+            showToast.error('Error al crear la tarea');
         }
     };
 
@@ -280,7 +281,7 @@ export default function ProjectDetails({ projectId, userEmail }: ProjectDetailsP
 
             if (error) {
                 console.error('Error updating task:', error);
-                alert('Error al actualizar la tarea');
+                showToast.error('Error al actualizar la tarea');
             } else {
                 setTaskFormData({
                     title: '',
@@ -295,7 +296,7 @@ export default function ProjectDetails({ projectId, userEmail }: ProjectDetailsP
             }
         } catch (error) {
             console.error('Error:', error);
-            alert('Error al actualizar la tarea');
+            showToast.error('Error al actualizar la tarea');
         }
     };
 
@@ -310,13 +311,13 @@ export default function ProjectDetails({ projectId, userEmail }: ProjectDetailsP
 
             if (error) {
                 console.error('Error deleting task:', error);
-                alert('Error al eliminar la tarea');
+                showToast.error('Error al eliminar la tarea');
             } else {
                 fetchProject(); // Recargar datos para actualizar progreso
             }
         } catch (error) {
             console.error('Error:', error);
-            alert('Error al eliminar la tarea');
+            showToast.error('Error al eliminar la tarea');
         }
     };
 
@@ -989,8 +990,9 @@ export default function ProjectDetails({ projectId, userEmail }: ProjectDetailsP
                                                                 <Edit className="h-4 w-4 text-blue-600" />
                                                             </button>
                                                             <button
-                                                                onClick={() => {
-                                                                    if (window.confirm('¿Estás seguro de que quieres eliminar esta tarea?')) {
+                                                                onClick={async () => {
+                                                                    const confirmed = await showToast.confirm('¿Estás seguro de que quieres eliminar esta tarea?');
+                                                                    if (confirmed) {
                                                                         deleteTask(task.id);
                                                                     }
                                                                 }}

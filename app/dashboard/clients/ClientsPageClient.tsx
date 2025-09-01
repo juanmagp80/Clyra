@@ -4,6 +4,7 @@ import Sidebar from '@/components/Sidebar';
 import TrialBanner from '@/components/TrialBanner';
 import { getCitiesByProvince, getProvinceNames } from '@/src/data/spanish-locations';
 import { createSupabaseClient } from '@/src/lib/supabase-client';
+import { showToast } from '@/utils/toast';
 import { useTrialStatus } from '@/src/lib/useTrialStatus';
 import {
     Building,
@@ -163,17 +164,17 @@ export default function ClientsPageClient({ userEmail }: ClientsPageClientProps)
     const addClient = async () => {
         try {
             if (!canUseFeatures) {
-                alert('❌ Tu trial ha expirado. Actualiza tu suscripción para continuar creando clientes.');
+                showToast.warning('❌ Tu trial ha expirado. Actualiza tu suscripción para continuar creando clientes.');
                 return;
             }
 
             if (hasReachedLimit('clients')) {
-                alert(`❌ Has alcanzado el límite de clientes de tu plan (${trialInfo?.limits.maxClients}). Actualiza tu suscripción para crear más clientes.`);
+                showToast.error(`❌ Has alcanzado el límite de clientes de tu plan (${trialInfo?.limits.maxClients}). Actualiza tu suscripción para crear más clientes.`);
                 return;
             }
 
             if (!formData.name.trim() || !formData.nif.trim() || !formData.city.trim() || !formData.province.trim() || !supabase) {
-                alert('Por favor, complete todos los campos obligatorios: Nombre, NIF/CIF, Ciudad y Provincia');
+                showToast.warning('Por favor, complete todos los campos obligatorios: Nombre, NIF/CIF, Ciudad y Provincia');
                 return;
             }
 
@@ -232,7 +233,7 @@ export default function ClientsPageClient({ userEmail }: ClientsPageClientProps)
     const updateClient = async () => {
         try {
             if (!editingClient || !editFormData.name.trim() || !editFormData.nif.trim() || !editFormData.city.trim() || !editFormData.province.trim() || !supabase) {
-                alert('Por favor, complete todos los campos obligatorios: Nombre, NIF/CIF, Ciudad y Provincia');
+                showToast.warning('Por favor, complete todos los campos obligatorios: Nombre, NIF/CIF, Ciudad y Provincia');
                 return;
             }
 
@@ -263,7 +264,7 @@ export default function ClientsPageClient({ userEmail }: ClientsPageClientProps)
 
             if (error) {
                 console.error('Error updating client:', error);
-                alert('Error actualizando cliente: ' + error.message);
+                showToast.error('Error actualizando cliente: ' + error.message);
                 return;
             }
 
@@ -286,7 +287,7 @@ export default function ClientsPageClient({ userEmail }: ClientsPageClientProps)
             }
         } catch (error) {
             console.error('Error updating client:', error);
-            alert('Error actualizando cliente');
+            showToast.error('Error actualizando cliente');
         } finally {
             setLoading(false);
         }
@@ -294,7 +295,8 @@ export default function ClientsPageClient({ userEmail }: ClientsPageClientProps)
 
     const deleteClient = async (clientId: string) => {
         try {
-            if (!confirm('¿Estás seguro de que quieres eliminar este cliente?')) {
+            const confirmed = await showToast.confirm('¿Estás seguro de que quieres eliminar este cliente?');
+            if (!confirmed) {
                 return;
             }
 
@@ -309,14 +311,14 @@ export default function ClientsPageClient({ userEmail }: ClientsPageClientProps)
 
             if (error) {
                 console.error('Error deleting client:', error);
-                alert('Error eliminando cliente: ' + error.message);
+                showToast.error('Error eliminando cliente: ' + error.message);
                 return;
             }
 
             setClients(prev => prev.filter(client => client.id !== clientId));
         } catch (error) {
             console.error('Error:', error);
-            alert('Error eliminando cliente');
+            showToast.error('Error eliminando cliente');
         } finally {
             setLoading(false);
         }
@@ -375,12 +377,12 @@ export default function ClientsPageClient({ userEmail }: ClientsPageClientProps)
 
     const handleNewClientClick = () => {
         if (!canUseFeatures) {
-            alert('❌ Tu trial ha expirado. Actualiza tu suscripción para continuar creando clientes.');
+            showToast.warning('❌ Tu trial ha expirado. Actualiza tu suscripción para continuar creando clientes.');
             return;
         }
 
         if (hasReachedLimit('clients')) {
-            alert(`❌ Has alcanzado el límite de clientes de tu plan (${trialInfo?.limits.maxClients}). Actualiza tu suscripción para crear más clientes.`);
+            showToast.error(`❌ Has alcanzado el límite de clientes de tu plan (${trialInfo?.limits.maxClients}). Actualiza tu suscripción para crear más clientes.`);
             return;
         }
 
@@ -894,8 +896,8 @@ export default function ClientsPageClient({ userEmail }: ClientsPageClientProps)
                                         required
                                     >
                                         <option value="">Selecciona una provincia</option>
-                                        {getProvinceNames().map((province) => (
-                                            <option key={province} value={province}>
+                                        {getProvinceNames().map((province, index) => (
+                                            <option key={`form-province-${province}-${index}`} value={province}>
                                                 {province}
                                             </option>
                                         ))}
@@ -913,8 +915,8 @@ export default function ClientsPageClient({ userEmail }: ClientsPageClientProps)
                                         <option value="">
                                             {formData.province ? 'Selecciona una ciudad' : 'Primero selecciona una provincia'}
                                         </option>
-                                        {availableCities.map((city) => (
-                                            <option key={city} value={city}>
+                                        {availableCities.map((city, index) => (
+                                            <option key={`${city}-${index}`} value={city}>
                                                 {city}
                                             </option>
                                         ))}
@@ -1035,8 +1037,8 @@ export default function ClientsPageClient({ userEmail }: ClientsPageClientProps)
                                         required
                                     >
                                         <option value="">Selecciona una provincia</option>
-                                        {getProvinceNames().map((province) => (
-                                            <option key={province} value={province}>
+                                        {getProvinceNames().map((province, index) => (
+                                            <option key={`edit-province-${province}-${index}`} value={province}>
                                                 {province}
                                             </option>
                                         ))}
@@ -1054,8 +1056,8 @@ export default function ClientsPageClient({ userEmail }: ClientsPageClientProps)
                                         <option value="">
                                             {editFormData.province ? 'Selecciona una ciudad' : 'Primero selecciona una provincia'}
                                         </option>
-                                        {editAvailableCities.map((city) => (
-                                            <option key={city} value={city}>
+                                        {editAvailableCities.map((city, index) => (
+                                            <option key={`edit-${city}-${index}`} value={city}>
                                                 {city}
                                             </option>
                                         ))}

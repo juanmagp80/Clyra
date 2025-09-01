@@ -13,6 +13,7 @@ import {
 import Link from 'next/link';
 import { notFound } from 'next/navigation';
 import { useEffect, useState } from 'react';
+import { showToast } from '@/utils/toast';
 // import { demoClients, demoProjects } from '../../demo-data';
 interface DemoClient {
     id: string;
@@ -111,7 +112,7 @@ export default function DemoProjectDetailsPage({ params }: Props) {
 
     // Función para simular acciones
     const handleAction = (action: string) => {
-        alert(`Demo: ${action}. ¡Crea tu cuenta para usar esta funcionalidad!`);
+        showToast.error(`Demo: ${action}. ¡Crea tu cuenta para usar esta funcionalidad!`);
     };
 
     // Calcular progreso del proyecto

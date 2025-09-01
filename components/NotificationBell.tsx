@@ -115,8 +115,8 @@ export default function NotificationBell({ userEmail, className }: NotificationB
                 )}
                 {/* Badge de contador */}
                 {unreadCount > 0 && (
-                    <Badge 
-                        variant="destructive" 
+                    <Badge
+                        variant="destructive"
                         className="absolute -top-1 -right-1 h-5 w-5 rounded-full p-0 flex items-center justify-center text-xs font-bold animate-bounce"
                     >
                         {unreadCount > 99 ? '99+' : unreadCount}
@@ -204,7 +204,7 @@ export default function NotificationBell({ userEmail, className }: NotificationB
                                                         )}
                                                     </div>
                                                 </div>
-                                                
+
                                                 <p className="text-xs sm:text-sm text-slate-600 dark:text-slate-400 mt-1 line-clamp-2 leading-relaxed">
                                                     {notification.message}
                                                 </p>
@@ -218,7 +218,7 @@ export default function NotificationBell({ userEmail, className }: NotificationB
                                                             </Badge>
                                                         )}
                                                         {notification.type !== 'info' && (
-                                                            <Badge 
+                                                            <Badge
                                                                 variant={notification.type === 'error' ? 'destructive' : 'outline'}
                                                                 className="text-xs px-1.5 py-0.5"
                                                             >
@@ -228,7 +228,7 @@ export default function NotificationBell({ userEmail, className }: NotificationB
                                                             </Badge>
                                                         )}
                                                     </div>
-                                                    
+
                                                     <Button
                                                         variant="ghost"
                                                         size="sm"

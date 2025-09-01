@@ -3,7 +3,9 @@ import './globals.css';
 import './fallback.css';
 import '../styles/datepicker.css';
 import '../styles/datepicker-fix.css';
+import '../styles/toasts.css';
 import { ThemeProvider } from '@/components/providers/ThemeProvider';
+import { Toaster } from 'sonner';
 
 export const metadata: Metadata = {
   title: 'Taskelio — Tu CRM ligero para freelancers',
@@ -31,6 +33,20 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
           forcedTheme="light"
         >
           {children}
+          <Toaster 
+            position="top-right"
+            expand={true}
+            richColors={true}
+            closeButton={true}
+            toastOptions={{
+              duration: 4000,
+              style: {
+                background: 'white',
+                border: '1px solid #e2e8f0',
+                color: '#0f172a',
+              },
+            }}
+          />
         </ThemeProvider>
       </body>
     </html>

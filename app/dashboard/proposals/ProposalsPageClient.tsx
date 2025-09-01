@@ -21,6 +21,7 @@ import { useRouter } from 'next/navigation';
 import { useEffect, useState } from 'react';
 import TrialBanner from '../../../components/TrialBanner';
 import { useTrialStatus } from '../../../src/lib/useTrialStatus';
+import { showToast } from '@/utils/toast';
 
 interface Proposal {
     id: string;
@@ -93,16 +94,16 @@ export default function ProposalsPageClientBonsai({ userEmail }: ProposalsPageCl
 
     const handleNewProposalClick = () => {
         if (!canUseFeatures) {
-            alert('Tu periodo de prueba ha expirado. Actualiza tu plan para continuar creando propuestas.');
+            showToast.warning('Tu periodo de prueba ha expirado. Actualiza tu plan para continuar creando propuestas.');
             return;
         }
 
         // Aquí iría la lógica para abrir modal de nueva propuesta
-        alert('Funcionalidad de nueva propuesta - proximamente');
+        showToast.error('Funcionalidad de nueva propuesta - proximamente');
     };
 
     const createSampleProposals = () => {
-        alert('Funcionalidad de datos demo - proximamente');
+        showToast.error('Funcionalidad de datos demo - proximamente');
     };
 
     const loadProposals = async () => {

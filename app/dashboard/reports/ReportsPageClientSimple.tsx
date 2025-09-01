@@ -7,6 +7,7 @@ import { Button } from '@/components/ui/Button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/Card';
 import { Input } from '@/components/ui/Input';
 import { createSupabaseClient } from '@/src/lib/supabase-client';
+import { showToast } from '@/utils/toast';
 import {
     BarChart3,
     Calendar,
@@ -1054,11 +1055,11 @@ export default function ReportsPageClient({ userEmail }: ReportsPageClientProps)
             document.body.removeChild(a);
             
             // Mostrar notificación de éxito
-            alert(`✅ Reporte exportado exitosamente en formato ${format.toUpperCase()}!\n\nArchivo: ${reportData.title}.${format}\nPeríodo: ${reportData.period}\nGenerado: ${reportData.generatedAt}`);
+            showToast.error(`✅ Reporte exportado exitosamente en formato ${format.toUpperCase()}!\n\nArchivo: ${reportData.title}.${format}\nPeríodo: ${reportData.period}\nGenerado: ${reportData.generatedAt}`);
             
         } catch (error) {
             console.error('Error exporting report:', error);
-            alert('❌ Error al exportar el reporte. Inténtalo de nuevo.');
+            showToast.error('❌ Error al exportar el reporte. Inténtalo de nuevo.');
         } finally {
             setExportLoading(false);
         }
@@ -1075,11 +1076,11 @@ export default function ReportsPageClient({ userEmail }: ReportsPageClientProps)
             } else {
                 // Fallback: copiar al portapapeles
                 await navigator.clipboard.writeText(window.location.href);
-                alert('🔗 Enlace copiado al portapapeles');
+                showToast.error('🔗 Enlace copiado al portapapeles');
             }
         } catch (error) {
             console.error('Error sharing report:', error);
-            alert('Error al compartir el reporte');
+            showToast.error('Error al compartir el reporte');
         }
     };
 

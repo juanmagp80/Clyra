@@ -26,6 +26,7 @@ import {
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { useEffect, useState } from 'react';
+import { showToast } from '@/utils/toast';
 
 // Tipo Project
 type Project = {
@@ -189,12 +190,12 @@ export default function ProjectsPageBonsai({ userEmail }: ProjectsPageClientProp
         if (trialLoading) return;
         
         if (!canUseFeatures) {
-            alert('❌ Tu trial ha expirado. Actualiza tu suscripción para continuar creando proyectos.');
+            showToast.warning('❌ Tu trial ha expirado. Actualiza tu suscripción para continuar creando proyectos.');
             return;
         }
 
         if (hasReachedLimit('projects')) {
-            alert(`❌ Has alcanzado el límite de proyectos de tu plan (${trialInfo?.limits.maxProjects}). Actualiza tu suscripción para crear más proyectos.`);
+            showToast.error(`❌ Has alcanzado el límite de proyectos de tu plan (${trialInfo?.limits.maxProjects}). Actualiza tu suscripción para crear más proyectos.`);
             return;
         }
 
@@ -227,7 +228,7 @@ export default function ProjectsPageBonsai({ userEmail }: ProjectsPageClientProp
 
             if (error) {
                 console.error('Error creating project:', error);
-                alert('Error al crear el proyecto');
+                showToast.error('Error al crear el proyecto');
                 return;
             }
 
@@ -245,7 +246,7 @@ export default function ProjectsPageBonsai({ userEmail }: ProjectsPageClientProp
             fetchProjects();
         } catch (error) {
             console.error('Error:', error);
-            alert('Error al crear el proyecto');
+            showToast.error('Error al crear el proyecto');
         }
     };
 
@@ -288,7 +289,7 @@ export default function ProjectsPageBonsai({ userEmail }: ProjectsPageClientProp
 
             if (error) {
                 console.error('Error updating project:', error);
-                alert('Error al actualizar el proyecto');
+                showToast.error('Error al actualizar el proyecto');
                 return;
             }
 
@@ -297,12 +298,12 @@ export default function ProjectsPageBonsai({ userEmail }: ProjectsPageClientProp
             fetchProjects();
         } catch (error) {
             console.error('Error:', error);
-            alert('Error al actualizar el proyecto');
+            showToast.error('Error al actualizar el proyecto');
         }
     };
 
     const handleDelete = async (projectId: string) => {
-        if (!confirm('¿Estás seguro de que quieres eliminar este proyecto?')) {
+        if (!await showToast.confirm('¿Estás seguro de que quieres eliminar este proyecto?')) {
             return;
         }
 
@@ -316,14 +317,14 @@ export default function ProjectsPageBonsai({ userEmail }: ProjectsPageClientProp
 
             if (error) {
                 console.error('Error deleting project:', error);
-                alert('Error al eliminar el proyecto');
+                showToast.error('Error al eliminar el proyecto');
                 return;
             }
 
             fetchProjects();
         } catch (error) {
             console.error('Error:', error);
-            alert('Error al eliminar el proyecto');
+            showToast.error('Error al eliminar el proyecto');
         }
     };
 

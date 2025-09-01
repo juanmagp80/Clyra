@@ -24,6 +24,7 @@ import {
 import { useRouter } from 'next/navigation';
 import { useEffect, useState } from 'react';
 import ReactDOM from 'react-dom';
+import { showToast } from '@/utils/toast';
 
 // Tipos básicos
 type TaskStatus = 'pending' | 'in_progress' | 'paused' | 'completed' | 'archived';
@@ -196,7 +197,7 @@ export default function TasksPageClient({ userEmail }: TasksPageClientProps) {
             }
 
             console.log('✅ Sesión limpiada, redirigiendo al login...');
-            alert('🔧 Se detectó un problema con la sesión. Serás redirigido al login para solucionarlo.');
+            showToast.error('🔧 Se detectó un problema con la sesión. Serás redirigido al login para solucionarlo.');
             router.push('/login');
 
         } catch (error) {
@@ -315,7 +316,7 @@ export default function TasksPageClient({ userEmail }: TasksPageClientProps) {
 
             if (!uid) {
                 console.error('❌ No se pudo obtener user ID después de todos los intentos');
-                alert('⚠️ No se pudo verificar tu identidad. Por favor, recarga la página o inicia sesión nuevamente.');
+                showToast.warning('⚠️ No se pudo verificar tu identidad. Por favor, recarga la página o inicia sesión nuevamente.');
                 setProjects([]);
                 return;
             }
@@ -333,7 +334,7 @@ export default function TasksPageClient({ userEmail }: TasksPageClientProps) {
 
             if (error) {
                 console.error('❌ Error fetching projects:', error);
-                alert('⚠️ Error al cargar proyectos: ' + error.message);
+                showToast.error('⚠️ Error al cargar proyectos: ' + error.message);
                 setProjects([]);
                 return;
             }
@@ -369,18 +370,18 @@ export default function TasksPageClient({ userEmail }: TasksPageClientProps) {
 
         } catch (error) {
             console.error('❌ Error crítico en fetchProjects:', error);
-            alert('⚠️ Error crítico al cargar proyectos. Revisa la consola para más detalles.');
+            showToast.error('⚠️ Error crítico al cargar proyectos. Revisa la consola para más detalles.');
             setProjects([]);
         }
     };
 
     const createTask = async () => {
         if (!newTask.title.trim()) {
-            alert('⚠️ El título de la tarea es obligatorio');
+            showToast.warning('⚠️ El título de la tarea es obligatorio');
             return;
         }
         if (!newTask.category || newTask.category.trim() === '') {
-            alert('⚠️ Debes seleccionar una categoría');
+            showToast.error('⚠️ Debes seleccionar una categoría');
             return;
         }
         if (!supabase) return;
@@ -391,7 +392,7 @@ export default function TasksPageClient({ userEmail }: TasksPageClientProps) {
             if (!uid) {
                 const { data: authData, error: authError } = await supabase.auth.getUser();
                 if (authError || !authData?.user?.id) {
-                    alert('⚠️ Error de autenticación. Por favor, recarga la página e intenta nuevamente.');
+                    showToast.warning('⚠️ Error de autenticación. Por favor, recarga la página e intenta nuevamente.');
                     return;
                 }
                 uid = authData.user.id;
@@ -411,7 +412,7 @@ export default function TasksPageClient({ userEmail }: TasksPageClientProps) {
                     .single();
                     
                 if (defaultError || !defaultProject) {
-                    alert('⚠️ No se encontró un proyecto por defecto. Por favor, selecciona un proyecto.');
+                    showToast.warning('⚠️ No se encontró un proyecto por defecto. Por favor, selecciona un proyecto.');
                     return;
                 }
                 projectId = defaultProject.id;
@@ -439,19 +440,19 @@ export default function TasksPageClient({ userEmail }: TasksPageClientProps) {
 
             if (error) {
                 console.error('Error creating task:', error);
-                alert('Error al crear la tarea: ' + error.message);
+                showToast.error('Error al crear la tarea: ' + error.message);
                 return;
             }
 
             console.log('✅ Tarea creada:', data);
-            alert('¡Tarea creada exitosamente! 🎉');
+            showToast.success('¡Tarea creada exitosamente! 🎉');
             setShowNewTaskModal(false);
             resetNewTaskForm();
             await fetchTasks();
 
         } catch (error) {
             console.error('Error:', error);
-            alert('Error crítico al crear la tarea');
+            showToast.error('Error crítico al crear la tarea');
         }
     };
 
@@ -468,7 +469,7 @@ export default function TasksPageClient({ userEmail }: TasksPageClientProps) {
 
             if (error) {
                 console.error('Error updating task:', error);
-                alert('Error al actualizar la tarea');
+                showToast.error('Error al actualizar la tarea');
                 return;
             }
 
@@ -479,7 +480,8 @@ export default function TasksPageClient({ userEmail }: TasksPageClientProps) {
     };
 
     const deleteTask = async (taskId: string) => {
-        if (!confirm('¿Estás seguro de que quieres eliminar esta tarea?')) return;
+        const confirmed = await showToast.confirm('¿Estás seguro de que quieres eliminar esta tarea?');
+        if (!confirmed) return;
         if (!supabase) return;
 
         try {
@@ -490,7 +492,7 @@ export default function TasksPageClient({ userEmail }: TasksPageClientProps) {
 
             if (error) {
                 console.error('Error deleting task:', error);
-                alert('Error al eliminar la tarea');
+                showToast.error('Error al eliminar la tarea');
                 return;
             }
 
@@ -521,7 +523,7 @@ export default function TasksPageClient({ userEmail }: TasksPageClientProps) {
 
             if (error) {
                 console.error('Error updating task:', error);
-                alert('Error al actualizar la tarea');
+                showToast.error('Error al actualizar la tarea');
                 return;
             }
 

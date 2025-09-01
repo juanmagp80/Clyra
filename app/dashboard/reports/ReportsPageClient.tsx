@@ -10,6 +10,7 @@ import { SimpleBarChart } from '@/components/ui/Chart';
 import { createSupabaseClient } from '@/src/lib/supabase-client';
 import TrialBanner from '../../../components/TrialBanner';
 import { useTrialStatus } from '../../../src/lib/useTrialStatus';
+import { showToast } from '@/utils/toast';
 
 interface ReportsPageClientProps {
     userEmail: string;
@@ -96,11 +97,11 @@ export default function ReportsPageClient({ userEmail }: ReportsPageClientProps)
             const dateStr = `${today.getFullYear()}-${String(today.getMonth() + 1).padStart(2, '0')}-${String(today.getDate()).padStart(2, '0')}`;
             const fileName = `Reporte_Taskelio_${dateStr}.${format === 'pdf' ? 'pdf' : 'csv'}`;
             
-            alert(`✅ Reporte exportado: ${fileName}`);
+            showToast.error(`✅ Reporte exportado: ${fileName}`);
             
         } catch (error) {
             console.error('Error exporting report:', error);
-            alert('❌ Error al exportar el reporte.');
+            showToast.error('❌ Error al exportar el reporte.');
         } finally {
             setExportLoading(false);
         }
@@ -110,7 +111,7 @@ export default function ReportsPageClient({ userEmail }: ReportsPageClientProps)
         setShareLoading(true);
         try {
             await new Promise(resolve => setTimeout(resolve, 1000));
-            alert('🔗 Enlace de reporte copiado al portapapeles');
+            showToast.error('🔗 Enlace de reporte copiado al portapapeles');
         } catch (error) {
             console.error('Error sharing report:', error);
         } finally {

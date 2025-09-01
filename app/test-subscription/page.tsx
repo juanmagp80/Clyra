@@ -2,6 +2,7 @@
 
 import { useState } from 'react';
 import { useTrialStatus } from '@/src/lib/useTrialStatus';
+import { showToast } from '@/utils/toast';
 
 export default function TestSubscriptionPage() {
   const [email, setEmail] = useState('');
@@ -11,7 +12,7 @@ export default function TestSubscriptionPage() {
 
   const handleTestSubscription = async () => {
     if (!email) {
-      alert('Por favor ingresa tu email');
+      showToast.warning('Por favor ingresa tu email');
       return;
     }
 
@@ -32,12 +33,12 @@ export default function TestSubscriptionPage() {
         // Esperar un momento y actualizar el estado del trial
         setTimeout(async () => {
           await checkTrialStatus();
-          alert('¡Suscripción de prueba creada! Los botones deberían estar activados ahora.');
+          showToast.error('¡Suscripción de prueba creada! Los botones deberían estar activados ahora.');
           // Redirigir al dashboard
           window.location.href = '/dashboard';
         }, 1000);
       } else {
-        alert('Error: ' + (data.error || 'Unknown error'));
+        showToast.error('Error: ' + (data.error || 'Unknown error'));
       }
     } catch (error) {
       console.error('Error:', error);
@@ -49,7 +50,7 @@ export default function TestSubscriptionPage() {
 
   const handleDebugSubscription = async () => {
     if (!email) {
-      alert('Por favor ingresa tu email');
+      showToast.warning('Por favor ingresa tu email');
       return;
     }
 

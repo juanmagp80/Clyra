@@ -1,6 +1,7 @@
 'use client';
 
 import React, { useState, useEffect } from 'react';
+import { showToast } from '@/utils/toast';
 
 interface MeetingReminderStatus {
   success: boolean;
@@ -63,15 +64,15 @@ export default function MeetingReminderAdmin() {
       setLastExecution(new Date().toLocaleString('es-ES'));
       
       if (data.success) {
-        alert(`✅ Monitoreo completado exitosamente!\n\nRecordatorios enviados: ${data.remindersSent || 0}\nMensaje: ${data.message}`);
+        showToast.error(`✅ Monitoreo completado exitosamente!\n\nRecordatorios enviados: ${data.remindersSent || 0}\nMensaje: ${data.message}`);
       } else {
-        alert(`❌ Error en el monitoreo:\n${data.error || data.message}`);
+        showToast.error(`❌ Error en el monitoreo:\n${data.error || data.message}`);
       }
       
     } catch (error) {
       console.error('Error ejecutando monitoreo:', error);
       setLastExecution('Error en la ejecución');
-      alert('❌ Error ejecutando el monitoreo de reuniones');
+      showToast.error('❌ Error ejecutando el monitoreo de reuniones');
     } finally {
       setLoading(false);
     }

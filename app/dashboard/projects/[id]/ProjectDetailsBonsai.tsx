@@ -25,6 +25,7 @@ import {
 } from 'lucide-react';
 import { useRouter } from 'next/navigation';
 import { useEffect, useState } from 'react';
+import { showToast } from '@/utils/toast';
 
 // Tipo Task
 type Task = {
@@ -281,7 +282,7 @@ export default function ProjectDetailsBonsai({ projectId, userEmail }: ProjectDe
 
             if (error) {
                 console.error('Error updating project:', error);
-                alert('Error al actualizar el proyecto');
+                showToast.error('Error al actualizar el proyecto');
                 return;
             }
 
@@ -289,14 +290,14 @@ export default function ProjectDetailsBonsai({ projectId, userEmail }: ProjectDe
             fetchProject();
         } catch (error) {
             console.error('Error:', error);
-            alert('Error al actualizar el proyecto');
+            showToast.error('Error al actualizar el proyecto');
         }
     };
 
     // Función para generar tareas desde las fases del template
     const generateTasksFromPhases = async () => {
         if (!project?.template_data?.phases || !supabase) {
-            alert('No hay fases del template para generar tareas');
+            showToast.error('No hay fases del template para generar tareas');
             return;
         }
 
@@ -320,15 +321,15 @@ export default function ProjectDetailsBonsai({ projectId, userEmail }: ProjectDe
 
             if (error) {
                 console.error('Error generating tasks:', error);
-                alert('Error al generar tareas desde las fases');
+                showToast.error('Error al generar tareas desde las fases');
                 return;
             }
 
-            alert(`Se generaron ${tasksToCreate.length} tareas basadas en las fases del template`);
+            showToast.error(`Se generaron ${tasksToCreate.length} tareas basadas en las fases del template`);
             fetchTasks();
         } catch (error) {
             console.error('Error:', error);
-            alert('Error al generar tareas');
+            showToast.error('Error al generar tareas');
         }
     };
 
@@ -572,7 +573,7 @@ export default function ProjectDetailsBonsai({ projectId, userEmail }: ProjectDe
 
             if (error) {
                 console.error('Error creating task:', error);
-                alert('Error al crear la tarea');
+                showToast.error('Error al crear la tarea');
                 return;
             }
 
@@ -588,7 +589,7 @@ export default function ProjectDetailsBonsai({ projectId, userEmail }: ProjectDe
             fetchTasks();
         } catch (error) {
             console.error('Error:', error);
-            alert('Error al crear la tarea');
+            showToast.error('Error al crear la tarea');
         }
     };
 
@@ -615,7 +616,7 @@ export default function ProjectDetailsBonsai({ projectId, userEmail }: ProjectDe
 
     // Función para eliminar tarea
     const handleDeleteTask = async (taskId: string) => {
-        if (!confirm('¿Estás seguro de que quieres eliminar esta tarea?')) {
+        if (!await showToast.confirm('¿Estás seguro de que quieres eliminar esta tarea?')) {
             return;
         }
 

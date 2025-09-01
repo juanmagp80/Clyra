@@ -1,0 +1,110 @@
+/* styles/toasts.css */
+
+/* Estilos personalizados para los toasts */
+.success-toast {
+  border-left: 4px solid #10b981 !important;
+  background: linear-gradient(135deg, #ecfdf5 0%, #f0fdf4 100%) !important;
+}
+
+.error-toast {
+  border-left: 4px solid #ef4444 !important;
+  background: linear-gradient(135deg, #fef2f2 0%, #fef7f7 100%) !important;
+}
+
+.warning-toast {
+  border-left: 4px solid #f59e0b !important;
+  background: linear-gradient(135deg, #fffbeb 0%, #fefce8 100%) !important;
+}
+
+.info-toast {
+  border-left: 4px solid #3b82f6 !important;
+  background: linear-gradient(135deg, #eff6ff 0%, #f0f9ff 100%) !important;
+}
+
+.loading-toast {
+  border-left: 4px solid #6366f1 !important;
+  background: linear-gradient(135deg, #f1f5f9 0%, #f8fafc 100%) !important;
+}
+
+.confirm-toast {
+  border-left: 4px solid #8b5cf6 !important;
+  background: linear-gradient(135deg, #faf5ff 0%, #f3e8ff 100%) !important;
+}
+
+/* Animaciones suaves */
+[data-sonner-toast] {
+  box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05) !important;
+  border-radius: 12px !important;
+  font-family: 'Inter', system-ui, -apple-system, sans-serif !important;
+  font-size: 14px !important;
+  padding: 16px !important;
+  backdrop-filter: blur(8px) !important;
+}
+
+[data-sonner-toast][data-type="success"] {
+  color: #065f46 !important;
+}
+
+[data-sonner-toast][data-type="error"] {
+  color: #991b1b !important;
+}
+
+[data-sonner-toast][data-type="warning"] {
+  color: #92400e !important;
+}
+
+[data-sonner-toast][data-type="info"] {
+  color: #1e40af !important;
+}
+
+/* Estilo del botón de cerrar */
+[data-sonner-toast] [data-close-button] {
+  background: rgba(0, 0, 0, 0.1) !important;
+  border-radius: 6px !important;
+  transition: all 0.2s ease !important;
+}
+
+[data-sonner-toast] [data-close-button]:hover {
+  background: rgba(0, 0, 0, 0.2) !important;
+  transform: scale(1.1) !important;
+}
+
+/* Estilo de los botones de acción */
+[data-sonner-toast] button[data-button] {
+  background: #4f46e5 !important;
+  color: white !important;
+  border: none !important;
+  border-radius: 8px !important;
+  padding: 8px 16px !important;
+  font-weight: 500 !important;
+  transition: all 0.2s ease !important;
+}
+
+[data-sonner-toast] button[data-button]:hover {
+  background: #4338ca !important;
+  transform: translateY(-1px) !important;
+}
+
+[data-sonner-toast] button[data-cancel] {
+  background: transparent !important;
+  color: #6b7280 !important;
+  border: 1px solid #d1d5db !important;
+}
+
+[data-sonner-toast] button[data-cancel]:hover {
+  background: #f9fafb !important;
+  color: #374151 !important;
+}
+
+/* Responsivo */
+@media (max-width: 640px) {
+  [data-sonner-toaster] {
+    left: 16px !important;
+    right: 16px !important;
+  }
+  
+  [data-sonner-toast] {
+    font-size: 13px !important;
+    padding: 12px !important;
+  }
+}

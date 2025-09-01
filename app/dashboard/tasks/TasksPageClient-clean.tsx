@@ -16,6 +16,7 @@ import {
 } from 'lucide-react';
 import { useRouter } from 'next/navigation';
 import { useEffect, useState } from 'react';
+import { showToast } from '@/utils/toast';
 
 // Tipos básicos
 type TaskStatus = 'pending' | 'in_progress' | 'paused' | 'completed' | 'archived';
@@ -226,7 +227,8 @@ const TasksPageClient: React.FC<TasksPageClientProps> = ({
 
     // Función para eliminar tarea
     const deleteTask = async (taskId: string) => {
-        if (!confirm('¿Estás seguro de que quieres eliminar esta tarea?')) return;
+        const confirmed = await showToast.confirm('¿Estás seguro de que quieres eliminar esta tarea?');
+        if (!confirmed) return;
 
         try {
             const supabase = createSupabaseClient();

@@ -17,6 +17,7 @@ import {
 import Link from 'next/link';
 import { notFound } from 'next/navigation';
 import { useEffect, useState } from 'react';
+import { showToast } from '@/utils/toast';
 // import { demoClients, demoInvoices, demoProjects, demoUser } from '../../demo-data';
 interface DemoClient {
     id: string;
@@ -113,7 +114,7 @@ export default function DemoInvoiceDetailsPage({ params }: Props) {
 
     // Función para simular acciones
     const handleAction = (action: string) => {
-        alert(`Demo: ${action}. ¡Crea tu cuenta para usar esta funcionalidad!`);
+        showToast.error(`Demo: ${action}. ¡Crea tu cuenta para usar esta funcionalidad!`);
     };
 
     // Datos ficticios para la factura detallada

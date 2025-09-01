@@ -4,6 +4,7 @@ import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import Sidebar from '@/components/Sidebar';
 import { Button } from '@/components/ui/Button';
+import { showToast } from '@/utils/toast';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/Card';
 import { Input } from '@/components/ui/Input';
 import CustomDatePicker from '@/components/ui/DatePicker';
@@ -122,7 +123,7 @@ export default function CalendarPageClient({ userEmail }: CalendarPageClientProp
     // Función para manejar nuevo evento
     const handleNewEventClick = () => {
         if (!canUseFeatures) {
-            alert('Tu periodo de prueba ha expirado. Actualiza tu plan para continuar creando eventos.');
+            showToast.warning('Tu periodo de prueba ha expirado. Actualiza tu plan para continuar creando eventos.');
             return;
         }
         
@@ -257,7 +258,7 @@ export default function CalendarPageClient({ userEmail }: CalendarPageClientProp
 
             // Si no tiene eventos y las tablas existen, crear datos de ejemplo
             if (!existingEvents || existingEvents.length === 0) {
-                const shouldCreateSample = confirm(
+                const shouldCreateSample = await showToast.confirm(
                     '¡Bienvenido a Taskelio! 🎉\n\n' +
                     'Parece que es tu primera vez usando el calendario.\n' +
                     '¿Te gustaría que creemos algunos datos de ejemplo para empezar?\n\n' +
@@ -541,12 +542,12 @@ export default function CalendarPageClient({ userEmail }: CalendarPageClientProp
     // Crear nuevo evento
     const createEvent = async () => {
         if (!newEvent.title.trim() || !newEvent.start_time || !newEvent.end_time) {
-            alert('Por favor, completa todos los campos obligatorios');
+            showToast.warning('Por favor, completa todos los campos obligatorios');
             return;
         }
         
         if (!supabase) {
-            alert('Error: Base de datos no configurada');
+            showToast.error('Error: Base de datos no configurada');
             return;
         }
 
@@ -554,14 +555,14 @@ export default function CalendarPageClient({ userEmail }: CalendarPageClientProp
         const startDate = new Date(newEvent.start_time);
         const endDate = new Date(newEvent.end_time);
         if (endDate <= startDate) {
-            alert('La fecha de fin debe ser posterior a la fecha de inicio');
+            showToast.error('La fecha de fin debe ser posterior a la fecha de inicio');
             return;
         }
 
         try {
             const { data: { user } } = await supabase.auth.getUser();
             if (!user) {
-                alert('Error: Usuario no autenticado');
+                showToast.error('Error: Usuario no autenticado');
                 return;
             }
 
@@ -582,7 +583,7 @@ export default function CalendarPageClient({ userEmail }: CalendarPageClientProp
 
             if (error) {
                 console.error('Error creating event:', error);
-                alert(`Error al crear el evento: ${error.message}`);
+                showToast.error(`Error al crear el evento: ${error.message}`);
             } else {
                 // Limpiar formulario
                 setNewEvent({
@@ -601,11 +602,11 @@ export default function CalendarPageClient({ userEmail }: CalendarPageClientProp
                 setShowNewEventForm(false);
                 await fetchEvents(); // Recargar eventos
                 await loadAIData(); // Recargar datos de IA
-                alert('Evento creado exitosamente');
+                showToast.success('Evento creado exitosamente');
             }
         } catch (error) {
             console.error('Error creating event:', error);
-            alert('Error inesperado al crear el evento');
+            showToast.error('Error inesperado al crear el evento');
         }
     };
 
@@ -645,18 +646,18 @@ export default function CalendarPageClient({ userEmail }: CalendarPageClientProp
 
             if (error) {
                 console.error('Error updating event:', error);
-                alert('Error al actualizar el evento');
+                showToast.error('Error al actualizar el evento');
             } else {
                 setShowEventDetails(false);
                 setEditingEvent(null);
                 setIsEditMode(false);
                 fetchEvents();
                 loadAIData();
-                alert('Evento actualizado correctamente');
+                showToast.success('Evento actualizado correctamente');
             }
         } catch (error) {
             console.error('Error:', error);
-            alert('Error al actualizar el evento');
+            showToast.error('Error al actualizar el evento');
         }
     };
 
@@ -664,7 +665,8 @@ export default function CalendarPageClient({ userEmail }: CalendarPageClientProp
     const deleteEvent = async () => {
         if (!editingEvent || !supabase) return;
 
-        if (!confirm('¿Estás seguro de que quieres eliminar este evento?')) return;
+        const confirmed = await showToast.confirm('¿Estás seguro de que quieres eliminar este evento?');
+        if (!confirmed) return;
 
         try {
             const { error } = await supabase
@@ -674,18 +676,18 @@ export default function CalendarPageClient({ userEmail }: CalendarPageClientProp
 
             if (error) {
                 console.error('Error deleting event:', error);
-                alert('Error al eliminar el evento');
+                showToast.error('Error al eliminar el evento');
             } else {
                 setShowEventDetails(false);
                 setEditingEvent(null);
                 setIsEditMode(false);
                 fetchEvents();
                 loadAIData();
-                alert('Evento eliminado correctamente');
+                showToast.success('Evento eliminado correctamente');
             }
         } catch (error) {
             console.error('Error:', error);
-            alert('Error al eliminar el evento');
+            showToast.error('Error al eliminar el evento');
         }
     };
 
@@ -713,7 +715,7 @@ export default function CalendarPageClient({ userEmail }: CalendarPageClientProp
     // Auto-programar con IA local
     const autoScheduleEvent = async () => {
         if (!newEvent.title.trim()) {
-            alert('Por favor, ingresa un título para el evento');
+            showToast.warning('Por favor, ingresa un título para el evento');
             return;
         }
 
@@ -788,7 +790,7 @@ export default function CalendarPageClient({ userEmail }: CalendarPageClientProp
                 });
 
                 // Mostrar feedback al usuario
-                alert(`IA recomienda: ${suggestedDate.toLocaleDateString()} a las ${suggestedDate.toLocaleTimeString([], {hour: '2-digit', minute: '2-digit'})} (${bestPattern.productivityScore}% productividad en esta franja)`);
+                showToast.error(`IA recomienda: ${suggestedDate.toLocaleDateString()} a las ${suggestedDate.toLocaleTimeString([], {hour: '2-digit', minute: '2-digit'})} (${bestPattern.productivityScore}% productividad en esta franja)`);
             } else {
                 // Fallback si no hay patrones
                 const now = new Date();
@@ -803,12 +805,12 @@ export default function CalendarPageClient({ userEmail }: CalendarPageClientProp
                     end_time: tomorrow11AM.toISOString().slice(0, 16)
                 });
 
-                alert('IA sugiere: Mañana a las 10:00 AM (horario típicamente productivo)');
+                showToast.error('IA sugiere: Mañana a las 10:00 AM (horario típicamente productivo)');
             }
 
         } catch (error) {
             console.error('Error en auto-programación:', error);
-            alert('Error al usar IA. Intenta programar manualmente.');
+            showToast.error('Error al usar IA. Intenta programar manualmente.');
         } finally {
             setAILoading(false);
         }
@@ -851,9 +853,9 @@ export default function CalendarPageClient({ userEmail }: CalendarPageClientProp
                     end_time: suggestedEnd.toISOString().slice(0, 16)
                 });
 
-                alert(`Horario sugerido: ${suggestedStart.toLocaleTimeString()} (${bestPattern.productivityScore}% productividad)`);
+                showToast.error(`Horario sugerido: ${suggestedStart.toLocaleTimeString()} (${bestPattern.productivityScore}% productividad)`);
             } else {
-                alert('No hay suficientes datos para sugerir un horario óptimo');
+                showToast.error('No hay suficientes datos para sugerir un horario óptimo');
             }
         } catch (error) {
             console.error('Error suggesting optimal time:', error);
@@ -966,7 +968,7 @@ export default function CalendarPageClient({ userEmail }: CalendarPageClientProp
     // Exportar eventos a CSV
     const exportEventsToCSV = () => {
         if (events.length === 0) {
-            alert('No hay eventos para exportar');
+            showToast.error('No hay eventos para exportar');
             return;
         }
 
@@ -2525,8 +2527,9 @@ export default function CalendarPageClient({ userEmail }: CalendarPageClientProp
                                     <Button
                                         variant="ghost"
                                         size="sm"
-                                        onClick={() => {
-                                            if (confirm('¿Estás seguro de que quieres eliminar este evento?')) {
+                                        onClick={async () => {
+                                            const confirmed = await showToast.confirm('¿Estás seguro de que quieres eliminar este evento?');
+                                            if (confirmed) {
                                                 // Configurar el evento a eliminar temporalmente
                                                 setEditingEvent(selectedEvent);
                                                 deleteEvent();

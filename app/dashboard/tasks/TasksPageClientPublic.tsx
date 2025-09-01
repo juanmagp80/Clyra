@@ -18,6 +18,7 @@ import {
 } from 'lucide-react';
 import { useRouter } from 'next/navigation';
 import React, { useEffect, useState } from 'react';
+import { showToast } from '@/utils/toast';
 
 // Configuración de usuario específico para mostrar datos
 const MAIN_USER_ID = 'e7ed7c8d-229a-42d1-8a44-37bcc64c440c'; // Usuario con todos los datos
@@ -186,11 +187,11 @@ const TasksPageClient: React.FC = () => {
     // Crear nueva tarea
     const createTask = async () => {
         if (!newTask.title.trim()) {
-            alert('⚠️ El título de la tarea es obligatorio');
+            showToast.warning('⚠️ El título de la tarea es obligatorio');
             return;
         }
         if (!newTask.project_id) {
-            alert('⚠️ Debes seleccionar un proyecto');
+            showToast.error('⚠️ Debes seleccionar un proyecto');
             return;
         }
 
@@ -209,7 +210,7 @@ const TasksPageClient: React.FC = () => {
 
             if (error) {
                 console.error('Error creando tarea:', error);
-                alert('Error al crear la tarea: ' + error.message);
+                showToast.error('Error al crear la tarea: ' + error.message);
             } else {
                 console.log('✅ Tarea creada exitosamente');
                 await fetchTasks();
@@ -226,7 +227,7 @@ const TasksPageClient: React.FC = () => {
             }
         } catch (err) {
             console.error('Error crítico:', err);
-            alert('Error crítico al crear la tarea');
+            showToast.error('Error crítico al crear la tarea');
         }
     };
 
@@ -250,7 +251,7 @@ const TasksPageClient: React.FC = () => {
 
             if (error) {
                 console.error('Error actualizando tarea:', error);
-                alert('Error al actualizar la tarea: ' + error.message);
+                showToast.error('Error al actualizar la tarea: ' + error.message);
             } else {
                 console.log('✅ Tarea actualizada exitosamente');
                 await fetchTasks();
@@ -259,7 +260,7 @@ const TasksPageClient: React.FC = () => {
             }
         } catch (err) {
             console.error('Error crítico:', err);
-            alert('Error crítico al actualizar la tarea');
+            showToast.error('Error crítico al actualizar la tarea');
         }
     };
 
@@ -275,7 +276,7 @@ const TasksPageClient: React.FC = () => {
 
             if (error) {
                 console.error('Error eliminando tarea:', error);
-                alert('Error al eliminar la tarea: ' + error.message);
+                showToast.error('Error al eliminar la tarea: ' + error.message);
             } else {
                 console.log('✅ Tarea eliminada exitosamente');
                 await fetchTasks();
@@ -284,7 +285,7 @@ const TasksPageClient: React.FC = () => {
             }
         } catch (err) {
             console.error('Error crítico:', err);
-            alert('Error crítico al eliminar la tarea');
+            showToast.error('Error crítico al eliminar la tarea');
         }
     };
 

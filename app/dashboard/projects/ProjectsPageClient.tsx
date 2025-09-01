@@ -4,6 +4,7 @@ import TrialBanner from '@/components/TrialBanner';
 import CustomDatePicker from '@/components/ui/DatePicker';
 import { createSupabaseClient } from '@/src/lib/supabase-client';
 import { useTrialStatus } from '@/src/lib/useTrialStatus';
+import { showToast } from '@/utils/toast';
 import {
     AlertTriangle,
     Briefcase,
@@ -143,12 +144,12 @@ export default function ProjectsPageClient({ userEmail }: ProjectsPageClientProp
     // Función para manejar la creación de nuevo proyecto
     const handleNewProjectClick = () => {
         if (!canUseFeatures) {
-            alert('Tu periodo de prueba ha expirado. Actualiza tu plan para continuar creando proyectos.');
+            showToast.warning('Tu periodo de prueba ha expirado. Actualiza tu plan para continuar creando proyectos.');
             return;
         }
 
         if (hasReachedLimit('projects')) {
-            alert(`Has alcanzado el límite de ${(trialInfo && trialInfo.limits && typeof trialInfo.limits.maxProjects === 'number') ? trialInfo.limits.maxProjects : 5} proyectos en el plan de prueba. Actualiza tu plan para crear más proyectos.`);
+            showToast.error(`Has alcanzado el límite de ${(trialInfo && trialInfo.limits && typeof trialInfo.limits.maxProjects === 'number') ? trialInfo.limits.maxProjects : 5} proyectos en el plan de prueba. Actualiza tu plan para crear más proyectos.`);
             return;
         }
 
@@ -945,12 +946,12 @@ export default function ProjectsPageClient({ userEmail }: ProjectsPageClientProp
                                                     <button
                                                         onClick={() => {
                                                             if (!canUseFeatures) {
-                                                                alert('Tu periodo de prueba ha expirado. Actualiza tu plan para continuar creando proyectos.');
+                                                                showToast.warning('Tu periodo de prueba ha expirado. Actualiza tu plan para continuar creando proyectos.');
                                                                 return;
                                                             }
 
                                                             if (hasReachedLimit('projects')) {
-                                                                alert(`Has alcanzado el límite de ${(trialInfo && trialInfo.limits && typeof trialInfo.limits.maxProjects === 'number') ? trialInfo.limits.maxProjects : 5} proyectos en el plan de prueba. Actualiza tu plan para crear más proyectos.`);
+                                                                showToast.error(`Has alcanzado el límite de ${(trialInfo && trialInfo.limits && typeof trialInfo.limits.maxProjects === 'number') ? trialInfo.limits.maxProjects : 5} proyectos en el plan de prueba. Actualiza tu plan para crear más proyectos.`);
                                                                 return;
                                                             }
 
@@ -1134,8 +1135,9 @@ export default function ProjectsPageClient({ userEmail }: ProjectsPageClientProp
                                                                     <Edit className="w-4 h-4" />
                                                                 </button>
                                                                 <button
-                                                                    onClick={() => {
-                                                                        if (confirm('¿Estás seguro de que quieres eliminar este proyecto?')) {
+                                                                    onClick={async () => {
+                                                                        const confirmed = await showToast.confirm('¿Estás seguro de que quieres eliminar este proyecto?');
+                                                                        if (confirmed) {
                                                                             deleteProject(project.id);
                                                                         }
                                                                     }}
@@ -1267,8 +1269,9 @@ export default function ProjectsPageClient({ userEmail }: ProjectsPageClientProp
                                                                     <Edit className="w-4 h-4" />
                                                                 </button>
                                                                 <button
-                                                                    onClick={() => {
-                                                                        if (confirm('¿Estás seguro de que quieres eliminar este proyecto?')) {
+                                                                    onClick={async () => {
+                                                                        const confirmed = await showToast.confirm('¿Estás seguro de que quieres eliminar este proyecto?');
+                                                                        if (confirmed) {
                                                                             deleteProject(project.id);
                                                                         }
                                                                     }}

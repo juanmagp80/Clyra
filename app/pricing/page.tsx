@@ -3,6 +3,7 @@ import Link from 'next/link';
 import { Home, Check, Crown, Star, Shield, ArrowRight, Sparkles, TrendingUp } from 'lucide-react';
 import { createCheckoutAndRedirect } from '@/lib/stripe-client';
 import { useState } from 'react';
+import { showToast } from '@/utils/toast';
 
 // CONFIGURA ESTOS PRICE IDS EN TU DASHBOARD DE STRIPE
 // Estos son ejemplos - necesitas crear productos reales en tu dashboard
@@ -20,7 +21,7 @@ export default function PricingPage() {
       await createCheckoutAndRedirect(priceId);
     } catch (error) {
       console.error('Error al procesar el pago:', error);
-      alert('Error al procesar el pago. Inténtalo de nuevo.');
+      showToast.error('Error al procesar el pago. Inténtalo de nuevo.');
       setIsLoading(null);
     }
   };
@@ -131,7 +132,7 @@ export default function PricingPage() {
                                     </div>
                                 </div>
                                 <button
-                                    onClick={() => alert('Demo de Stripe - Funciona perfectamente!')}
+                                    onClick={() => showToast.success('Demo de Stripe - Funciona perfectamente!')}
                                     className="w-full py-4 px-6 rounded-2xl font-bold text-lg bg-gradient-to-r from-orange-600 via-amber-600 to-orange-600 text-white shadow-2xl shadow-orange-500/30 hover:shadow-orange-500/50 hover:scale-105 transition-all duration-300 flex items-center justify-center gap-3"
                                 >
                                     Probar Stripe
@@ -173,7 +174,7 @@ export default function PricingPage() {
                                     </div>
                                 </div>
                                 <button
-                                    onClick={() => alert('Demo de Stripe - Funciona perfectamente!')}
+                                    onClick={() => showToast.success('Demo de Stripe - Funciona perfectamente!')}
                                     className="w-full py-4 px-6 rounded-2xl font-bold text-lg bg-gradient-to-r from-slate-600 to-slate-700 text-white shadow-xl hover:shadow-2xl hover:scale-105 transition-all duration-300 flex items-center justify-center gap-3"
                                 >
                                     Probar Stripe

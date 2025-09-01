@@ -4,6 +4,7 @@ import { useState, useEffect } from 'react';
 import { useParams, useRouter } from 'next/navigation';
 import { Button } from '@/components/ui/Button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/Card';
+import { showToast } from '@/utils/toast';
 import { Input } from '@/components/ui/Input';
 import { 
     MessageCircle, 
@@ -188,7 +189,7 @@ export default function ClientPortalPage() {
 
         } catch (error: any) {
             console.error('Error sending message:', error);
-            alert('Error enviando mensaje: ' + error.message);
+            showToast.error('Error enviando mensaje: ' + error.message);
         } finally {
             setSending(false);
         }
