@@ -1,6 +1,6 @@
 import cron from 'node-cron';
 import { config } from '../config/index.js';
-import { EmailService } from '../services/EmailService.js';
+import { IEmailService } from '../types/EmailServiceInterface.js';
 import { GoogleCalendarService } from '../services/GoogleCalendarService.js';
 import { SupabaseService } from '../services/SupabaseService.js';
 import { AutomationStatus, CalendarEvent, Client } from '../types/index.js';
@@ -17,14 +17,14 @@ type ScheduleOptions = {
 export class MeetingReminderAutomation {
   private googleCalendar: GoogleCalendarService;
   private supabase: SupabaseService;
-  private email: EmailService;
+  private email: IEmailService;
   private cronJob?: import('node-cron').ScheduledTask;
   private status: AutomationStatus;
 
   constructor(
     googleCalendar: GoogleCalendarService,
     supabase: SupabaseService,
-    email: EmailService
+    email: IEmailService
   ) {
     this.googleCalendar = googleCalendar;
     this.supabase = supabase;
@@ -69,7 +69,6 @@ export class MeetingReminderAutomation {
   stop() {
     if (this.cronJob) {
       this.cronJob.stop();
-      this.cronJob.destroy();
       this.cronJob = undefined;
     }
 

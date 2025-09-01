@@ -1,4 +1,5 @@
 import { Resend } from 'resend';
+import { IEmailService } from '../types/EmailServiceInterface.js';
 
 interface EmailConfig {
   resendApiKey?: string;
@@ -7,7 +8,7 @@ interface EmailConfig {
   debug?: boolean;
 }
 
-export class EmailService {
+export class EmailServiceResend implements IEmailService {
   // Propiedad dummy para compatibilidad con EmailService.ts
   public transporter: undefined = undefined;
 

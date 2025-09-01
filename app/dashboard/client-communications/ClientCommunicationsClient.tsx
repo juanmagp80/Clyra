@@ -93,6 +93,40 @@ export default function ClientCommunications({ userEmail }: ClientCommunications
         loadData();
     }, []);
 
+    // Efecto para polling automático de mensajes
+    useEffect(() => {
+        const interval = setInterval(() => {
+            loadMessages();
+        }, 10000); // Recargar cada 10 segundos
+
+        return () => clearInterval(interval);
+    }, []);
+
+    // Efecto para suscripción en tiempo real de mensajes
+    useEffect(() => {
+        if (!supabase) return;
+
+        const subscription = supabase
+            .channel('client_messages')
+            .on('postgres_changes', 
+                { 
+                    event: '*', 
+                    schema: 'public', 
+                    table: 'client_messages' 
+                },
+                (payload: any) => {
+                    console.log('📨 Mensaje en tiempo real:', payload);
+                    // Recargar mensajes cuando hay cambios
+                    loadMessages();
+                }
+            )
+            .subscribe();
+
+        return () => {
+            subscription.unsubscribe();
+        };
+    }, [supabase]);
+
     const loadData = async () => {
         try {
             setLoading(true);

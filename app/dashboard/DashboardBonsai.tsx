@@ -19,6 +19,7 @@ import {
 import { useRouter } from 'next/navigation';
 import { useEffect, useState } from 'react';
 
+<<<<<<< HEAD
 // Tipos básicos
 interface Project {
     id: string;
@@ -27,6 +28,8 @@ interface Project {
     created_at: string;
 }
 
+=======
+>>>>>>> 9d3102b7a9a2c9d179d2b6c2a0439380b49b395e
 export default function DashboardBonsai({
     userEmail,
     isDemo = false,
@@ -211,11 +214,19 @@ export default function DashboardBonsai({
                 supabase.from('time_entries').select('duration_seconds').eq('user_id', user.id)
             ]);
 
+<<<<<<< HEAD
             const activeProjects = allProjects?.filter((p: Project) =>
                 p.status === 'active' || p.status === 'in_progress'
             ) || [];
 
             const completedProjects = allProjects?.filter((p: Project) =>
+=======
+            const activeProjects = allProjects?.filter((p: any) =>
+                p.status === 'active' || p.status === 'in_progress'
+            ) || [];
+
+            const completedProjects = allProjects?.filter((p: any) =>
+>>>>>>> 9d3102b7a9a2c9d179d2b6c2a0439380b49b395e
                 p.status === 'completed'
             ) || [];
 
@@ -335,7 +346,11 @@ export default function DashboardBonsai({
             }> = [];
 
             // Agregar proyectos recientes
+<<<<<<< HEAD
             recentProjects?.forEach((project: Project) => {
+=======
+            recentProjects?.forEach((project: any) => {
+>>>>>>> 9d3102b7a9a2c9d179d2b6c2a0439380b49b395e
                 activity.push({
                     id: project.id,
                     type: 'project',
@@ -347,7 +362,11 @@ export default function DashboardBonsai({
             });
 
             // Agregar clientes recientes
+<<<<<<< HEAD
             recentClients?.forEach(client => {
+=======
+            recentClients?.forEach((client: any) => {
+>>>>>>> 9d3102b7a9a2c9d179d2b6c2a0439380b49b395e
                 activity.push({
                     id: client.id,
                     type: 'client',

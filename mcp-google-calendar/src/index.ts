@@ -5,21 +5,21 @@ import { Server } from '@modelcontextprotocol/sdk/server/index.js';
 import { StdioServerTransport } from '@modelcontextprotocol/sdk/server/stdio.js';
 import { GoogleCalendarService } from './services/GoogleCalendarService.js';
 import { SupabaseService } from './services/SupabaseService.js';
-import { EmailService } from './services/EmailServiceResend.js';
+import { EmailServiceResend } from './services/EmailServiceResend.js';
 import { MeetingReminderAutomation } from './automations/MeetingReminderAutomation.js';
 import { config } from './config/index.js';
 
 class MCPGoogleCalendarServer {
   private googleCalendar: GoogleCalendarService;
   private supabase: SupabaseService;
-  private email: EmailService;
+  private email: EmailServiceResend;
   private automation: MeetingReminderAutomation;
 
   constructor() {
     // Inicializar servicios
     this.googleCalendar = new GoogleCalendarService();
     this.supabase = new SupabaseService();
-    this.email = new EmailService();
+    this.email = new EmailServiceResend();
     this.automation = new MeetingReminderAutomation(
       this.googleCalendar,
       this.supabase,
