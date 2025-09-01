@@ -46,7 +46,7 @@ export function useClientMessages(userEmail?: string) {
                 return;
             }
 
-            const formattedMessages = messagesData?.map(msg => ({
+            const formattedMessages = messagesData?.map((msg: any) => ({
                 ...msg,
                 client_name: msg.clients?.name || 'Cliente'
             })) || [];
@@ -95,7 +95,7 @@ export function useClientMessages(userEmail?: string) {
                     .from('clients')
                     .select('id')
                     .eq('user_id', user.id)
-                    .then(({ data }) => data?.map(c => c.id) || [])
+                    .then(({ data }: { data?: any[] }) => data?.map((c: any) => c.id) || [])
                 );
 
             if (!error) {
