@@ -42,8 +42,9 @@ function LoginPageContent() {
                 options: {
                     redirectTo: `${getBaseUrl()}/auth/callback`,
                     queryParams: {
-                        prompt: 'select_account',
-                        access_type: 'offline'
+                        prompt: 'select_account', // ✅ Siempre mostrar selección de cuenta
+                        access_type: 'offline',
+                        include_granted_scopes: 'true'
                     },
                     scopes: 'email profile'
                 }

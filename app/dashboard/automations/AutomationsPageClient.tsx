@@ -4,7 +4,6 @@ import Sidebar from '@/components/Sidebar';
 import { Button } from '@/components/ui/Button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/Card';
 import { Input } from '@/components/ui/Input';
-import { ProtectedButton } from '@/components/ProtectedComponents';
 import { executeAutomationAction, type ActionPayload } from '@/src/lib/automation-actions';
 import { createSupabaseClient } from '@/src/lib/supabase-client';
 import {
@@ -29,7 +28,6 @@ import { useRouter } from 'next/navigation';
 import { useEffect, useState } from 'react';
 import TrialBanner from '../../../components/TrialBanner';
 import { useTrialStatus } from '../../../src/lib/useTrialStatus';
-import { useAccessControl } from '../../../src/lib/useAccessControl';
 
 interface Automation {
     id: string;
@@ -69,9 +67,6 @@ const Modal: React.FC<ModalProps> = ({ isOpen, onClose, children }) => {
 export default function AutomationsPageClient({ userEmail }: AutomationsPageClientProps) {
     // Hook de trial status
     const { trialInfo, loading: trialLoading, hasReachedLimit, canUseFeatures } = useTrialStatus(userEmail);
-    
-    // Hook de control de acceso
-    const { checkAccess } = useAccessControl();
     
     const [modalOpen, setModalOpen] = useState(false);
     const [modalAutomation, setModalAutomation] = useState<Automation | null>(null);
@@ -114,11 +109,7 @@ export default function AutomationsPageClient({ userEmail }: AutomationsPageClie
     const handleAutomationClick = async (automation: Automation) => {
         console.log('🚀 Preparando ejecución de automatización:', automation.name);
 
-        if (!canUseFeatures) {
-            alert('Tu periodo de prueba ha expirado. Actualiza tu plan para continuar usando automaciones.');
-            return;
-        }
-
+        // ✅ Automatizaciones disponibles para todos los usuarios
         if (!supabase) {
             console.error('❌ Cliente Supabase no disponible');
             alert('Error: Cliente Supabase no disponible');
@@ -464,19 +455,21 @@ export default function AutomationsPageClient({ userEmail }: AutomationsPageClie
                 return;
             }
 
-            console.log('📊 Loading automations for user:', user.id);
+            console.log('📊 Loading global automations for user:', user.id, 'Email:', user.email);
             const { data, error } = await supabase
                 .from('automations')
                 .select('*')
-                .eq('user_id', user.id)
+                // ✅ Quitar filtro de user_id para mostrar todas las automatizaciones
                 .order('created_at', { ascending: false });
+
+            console.log('🔍 Database query result (global automations):', { data, error, userEmail: user.email });
 
             if (error) {
                 console.error('❌ Error loading automations:', error);
                 return;
             }
 
-            console.log('✅ Loaded automations:', data?.length || 0);
+            console.log(`✅ Found ${data?.length || 0} global automations available for ${user.email}`);
             setAutomations(data || []);
             setFilteredAutomations(data || []);
 
@@ -1130,28 +1123,21 @@ export default function AutomationsPageClient({ userEmail }: AutomationsPageClie
                             <div>
                                 <h1 className="text-2xl font-semibold text-gray-900">Automatizaciones</h1>
                                 <p className="mt-1 text-sm text-gray-600">
-                                    Gestiona tus {automations.length} automatizaciones
+                                    Explora y usa {automations.length} automatizaciones disponibles
                                 </p>
                             </div>
                             <button
                                 onClick={() => router.push('/dashboard/automations/create')}
-                                disabled={trialLoading || !canUseFeatures}
+                                disabled={trialLoading}
                                 className={`inline-flex items-center px-4 py-2 text-sm font-medium rounded-lg border transition-colors ${trialLoading
                                         ? 'bg-gray-100 border-gray-300 text-gray-500 cursor-wait'
-                                        : !canUseFeatures
-                                            ? 'bg-gray-100 border-gray-300 text-gray-400 cursor-not-allowed'
-                                            : 'bg-blue-600 border-blue-600 text-white hover:bg-blue-700 hover:border-blue-700'
+                                        : 'bg-blue-600 border-blue-600 text-white hover:bg-blue-700 hover:border-blue-700'
                                     }`}
                             >
                                 {trialLoading ? (
                                     <>
                                         <div className="w-4 h-4 mr-2 border-2 border-gray-400 border-t-transparent rounded-full animate-spin"></div>
                                         Cargando...
-                                    </>
-                                ) : !canUseFeatures ? (
-                                    <>
-                                        <X className="w-4 h-4 mr-2" />
-                                        Trial Expirado
                                     </>
                                 ) : (
                                     <>
@@ -1260,12 +1246,10 @@ export default function AutomationsPageClient({ userEmail }: AutomationsPageClie
                                     <div className="mt-6">
                                         <button
                                             onClick={() => router.push('/dashboard/automations/create')}
-                                            disabled={trialLoading || !canUseFeatures}
+                                            disabled={trialLoading}
                                             className={`inline-flex items-center px-4 py-2 border border-transparent shadow-sm text-sm font-medium rounded-md text-white ${trialLoading
                                                     ? 'bg-gray-400 cursor-wait'
-                                                    : !canUseFeatures
-                                                        ? 'bg-gray-400 cursor-not-allowed'
-                                                        : 'bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500'
+                                                    : 'bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500'
                                                 }`}
                                         >
                                             {trialLoading ? (
@@ -1345,19 +1329,10 @@ export default function AutomationsPageClient({ userEmail }: AutomationsPageClie
                                                     <div className="flex space-x-2">
                                                         <button
                                                             onClick={() => handleAutomationClick(automation)}
-                                                            disabled={!canUseFeatures}
-                                                            className={`text-sm px-3 py-1 rounded-md font-medium transition-colors ${
-                                                                !canUseFeatures
-                                                                    ? 'bg-gray-100 text-gray-400 cursor-not-allowed'
-                                                                    : 'bg-blue-600 text-white hover:bg-blue-700'
-                                                            }`}
-                                                            title={
-                                                                !canUseFeatures 
-                                                                    ? 'Trial expirado' 
-                                                                    : 'Ejecutar automatización'
-                                                            }
+                                                            className="text-sm px-3 py-1 rounded-md font-medium transition-colors bg-blue-600 text-white hover:bg-blue-700"
+                                                            title="Ejecutar automatización"
                                                         >
-                                                            {!canUseFeatures ? 'Trial Expirado' : 'Ejecutar'}
+                                                            Ejecutar
                                                         </button>
                                                     </div>
                                                 </div>

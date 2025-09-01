@@ -5,6 +5,7 @@ import NotificationBell from '@/components/NotificationBell';
 import SubscriptionStatus from '@/components/SubscriptionStatus';
 import { Button } from '@/components/ui/Button';
 import { cn } from '@/src/lib/utils';
+import { useTrialStatus } from '@/src/lib/useTrialStatus';
 import {
   BarChart3,
   Bell,
@@ -19,7 +20,6 @@ import {
   FileText,
   Home,
   LogOut,
-  Mail,
   MessageCircle,
   Presentation,
   Settings,
@@ -97,11 +97,6 @@ const navigation = [
     icon: BarChart3,
   },
   {
-    name: 'Email',
-    href: '/dashboard/emails',
-    icon: Mail,
-  },
-  {
     name: 'Comunicaciones',
     href: '/dashboard/client-communications',
     icon: MessageCircle,
@@ -128,6 +123,7 @@ const navigation = [
 export default function Sidebar({ userEmail, onLogout }: SidebarProps) {
   const pathname = usePathname();
   const [expandedMenus, setExpandedMenus] = useState<string[]>([]);
+  const { trialInfo, canUseFeatures } = useTrialStatus(userEmail || '');
 
   const toggleMenu = (menuName: string) => {
     setExpandedMenus(prev =>
@@ -137,10 +133,13 @@ export default function Sidebar({ userEmail, onLogout }: SidebarProps) {
     );
   };
 
+  // Verificar si el usuario es PRO (tiene suscripción activa o plan pro)
+  const isProUser = trialInfo?.plan === 'pro' && canUseFeatures;
+
   return (
     <div className="flex h-full w-56 flex-col fixed inset-y-0 z-50 bg-slate-50/95 dark:bg-slate-900/95 backdrop-blur-3xl border-r border-slate-200/60 dark:border-slate-700/60 shadow-2xl shadow-slate-900/3 dark:shadow-black/40 transition-all duration-300">
-      {/* Premium Logo - Más compacto */}
-      <div className="flex h-12 items-center border-b border-slate-200/60 dark:border-slate-700/60 px-4 bg-gradient-to-r from-indigo-50/50 to-violet-50/50 dark:from-slate-900/50 dark:to-slate-800/50 transition-all duration-300">
+      {/* Premium Logo - Movido hacia abajo con más padding */}
+      <div className="flex h-16 items-center border-b border-slate-200/60 dark:border-slate-700/60 px-4 pt-3 bg-gradient-to-r from-indigo-50/50 to-violet-50/50 dark:from-slate-900/50 dark:to-slate-800/50 transition-all duration-300">
         <div className="flex items-center justify-between w-full">
           <h1 className="text-lg font-black tracking-tight relative">
             <span className="relative bg-gradient-to-r from-slate-900 via-indigo-900 to-violet-900 dark:from-slate-100 dark:via-indigo-300 dark:to-violet-300 bg-clip-text text-transparent">
@@ -148,9 +147,12 @@ export default function Sidebar({ userEmail, onLogout }: SidebarProps) {
               <div className="absolute -top-0.5 -right-0.5 w-1 h-1 bg-gradient-to-r from-indigo-500 to-violet-500 dark:from-indigo-400 dark:to-violet-400 rounded-full opacity-80"></div>
             </span>
           </h1>
-          <span className="ml-2 text-xs bg-gradient-to-r from-indigo-50 to-violet-50 dark:from-indigo-900/30 dark:to-violet-900/30 border border-indigo-200 dark:border-indigo-700 text-indigo-700 dark:text-indigo-300 px-1.5 py-0.5 rounded-full font-medium transition-colors duration-300">
-            PRO
-          </span>
+          {/* Solo mostrar PRO si el usuario es premium */}
+          {isProUser && (
+            <span className="ml-2 text-xs bg-gradient-to-r from-indigo-50 to-violet-50 dark:from-indigo-900/30 dark:to-violet-900/30 border border-indigo-200 dark:border-indigo-700 text-indigo-700 dark:text-indigo-300 px-1.5 py-0.5 rounded-full font-medium transition-colors duration-300">
+              PRO
+            </span>
+          )}
           
           {/* Campana de notificaciones */}
           <div className="flex items-center gap-1">
@@ -163,7 +165,10 @@ export default function Sidebar({ userEmail, onLogout }: SidebarProps) {
       {/* Premium Navigation - Con submenús */}
       <nav className="flex-1 space-y-1 px-3 py-4">
         {navigation.map((item) => {
-          const isActive = pathname === item.href || pathname.startsWith(item.href + '/');
+          // Lógica especial para Dashboard: solo activo cuando estás exactamente en /dashboard
+          const isActive = item.href === '/dashboard' 
+            ? pathname === '/dashboard'
+            : pathname === item.href || pathname.startsWith(item.href + '/');
           const IconComponent = item.icon;
           const hasSubmenu = item.submenu && item.submenu.length > 0;
           const isExpanded = expandedMenus.includes(item.name);
