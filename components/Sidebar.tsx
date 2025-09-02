@@ -12,6 +12,7 @@ import {
   Bot,
   Briefcase,
   Building2,
+  Calculator,
   Calendar,
   CheckSquare,
   ChevronDown,
@@ -45,6 +46,11 @@ const navigation = [
     name: 'Clientes',
     href: '/dashboard/clients',
     icon: Users,
+  },
+  {
+    name: 'Presupuestos',
+    href: '/dashboard/budgets',
+    icon: Calculator,
   },
   {
     name: 'Proyectos',
@@ -137,9 +143,9 @@ export default function Sidebar({ userEmail, onLogout }: SidebarProps) {
   const isProUser = trialInfo?.plan === 'pro' && canUseFeatures;
 
   return (
-    <div className="flex h-full w-56 flex-col fixed inset-y-0 z-50 bg-slate-50/95 dark:bg-slate-900/95 backdrop-blur-3xl border-r border-slate-200/60 dark:border-slate-700/60 shadow-2xl shadow-slate-900/3 dark:shadow-black/40 transition-all duration-300">
+    <div className="flex h-screen w-56 flex-col fixed inset-y-0 z-50 bg-slate-50/95 dark:bg-slate-900/95 backdrop-blur-3xl border-r border-slate-200/60 dark:border-slate-700/60 shadow-2xl shadow-slate-900/3 dark:shadow-black/40 transition-all duration-300">
       {/* Premium Logo - Movido hacia abajo con más padding */}
-      <div className="flex h-16 items-center border-b border-slate-200/60 dark:border-slate-700/60 px-4 pt-3 bg-gradient-to-r from-indigo-50/50 to-violet-50/50 dark:from-slate-900/50 dark:to-slate-800/50 transition-all duration-300">
+      <div className="flex h-16 items-center border-b border-slate-200/60 dark:border-slate-700/60 px-4 pt-3 bg-gradient-to-r from-indigo-50/50 to-violet-50/50 dark:from-slate-900/50 dark:to-slate-800/50 transition-all duration-300 flex-shrink-0">
         <div className="flex items-center justify-between w-full">
           <h1 className="text-lg font-black tracking-tight relative">
             <span className="relative bg-gradient-to-r from-slate-900 via-indigo-900 to-violet-900 dark:from-slate-100 dark:via-indigo-300 dark:to-violet-300 bg-clip-text text-transparent">
@@ -163,7 +169,7 @@ export default function Sidebar({ userEmail, onLogout }: SidebarProps) {
       </div>
 
       {/* Premium Navigation - Con submenús */}
-      <nav className="flex-1 space-y-1 px-3 py-4">
+      <nav className="flex-1 overflow-y-auto space-y-1 px-3 py-4 min-h-0">
         {navigation.map((item) => {
           // Lógica especial para Dashboard: solo activo cuando estás exactamente en /dashboard
           const isActive = item.href === '/dashboard' 
@@ -276,7 +282,7 @@ export default function Sidebar({ userEmail, onLogout }: SidebarProps) {
       </nav>
 
       {/* Premium User section - Más compacto */}
-      <div className="border-t border-slate-200/60 dark:border-slate-700/60 p-3 bg-gradient-to-r from-slate-50/50 to-indigo-50/30 dark:from-slate-900/50 dark:to-indigo-900/30 transition-all duration-300">
+      <div className="border-t border-slate-200/60 dark:border-slate-700/60 p-3 bg-gradient-to-r from-slate-50/50 to-indigo-50/30 dark:from-slate-900/50 dark:to-indigo-900/30 transition-all duration-300 flex-shrink-0">
 
         {/* Estado de la suscripción */}
         <div className="mb-3">
