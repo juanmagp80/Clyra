@@ -23,6 +23,7 @@ import {
   LogOut,
   MessageCircle,
   Presentation,
+  Receipt,
   Settings,
   Users,
   Zap
@@ -51,6 +52,11 @@ const navigation = [
     name: 'Presupuestos',
     href: '/dashboard/budgets',
     icon: Calculator,
+  },
+  {
+    name: 'Contratos',
+    href: '/dashboard/contracts',
+    icon: FileText,
   },
   {
     name: 'Proyectos',
@@ -85,7 +91,7 @@ const navigation = [
   {
     name: 'Facturas',
     href: '/dashboard/invoices',
-    icon: FileText,
+    icon: Receipt,
   },
   {
     name: 'Calendario',
