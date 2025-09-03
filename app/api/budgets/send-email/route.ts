@@ -82,33 +82,69 @@ export async function POST(request: NextRequest) {
         // Obtener información del perfil del usuario
         const { data: profile } = await supabase
             .from('profiles')
-            .select('full_name, company_name, email')
+            .select('full_name, company, email, phone, website')
             .eq('id', user.id)
             .single();
 
         console.log('👤 Perfil usuario:', profile?.full_name || user.email);
+        console.log('🏢 Empresa:', profile?.company || 'No configurada');
 
         // Verificar configuración de Resend
+        console.log('🔑 Verificando configuración de Resend...');
+        console.log('🔑 RESEND_API_KEY presente:', !!process.env.RESEND_API_KEY);
+        console.log('🔑 FROM_EMAIL:', process.env.FROM_EMAIL);
+        
         if (!process.env.RESEND_API_KEY) {
             console.warn('⚠️ RESEND_API_KEY no configurada, enviando simulado');
             return await sendSimulatedEmail(budget, supabase, budgetId, user.id);
         }
 
+        console.log('✅ Resend configurado correctamente, enviando email REAL');
+
         // Generar contenido del email
         const emailHtml = generateBudgetEmailHtml(budget, profile);
         const fromEmail = process.env.FROM_EMAIL || 'noreply@resend.dev';
+        
+        // Email de respuesta (reply-to) - SIEMPRE usar el email del usuario autenticado
+        // Este es el email al que deben llegar las respuestas del cliente
+        const replyToEmail = user.email;
+        
+        // Usar un nombre personalizado en el From para que sea más claro
+        const fromName = profile?.full_name || profile?.company || 'Taskelio';
+        const formattedFrom = `${fromName} <${fromEmail}>`;
 
         console.log('📧 Enviando email real a:', budget.clients.email);
-        console.log('📤 Desde:', fromEmail);
+        console.log('📤 Desde:', formattedFrom);
+        console.log('↩️ Responder a:', replyToEmail);
+        console.log('👤 Email del freelancer (user.email):', user.email);
+        console.log('📋 Email del perfil (profile?.email):', profile?.email);
 
         try {
             // Enviar email con Resend
+            console.log('🔄 Intentando enviar email con Resend...');
+            console.log('📧 Parámetros del email:');
+            console.log('  - from:', formattedFrom);
+            console.log('  - to:', budget.clients.email);
+            console.log('  - reply_to:', replyToEmail);
+            console.log('  - subject:', `Presupuesto: ${budget.title}`);
+            
             const emailResult = await resend.emails.send({
-                from: fromEmail,
+                from: formattedFrom,
                 to: budget.clients.email,
+                reply_to: replyToEmail,
                 subject: `Presupuesto: ${budget.title}`,
                 html: emailHtml,
+                headers: {
+                    'X-Entity-Ref-ID': budgetId,
+                    'X-Mailer': 'Taskelio Budget System',
+                    'X-Priority': '3',
+                    'X-MSMail-Priority': 'Normal',
+                    'Importance': 'Normal',
+                    'Reply-To': replyToEmail
+                }
             });
+
+            console.log('📬 Resultado de Resend:', emailResult);
 
             if (emailResult.error) {
                 console.error('❌ Error enviando email:', emailResult.error);
@@ -150,9 +186,11 @@ export async function POST(request: NextRequest) {
             });
 
         } catch (emailError) {
-            console.error('❌ Error en Resend:', emailError);
+            console.error('❌ Error en Resend (catch):', emailError);
+            console.error('❌ Tipo de error:', typeof emailError);
+            console.error('❌ Stack trace:', emailError.stack);
             return NextResponse.json(
-                { error: 'Failed to send email' },
+                { error: 'Failed to send email: ' + (emailError.message || emailError) },
                 { status: 500 }
             );
         }
@@ -222,7 +260,12 @@ function generateBudgetEmailHtml(budget: any, profile: any): string {
     const subtotal = budget.total_amount || 0;
     const taxAmount = subtotal * (budget.tax_rate / 100);
     const total = subtotal + taxAmount;
-    const companyName = profile?.company_name || profile?.full_name || 'Mi Empresa';
+    
+    // Obtener información de la empresa/freelancer
+    const companyName = profile?.company || profile?.full_name || 'Freelancer';
+    const contactEmail = profile?.email || 'contacto@ejemplo.com';
+    const contactPhone = profile?.phone || '';
+    const website = profile?.website || '';
 
     return `
 <!DOCTYPE html>
@@ -233,7 +276,7 @@ function generateBudgetEmailHtml(budget: any, profile: any): string {
     <title>Presupuesto - ${budget.title}</title>
     <style>
         body {
-            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
             line-height: 1.6;
             color: #333;
             max-width: 800px;
@@ -257,11 +300,25 @@ function generateBudgetEmailHtml(budget: any, profile: any): string {
             color: #007bff;
             margin: 0;
             font-size: 2.5em;
+            font-weight: 600;
         }
         .company-info {
             text-align: center;
             margin-bottom: 30px;
+            padding: 20px;
+            background-color: #f8f9fa;
+            border-radius: 8px;
+        }
+        .company-name {
+            font-size: 1.5em;
+            font-weight: 600;
+            color: #007bff;
+            margin-bottom: 10px;
+        }
+        .contact-info {
             color: #666;
+            font-size: 0.9em;
+            line-height: 1.4;
         }
         .budget-info {
             display: grid;
@@ -271,55 +328,89 @@ function generateBudgetEmailHtml(budget: any, profile: any): string {
         }
         .info-section h3 {
             color: #007bff;
-            border-bottom: 1px solid #eee;
-            padding-bottom: 5px;
+            border-bottom: 2px solid #e9ecef;
+            padding-bottom: 8px;
+            margin-bottom: 15px;
+            font-weight: 600;
+        }
+        .info-item {
+            margin-bottom: 8px;
+            display: flex;
+            align-items: center;
+        }
+        .info-label {
+            font-weight: 600;
+            color: #495057;
+            min-width: 80px;
         }
         .items-table {
             width: 100%;
             border-collapse: collapse;
             margin-bottom: 30px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
         }
         .items-table th,
         .items-table td {
-            border: 1px solid #ddd;
+            border: 1px solid #dee2e6;
             padding: 12px;
             text-align: left;
         }
         .items-table th {
             background-color: #007bff;
             color: white;
+            font-weight: 600;
+            text-transform: uppercase;
+            font-size: 0.85em;
         }
         .items-table tr:nth-child(even) {
             background-color: #f8f9fa;
+        }
+        .items-table tr:hover {
+            background-color: #e3f2fd;
         }
         .total-section {
             text-align: right;
             border-top: 2px solid #007bff;
             padding-top: 20px;
+            background-color: #f8f9fa;
+            padding: 20px;
+            border-radius: 8px;
         }
         .total-row {
             display: flex;
             justify-content: space-between;
             margin-bottom: 10px;
+            padding: 5px 0;
         }
         .total-final {
-            font-size: 1.3em;
+            font-size: 1.4em;
             font-weight: bold;
             color: #007bff;
-            border-top: 1px solid #ddd;
-            padding-top: 10px;
+            border-top: 2px solid #007bff;
+            padding-top: 15px;
+            margin-top: 10px;
         }
         .footer {
             text-align: center;
             margin-top: 40px;
-            padding-top: 20px;
-            border-top: 1px solid #eee;
+            padding: 25px;
+            background-color: #f8f9fa;
+            border-radius: 8px;
             color: #666;
             font-size: 0.9em;
+            border-top: 1px solid #dee2e6;
+        }
+        .response-info {
+            background-color: #e3f2fd;
+            padding: 15px;
+            border-radius: 8px;
+            margin: 20px 0;
+            border-left: 4px solid #007bff;
         }
         @media (max-width: 600px) {
             .budget-info { grid-template-columns: 1fr; }
             .container { padding: 20px; }
+            .total-row { flex-direction: column; text-align: right; }
         }
     </style>
 </head>
@@ -327,30 +418,59 @@ function generateBudgetEmailHtml(budget: any, profile: any): string {
     <div class="container">
         <div class="header">
             <h1>PRESUPUESTO</h1>
+            <p style="margin: 10px 0 0 0; color: #666; font-size: 1.1em;">Propuesta comercial profesional</p>
         </div>
 
         <div class="company-info">
-            <h2>${companyName}</h2>
+            <div class="company-name">${companyName}</div>
+            <div class="contact-info">
+                ${contactEmail ? `📧 ${contactEmail}` : ''}
+                ${contactPhone ? ` • 📞 ${contactPhone}` : ''}
+                ${website ? ` • 🌐 ${website}` : ''}
+            </div>
         </div>
 
         <div class="budget-info">
             <div class="info-section">
-                <h3>Información del Cliente</h3>
-                <p><strong>Cliente:</strong> ${budget.clients?.name || 'Cliente'}</p>
-                ${budget.clients?.company ? `<p><strong>Empresa:</strong> ${budget.clients.company}</p>` : ''}
-                <p><strong>Email:</strong> ${budget.clients?.email}</p>
+                <h3>📋 Información del Cliente</h3>
+                <div class="info-item">
+                    <span class="info-label">Cliente:</span>
+                    <span>${budget.clients?.name || 'Cliente'}</span>
+                </div>
+                ${budget.clients?.company ? `
+                <div class="info-item">
+                    <span class="info-label">Empresa:</span>
+                    <span>${budget.clients.company}</span>
+                </div>` : ''}
+                <div class="info-item">
+                    <span class="info-label">Email:</span>
+                    <span>${budget.clients?.email}</span>
+                </div>
             </div>
             <div class="info-section">
-                <h3>Detalles del Presupuesto</h3>
-                <p><strong>Número:</strong> #${budget.id.slice(0, 8).toUpperCase()}</p>
-                <p><strong>Fecha:</strong> ${formatDate(budget.created_at)}</p>
-                <p><strong>Estado:</strong> Enviado</p>
-                ${budget.expires_at ? `<p><strong>Válido hasta:</strong> ${formatDate(budget.expires_at)}</p>` : ''}
+                <h3>📊 Detalles del Presupuesto</h3>
+                <div class="info-item">
+                    <span class="info-label">Número:</span>
+                    <span>#${budget.id.slice(0, 8).toUpperCase()}</span>
+                </div>
+                <div class="info-item">
+                    <span class="info-label">Fecha:</span>
+                    <span>${formatDate(budget.created_at)}</span>
+                </div>
+                <div class="info-item">
+                    <span class="info-label">Estado:</span>
+                    <span style="color: #28a745; font-weight: 600;">✅ Enviado</span>
+                </div>
+                ${budget.expires_at ? `
+                <div class="info-item">
+                    <span class="info-label">Válido hasta:</span>
+                    <span style="color: #dc3545; font-weight: 600;">${formatDate(budget.expires_at)}</span>
+                </div>` : ''}
             </div>
         </div>
 
-        <h3>${budget.title}</h3>
-        ${budget.description ? `<p style="color: #666; margin-bottom: 30px;">${budget.description}</p>` : ''}
+        <h3 style="color: #007bff; border-bottom: 2px solid #e9ecef; padding-bottom: 10px;">${budget.title}</h3>
+        ${budget.description ? `<div style="background-color: #f8f9fa; padding: 15px; border-radius: 8px; margin-bottom: 30px; color: #666; border-left: 4px solid #007bff;"><strong>Descripción:</strong> ${budget.description}</div>` : ''}
 
         <table class="items-table">
             <thead>
@@ -367,39 +487,55 @@ function generateBudgetEmailHtml(budget: any, profile: any): string {
                     <tr>
                         <td><strong>${item.title}</strong></td>
                         <td>${item.description || '-'}</td>
-                        <td>${item.quantity}</td>
-                        <td>${formatCurrency(item.unit_price)}</td>
-                        <td>${formatCurrency(item.total)}</td>
+                        <td style="text-align: center;">${item.quantity}</td>
+                        <td style="text-align: right;">${formatCurrency(item.unit_price)}</td>
+                        <td style="text-align: right; font-weight: 600;">${formatCurrency(item.total)}</td>
                     </tr>
-                `).join('') || '<tr><td colspan="5">No hay items en este presupuesto</td></tr>'}
+                `).join('') || '<tr><td colspan="5" style="text-align: center; color: #666; font-style: italic;">No hay items en este presupuesto</td></tr>'}
             </tbody>
         </table>
 
         <div class="total-section">
             <div class="total-row">
                 <span><strong>Subtotal:</strong></span>
-                <span>${formatCurrency(subtotal)}</span>
+                <span style="font-weight: 600;">${formatCurrency(subtotal)}</span>
             </div>
             <div class="total-row">
                 <span><strong>IVA (${budget.tax_rate}%):</strong></span>
-                <span>${formatCurrency(taxAmount)}</span>
+                <span style="font-weight: 600;">${formatCurrency(taxAmount)}</span>
             </div>
             <div class="total-row total-final">
                 <span><strong>TOTAL:</strong></span>
-                <span>${formatCurrency(total)}</span>
+                <span><strong>${formatCurrency(total)}</strong></span>
             </div>
         </div>
 
         ${budget.notes ? `
-            <div style="margin-top: 30px; padding: 20px; background-color: #f8f9fa; border-radius: 5px;">
-                <h3>Notas adicionales</h3>
-                <p>${budget.notes}</p>
+            <div style="margin-top: 30px; padding: 20px; background-color: #fff3cd; border-radius: 8px; border-left: 4px solid #ffc107;">
+                <h3 style="color: #856404; margin-top: 0;">📝 Notas adicionales</h3>
+                <p style="color: #856404; margin-bottom: 0;">${budget.notes}</p>
             </div>
         ` : ''}
 
+        ${budget.terms_conditions ? `
+            <div style="margin-top: 30px; padding: 20px; background-color: #f8f9fa; border-radius: 8px; border-left: 4px solid #6c757d;">
+                <h3 style="color: #495057; margin-top: 0;">📋 Términos y condiciones</h3>
+                <p style="color: #495057; margin-bottom: 0;">${budget.terms_conditions}</p>
+            </div>
+        ` : ''}
+
+        <div class="response-info">
+            <h3 style="color: #0056b3; margin-top: 0;">💬 ¿Tienes preguntas?</h3>
+            <p style="margin-bottom: 0; color: #0056b3;">
+                Puedes responder directamente a este email o contactarme en: <strong>${contactEmail}</strong>
+                ${contactPhone ? ` • 📞 ${contactPhone}` : ''}
+            </p>
+        </div>
+
         <div class="footer">
-            <p>Presupuesto generado por ${companyName}</p>
-            <p>Si tienes alguna pregunta, no dudes en contactarnos.</p>
+            <p><strong>Presupuesto generado por ${companyName}</strong></p>
+            <p>Este es un email automático generado por nuestro sistema de gestión.</p>
+            <p style="margin-bottom: 0;">Gracias por confiar en nuestros servicios profesionales.</p>
         </div>
     </div>
 </body>

@@ -69,14 +69,14 @@ const BudgetDropdownMenu = ({
     const { position, dropdownRef } = useDropdownPosition(isOpen);
 
     const dropdownClasses = position === 'top' 
-        ? "absolute right-0 bottom-full mb-1 w-48 bg-white rounded-md shadow-lg border border-gray-200 z-50 max-h-60 overflow-y-auto"
-        : "absolute right-0 top-full mt-1 w-48 bg-white rounded-md shadow-lg border border-gray-200 z-50 max-h-60 overflow-y-auto";
+        ? "absolute right-0 bottom-full mb-1 w-48 bg-white rounded-md shadow-lg border border-gray-200 z-[99999] max-h-60 overflow-y-auto"
+        : "absolute right-0 top-full mt-1 w-48 bg-white rounded-md shadow-lg border border-gray-200 z-[99999] max-h-60 overflow-y-auto";
 
     // Log para debug
     console.log('BudgetDropdownMenu - Budget status:', budget.status, 'Should show send:', budget.status === 'draft');
 
     return (
-        <div className="relative" data-dropdown ref={dropdownRef}>
+        <div className="relative z-[99999]" data-dropdown ref={dropdownRef}>
             <Button
                 variant="ghost"
                 size="sm"
@@ -612,7 +612,7 @@ export function BudgetsPageClient({ userEmail }: BudgetsPageClientProps) {
                                     </Button>
                                 </div>
                             ) : (
-                                <div className="overflow-hidden">
+                                <div className="overflow-x-auto overflow-y-visible">
                                     <table className="w-full">
                                         <thead className="bg-gray-50 dark:bg-gray-700/50">
                                             <tr>
@@ -638,7 +638,7 @@ export function BudgetsPageClient({ userEmail }: BudgetsPageClientProps) {
                                         </thead>
                                         <tbody className="divide-y divide-gray-200 dark:divide-gray-700">
                                             {filteredBudgets.map((budget) => (
-                                                <tr key={budget.id} className="hover:bg-gray-50 dark:hover:bg-gray-700/50">
+                                                <tr key={budget.id} className="hover:bg-gray-50 dark:hover:bg-gray-700/50 relative">
                                                     <td className="px-6 py-4">
                                                         <div>
                                                             <div className="text-sm font-medium text-gray-900 dark:text-white">
@@ -669,8 +669,8 @@ export function BudgetsPageClient({ userEmail }: BudgetsPageClientProps) {
                                                             {new Date(budget.created_at).toLocaleDateString('es-ES')}
                                                         </div>
                                                     </td>
-                                                    <td className="px-6 py-4 text-right">
-                                                        <div className="flex items-center justify-end gap-2">
+                                                    <td className="px-6 py-4 text-right relative z-[99999]">
+                                                        <div className="flex items-center justify-end gap-2 relative z-[99999]">
                                                             <Button
                                                                 variant="ghost"
                                                                 size="sm"
