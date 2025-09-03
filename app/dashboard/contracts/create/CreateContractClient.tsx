@@ -6,9 +6,13 @@ import { Button } from '@/components/ui/Button';
 import { createSupabaseClient } from '@/src/lib/supabase-client';
 import { useTrialStatus } from '@/src/lib/useTrialStatus';
 import { showToast } from '@/utils/toast';
-import { ArrowLeft, FileText, Users } from 'lucide-react';
+import { ArrowLeft, FileText, Users, Calendar } from 'lucide-react';
 import { useRouter } from 'next/navigation';
 import { useEffect, useState } from 'react';
+import DatePicker from 'react-datepicker';
+import 'react-datepicker/dist/react-datepicker.css';
+import '@/styles/datepicker.css';
+import { es } from 'date-fns/locale';
 
 interface ContractTemplate {
     id: string;
@@ -49,6 +53,110 @@ export default function CreateContractClient() {
         payment_terms: '',
         project_details: {} as Record<string, string>
     });
+
+    // Separate state for DatePicker objects
+    const [startDate, setStartDate] = useState<Date | null>(null);
+    const [endDate, setEndDate] = useState<Date | null>(null);
+
+    // Function to generate professional contract format
+    const generateProfessionalContract = (content: string, contractData: any, profileData: any, clientData: any) => {
+        const contractNumber = `CONT-${new Date().getFullYear()}-${String(Math.floor(Math.random() * 10000)).padStart(4, '0')}`;
+        const currentDate = new Date().toLocaleDateString('es-ES', { 
+            year: 'numeric', 
+            month: 'long', 
+            day: 'numeric' 
+        });
+
+        return `
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+                            CONTRATO DE SERVICIOS PROFESIONALES
+                                    DOCUMENTO OFICIAL
+                              Número de Contrato: ${contractNumber}
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+📍 LUGAR Y FECHA: ${profileData?.city || '[Ciudad]'}, ${currentDate}
+
+══════════════════════════════════════════════════════════════════════════════
+
+                                    PARTES CONTRATANTES
+
+══════════════════════════════════════════════════════════════════════════════
+
+🔹 EL CONSULTOR/PRESTADOR DE SERVICIOS:
+   Nombre: ${profileData?.name || '[Nombre del Consultor]'}
+   DNI/NIF: ${profileData?.dni || '[DNI del Consultor]'}
+   Dirección: ${profileData?.address || '[Dirección del Consultor]'}
+   Email: ${profileData?.email || '[Email del Consultor]'}
+
+🔹 EL CLIENTE/CONTRATANTE:
+   Nombre/Razón Social: ${clientData.name}
+   ${clientData.company ? `Empresa: ${clientData.company}` : ''}
+   Dirección: ${clientData.address || '[Dirección del Cliente]'}
+   Email: ${clientData.email}
+   ${clientData.phone ? `Teléfono: ${clientData.phone}` : ''}
+
+══════════════════════════════════════════════════════════════════════════════
+
+                                 DETALLES DEL CONTRATO
+
+══════════════════════════════════════════════════════════════════════════════
+
+📋 TÍTULO DEL PROYECTO: ${contractData.title}
+
+💰 VALOR DEL CONTRATO: ${contractData.contract_value} ${contractData.currency}
+
+📅 PERÍODO DE VIGENCIA:
+   • Fecha de Inicio: ${contractData.start_date}
+   • Fecha de Finalización: ${contractData.end_date}
+
+💳 CONDICIONES DE PAGO: ${contractData.payment_terms}
+
+══════════════════════════════════════════════════════════════════════════════
+
+                              CONTENIDO DEL CONTRATO
+
+══════════════════════════════════════════════════════════════════════════════
+
+${content}
+
+══════════════════════════════════════════════════════════════════════════════
+
+                                      FIRMAS
+
+══════════════════════════════════════════════════════════════════════════════
+
+EL CONSULTOR:                                    EL CLIENTE:
+
+
+_____________________________                   _____________________________
+${profileData?.name || '[Nombre del Consultor]'}                      ${clientData.name}
+DNI: ${profileData?.dni || '[DNI]'}                              DNI/CIF: [Documento del Cliente]
+
+
+Fecha: _______________                          Fecha: _______________
+
+
+══════════════════════════════════════════════════════════════════════════════
+
+                               INFORMACIÓN ADICIONAL
+
+══════════════════════════════════════════════════════════════════════════════
+
+📌 Este contrato ha sido generado mediante el sistema Clyra
+📌 Número de referencia: ${contractNumber}
+📌 Fecha de generación: ${currentDate}
+📌 Jurisdicción aplicable: ${profileData?.city || '[Ciudad]'}, España
+
+──────────────────────────────────────────────────────────────────────────────
+
+                    © ${new Date().getFullYear()} - Documento Oficial Clyra
+                              Todos los derechos reservados
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+        `;
+    };
 
     useEffect(() => {
         loadTemplates();
@@ -243,6 +351,18 @@ export default function CreateContractClient() {
                 const regex = new RegExp(`{{${key}}}`, 'g');
                 contractContent = contractContent.replace(regex, String(value) || `[${key}]`);
             });
+
+            // Apply professional format to the contract
+            const contractData = {
+                title: formData.title,
+                contract_value: formData.contract_value,
+                currency: formData.currency,
+                start_date: new Date(formData.start_date).toLocaleDateString('es-ES'),
+                end_date: new Date(formData.end_date).toLocaleDateString('es-ES'),
+                payment_terms: formData.payment_terms
+            };
+
+            contractContent = generateProfessionalContract(contractContent, contractData, profile, selectedClient);
 
             // Validar datos antes de insertar
             if (!formData.title.trim()) {
@@ -479,24 +599,47 @@ export default function CreateContractClient() {
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                     <div>
                         <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                            <Calendar className="inline w-4 h-4 mr-2" />
                             Fecha de Inicio
                         </label>
-                        <input
-                            type="date"
-                            value={formData.start_date}
-                            onChange={(e) => setFormData({ ...formData, start_date: e.target.value })}
-                            className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
+                        <DatePicker
+                            selected={startDate}
+                            onChange={(date: Date | null) => {
+                                setStartDate(date);
+                                setFormData({ 
+                                    ...formData, 
+                                    start_date: date ? date.toISOString().split('T')[0] : '' 
+                                });
+                            }}
+                            locale={es}
+                            dateFormat="dd/MM/yyyy"
+                            placeholderText="Selecciona fecha de inicio"
+                            className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent bg-white dark:bg-gray-700 text-gray-900 dark:text-white cursor-pointer"
+                            wrapperClassName="w-full"
+                            calendarClassName="bonsai-datepicker-calendar"
                         />
                     </div>
                     <div>
                         <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                            <Calendar className="inline w-4 h-4 mr-2" />
                             Fecha de Finalización
                         </label>
-                        <input
-                            type="date"
-                            value={formData.end_date}
-                            onChange={(e) => setFormData({ ...formData, end_date: e.target.value })}
-                            className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
+                        <DatePicker
+                            selected={endDate}
+                            onChange={(date: Date | null) => {
+                                setEndDate(date);
+                                setFormData({ 
+                                    ...formData, 
+                                    end_date: date ? date.toISOString().split('T')[0] : '' 
+                                });
+                            }}
+                            locale={es}
+                            dateFormat="dd/MM/yyyy"
+                            placeholderText="Selecciona fecha de finalización"
+                            minDate={startDate || undefined}
+                            className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent bg-white dark:bg-gray-700 text-gray-900 dark:text-white cursor-pointer"
+                            wrapperClassName="w-full"
+                            calendarClassName="bonsai-datepicker-calendar"
                         />
                     </div>
                 </div>
@@ -857,7 +1000,7 @@ export default function CreateContractClient() {
 
     return (
         <div className="flex h-screen bg-gray-50 dark:bg-gray-900">
-            <Sidebar />
+            <Sidebar onLogout={() => {}} />
             
             <div className="flex-1 flex flex-col overflow-hidden ml-56">
                 <TrialBanner />

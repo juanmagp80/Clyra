@@ -81,7 +81,7 @@ export default function ContractsPageClient({ userEmail }: ContractsPageClientPr
                 return;
             }
 
-            const contractsWithClientName = data?.map(contract => ({
+            const contractsWithClientName = data?.map((contract: any) => ({
                 ...contract,
                 client_name: contract.clients?.name || 'Cliente no encontrado'
             })) || [];
@@ -131,7 +131,7 @@ export default function ContractsPageClient({ userEmail }: ContractsPageClientPr
 
     return (
         <div className="flex h-screen bg-gray-50 dark:bg-gray-900">
-            <Sidebar />
+            <Sidebar onLogout={() => {}} />
             
             <div className="flex-1 flex flex-col overflow-hidden ml-56">
                 <TrialBanner />
@@ -257,6 +257,7 @@ export default function ContractsPageClient({ userEmail }: ContractsPageClientPr
                                     </div>
                                 </div>
                             </div>
+                            )}
 
                             {/* Filters */}
                             <div className="bg-white dark:bg-gray-800 rounded-lg shadow p-6 mb-6">
