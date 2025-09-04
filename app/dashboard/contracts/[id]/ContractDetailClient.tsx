@@ -40,11 +40,12 @@ interface Contract {
 
 interface ContractDetailClientProps {
     contractId: string;
+    userEmail: string;
 }
 
-export default function ContractDetailClient({ contractId }: ContractDetailClientProps) {
+export default function ContractDetailClient({ contractId, userEmail }: ContractDetailClientProps) {
     const router = useRouter();
-    const { canUseFeatures } = useTrialStatus();
+    const { canUseFeatures } = useTrialStatus(userEmail);
     const [contract, setContract] = useState<Contract | null>(null);
     const [loading, setLoading] = useState(true);
 
@@ -163,10 +164,16 @@ export default function ContractDetailClient({ contractId }: ContractDetailClien
         }
     };
 
+    const handleLogout = async () => {
+        const supabase = createSupabaseClient();
+        await supabase.auth.signOut();
+        router.push('/login');
+    };
+
     if (loading) {
         return (
             <div className="flex h-screen bg-gray-50 dark:bg-gray-900">
-                <Sidebar />
+                <Sidebar userEmail={userEmail} onLogout={handleLogout} />
                 <div className="flex-1 flex items-center justify-center">
                     <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div>
                 </div>
@@ -177,7 +184,7 @@ export default function ContractDetailClient({ contractId }: ContractDetailClien
     if (!contract) {
         return (
             <div className="flex h-screen bg-gray-50 dark:bg-gray-900">
-                <Sidebar />
+                <Sidebar userEmail={userEmail} onLogout={handleLogout} />
                 <div className="flex-1 flex items-center justify-center ml-56">
                     <div className="text-center">
                         <h2 className="text-2xl font-bold text-gray-900 dark:text-white mb-2">
@@ -194,7 +201,7 @@ export default function ContractDetailClient({ contractId }: ContractDetailClien
 
     return (
         <div className="flex h-screen bg-gray-50 dark:bg-gray-900">
-            <Sidebar />
+            <Sidebar userEmail={userEmail} onLogout={handleLogout} />
             
             <div className="flex-1 flex flex-col overflow-hidden ml-56">
                 <TrialBanner />

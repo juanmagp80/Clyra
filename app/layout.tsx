@@ -1,4 +1,5 @@
 import type { Metadata } from 'next';
+import { Inter } from 'next/font/google';
 import './globals.css';
 import './fallback.css';
 import '../styles/datepicker.css';
@@ -6,6 +7,14 @@ import '../styles/datepicker-fix.css';
 import '../styles/toasts.css';
 import { ThemeProvider } from '@/components/providers/ThemeProvider';
 import { Toaster } from 'sonner';
+
+// Configurar la fuente Inter como en Bonsai
+const inter = Inter({
+  subsets: ['latin'],
+  display: 'swap',
+  variable: '--font-inter',
+  weight: ['300', '400', '500', '600', '700'],
+});
 
 export const metadata: Metadata = {
   title: 'Taskelio — Tu CRM ligero para freelancers',
@@ -23,7 +32,7 @@ export const metadata: Metadata = {
 export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
     <html lang="es" suppressHydrationWarning>
-      <body suppressHydrationWarning={true} className="transition-colors duration-300">
+      <body suppressHydrationWarning={true} className={`${inter.className} transition-colors duration-300 antialiased`}>
         <ThemeProvider
           attribute="class"
           defaultTheme="light"

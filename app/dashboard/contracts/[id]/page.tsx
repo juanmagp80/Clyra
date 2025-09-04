@@ -17,5 +17,5 @@ export default async function ContractDetailPage({ params }: ContractDetailPageP
         redirect('/login');
     }
 
-    return <ContractDetailClient contractId={params.id} />;
+    return <ContractDetailClient contractId={params.id} userEmail={user.email || ''} />;
 }

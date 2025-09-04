@@ -39,6 +39,18 @@
 @tailwind utilities;
 
 @layer base {
+  /* Tipografía estilo Bonsai */
+  * {
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+  }
+  
+  body {
+    font-feature-settings: "rlig" 1, "calt" 1;
+    text-rendering: optimizeLegibility;
+    letter-spacing: -0.011em;
+  }
+
   :root {
     /* Colores de fondo más suaves y cálidos */
     --background: 210 20% 98%; /* Fondo muy suave con un toque gris-azul */
@@ -133,5 +145,32 @@
   
   .dark .bg-gradient-soft {
     background: linear-gradient(135deg, rgba(15, 23, 42, 0.8) 0%, rgba(30, 41, 59, 0.9) 50%, rgba(51, 65, 85, 0.8) 100%);
+  }
+  
+  /* Tipografía estilo Bonsai */
+  .text-bonsai-heading {
+    font-weight: 600;
+    letter-spacing: -0.025em;
+    line-height: 1.2;
+  }
+  
+  .text-bonsai-subheading {
+    font-weight: 500;
+    letter-spacing: -0.015em;
+    line-height: 1.4;
+  }
+  
+  .text-bonsai-body {
+    font-weight: 400;
+    letter-spacing: -0.011em;
+    line-height: 1.5;
+  }
+  
+  .text-bonsai-caption {
+    font-weight: 400;
+    letter-spacing: -0.008em;
+    line-height: 1.4;
+    font-size: 0.875rem;
+    color: rgb(107 114 128);
   }
 }

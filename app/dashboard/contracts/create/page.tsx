@@ -11,5 +11,5 @@ export default async function CreateContractPage() {
         redirect('/login');
     }
 
-    return <CreateContractClient />;
+    return <CreateContractClient userEmail={user.email || ''} />;
 }
