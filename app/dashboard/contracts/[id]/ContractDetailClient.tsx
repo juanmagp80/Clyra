@@ -74,7 +74,7 @@ export default function ContractDetailClient({ contractId, userEmail }: Contract
             });
         } catch (error) {
             console.error('Error loading contract:', error);
-            showToast('Error al cargar el contrato', 'error');
+            showToast.error('Error al cargar el contrato');
         } finally {
             setLoading(false);
         }
@@ -157,10 +157,10 @@ export default function ContractDetailClient({ contractId, userEmail }: Contract
             if (error) throw error;
 
             setContract({ ...contract, status: 'sent' });
-            showToast('Contrato marcado como enviado', 'success');
+            showToast.success('Contrato marcado como enviado');
         } catch (error) {
             console.error('Error sending contract:', error);
-            showToast('Error al enviar el contrato', 'error');
+            showToast.error('Error al enviar el contrato');
         }
     };
 
@@ -207,7 +207,7 @@ export default function ContractDetailClient({ contractId, userEmail }: Contract
                 <TrialBanner />
                 
                 <main className="flex-1 overflow-x-hidden overflow-y-auto bg-gray-50 dark:bg-gray-900">
-                    <div className="container mx-auto px-6 py-8">
+                    <div className="h-full px-6 py-8">
                         {/* Header */}
                         <div className="mb-8">
                             <div className="flex items-center justify-between mb-6">
@@ -399,7 +399,7 @@ export default function ContractDetailClient({ contractId, userEmail }: Contract
                                             className="w-full justify-start"
                                             onClick={() => {
                                                 navigator.clipboard.writeText(window.location.href);
-                                                showToast('Enlace copiado', 'success');
+                                                showToast.success('Enlace copiado');
                                             }}
                                         >
                                             <Share2 className="w-4 h-4 mr-2" />

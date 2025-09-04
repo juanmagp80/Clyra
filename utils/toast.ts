@@ -87,3 +87,8 @@ export const dismissAllToasts = () => toast.dismiss();
 
 // Función para dismiss un toast específico
 export const dismissToast = (toastId: string | number) => toast.dismiss(toastId);
+
+// Función de retrocompatibilidad para mantener la sintaxis antigua
+export const showToastLegacy = (message: string, type: 'success' | 'error' | 'warning' | 'info' = 'info') => {
+  return showToast[type](message);
+};

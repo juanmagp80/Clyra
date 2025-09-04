@@ -7,6 +7,8 @@ import '../styles/datepicker-fix.css';
 import '../styles/toasts.css';
 import { ThemeProvider } from '@/components/providers/ThemeProvider';
 import { Toaster } from 'sonner';
+import CookieBanner from '@/components/CookieBanner';
+import CookieSettings from '@/components/CookieSettings';
 
 // Configurar la fuente Inter como en Bonsai
 const inter = Inter({
@@ -42,6 +44,8 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
           forcedTheme="light"
         >
           {children}
+          <CookieBanner />
+          <CookieSettings />
           <Toaster 
             position="top-right"
             expand={true}
