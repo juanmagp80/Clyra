@@ -10,6 +10,7 @@ import {
   BarChart3,
   Bell,
   Bot,
+  Brain,
   Briefcase,
   Building2,
   Calculator,
@@ -25,6 +26,7 @@ import {
   Presentation,
   Receipt,
   Settings,
+  Star,
   Users,
   Zap
 } from 'lucide-react';
@@ -37,7 +39,21 @@ interface SidebarProps {
   onLogout: () => void;
 }
 
-const navigation = [
+interface NavigationItem {
+  name: string;
+  href: string;
+  icon: any;
+  isNew?: boolean;
+  isPremium?: boolean;
+  submenu?: {
+    name: string;
+    href: string;
+    icon?: any;
+    highlight?: boolean;
+  }[];
+}
+
+const navigation: NavigationItem[] = [
   {
     name: 'Dashboard',
     href: '/dashboard',
@@ -72,6 +88,13 @@ const navigation = [
     name: 'Automaciones',
     href: '/dashboard/automations',
     icon: Bot,
+  },
+  {
+    name: 'Automaciones IA',
+    href: '/dashboard/ai-automations',
+    icon: Brain,
+    isNew: true,
+    isPremium: true,
   },
   {
     name: 'Propuestas',
@@ -241,7 +264,20 @@ export default function Sidebar({ userEmail, onLogout }: SidebarProps) {
                         : 'text-slate-600 dark:text-slate-400 group-hover:text-indigo-600 dark:group-hover:text-indigo-400 group-hover:scale-110'
                     )}
                   />
-                  <span className="relative z-10">{item.name}</span>
+                  <span className="relative z-10 flex-1">{item.name}</span>
+                  <div className="flex items-center gap-1 ml-2">
+                    {(item as any).isNew && (
+                      <span className="bg-green-500 text-white text-xs font-medium px-1.5 py-0.5 rounded-full">
+                        Nuevo
+                      </span>
+                    )}
+                    {(item as any).isPremium && (
+                      <span className="bg-purple-500 text-white text-xs font-medium px-1.5 py-0.5 rounded-full flex items-center gap-1">
+                        <Star className="h-2.5 w-2.5" />
+                        Pro
+                      </span>
+                    )}
+                  </div>
                 </Link>
               )}
 

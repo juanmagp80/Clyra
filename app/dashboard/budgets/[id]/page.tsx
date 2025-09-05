@@ -3,12 +3,13 @@ import { redirect } from 'next/navigation';
 import { BudgetDetailClient } from './BudgetDetailClient';
 
 interface BudgetDetailPageProps {
-    params: {
+    params: Promise<{
         id: string;
-    };
+    }>;
 }
 
 export default async function BudgetDetailPage({ params }: BudgetDetailPageProps) {
+    const resolvedParams = await params;
     const supabase = await createServerSupabaseClient();
 
     const {
@@ -19,5 +20,5 @@ export default async function BudgetDetailPage({ params }: BudgetDetailPageProps
         redirect('/login');
     }
 
-    return <BudgetDetailClient budgetId={params.id} userEmail={session.user.email} />;
+    return <BudgetDetailClient budgetId={resolvedParams.id} userEmail={session.user.email} />;
 }

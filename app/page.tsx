@@ -24,10 +24,10 @@ export default function Home() {
       highlight: "Sin complejidad"
     },
     {
-      icon: Calendar,
-      title: "Organización Simplificada",
-      description: "Planifica deadlines y proyectos sin herramientas pesadas.",
-      highlight: "Ligero y rápido"
+      icon: Sparkles,
+      title: "Automatizaciones con IA",
+      description: "IA que escribe emails, analiza proyectos y automatiza seguimientos. Sin configuraciones complejas.",
+      highlight: "IA incluida"
     },
     {
       icon: DollarSign,
@@ -39,13 +39,13 @@ export default function Home() {
       icon: BarChart3,
       title: "Métricas Visuales",
       description: "Visualiza el progreso de tus proyectos e ingresos de forma clara y directa.",
-      highlight: "Diseño pensado para freelancers"
+      highlight: "Dashboard inteligente"
     },
     {
-      icon: Zap,
-      title: "Flujo Optimizado",
-      description: "Automatiza tareas repetitivas y enfócate en lo que realmente genera valor.",
-      highlight: "Más productivo"
+      icon: Calendar,
+      title: "Organización Simplificada",
+      description: "Planifica deadlines y proyectos sin herramientas pesadas.",
+      highlight: "Ligero y rápido"
     },
     {
       icon: Globe,
@@ -66,9 +66,9 @@ export default function Home() {
     {
       name: "Carlos Ruiz",
       role: "Desarrollador Independiente",
-      company: "Barcelona",
-      content: "Finalmente un CRM que no me complica la vida. Es visual, rápido y entiende cómo trabajo como freelancer.",
-      growth: "5h/semana ahorradas"
+      company: "Barcelona", 
+      content: "Venir de herramientas complejas a Taskelio fue liberador. Mismas funciones, precio justo y sin frustraciones.",
+      growth: "Workflow simplificado"
     },
     {
       name: "María López",
@@ -128,11 +128,11 @@ export default function Home() {
       {/* Hero Section */}
       <section className="relative z-10 pt-32 pb-20 px-4">
         <div className="container mx-auto text-center max-w-6xl">
-          {/* Badge */}
-          <div className="inline-flex items-center gap-2 bg-gradient-to-r from-purple-500/10 to-cyan-500/10 border border-purple-500/20 rounded-full px-4 py-2 mb-8">
-            <Zap className="w-4 h-4 text-cyan-400" />
-            <span className="text-sm text-gray-300">
-              Tu CRM ligero para freelancers
+          {/* Badge - Destacando IA */}
+          <div className="inline-flex items-center gap-2 bg-gradient-to-r from-blue-500/10 to-purple-500/10 border border-blue-500/20 rounded-full px-4 py-2 mb-8">
+            <Sparkles className="w-4 h-4 text-blue-400" />
+            <span className="text-sm text-blue-300 font-medium">
+              CRM con IA integrada • Precio freelancer-friendly
             </span>
           </div>
 
@@ -152,20 +152,63 @@ export default function Home() {
           </h1>
 
           {/* Subheadline */}
-          <p className="text-xl md:text-2xl text-gray-300 mb-12 max-w-3xl mx-auto leading-relaxed">
-            <span className="text-white font-semibold">Un CRM rápido, visual y sin complejidad corporativa,</span> pensado para autónomos que necesitan orden sin perder tiempo.
+          <p className="text-xl md:text-2xl text-gray-300 mb-8 max-w-3xl mx-auto leading-relaxed">
+            <span className="text-white font-semibold">CRM + Automatizaciones IA + Facturación</span> en una plataforma simple y accesible.
             <br />
-            <span className="text-purple-400 font-medium">El CRM que entiende tu forma de trabajar.</span>
+            <span className="text-blue-400 font-medium">Sin complejidad enterprise, con inteligencia artificial incluida.</span>
           </p>
 
+          {/* Pricing Comparison - Fix overlap */}
+          <div className="bg-gradient-to-r from-gray-800/50 to-gray-900/50 border border-gray-700/50 rounded-2xl p-6 mb-12 max-w-4xl mx-auto">
+            <div className="text-center mb-4">
+              <p className="text-sm text-gray-400 mb-2">Lo que pagas por un CRM completo</p>
+            </div>
+            <div className="grid md:grid-cols-4 gap-4 text-center">
+              <div className="space-y-2 opacity-60">
+                <p className="text-xs text-gray-500">Enterprise CRMs</p>
+                <p className="text-lg text-gray-500">€45-150/mes</p>
+              </div>
+              <div className="space-y-2 opacity-60">
+                <p className="text-xs text-gray-500">Mid-market</p>
+                <p className="text-lg text-gray-500">€25-80/mes</p>
+              </div>
+              <div className="space-y-2 opacity-60">
+                <p className="text-xs text-gray-500">Basic tools</p>
+                <p className="text-lg text-gray-500">€15-45/mes</p>
+              </div>
+              <div className="space-y-3">
+                <div className="flex justify-center mb-2">
+                  <span className="bg-blue-500/20 text-blue-300 text-xs font-medium px-3 py-1 rounded-full border border-blue-500/40">
+                    Taskelio
+                  </span>
+                </div>
+                <p className="text-xs text-gray-400">Con IA integrada</p>
+                <p className="text-2xl font-bold text-white">€10/mes</p>
+              </div>
+            </div>
+            <div className="text-center mt-4">
+              <p className="text-xs text-gray-400">
+                CRM + IA + Automatizaciones + Facturación • Todo incluido
+              </p>
+            </div>
+          </div>
+
           {/* CTA Button */}
-          <div className="flex justify-center mb-8">
+          <div className="flex flex-col items-center mb-8">
+            <div className="mb-4">
+              <span className="bg-gradient-to-r from-blue-500/20 to-purple-500/20 text-blue-300 text-sm font-medium px-4 py-2 rounded-full border border-blue-500/30">
+                Prueba gratuita • Después €10/mes
+              </span>
+            </div>
             <Link href="/register">
-              <Button size="lg" className="bg-gradient-to-r from-purple-600 to-cyan-600 hover:from-purple-700 hover:to-cyan-700 text-lg px-12 py-4 rounded-full border-0 shadow-2xl shadow-purple-500/25 group">
-                Comenzar Prueba Gratuita - 14 Días
+              <Button size="lg" className="bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700 text-lg px-12 py-4 rounded-full border-0 shadow-2xl shadow-blue-500/25 group">
+                Comenzar Prueba Gratuita
                 <ArrowRight className="ml-2 h-5 w-5 group-hover:translate-x-1 transition-transform" />
               </Button>
             </Link>
+            <p className="text-xs text-gray-400 mt-2">
+              14 días gratis • Sin tarjeta requerida • Cancela cuando quieras
+            </p>
           </div>
 
           {/* Social Proof */}
@@ -256,6 +299,135 @@ export default function Home() {
         </div>
       </section>
 
+      {/* Value Comparison Section - Más profesional */}
+      <section className="relative z-10 py-32 px-4">
+        <div className="container mx-auto">
+          <div className="text-center mb-16">
+            <div className="inline-flex items-center gap-2 bg-gradient-to-r from-blue-500/10 to-purple-500/10 border border-blue-500/20 rounded-full px-4 py-2 mb-6">
+              <TrendingUp className="w-4 h-4 text-blue-400" />
+              <span className="text-sm text-blue-300">Por qué elegir Taskelio</span>
+            </div>
+            <h2 className="text-4xl md:text-5xl font-bold mb-6">
+              <span className="bg-gradient-to-r from-white to-gray-300 bg-clip-text text-transparent">
+                Construido para freelancers,
+              </span>
+              <br />
+              <span className="bg-gradient-to-r from-blue-400 to-purple-400 bg-clip-text text-transparent">
+                no para corporaciones
+              </span>
+            </h2>
+            <p className="text-xl text-gray-300 max-w-3xl mx-auto">
+              Mientras otros CRMs añaden complejidad y costos, nosotros simplificamos y optimizamos.
+            </p>
+          </div>
+
+          <div className="max-w-5xl mx-auto">
+            <div className="grid md:grid-cols-2 gap-8">
+              {/* Herramientas Enterprise */}
+              <Card className="bg-gradient-to-br from-gray-800/40 to-gray-900/40 border-gray-700/50">
+                <CardHeader>
+                  <CardTitle className="text-xl text-gray-300 flex items-center gap-2">
+                    🏢 Herramientas Enterprise
+                  </CardTitle>
+                </CardHeader>
+                <CardContent className="space-y-4">
+                  <div className="space-y-3">
+                    <div className="flex justify-between items-center">
+                      <span className="text-gray-300">Configuración</span>
+                      <span className="text-orange-400">Semanas</span>
+                    </div>
+                    <div className="flex justify-between items-center">
+                      <span className="text-gray-300">Funciones necesarias</span>
+                      <span className="text-orange-400">20% del total</span>
+                    </div>
+                    <div className="flex justify-between items-center">
+                      <span className="text-gray-300">Orientado a</span>
+                      <span className="text-orange-400">Equipos grandes</span>
+                    </div>
+                    <div className="flex justify-between items-center">
+                      <span className="text-gray-300">Inversión mensual</span>
+                      <span className="text-orange-400">€25-150</span>
+                    </div>
+                  </div>
+                  <div className="border-t border-gray-700/50 pt-4">
+                    <div className="text-center">
+                      <p className="text-gray-400 text-sm">
+                        Potente pero excesivo para freelancers
+                      </p>
+                    </div>
+                  </div>
+                </CardContent>
+              </Card>
+
+              {/* Taskelio */}
+              <Card className="bg-gradient-to-br from-blue-900/20 to-purple-800/20 border-blue-500/30 relative overflow-hidden">
+                <div className="absolute top-4 right-4">
+                  <span className="bg-blue-500/20 text-blue-300 text-xs font-medium px-2 py-1 rounded-full border border-blue-500/40">
+                    Optimizado
+                  </span>
+                </div>
+                <CardHeader>
+                  <CardTitle className="text-xl text-blue-300 flex items-center gap-2">
+                    🚀 Taskelio
+                  </CardTitle>
+                </CardHeader>
+                <CardContent className="space-y-4">
+                  <div className="space-y-3">
+                    <div className="flex justify-between items-center">
+                      <span className="text-gray-300">Configuración</span>
+                      <span className="text-blue-400">2 minutos</span>
+                    </div>
+                    <div className="flex justify-between items-center">
+                      <span className="text-gray-300">IA integrada</span>
+                      <span className="text-blue-400">✨ Incluida</span>
+                    </div>
+                    <div className="flex justify-between items-center">
+                      <span className="text-gray-300">Orientado a</span>
+                      <span className="text-blue-400">Freelancers</span>
+                    </div>
+                    <div className="flex justify-between items-center">
+                      <span className="text-gray-300">Inversión mensual</span>
+                      <span className="text-blue-400">€10</span>
+                    </div>
+                  </div>
+                  <div className="border-t border-blue-500/30 pt-4">
+                    <div className="text-center">
+                      <p className="text-blue-300 text-sm font-medium">
+                        Todo lo que necesitas + IA, nada que no
+                      </p>
+                    </div>
+                  </div>
+                </CardContent>
+              </Card>
+            </div>
+
+            {/* ROI Calculator - Más sutil */}
+            <div className="mt-16 text-center">
+              <div className="bg-gradient-to-r from-gray-800/50 to-gray-900/50 border border-gray-700/50 rounded-2xl p-8 max-w-2xl mx-auto">
+                <h3 className="text-xl font-semibold text-white mb-6">
+                  Tu ahorro enfocándote en freelancers
+                </h3>
+                <div className="grid md:grid-cols-2 gap-6">
+                  <div className="text-center">
+                    <p className="text-sm text-gray-400 mb-2">Herramientas enterprise</p>
+                    <p className="text-2xl font-bold text-gray-400">€300-1800</p>
+                    <p className="text-xs text-gray-500 mt-1">por año</p>
+                  </div>
+                  <div className="text-center">
+                    <p className="text-sm text-blue-400 mb-2">Con Taskelio</p>
+                    <p className="text-2xl font-bold text-blue-400">€120</p>
+                    <p className="text-xs text-blue-400 mt-1">por año</p>
+                  </div>
+                </div>
+                <p className="text-sm text-gray-400 mt-6">
+                  Invierte la diferencia en hacer crecer tu negocio
+                </p>
+              </div>
+            </div>
+          </div>
+        </div>
+      </section>
+
       {/* Testimonials Section */}
       <section className="relative z-10 py-32 px-4">
         <div className="container mx-auto">
@@ -315,24 +487,32 @@ export default function Home() {
       <section className="relative z-10 py-32 px-4">
         <div className="container mx-auto text-center">
           <div className="max-w-4xl mx-auto">
+            {/* Value proposition reminder */}
+            <div className="inline-flex items-center gap-2 bg-gradient-to-r from-blue-500/10 to-purple-500/10 border border-blue-500/20 rounded-full px-6 py-3 mb-8">
+              <Sparkles className="w-5 h-5 text-blue-400" />
+              <span className="text-lg text-blue-300 font-medium">
+                CRM completo + IA por €10/mes
+              </span>
+            </div>
+
             <h2 className="text-5xl md:text-6xl font-bold mb-8 leading-none">
               <span className="bg-gradient-to-r from-white to-gray-300 bg-clip-text text-transparent">
                 ¿Listo para
               </span>
               <br />
-              <span className="bg-gradient-to-r from-purple-400 via-pink-400 to-cyan-400 bg-clip-text text-transparent">
+              <span className="bg-gradient-to-r from-blue-400 via-purple-400 to-cyan-400 bg-clip-text text-transparent">
                 simplificar?
               </span>
             </h2>
             <p className="text-2xl text-gray-300 mb-12 leading-relaxed">
-              Únete a <span className="text-purple-400 font-bold">miles de freelancers</span> que ya organizaron su trabajo.
+              Únete a <span className="text-blue-400 font-bold">miles de freelancers</span> que ya optimizaron su gestión sin complicaciones.
             </p>
 
             <div className="flex gap-6 justify-center flex-wrap mb-12">
               <Link href="/register">
-                <Button size="lg" className="bg-gradient-to-r from-purple-600 to-cyan-600 hover:from-purple-700 hover:to-cyan-700 text-xl px-16 py-6 rounded-full border-0 shadow-2xl shadow-purple-500/25 group">
+                <Button size="lg" className="bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700 text-xl px-16 py-6 rounded-full border-0 shadow-2xl shadow-blue-500/25 group">
                   <Sparkles className="mr-3 h-6 w-6 group-hover:rotate-12 transition-transform" />
-                  Comenzar Gratis
+                  Comenzar Prueba Gratuita
                   <ArrowRight className="ml-3 h-6 w-6 group-hover:translate-x-2 transition-transform" />
                 </Button>
               </Link>
@@ -340,16 +520,34 @@ export default function Home() {
 
             <div className="flex items-center justify-center gap-8 text-sm text-gray-400">
               <div className="flex items-center gap-2">
-                <CheckCircle className="w-4 h-4 text-green-400" />
-                <span>Prueba gratis 14 días</span>
+                <CheckCircle className="w-4 h-4 text-blue-400" />
+                <span>14 días gratis</span>
               </div>
               <div className="flex items-center gap-2">
-                <CheckCircle className="w-4 h-4 text-green-400" />
-                <span>Sin costos de configuración</span>
+                <CheckCircle className="w-4 h-4 text-blue-400" />
+                <span>Setup en 2 minutos</span>
               </div>
               <div className="flex items-center gap-2">
-                <CheckCircle className="w-4 h-4 text-green-400" />
-                <span>Soporte 24/7</span>
+                <CheckCircle className="w-4 h-4 text-blue-400" />
+                <span>Cancela cuando quieras</span>
+              </div>
+            </div>
+
+            {/* Subtle value reminder */}
+            <div className="mt-12 bg-gradient-to-r from-gray-800/50 to-gray-900/50 border border-gray-700/50 rounded-2xl p-6 max-w-2xl mx-auto">
+              <p className="text-gray-300 text-sm mb-2">
+                Tu inversión inteligente:
+              </p>
+              <div className="flex items-center justify-center gap-4">
+                <div className="text-center">
+                  <p className="text-gray-500 text-lg">€300-1800/año</p>
+                  <p className="text-xs text-gray-500">Herramientas enterprise</p>
+                </div>
+                <span className="text-gray-600">vs</span>
+                <div className="text-center">
+                  <p className="text-blue-400 font-semibold text-xl">€120/año</p>
+                  <p className="text-xs text-blue-400">Taskelio completo</p>
+                </div>
               </div>
             </div>
           </div>

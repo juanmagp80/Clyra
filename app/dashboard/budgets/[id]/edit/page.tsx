@@ -3,12 +3,13 @@ import { redirect } from 'next/navigation';
 import { EditBudgetClient } from './EditBudgetClient';
 
 interface EditBudgetPageProps {
-    params: {
+    params: Promise<{
         id: string;
-    };
+    }>;
 }
 
 export default async function EditBudgetPage({ params }: EditBudgetPageProps) {
+    const resolvedParams = await params;
     const supabase = await createServerSupabaseClient();
 
     const {
@@ -19,5 +20,5 @@ export default async function EditBudgetPage({ params }: EditBudgetPageProps) {
         redirect('/login');
     }
 
-    return <EditBudgetClient budgetId={params.id} userEmail={session.user.email} />;
+    return <EditBudgetClient budgetId={resolvedParams.id} userEmail={session.user.email} />;
 }

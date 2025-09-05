@@ -107,7 +107,7 @@ export async function POST(request: NextRequest) {
         
         // Email de respuesta (reply-to) - SIEMPRE usar el email del usuario autenticado
         // Este es el email al que deben llegar las respuestas del cliente
-        const replyToEmail = user.email;
+        const replyToEmail = user.email || fromEmail;
         
         // Usar un nombre personalizado en el From para que sea más claro
         const fromName = profile?.full_name || profile?.company || 'Taskelio';
@@ -131,7 +131,7 @@ export async function POST(request: NextRequest) {
             const emailResult = await resend.emails.send({
                 from: formattedFrom,
                 to: budget.clients.email,
-                reply_to: replyToEmail,
+                replyTo: replyToEmail,
                 subject: `Presupuesto: ${budget.title}`,
                 html: emailHtml,
                 headers: {

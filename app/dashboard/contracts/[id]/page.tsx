@@ -3,12 +3,13 @@ import { redirect } from 'next/navigation';
 import ContractDetailClient from './ContractDetailClient';
 
 interface ContractDetailPageProps {
-    params: {
+    params: Promise<{
         id: string;
-    };
+    }>;
 }
 
 export default async function ContractDetailPage({ params }: ContractDetailPageProps) {
+    const resolvedParams = await params;
     const supabase = await createSupabaseServerClient();
     
     const { data: { user }, error } = await supabase.auth.getUser();
@@ -17,5 +18,5 @@ export default async function ContractDetailPage({ params }: ContractDetailPageP
         redirect('/login');
     }
 
-    return <ContractDetailClient contractId={params.id} userEmail={user.email || ''} />;
+    return <ContractDetailClient contractId={resolvedParams.id} userEmail={user.email || ''} />;
 }

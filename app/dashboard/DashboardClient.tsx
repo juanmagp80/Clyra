@@ -800,7 +800,7 @@ export default function DashboardBonsai({
 
                 {/* Header estilo Bonsai */}
                 <div className="bg-white border-b border-gray-200">
-                    <div className="px-6 py-6">
+                    <div className="px-4 sm:px-6 py-4 sm:py-6">
                         <div className="flex items-center justify-between">
                             <div>
                                 <h1 className="text-2xl font-semibold text-gray-900">
@@ -818,7 +818,7 @@ export default function DashboardBonsai({
                     </div>
                 </div>
 
-                <div className="p-6">
+                <div className="p-4 sm:p-6">
                     {loading ? (
                         <div className="flex items-center justify-center h-64">
                             <div className="text-center">
@@ -829,23 +829,21 @@ export default function DashboardBonsai({
                     ) : (
                         <>
                             {/* Estadísticas Principales */}
-                            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-6 gap-6 mb-8">
+                            <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-3 xl:grid-cols-6 gap-4 lg:gap-6 mb-8">
                                 {/* Total Clients */}
                                 <div
                                     onClick={() => router.push('/dashboard/clients')}
-                                    className="bg-white rounded-lg shadow-sm border border-gray-200 p-6 hover:shadow-md transition-shadow cursor-pointer"
+                                    className="bg-white rounded-lg shadow-sm border border-gray-200 p-4 sm:p-6 hover:shadow-md transition-shadow cursor-pointer min-h-[100px]"
                                 >
-                                    <div className="flex items-center">
+                                    <div className="flex items-start space-x-3">
                                         <div className="flex-shrink-0">
-                                            <Users className="h-8 w-8 text-blue-600" />
+                                            <Users className="h-6 w-6 sm:h-8 sm:w-8 text-blue-600" />
                                         </div>
-                                        <div className="ml-4 flex-1">
+                                        <div className="flex-1 min-w-0">
+                                            <p className="text-xs sm:text-sm font-medium text-gray-600 mb-1">Clientes</p>
                                             <div className="flex items-center justify-between">
-                                                <div>
-                                                    <p className="text-sm font-medium text-gray-600">Clientes</p>
-                                                    <p className="text-2xl font-semibold text-gray-900">{metrics.totalClients}</p>
-                                                </div>
-                                                <ArrowRight className="h-4 w-4 text-gray-400" />
+                                                <p className="text-lg sm:text-2xl font-semibold text-gray-900 truncate">{metrics.totalClients}</p>
+                                                <ArrowRight className="h-3 w-3 sm:h-4 sm:w-4 text-gray-400 flex-shrink-0 ml-2" />
                                             </div>
                                         </div>
                                     </div>
@@ -854,46 +852,44 @@ export default function DashboardBonsai({
                                 {/* Active Projects */}
                                 <div
                                     onClick={() => router.push('/dashboard/projects')}
-                                    className="bg-white rounded-lg shadow-sm border border-gray-200 p-6 hover:shadow-md transition-shadow cursor-pointer"
+                                    className="bg-white rounded-lg shadow-sm border border-gray-200 p-4 sm:p-6 hover:shadow-md transition-shadow cursor-pointer min-h-[100px]"
                                 >
-                                    <div className="flex items-center">
+                                    <div className="flex items-start space-x-3">
                                         <div className="flex-shrink-0">
-                                            <Briefcase className="h-8 w-8 text-green-600" />
+                                            <Briefcase className="h-6 w-6 sm:h-8 sm:w-8 text-green-600" />
                                         </div>
-                                        <div className="ml-4 flex-1">
+                                        <div className="flex-1 min-w-0">
+                                            <p className="text-xs sm:text-sm font-medium text-gray-600 mb-1">Proyectos Activos</p>
                                             <div className="flex items-center justify-between">
-                                                <div>
-                                                    <p className="text-sm font-medium text-gray-600">Proyectos Activos</p>
-                                                    <p className="text-2xl font-semibold text-gray-900">{metrics.activeProjects}</p>
-                                                </div>
-                                                <ArrowRight className="h-4 w-4 text-gray-400" />
+                                                <p className="text-lg sm:text-2xl font-semibold text-gray-900 truncate">{metrics.activeProjects}</p>
+                                                <ArrowRight className="h-3 w-3 sm:h-4 sm:w-4 text-gray-400 flex-shrink-0 ml-2" />
                                             </div>
                                         </div>
                                     </div>
                                 </div>
 
                                 {/* Completed Projects */}
-                                <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
-                                    <div className="flex items-center">
+                                <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-4 sm:p-6 min-h-[100px]">
+                                    <div className="flex items-start space-x-3">
                                         <div className="flex-shrink-0">
-                                            <CheckCircle className="h-8 w-8 text-purple-600" />
+                                            <CheckCircle className="h-6 w-6 sm:h-8 sm:w-8 text-purple-600" />
                                         </div>
-                                        <div className="ml-4">
-                                            <p className="text-sm font-medium text-gray-600">Completados</p>
-                                            <p className="text-2xl font-semibold text-gray-900">{metrics.completedProjects}</p>
+                                        <div className="flex-1 min-w-0">
+                                            <p className="text-xs sm:text-sm font-medium text-gray-600 mb-1">Completados</p>
+                                            <p className="text-lg sm:text-2xl font-semibold text-gray-900 truncate">{metrics.completedProjects}</p>
                                         </div>
                                     </div>
                                 </div>
 
                                 {/* Monthly Revenue */}
-                                <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
-                                    <div className="flex items-center">
+                                <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-4 sm:p-6 min-h-[100px]">
+                                    <div className="flex items-start space-x-3">
                                         <div className="flex-shrink-0">
-                                            <DollarSign className="h-8 w-8 text-amber-600" />
+                                            <DollarSign className="h-6 w-6 sm:h-8 sm:w-8 text-amber-600" />
                                         </div>
-                                        <div className="ml-4">
-                                            <p className="text-sm font-medium text-gray-600">Presupuestos</p>
-                                            <p className="text-2xl font-semibold text-gray-900">
+                                        <div className="flex-1 min-w-0">
+                                            <p className="text-xs sm:text-sm font-medium text-gray-600 mb-1">Presupuestos</p>
+                                            <p className="text-lg sm:text-2xl font-semibold text-gray-900 truncate">
                                                 €{metrics.monthlyRevenue.toLocaleString()}
                                             </p>
                                         </div>
@@ -903,35 +899,33 @@ export default function DashboardBonsai({
                                 {/* Paid Invoices */}
                                 <div 
                                     onClick={() => router.push('/dashboard/invoices')}
-                                    className="bg-white rounded-lg shadow-sm border border-gray-200 p-6 hover:shadow-md transition-shadow cursor-pointer"
+                                    className="bg-white rounded-lg shadow-sm border border-gray-200 p-4 sm:p-6 hover:shadow-md transition-shadow cursor-pointer min-h-[100px]"
                                 >
-                                    <div className="flex items-center">
+                                    <div className="flex items-start space-x-3">
                                         <div className="flex-shrink-0">
-                                            <CheckCircle className="h-8 w-8 text-green-600" />
+                                            <CheckCircle className="h-6 w-6 sm:h-8 sm:w-8 text-green-600" />
                                         </div>
-                                        <div className="ml-4 flex-1">
+                                        <div className="flex-1 min-w-0">
+                                            <p className="text-xs sm:text-sm font-medium text-gray-600 mb-1">Facturas Pagadas</p>
                                             <div className="flex items-center justify-between">
-                                                <div>
-                                                    <p className="text-sm font-medium text-gray-600">Facturas Pagadas</p>
-                                                    <p className="text-2xl font-semibold text-gray-900">
-                                                        €{metrics.paidInvoices.toLocaleString()}
-                                                    </p>
-                                                </div>
-                                                <ArrowRight className="h-4 w-4 text-gray-400" />
+                                                <p className="text-lg sm:text-2xl font-semibold text-gray-900 truncate">
+                                                    €{metrics.paidInvoices.toLocaleString()}
+                                                </p>
+                                                <ArrowRight className="h-3 w-3 sm:h-4 sm:w-4 text-gray-400 flex-shrink-0 ml-2" />
                                             </div>
                                         </div>
                                     </div>
                                 </div>
 
                                 {/* Total Task Time */}
-                                <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
-                                    <div className="flex items-center">
+                                <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-4 sm:p-6 min-h-[100px]">
+                                    <div className="flex items-start space-x-3">
                                         <div className="flex-shrink-0">
-                                            <Clock className="h-8 w-8 text-blue-600" />
+                                            <Clock className="h-6 w-6 sm:h-8 sm:w-8 text-blue-600" />
                                         </div>
-                                        <div className="ml-4">
-                                            <p className="text-sm font-medium text-gray-600">TIEMPO ACUMULADO (Clyra)</p>
-                                            <p className="text-2xl font-semibold text-gray-900">
+                                        <div className="flex-1 min-w-0">
+                                            <p className="text-xs sm:text-sm font-medium text-gray-600 mb-1">TIEMPO ACUMULADO</p>
+                                            <p className="text-lg sm:text-2xl font-semibold text-gray-900 truncate">
                                                 {(() => {
                                                     const h = Math.floor(totalTaskTime / 3600);
                                                     const m = Math.floor((totalTaskTime % 3600) / 60);
@@ -1075,7 +1069,7 @@ export default function DashboardBonsai({
                             </div>
 
                             {/* Estadísticas Adicionales - Estilo Bonsai */}
-                            <div className="grid grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
+                            <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 lg:grid-cols-4 gap-4 lg:gap-6 mb-8">
                                 {/* Proyectos Completados */}
                                 <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6 text-center">
                                     <div className="w-12 h-12 bg-green-600 rounded-lg mx-auto mb-4 flex items-center justify-center">
