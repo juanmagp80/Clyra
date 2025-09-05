@@ -3,6 +3,7 @@
 
 import { SupabaseClient, User } from '@supabase/supabase-js';
 import emailService from './email-service';
+import { analyzeSentiment, generateProposal, optimizePricing, prioritizeTasks, type SentimentAnalysisRequest, type ProposalGenerationRequest, type PricingOptimizationRequest, type TaskPrioritizationRequest } from '../../lib/openai';
 
 // Tipos de acciones disponibles
 export type ActionType = 
@@ -14,7 +15,11 @@ export type ActionType =
     | 'send_whatsapp'
     | 'generate_report'
     | 'create_proposal'
-    | 'create_notification';
+    | 'create_notification'
+    | 'analyze_sentiment'        // 🆕 NUEVA
+    | 'generate_ai_proposal'     // 🆕 NUEVA
+    | 'optimize_pricing'         // 🆕 NUEVA
+    | 'prioritize_tasks_ai';     // 🆕 NUEVA
 
 // Interfaz para una acción de automatización
 export interface AutomationAction {
@@ -493,6 +498,313 @@ const createNotificationAction: ActionExecutor = async (action, payload) => {
 };
 
 // =============================================================================
+// 🆕 NUEVAS ACCIONES DE IA REALES
+// =============================================================================
+
+// Análisis de sentimiento con IA
+const analyzeSentimentAction: ActionExecutor = async (action, payload) => {
+    try {
+        const params = action.parameters;
+        
+        if (!params.text) {
+            return {
+                success: false,
+                message: "Texto para análisis es requerido",
+                error: "MISSING_TEXT"
+            };
+        }
+
+        // Realizar análisis de sentimiento
+        const sentimentRequest: SentimentAnalysisRequest = {
+            text: params.text,
+            clientName: payload.client.name,
+            context: params.context
+        };
+
+        const result = await analyzeSentiment(sentimentRequest);
+
+        // Guardar resultado en base de datos
+        const { data: sentimentData, error: dbError } = await payload.supabase
+            .from('client_communications')
+            .insert({
+                user_id: payload.user.id,
+                client_id: payload.client.id,
+                type: 'sentiment_analysis',
+                content: params.text,
+                sentiment_score: result.confidence,
+                sentiment_label: result.sentiment,
+                keywords: result.keywords,
+                metadata: {
+                    urgency: result.urgency,
+                    summary: result.summary,
+                    actionRequired: result.actionRequired,
+                    suggestedResponse: result.suggestedResponse,
+                    automationId: payload.automation.id
+                }
+            })
+            .select()
+            .single();
+
+        // Si es negativo y requiere acción, crear tarea urgente
+        if (result.actionRequired && result.sentiment === 'negative') {
+            await payload.supabase
+                .from('tasks')
+                .insert({
+                    user_id: payload.user.id,
+                    title: `🚨 Cliente requiere atención: ${payload.client.name}`,
+                    description: `Sentimiento negativo detectado (${Math.round(result.confidence * 100)}% confianza).\n\nResumen: ${result.summary}\n\nSugerencia: ${result.suggestedResponse}`,
+                    priority: 'high',
+                    category: 'client_management',
+                    due_date: new Date(Date.now() + 24 * 60 * 60 * 1000).toISOString(), // 24h
+                    status: 'pending'
+                });
+        }
+
+        return {
+            success: true,
+            message: `Análisis completado: ${result.sentiment} (${Math.round(result.confidence * 100)}% confianza)`,
+            data: {
+                sentiment: result.sentiment,
+                confidence: result.confidence,
+                urgency: result.urgency,
+                keywords: result.keywords,
+                summary: result.summary,
+                actionRequired: result.actionRequired,
+                suggestedResponse: result.suggestedResponse,
+                recordId: sentimentData?.id
+            }
+        };
+
+    } catch (error) {
+        console.error('Error en analyzeSentimentAction:', error);
+        return {
+            success: false,
+            message: "Error analizando sentimiento con IA",
+            error: error instanceof Error ? error.message : String(error)
+        };
+    }
+};
+
+// Generación automática de propuestas con IA
+const generateAIProposalAction: ActionExecutor = async (action, payload) => {
+    try {
+        const params = action.parameters;
+        
+        if (!params.clientBrief) {
+            return {
+                success: false,
+                message: "Brief del cliente es requerido",
+                error: "MISSING_BRIEF"
+            };
+        }
+
+        // Generar propuesta con IA
+        const proposalRequest: ProposalGenerationRequest = {
+            clientName: payload.client.name,
+            clientBrief: params.clientBrief,
+            projectType: params.projectType || 'consulting',
+            budget: params.budget,
+            timeline: params.timeline,
+            requirements: params.requirements || [],
+            userExpertise: params.userExpertise
+        };
+
+        const result = await generateProposal(proposalRequest);
+
+        // Guardar propuesta en base de datos
+        const { data: proposalData, error: dbError } = await payload.supabase
+            .from('proposals')
+            .insert({
+                user_id: payload.user.id,
+                client_id: payload.client.id,
+                title: result.title,
+                description: result.executive_summary,
+                total_amount: result.total_budget,
+                currency: 'EUR',
+                status: 'draft',
+                content: JSON.stringify({
+                    executive_summary: result.executive_summary,
+                    scope_of_work: result.scope_of_work,
+                    timeline: result.timeline,
+                    budget_breakdown: result.budget_breakdown,
+                    terms_and_conditions: result.terms_and_conditions,
+                    next_steps: result.next_steps,
+                    generated_by_ai: true,
+                    automation_id: payload.automation.id
+                }),
+                created_at: new Date().toISOString()
+            })
+            .select()
+            .single();
+
+        if (dbError) {
+            console.warn('⚠️ No se pudo guardar propuesta en BD:', dbError.message);
+        }
+
+        return {
+            success: true,
+            message: `Propuesta "${result.title}" generada automáticamente`,
+            data: {
+                proposalId: proposalData?.id,
+                title: result.title,
+                budget: result.total_budget,
+                scope: result.scope_of_work.length + ' elementos',
+                timeline: result.timeline,
+                proposal: result
+            }
+        };
+
+    } catch (error) {
+        console.error('Error en generateAIProposalAction:', error);
+        return {
+            success: false,
+            message: "Error generando propuesta con IA",
+            error: error instanceof Error ? error.message : String(error)
+        };
+    }
+};
+
+// Optimización inteligente de precios
+const optimizePricingAction: ActionExecutor = async (action, payload) => {
+    try {
+        const params = action.parameters;
+        
+        if (!params.projectType || !params.projectScope) {
+            return {
+                success: false,
+                message: "Tipo de proyecto y alcance son requeridos",
+                error: "MISSING_PROJECT_DATA"
+            };
+        }
+
+        // Optimizar precios con IA
+        const pricingRequest: PricingOptimizationRequest = {
+            projectType: params.projectType,
+            projectScope: params.projectScope,
+            clientBudget: params.clientBudget,
+            timeline: params.timeline || '4-6 semanas',
+            complexity: params.complexity || 'medium',
+            userExperience: params.userExperience || 'mid',
+            marketData: params.marketData
+        };
+
+        const result = await optimizePricing(pricingRequest);
+
+        // Crear notificación con recomendación de precio
+        await payload.supabase
+            .from('user_notifications')
+            .insert({
+                user_id: payload.user.id,
+                title: `💰 Precio optimizado para ${payload.client.name}`,
+                message: `IA recomienda €${result.recommended_price} (${result.market_position}). Rango: €${result.price_range.min}-€${result.price_range.max}`,
+                type: 'pricing_recommendation',
+                is_read: false,
+                action_data: {
+                    clientId: payload.client.id,
+                    automationId: payload.automation.id,
+                    pricingData: result
+                }
+            });
+
+        return {
+            success: true,
+            message: `Precio optimizado: €${result.recommended_price} (confianza: ${Math.round(result.confidence * 100)}%)`,
+            data: {
+                recommended_price: result.recommended_price,
+                price_range: result.price_range,
+                reasoning: result.reasoning,
+                confidence: result.confidence,
+                market_position: result.market_position
+            }
+        };
+
+    } catch (error) {
+        console.error('Error en optimizePricingAction:', error);
+        return {
+            success: false,
+            message: "Error optimizando precios con IA",
+            error: error instanceof Error ? error.message : String(error)
+        };
+    }
+};
+
+// Priorización inteligente de tareas
+const prioritizeTasksAIAction: ActionExecutor = async (action, payload) => {
+    try {
+        const params = action.parameters;
+        
+        // Obtener tareas del usuario
+        const { data: tasksData, error: tasksError } = await payload.supabase
+            .from('tasks')
+            .select('id, title, description, due_date, priority, status')
+            .eq('user_id', payload.user.id)
+            .in('status', ['pending', 'in_progress']);
+
+        if (tasksError || !tasksData || tasksData.length === 0) {
+            return {
+                success: false,
+                message: "No se encontraron tareas para priorizar",
+                error: "NO_TASKS_FOUND"
+            };
+        }
+
+        // Preparar tareas para IA
+        const taskRequest: TaskPrioritizationRequest = {
+            tasks: tasksData.map(task => ({
+                id: task.id,
+                title: task.title,
+                description: task.description,
+                deadline: task.due_date,
+                estimatedHours: params.estimatedHours || 2
+            })),
+            workload: params.workload || 40,
+            priorities: params.priorities || []
+        };
+
+        const result = await prioritizeTasks(taskRequest);
+
+        // Actualizar prioridades en base de datos
+        let updatedCount = 0;
+        for (const task of result.prioritized_tasks) {
+            // Buscar la tarea original para preservar la descripción
+            const originalTask = tasksData.find(t => t.id === task.id);
+            const updatedDescription = originalTask?.description ? 
+                `${originalTask.description}\n\n🤖 IA: ${task.reasoning}` : 
+                `🤖 IA: ${task.reasoning}`;
+
+            const { error: updateError } = await payload.supabase
+                .from('tasks')
+                .update({
+                    priority: task.priority_level,
+                    description: updatedDescription
+                })
+                .eq('id', task.id)
+                .eq('user_id', payload.user.id);
+
+            if (!updateError) updatedCount++;
+        }
+
+        return {
+            success: true,
+            message: `${updatedCount} tareas repriorizadas con IA`,
+            data: {
+                prioritized_tasks: result.prioritized_tasks,
+                workload_analysis: result.workload_analysis,
+                updated_count: updatedCount
+            }
+        };
+
+    } catch (error) {
+        console.error('Error en prioritizeTasksAIAction:', error);
+        return {
+            success: false,
+            message: "Error priorizando tareas con IA",
+            error: error instanceof Error ? error.message : String(error)
+        };
+    }
+};
+
+// =============================================================================
 // REGISTRO DE EJECUTORES DE ACCIONES
 // =============================================================================
 
@@ -506,6 +818,11 @@ const actionExecutors: Record<ActionType, ActionExecutor> = {
     send_whatsapp: notImplementedAction,
     generate_report: notImplementedAction,
     create_proposal: notImplementedAction,
+    // 🆕 NUEVAS ACCIONES DE IA REALES
+    analyze_sentiment: analyzeSentimentAction,
+    generate_ai_proposal: generateAIProposalAction,
+    optimize_pricing: optimizePricingAction,
+    prioritize_tasks_ai: prioritizeTasksAIAction
 };
 
 // =============================================================================
