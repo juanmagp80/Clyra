@@ -70,8 +70,8 @@ export async function handleClientOnboarding(payload: any, user_id: string) {
   // Enviar email de bienvenida
   await sendEmail(
     clientEmail,
-    `¡Bienvenido/a ${clientName}! 🎉`,
-    `Hola ${clientName},\n\n¡Estamos emocionados de trabajar contigo! Te hemos preparado un kit de bienvenida con toda la información necesaria para comenzar.\n\nPróximos pasos:\n- Revisar el documento de alcance del proyecto\n- Programar kickoff meeting\n- Acceso a herramientas de colaboración\n\n¡Hablamos pronto!`,
+    `¡Bienvenido/a ${clientName} a {{user_company}}! 🎉`,
+    `Hola ${clientName},\n\n¡Bienvenido/a a {{user_company}}! Es un placer tenerte como cliente.\n\nNuestro equipo te acompañará en cada paso para que tu experiencia sea excelente.\n\nPróximos pasos:\n- Revisa el documento de alcance del proyecto\n- Agenda una reunión de inicio con nosotros\n- Accede a las herramientas de colaboración que te hemos habilitado\n\nSi tienes cualquier duda, puedes contactarnos directamente al teléfono {{user_phone}}.\n\nGracias por confiar en {{user_company}}.\n\nUn saludo cordial,\nEl equipo de {{user_company}}`,
     'high'
   );
   

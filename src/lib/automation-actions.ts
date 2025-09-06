@@ -79,21 +79,39 @@ const sendEmailAction: ActionExecutor = async (action, payload) => {
             };
         }
 
-        // Obtener información de la empresa del usuario
+
+        // Obtener información de la empresa y teléfono del usuario
         let userCompany = 'Mi Empresa';
+        let userPhone = '';
         try {
-            const { data: userProfile, error: profileError } = await payload.supabase
-                .from('profiles')
-                .select('company_name')
-                .eq('id', payload.user.id)
+            // 1. Buscar en company_settings
+            const { data: companySettings, error: companyError } = await payload.supabase
+                .from('company_settings')
+                .select('company_name, phone')
+                .eq('user_id', payload.user.id)
                 .single();
-            
-            if (!profileError && userProfile?.company_name) {
-                userCompany = userProfile.company_name;
+            if (!companyError && companySettings) {
+                if (companySettings.company_name) userCompany = companySettings.company_name;
+                if (companySettings.phone) userPhone = companySettings.phone;
+                console.log('🏢 Datos de company_settings:', { company_name: companySettings.company_name, phone: companySettings.phone });
+            } else {
+                // 2. Fallback a profiles
+                const { data: userProfile, error: profileError } = await payload.supabase
+                    .from('profiles')
+                    .select('company, phone')
+                    .eq('id', payload.user.id)
+                    .single();
+                if (!profileError && userProfile) {
+                    if (userProfile.company) userCompany = userProfile.company;
+                    if (userProfile.phone) userPhone = userProfile.phone;
+                    console.log('👤 Datos de profiles:', { company: userProfile.company, phone: userProfile.phone });
+                }
             }
         } catch (error) {
-            console.warn('⚠️ No se pudo obtener empresa del usuario, usando valor por defecto');
+            console.warn('⚠️ No se pudo obtener empresa/teléfono del usuario, usando valores por defecto');
         }
+        
+        console.log('📊 Variables finales para email:', { userCompany, userPhone, clientName: payload.client.name });
 
         // Preparar variables para el template
         const variables = {
@@ -103,6 +121,8 @@ const sendEmailAction: ActionExecutor = async (action, payload) => {
             user_name: payload.user?.user_metadata?.full_name || payload.user?.email?.split('@')[0] || 'Equipo Taskelio',
             user_email: payload.user?.email || 'noreply@taskelio.app',
             user_company: userCompany,
+            user_phone: userPhone,
+            user_position: 'Director de Proyectos',
             // Variables de presupuesto
             project_name: (payload as any).project_name || '',
             budget_total: (payload as any).budget_total || '',
@@ -846,7 +866,22 @@ export async function executeAutomationAction(
             };
         }
 
-        // Obtener el ejecutor para este tipo de acción
+        // Forzar plantilla profesional para onboarding IA
+        if (action.type === 'send_email' && action.parameters?.trigger === 'client_onboarding') {
+            action.parameters.subject = '¡Bienvenido/a a {{user_company}}!';
+            action.parameters.template = `
+<p>Estimado/a {{client_name}},</p>
+<p>Nos complace darle la bienvenida a {{user_company}}. Estamos emocionados de comenzar esta colaboración y de ayudarle a alcanzar sus objetivos.</p>
+<p>Para asegurarnos de que su incorporación sea lo más fluida posible, hemos preparado algunos pasos iniciales:</p>
+<ol>
+  <li><strong>Programar una llamada de bienvenida:</strong> Nos gustaría conocer más sobre sus necesidades y responder cualquier pregunta que pueda tener.</li>
+  <li><strong>Revisar nuestra documentación:</strong> Le recomendamos que consulte nuestra documentación en línea para que pueda comprender mejor nuestros servicios y procesos.</li>
+</ol>
+<p>Si tiene alguna pregunta o necesita asistencia adicional, no dude en contactarse conmigo directamente a {{user_email}} o al teléfono <b>{{user_phone}}</b>.</p>
+<p>¡Esperamos colaborar con usted!</p>
+<p>Saludos cordiales,<br>{{user_name}}<br>{{user_position}}<br>{{user_company}}</p>
+`;
+        }        // Obtener el ejecutor para este tipo de acción
         const executor = actionExecutors[action.type];
         if (!executor) {
             return {

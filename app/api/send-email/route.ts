@@ -61,7 +61,27 @@ export async function POST(request: NextRequest) {
             reply_to: emailData.reply_to
         });
 
-        // Enviar email con Resend
+        // **MODO SIMULACIÓN** - Para testing cuando la API key es inválida
+        const SIMULATION_MODE = process.env.EMAIL_SIMULATION_MODE === 'true';
+        
+        if (SIMULATION_MODE) {
+            console.log('🎭 MODO SIMULACIÓN: Email no enviado realmente');
+            const simulatedId = `sim_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
+            
+            return NextResponse.json({
+                success: true,
+                message: 'Email enviado exitosamente (SIMULACIÓN)',
+                data: {
+                    id: simulatedId,
+                    to: to,
+                    subject: subject,
+                    from: fromEmail,
+                    simulation: true
+                }
+            });
+        }
+
+        // Enviar email real con Resend
         const result = await resend.emails.send(emailData);
 
         console.log('📧 API send-email: Respuesta de Resend:', result);

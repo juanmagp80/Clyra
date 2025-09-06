@@ -19,11 +19,23 @@ export function useClientMessages(userEmail?: string) {
     const [loading, setLoading] = useState(false);
 
     const loadUnreadMessages = async () => {
-        if (!userEmail) return;
+        if (!userEmail) {
+            console.warn('No userEmail provided to loadUnreadMessages');
+            return;
+        }
 
         setLoading(true);
         try {
             const supabase = createSupabaseClient();
+            const userResult = await supabase.auth.getUser();
+            console.log('Supabase user result:', userResult);
+            const userId = userResult?.data?.user?.id;
+            if (!userId) {
+                console.error('No authenticated user found in Supabase.');
+                setMessages([]);
+                setUnreadCount(0);
+                return;
+            }
 
             // Obtener mensajes no leídos de clientes
             const { data: messagesData, error: messagesError } = await supabase
@@ -37,12 +49,13 @@ export function useClientMessages(userEmail?: string) {
                 `)
                 .eq('sender_type', 'client')
                 .eq('is_read', false)
-                .eq('clients.user_id', (await supabase.auth.getUser()).data.user?.id)
+                .eq('clients.user_id', userId)
                 .order('created_at', { ascending: false })
                 .limit(10);
 
             if (messagesError) {
                 console.error('Error loading unread messages:', messagesError);
+                console.log('Query params:', { userId, userEmail });
                 return;
             }
 
