@@ -1,9 +1,9 @@
 'use client';
 
-import { useState, useEffect } from 'react';
 import { Button } from '@/components/ui/Button';
-import { X, Cookie, Settings, Shield, Eye } from 'lucide-react';
 import { createSupabaseClient } from '@/src/lib/supabase-client';
+import { Cookie, Eye, Settings, Shield, X } from 'lucide-react';
+import { useEffect, useState } from 'react';
 
 interface CookiePreferences {
   necessary: boolean;
@@ -39,9 +39,9 @@ export default function CookieBanner({ userEmail }: CookieBannerProps) {
 
     // Escuchar cambios de autenticación
     const supabase = createSupabaseClient();
-    const { data: { subscription } } = supabase.auth.onAuthStateChange((event, session) => {
+  const { data: { subscription } } = supabase.auth.onAuthStateChange((event: string, session: any) => {
       setIsAuthenticated(!!session?.user);
-      
+
       // Cuando el usuario se autentica, verificar si necesita ver el banner
       if (session?.user && event === 'SIGNED_IN') {
         checkCookieConsent();
@@ -54,14 +54,14 @@ export default function CookieBanner({ userEmail }: CookieBannerProps) {
   const checkCookieConsent = () => {
     // Verificar si el usuario ya ha dado su consentimiento
     const consent = localStorage.getItem('cookie-consent');
-    
+
     if (!consent) {
       // Solo mostrar si el usuario está autenticado
       if (isAuthenticated) {
         const timer = setTimeout(() => {
           setIsVisible(true);
         }, 2000); // 2 segundos después del login
-        
+
         return () => clearTimeout(timer);
       }
     } else {
@@ -71,7 +71,7 @@ export default function CookieBanner({ userEmail }: CookieBannerProps) {
         const consentDate = new Date(parsedConsent.timestamp);
         const now = new Date();
         const daysDiff = Math.floor((now.getTime() - consentDate.getTime()) / (1000 * 60 * 60 * 24));
-        
+
         // Si el consentimiento es muy antiguo (más de 365 días), pedirlo de nuevo
         if (daysDiff > 365) {
           localStorage.removeItem('cookie-consent');
@@ -105,7 +105,7 @@ export default function CookieBanner({ userEmail }: CookieBannerProps) {
       marketing: true,
       functional: true,
     };
-    
+
     saveConsent(allAccepted);
     setIsVisible(false);
   };
@@ -122,7 +122,7 @@ export default function CookieBanner({ userEmail }: CookieBannerProps) {
       marketing: false,
       functional: false,
     };
-    
+
     saveConsent(onlyNecessary);
     setIsVisible(false);
   };
@@ -130,7 +130,7 @@ export default function CookieBanner({ userEmail }: CookieBannerProps) {
   const saveConsent = async (prefs: CookiePreferences) => {
     const supabase = createSupabaseClient();
     const { data: { user } } = await supabase.auth.getUser();
-    
+
     const consentData = {
       preferences: prefs,
       timestamp: new Date().toISOString(),
@@ -138,10 +138,10 @@ export default function CookieBanner({ userEmail }: CookieBannerProps) {
       userId: user?.id || null,
       userAgent: navigator.userAgent,
     };
-    
+
     // Guardar localmente
     localStorage.setItem('cookie-consent', JSON.stringify(consentData));
-    
+
     // Guardar en la base de datos si el usuario está autenticado
     if (user) {
       try {
@@ -180,7 +180,7 @@ export default function CookieBanner({ userEmail }: CookieBannerProps) {
         // Continuar sin fallar, el localStorage es suficiente
       }
     }
-    
+
     // Activar/desactivar scripts según las preferencias
     if (prefs.analytics) {
       console.log('🍪 Analytics cookies habilitadas');
@@ -191,7 +191,7 @@ export default function CookieBanner({ userEmail }: CookieBannerProps) {
         });
       }
     }
-    
+
     if (prefs.marketing) {
       console.log('🍪 Marketing cookies habilitadas');
       // Activar píxeles de marketing
@@ -203,7 +203,7 @@ export default function CookieBanner({ userEmail }: CookieBannerProps) {
         });
       }
     }
-    
+
     if (prefs.functional) {
       console.log('🍪 Functional cookies habilitadas');
       // Activar cookies funcionales (chat, preferencias, etc.)
@@ -223,7 +223,7 @@ export default function CookieBanner({ userEmail }: CookieBannerProps) {
     <>
       {/* Overlay */}
       <div className="fixed inset-0 bg-black bg-opacity-50 z-50 transition-opacity duration-300" />
-      
+
       {/* Banner */}
       <div className="fixed bottom-0 left-0 right-0 z-50 p-4 md:p-6">
         <div className="max-w-4xl mx-auto bg-white dark:bg-gray-800 rounded-lg shadow-2xl border border-gray-200 dark:border-gray-700 overflow-hidden">
@@ -255,7 +255,7 @@ export default function CookieBanner({ userEmail }: CookieBannerProps) {
           {/* Content */}
           <div className="p-6">
             <p className="text-gray-700 dark:text-gray-300 mb-4 leading-relaxed">
-              Utilizamos cookies para mejorar tu experiencia, analizar el uso del sitio y personalizar el contenido. 
+              Utilizamos cookies para mejorar tu experiencia, analizar el uso del sitio y personalizar el contenido.
               Puedes elegir qué tipos de cookies aceptar o rechazar todas las opcionales.
             </p>
 
@@ -268,7 +268,7 @@ export default function CookieBanner({ userEmail }: CookieBannerProps) {
                 >
                   ✅ Aceptar Todas
                 </Button>
-                
+
                 <Button
                   onClick={rejectAll}
                   variant="outline"
@@ -276,7 +276,7 @@ export default function CookieBanner({ userEmail }: CookieBannerProps) {
                 >
                   ❌ Solo Necesarias
                 </Button>
-                
+
                 <Button
                   onClick={() => setShowDetails(true)}
                   variant="ghost"
@@ -321,11 +321,10 @@ export default function CookieBanner({ userEmail }: CookieBannerProps) {
                     </div>
                     <button
                       onClick={() => handlePreferenceChange('analytics', !preferences.analytics)}
-                      className={`w-10 h-6 rounded-full flex items-center transition-all duration-200 ${
-                        preferences.analytics 
-                          ? 'bg-blue-500 justify-end' 
+                      className={`w-10 h-6 rounded-full flex items-center transition-all duration-200 ${preferences.analytics
+                          ? 'bg-blue-500 justify-end'
                           : 'bg-gray-300 dark:bg-gray-600 justify-start'
-                      } px-1`}
+                        } px-1`}
                     >
                       <div className="w-4 h-4 bg-white rounded-full shadow"></div>
                     </button>
@@ -346,11 +345,10 @@ export default function CookieBanner({ userEmail }: CookieBannerProps) {
                     </div>
                     <button
                       onClick={() => handlePreferenceChange('marketing', !preferences.marketing)}
-                      className={`w-10 h-6 rounded-full flex items-center transition-all duration-200 ${
-                        preferences.marketing 
-                          ? 'bg-purple-500 justify-end' 
+                      className={`w-10 h-6 rounded-full flex items-center transition-all duration-200 ${preferences.marketing
+                          ? 'bg-purple-500 justify-end'
                           : 'bg-gray-300 dark:bg-gray-600 justify-start'
-                      } px-1`}
+                        } px-1`}
                     >
                       <div className="w-4 h-4 bg-white rounded-full shadow"></div>
                     </button>
@@ -371,11 +369,10 @@ export default function CookieBanner({ userEmail }: CookieBannerProps) {
                     </div>
                     <button
                       onClick={() => handlePreferenceChange('functional', !preferences.functional)}
-                      className={`w-10 h-6 rounded-full flex items-center transition-all duration-200 ${
-                        preferences.functional 
-                          ? 'bg-orange-500 justify-end' 
+                      className={`w-10 h-6 rounded-full flex items-center transition-all duration-200 ${preferences.functional
+                          ? 'bg-orange-500 justify-end'
                           : 'bg-gray-300 dark:bg-gray-600 justify-start'
-                      } px-1`}
+                        } px-1`}
                     >
                       <div className="w-4 h-4 bg-white rounded-full shadow"></div>
                     </button>
@@ -393,7 +390,7 @@ export default function CookieBanner({ userEmail }: CookieBannerProps) {
                   >
                     ✅ Guardar Preferencias
                   </Button>
-                  
+
                   <Button
                     onClick={acceptAll}
                     variant="outline"
@@ -401,7 +398,7 @@ export default function CookieBanner({ userEmail }: CookieBannerProps) {
                   >
                     Aceptar Todas
                   </Button>
-                  
+
                   <Button
                     onClick={() => setShowDetails(false)}
                     variant="ghost"

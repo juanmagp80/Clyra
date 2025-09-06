@@ -52,6 +52,7 @@ interface Profile {
     city?: string;
     address?: string;
     dni?: string;
+    phone?: string;
 }
 
 interface CompanySettings {
@@ -60,6 +61,11 @@ interface CompanySettings {
     default_currency?: string;
     default_payment_terms?: string;
     logo_url?: string;
+    nif?: string; // Añadido para permitir el acceso a companySettings.nif
+    address?: string;
+    email?: string;
+    city?: string;
+    phone?: string;
 }
 
 interface CreateContractClientProps {
@@ -270,10 +276,10 @@ Fecha: _______________                          Fecha: _______________
             }
         }
     }, [
-        formData.project_details.price_per_word, 
-        formData.project_details.price_per_piece, 
-        formData.project_details.average_length, 
-        formData.project_details.content_quantity, 
+        formData.project_details.price_per_word,
+        formData.project_details.price_per_piece,
+        formData.project_details.average_length,
+        formData.project_details.content_quantity,
         selectedTemplate?.category
     ]);
 
@@ -763,8 +769,8 @@ Fecha: _______________                          Fecha: _______________
                         key={template.id}
                         onClick={() => handleTemplateSelect(template)}
                         className={`cursor-pointer p-6 rounded-lg border-2 transition-all hover:shadow-lg ${selectedTemplate?.id === template.id
-                                ? 'border-blue-600 bg-blue-50 dark:bg-blue-900/20'
-                                : 'border-gray-200 dark:border-gray-700 hover:border-gray-300'
+                            ? 'border-blue-600 bg-blue-50 dark:bg-blue-900/20'
+                            : 'border-gray-200 dark:border-gray-700 hover:border-gray-300'
                             }`}
                     >
                         <div className="text-center mb-4">
@@ -810,8 +816,8 @@ Fecha: _______________                          Fecha: _______________
                             key={client.id}
                             onClick={() => setSelectedClient(client)}
                             className={`cursor-pointer p-4 rounded-lg border-2 transition-all hover:shadow-md ${selectedClient?.id === client.id
-                                    ? 'border-blue-600 bg-blue-50 dark:bg-blue-900/20'
-                                    : 'border-gray-200 dark:border-gray-700 hover:border-gray-300'
+                                ? 'border-blue-600 bg-blue-50 dark:bg-blue-900/20'
+                                : 'border-gray-200 dark:border-gray-700 hover:border-gray-300'
                                 }`}
                         >
                             <h3 className="font-semibold text-gray-900 dark:text-white">
@@ -1339,7 +1345,7 @@ Fecha: _______________                          Fecha: _______________
                                 />
                             </div>
                         </div>
-                        
+
                         {/* Sección de fechas de entrega */}
                         <div className="border-t pt-6 mt-6">
                             <h4 className="text-md font-semibold text-gray-900 dark:text-white mb-4">
@@ -1851,7 +1857,7 @@ Fecha: _______________                          Fecha: _______________
                                 />
                             </div>
                         </div>
-                        
+
                         {/* Sección de Plazos */}
                         <div className="border-t pt-6 mt-6">
                             <h4 className="text-md font-semibold text-gray-900 dark:text-white mb-4">

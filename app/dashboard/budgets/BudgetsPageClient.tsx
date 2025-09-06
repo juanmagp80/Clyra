@@ -232,7 +232,7 @@ export function BudgetsPageClient({ userEmail }: BudgetsPageClientProps) {
             }
 
             // Transformar los datos para que coincidan con la interfaz Budget
-            const transformedBudgets = (budgetsData || []).map(budget => ({
+            const transformedBudgets = (budgetsData || []).map((budget: any) => ({
                 ...budget,
                 client_name: budget.clients.name
             }));
@@ -241,8 +241,8 @@ export function BudgetsPageClient({ userEmail }: BudgetsPageClientProps) {
 
             // Calcular métricas
             const totalBudgets = transformedBudgets.length;
-            const approvedBudgets = transformedBudgets.filter(b => b.status === 'approved').length;
-            const totalValue = transformedBudgets.reduce((sum, b) => sum + (b.total_amount || 0), 0);
+            const approvedBudgets = transformedBudgets.filter((b: any) => b.status === 'approved').length;
+            const totalValue = transformedBudgets.reduce((sum: number, b: any) => sum + (b.total_amount || 0), 0);
             const conversionRate = totalBudgets > 0 ? (approvedBudgets / totalBudgets) * 100 : 0;
 
             setMetrics({

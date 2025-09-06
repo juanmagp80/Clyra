@@ -1,7 +1,7 @@
 'use client';
 
-import { useState, useEffect } from 'react';
 import { createSupabaseClient } from '@/src/lib/supabase-client';
+import { useEffect, useState } from 'react';
 
 interface CookiePreferences {
   necessary: boolean;
@@ -28,7 +28,7 @@ export function useCookieConsent() {
 
   const loadConsent = async () => {
     setIsLoading(true);
-    
+
     try {
       const supabase = createSupabaseClient();
       const { data: { user } } = await supabase.auth.getUser();
@@ -68,12 +68,12 @@ export function useCookieConsent() {
       if (savedConsent) {
         try {
           const parsedConsent: CookieConsent = JSON.parse(savedConsent);
-          
+
           // Verificar si el consentimiento no es muy antiguo (365 días)
           const consentDate = new Date(parsedConsent.timestamp);
           const now = new Date();
           const daysDiff = Math.floor((now.getTime() - consentDate.getTime()) / (1000 * 60 * 60 * 24));
-          
+
           if (daysDiff <= 365) {
             setConsent(parsedConsent);
             setHasConsent(true);
@@ -125,7 +125,7 @@ export function useCookieConsent() {
   const updateConsent = async (newPreferences: CookiePreferences) => {
     const supabase = createSupabaseClient();
     const { data: { user } } = await supabase.auth.getUser();
-    
+
     const newConsent: CookieConsent = {
       preferences: newPreferences,
       timestamp: new Date().toISOString(),
@@ -137,7 +137,7 @@ export function useCookieConsent() {
     localStorage.setItem('cookie-consent', JSON.stringify(newConsent));
     setConsent(newConsent);
     setHasConsent(true);
-    
+
     // Guardar en BD si hay usuario
     if (user) {
       try {
@@ -172,7 +172,7 @@ export function useCookieConsent() {
         console.warn('No se pudo sincronizar con la BD:', error);
       }
     }
-    
+
     // Activar scripts con las nuevas preferencias
     activateScripts(newPreferences);
   };
@@ -180,12 +180,12 @@ export function useCookieConsent() {
   const revokeConsent = async () => {
     const supabase = createSupabaseClient();
     const { data: { user } } = await supabase.auth.getUser();
-    
+
     // Eliminar localmente
     localStorage.removeItem('cookie-consent');
     setConsent(null);
     setHasConsent(false);
-    
+
     // Eliminar de BD si hay usuario
     if (user) {
       try {
@@ -197,7 +197,7 @@ export function useCookieConsent() {
         console.warn('No se pudo eliminar de la BD:', error);
       }
     }
-    
+
     // Desactivar todos los scripts opcionales
     if (typeof window !== 'undefined' && window.gtag) {
       window.gtag('consent', 'update', {

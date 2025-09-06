@@ -1,5 +1,5 @@
-import { Metadata } from 'next';
 import { createSupabaseServerClient } from '@/src/lib/supabase-server';
+import { Metadata } from 'next';
 import { redirect } from 'next/navigation';
 import CookiePreferencesClient from './CookiePreferencesClient';
 

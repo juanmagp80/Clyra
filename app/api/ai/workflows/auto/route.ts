@@ -1,7 +1,7 @@
-import { NextRequest, NextResponse } from 'next/server';
-import { createSupabaseAdmin } from '@/src/lib/supabase-admin';
-import { getEventDataAutomatically, detectRecentEvents } from '@/lib/event-detectors';
+import { detectRecentEvents, getEventDataAutomatically } from '@/lib/event-detectors';
 import { generateSmartEmail } from '@/lib/openai';
+import { createSupabaseAdmin } from '@/src/lib/supabase-admin';
+import { NextRequest, NextResponse } from 'next/server';
 
 export async function POST(request: NextRequest) {
     try {
@@ -11,12 +11,12 @@ export async function POST(request: NextRequest) {
         console.log('🔄 Processing automatic event:', { eventType, entityId, userInput, autoDetect });
 
         const supabase = createSupabaseAdmin();
-        
+
         let userId = null;
-        
+
         // Determinar si userInput es UUID o email
         const isUUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(userInput);
-        
+
         if (isUUID) {
             // userInput es un UUID, usarlo directamente
             userId = userInput;
@@ -27,31 +27,31 @@ export async function POST(request: NextRequest) {
                 .rpc('get_user_id_by_email', { user_email: userInput });
 
             if (userError || !userIdFromEmail) {
-                return NextResponse.json({ 
-                    error: 'Usuario no encontrado por email' 
+                return NextResponse.json({
+                    error: 'Usuario no encontrado por email'
                 }, { status: 404 });
             }
-            
+
             userId = userIdFromEmail;
             console.log('✅ Found user ID from email:', userId);
         }
 
-        let results = [];
+        const results = [];
 
         if (autoDetect) {
             // Modo detección automática: buscar eventos recientes
             console.log('🔍 Auto-detecting recent events...');
-            
+
             const recentEvents = await detectRecentEvents(userId, 24); // Últimas 24 horas
-            
+
             for (const event of recentEvents) {
                 try {
                     // Obtener datos automáticamente
                     const eventData = await getEventDataAutomatically(event.type, event.entityId, userId);
-                    
+
                     // Generar email inteligente automáticamente
                     const email = await generateSmartEmail(eventData.trigger, eventData.context);
-                    
+
                     // Guardar en base de datos
                     const { data: savedEmail, error } = await supabase
                         .from('ai_insights')
@@ -96,13 +96,13 @@ export async function POST(request: NextRequest) {
         } else {
             // Modo manual: procesar evento específico
             console.log('📧 Processing specific event:', eventType, entityId);
-            
+
             // Obtener datos automáticamente del evento
             const eventData = await getEventDataAutomatically(eventType, entityId, userId);
-            
+
             // Generar email inteligente
             const email = await generateSmartEmail(eventData.trigger, eventData.context);
-            
+
             // Guardar en base de datos
             const { data: savedEmail, error } = await supabase
                 .from('ai_insights')
@@ -155,12 +155,12 @@ export async function GET(request: NextRequest) {
         }
 
         const supabase = createSupabaseAdmin();
-        
+
         let userId = null;
-        
+
         // Determinar si userInput es UUID o email
         const isUUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(userInput);
-        
+
         if (isUUID) {
             // userInput es un UUID, usarlo directamente
             userId = userInput;
@@ -173,7 +173,7 @@ export async function GET(request: NextRequest) {
             if (userError || !userIdFromEmail) {
                 return NextResponse.json({ error: 'Usuario no encontrado por email' }, { status: 404 });
             }
-            
+
             userId = userIdFromEmail;
             console.log('✅ GET: Found user ID from email:', userId);
         }

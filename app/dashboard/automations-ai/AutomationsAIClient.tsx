@@ -38,6 +38,12 @@ interface UsageStats {
 }
 
 export default function AutomationsAIClient() {
+  // Función de logout para Sidebar
+  const onLogout = async () => {
+    // Aquí puedes agregar la lógica real de logout, por ejemplo limpiar sesión, llamar a API, redirigir, etc.
+    // Por ahora solo mostramos un alert
+    alert('Sesión cerrada');
+  };
   const [selectedAutomation, setSelectedAutomation] = useState<string | null>(null);
   const [isGenerating, setIsGenerating] = useState(false);
   const [result, setResult] = useState<string>('');
@@ -207,7 +213,7 @@ export default function AutomationsAIClient() {
 
   return (
     <div className="flex min-h-screen bg-black">
-      <Sidebar />
+  <Sidebar onLogout={onLogout} />
       
       <div className="flex-1 pl-64">
         <div className="p-6">

@@ -10,10 +10,8 @@ import {
     ArrowLeft,
     Download,
     Edit,
-    FileText,
     Mail,
-    Share2,
-    Trash2
+    Share2
 } from 'lucide-react';
 import { useRouter } from 'next/navigation';
 import { useEffect, useState } from 'react';
@@ -56,7 +54,7 @@ export default function ContractDetailClient({ contractId, userEmail }: Contract
     const loadContract = async () => {
         try {
             const supabase = createSupabaseClient();
-            
+
             const { data, error } = await supabase
                 .from('contracts')
                 .select(`
@@ -91,7 +89,7 @@ export default function ContractDetailClient({ contractId, userEmail }: Contract
         };
 
         const config = statusConfig[status as keyof typeof statusConfig] || statusConfig.draft;
-        
+
         return (
             <span className={`inline-flex items-center px-3 py-1 rounded-full text-sm font-medium ${config.bg} ${config.text}`}>
                 {config.label}
@@ -110,7 +108,7 @@ export default function ContractDetailClient({ contractId, userEmail }: Contract
 
     const handleDownloadPDF = () => {
         if (!contract) return;
-        
+
         // Create a simple HTML page for printing
         const printWindow = window.open('', '_blank');
         if (printWindow) {
@@ -144,10 +142,10 @@ export default function ContractDetailClient({ contractId, userEmail }: Contract
 
     const handleSendContract = async () => {
         if (!contract || !canUseFeatures) return;
-        
+
         try {
             const supabase = createSupabaseClient();
-            
+
             // Update status to sent
             const { error } = await supabase
                 .from('contracts')
@@ -202,10 +200,10 @@ export default function ContractDetailClient({ contractId, userEmail }: Contract
     return (
         <div className="flex h-screen bg-gray-50 dark:bg-gray-900">
             <Sidebar userEmail={userEmail} onLogout={handleLogout} />
-            
+
             <div className="flex-1 flex flex-col overflow-hidden ml-56">
                 <TrialBanner />
-                
+
                 <main className="flex-1 overflow-x-hidden overflow-y-auto bg-gray-50 dark:bg-gray-900">
                     <div className="h-full px-6 py-8">
                         {/* Header */}
@@ -263,11 +261,11 @@ export default function ContractDetailClient({ contractId, userEmail }: Contract
                                         </h2>
                                     </div>
                                     <div className="p-8">
-                                        <div 
+                                        <div
                                             className="prose prose-lg max-w-none dark:prose-invert"
-                                            style={{ 
-                                                fontFamily: '"Times New Roman", serif', 
-                                                fontSize: '16px', 
+                                            style={{
+                                                fontFamily: '"Times New Roman", serif',
+                                                fontSize: '16px',
                                                 lineHeight: '1.8',
                                                 color: '#1a1a1a'
                                             }}

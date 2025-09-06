@@ -9,8 +9,6 @@ import {
     Calendar,
     DollarSign,
     FileText,
-    Filter,
-    MoreHorizontal,
     Plus,
     Search,
     User
@@ -51,7 +49,7 @@ export default function ContractsPageClient({ userEmail }: ContractsPageClientPr
     const loadContracts = async () => {
         try {
             const supabase = createSupabaseClient();
-            
+
             const { data, error } = await supabase
                 .from('contracts')
                 .select(`
@@ -70,7 +68,7 @@ export default function ContractsPageClient({ userEmail }: ContractsPageClientPr
 
             if (error) {
                 console.error('Error loading contracts:', error);
-                
+
                 // Mostrar error más específico si las tablas no existen
                 if (error && typeof error === 'object' && 'message' in error) {
                     const errorMessage = (error as any).message;
@@ -96,7 +94,7 @@ export default function ContractsPageClient({ userEmail }: ContractsPageClientPr
 
     const filteredContracts = contracts.filter(contract => {
         const matchesSearch = contract.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                            contract.client_name.toLowerCase().includes(searchTerm.toLowerCase());
+            contract.client_name.toLowerCase().includes(searchTerm.toLowerCase());
         const matchesStatus = statusFilter === 'all' || contract.status === statusFilter;
         return matchesSearch && matchesStatus;
     });
@@ -112,7 +110,7 @@ export default function ContractsPageClient({ userEmail }: ContractsPageClientPr
         };
 
         const config = statusConfig[status as keyof typeof statusConfig] || statusConfig.draft;
-        
+
         return (
             <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${config.bg} ${config.text}`}>
                 {config.label}
@@ -138,10 +136,10 @@ export default function ContractsPageClient({ userEmail }: ContractsPageClientPr
     return (
         <div className="flex h-screen bg-gray-50 dark:bg-gray-900">
             <Sidebar userEmail={userEmail} onLogout={handleLogout} />
-            
+
             <div className="flex-1 flex flex-col overflow-hidden ml-56">
                 <TrialBanner userEmail={userEmail} />
-                
+
                 <main className="flex-1 overflow-x-hidden overflow-y-auto bg-gray-50 dark:bg-gray-900">
                     <div className="h-full px-6 py-8">
                         {/* Header */}
@@ -155,7 +153,7 @@ export default function ContractsPageClient({ userEmail }: ContractsPageClientPr
                                         Gestiona tus contratos profesionales
                                     </p>
                                 </div>
-                                <Button 
+                                <Button
                                     onClick={() => router.push('/dashboard/contracts/create')}
                                     className="flex items-center gap-2"
                                 >
@@ -195,74 +193,74 @@ export default function ContractsPageClient({ userEmail }: ContractsPageClientPr
 
                             {/* Stats Cards - Solo mostrar si las tablas existen */}
                             {!tablesNotExist && (
-                            <div className="grid grid-cols-1 md:grid-cols-4 gap-6 mb-8">
-                                <div className="bg-white dark:bg-gray-800 rounded-lg shadow p-6">
-                                    <div className="flex items-center">
-                                        <div className="p-2 bg-blue-100 dark:bg-blue-900 rounded-lg">
-                                            <FileText className="w-6 h-6 text-blue-600 dark:text-blue-400" />
-                                        </div>
-                                        <div className="ml-4">
-                                            <p className="text-sm font-medium text-gray-600 dark:text-gray-400">
-                                                Total Contratos
-                                            </p>
-                                            <p className="text-2xl font-semibold text-gray-900 dark:text-white">
-                                                {contracts.length}
-                                            </p>
+                                <div className="grid grid-cols-1 md:grid-cols-4 gap-6 mb-8">
+                                    <div className="bg-white dark:bg-gray-800 rounded-lg shadow p-6">
+                                        <div className="flex items-center">
+                                            <div className="p-2 bg-blue-100 dark:bg-blue-900 rounded-lg">
+                                                <FileText className="w-6 h-6 text-blue-600 dark:text-blue-400" />
+                                            </div>
+                                            <div className="ml-4">
+                                                <p className="text-sm font-medium text-gray-600 dark:text-gray-400">
+                                                    Total Contratos
+                                                </p>
+                                                <p className="text-2xl font-semibold text-gray-900 dark:text-white">
+                                                    {contracts.length}
+                                                </p>
+                                            </div>
                                         </div>
                                     </div>
-                                </div>
 
-                                <div className="bg-white dark:bg-gray-800 rounded-lg shadow p-6">
-                                    <div className="flex items-center">
-                                        <div className="p-2 bg-green-100 dark:bg-green-900 rounded-lg">
-                                            <User className="w-6 h-6 text-green-600 dark:text-green-400" />
-                                        </div>
-                                        <div className="ml-4">
-                                            <p className="text-sm font-medium text-gray-600 dark:text-gray-400">
-                                                Activos
-                                            </p>
-                                            <p className="text-2xl font-semibold text-gray-900 dark:text-white">
-                                                {contracts.filter(c => c.status === 'active').length}
-                                            </p>
+                                    <div className="bg-white dark:bg-gray-800 rounded-lg shadow p-6">
+                                        <div className="flex items-center">
+                                            <div className="p-2 bg-green-100 dark:bg-green-900 rounded-lg">
+                                                <User className="w-6 h-6 text-green-600 dark:text-green-400" />
+                                            </div>
+                                            <div className="ml-4">
+                                                <p className="text-sm font-medium text-gray-600 dark:text-gray-400">
+                                                    Activos
+                                                </p>
+                                                <p className="text-2xl font-semibold text-gray-900 dark:text-white">
+                                                    {contracts.filter(c => c.status === 'active').length}
+                                                </p>
+                                            </div>
                                         </div>
                                     </div>
-                                </div>
 
-                                <div className="bg-white dark:bg-gray-800 rounded-lg shadow p-6">
-                                    <div className="flex items-center">
-                                        <div className="p-2 bg-purple-100 dark:bg-purple-900 rounded-lg">
-                                            <Calendar className="w-6 h-6 text-purple-600 dark:text-purple-400" />
-                                        </div>
-                                        <div className="ml-4">
-                                            <p className="text-sm font-medium text-gray-600 dark:text-gray-400">
-                                                Firmados
-                                            </p>
-                                            <p className="text-2xl font-semibold text-gray-900 dark:text-white">
-                                                {contracts.filter(c => c.status === 'signed').length}
-                                            </p>
+                                    <div className="bg-white dark:bg-gray-800 rounded-lg shadow p-6">
+                                        <div className="flex items-center">
+                                            <div className="p-2 bg-purple-100 dark:bg-purple-900 rounded-lg">
+                                                <Calendar className="w-6 h-6 text-purple-600 dark:text-purple-400" />
+                                            </div>
+                                            <div className="ml-4">
+                                                <p className="text-sm font-medium text-gray-600 dark:text-gray-400">
+                                                    Firmados
+                                                </p>
+                                                <p className="text-2xl font-semibold text-gray-900 dark:text-white">
+                                                    {contracts.filter(c => c.status === 'signed').length}
+                                                </p>
+                                            </div>
                                         </div>
                                     </div>
-                                </div>
 
-                                <div className="bg-white dark:bg-gray-800 rounded-lg shadow p-6">
-                                    <div className="flex items-center">
-                                        <div className="p-2 bg-yellow-100 dark:bg-yellow-900 rounded-lg">
-                                            <DollarSign className="w-6 h-6 text-yellow-600 dark:text-yellow-400" />
-                                        </div>
-                                        <div className="ml-4">
-                                            <p className="text-sm font-medium text-gray-600 dark:text-gray-400">
-                                                Valor Total
-                                            </p>
-                                            <p className="text-2xl font-semibold text-gray-900 dark:text-white">
-                                                {formatCurrency(
-                                                    contracts.reduce((sum, c) => sum + (c.contract_value || 0), 0),
-                                                    'EUR'
-                                                )}
-                                            </p>
+                                    <div className="bg-white dark:bg-gray-800 rounded-lg shadow p-6">
+                                        <div className="flex items-center">
+                                            <div className="p-2 bg-yellow-100 dark:bg-yellow-900 rounded-lg">
+                                                <DollarSign className="w-6 h-6 text-yellow-600 dark:text-yellow-400" />
+                                            </div>
+                                            <div className="ml-4">
+                                                <p className="text-sm font-medium text-gray-600 dark:text-gray-400">
+                                                    Valor Total
+                                                </p>
+                                                <p className="text-2xl font-semibold text-gray-900 dark:text-white">
+                                                    {formatCurrency(
+                                                        contracts.reduce((sum, c) => sum + (c.contract_value || 0), 0),
+                                                        'EUR'
+                                                    )}
+                                                </p>
+                                            </div>
                                         </div>
                                     </div>
                                 </div>
-                            </div>
                             )}
 
                             {/* Filters */}
@@ -313,13 +311,13 @@ export default function ContractsPageClient({ userEmail }: ContractsPageClientPr
                                         {contracts.length === 0 ? 'No tienes contratos aún' : 'No se encontraron contratos'}
                                     </h3>
                                     <p className="text-gray-600 dark:text-gray-400 mb-6">
-                                        {contracts.length === 0 
+                                        {contracts.length === 0
                                             ? 'Crea tu primer contrato para empezar a gestionar tus proyectos de forma profesional.'
                                             : 'Intenta ajustar los filtros de búsqueda.'
                                         }
                                     </p>
                                     {contracts.length === 0 && (
-                                        <Button 
+                                        <Button
                                             onClick={() => router.push('/dashboard/contracts/create')}
                                         >
                                             <Plus className="w-4 h-4 mr-2" />

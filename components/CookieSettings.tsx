@@ -1,14 +1,14 @@
 'use client';
 
-import { useState } from 'react';
 import { Button } from '@/components/ui/Button';
 import { useCookieConsent } from '@/src/hooks/useCookieConsent';
-import { Settings, Cookie, Shield, Eye } from 'lucide-react';
+import { Cookie, Eye, Settings, Shield } from 'lucide-react';
+import { useState } from 'react';
 
 export default function CookieSettings() {
   const { consent, hasConsent, updateConsent, revokeConsent, isLoading } = useCookieConsent();
   const [isOpen, setIsOpen] = useState(false);
-  
+
   // No mostrar si está cargando o no hay consentimiento
   if (isLoading || !hasConsent) {
     return null;
@@ -66,11 +66,10 @@ export default function CookieSettings() {
                     <Eye className="w-4 h-4 text-blue-600" />
                     <span className="text-sm font-medium">Análisis</span>
                   </div>
-                  <span className={`text-xs px-2 py-1 rounded-full ${
-                    currentPreferences.analytics 
-                      ? 'bg-green-100 text-green-800' 
+                  <span className={`text-xs px-2 py-1 rounded-full ${currentPreferences.analytics
+                      ? 'bg-green-100 text-green-800'
                       : 'bg-red-100 text-red-800'
-                  }`}>
+                    }`}>
                     {currentPreferences.analytics ? 'ACTIVAS' : 'INACTIVAS'}
                   </span>
                 </div>
@@ -80,11 +79,10 @@ export default function CookieSettings() {
                     <Cookie className="w-4 h-4 text-purple-600" />
                     <span className="text-sm font-medium">Marketing</span>
                   </div>
-                  <span className={`text-xs px-2 py-1 rounded-full ${
-                    currentPreferences.marketing 
-                      ? 'bg-green-100 text-green-800' 
+                  <span className={`text-xs px-2 py-1 rounded-full ${currentPreferences.marketing
+                      ? 'bg-green-100 text-green-800'
                       : 'bg-red-100 text-red-800'
-                  }`}>
+                    }`}>
                     {currentPreferences.marketing ? 'ACTIVAS' : 'INACTIVAS'}
                   </span>
                 </div>
@@ -94,11 +92,10 @@ export default function CookieSettings() {
                     <Settings className="w-4 h-4 text-orange-600" />
                     <span className="text-sm font-medium">Funcionales</span>
                   </div>
-                  <span className={`text-xs px-2 py-1 rounded-full ${
-                    currentPreferences.functional 
-                      ? 'bg-green-100 text-green-800' 
+                  <span className={`text-xs px-2 py-1 rounded-full ${currentPreferences.functional
+                      ? 'bg-green-100 text-green-800'
                       : 'bg-red-100 text-red-800'
-                  }`}>
+                    }`}>
                     {currentPreferences.functional ? 'ACTIVAS' : 'INACTIVAS'}
                   </span>
                 </div>
@@ -112,7 +109,7 @@ export default function CookieSettings() {
                 >
                   🗑️ Revocar Consentimiento
                 </Button>
-                
+
                 <Button
                   onClick={() => setIsOpen(false)}
                   variant="ghost"

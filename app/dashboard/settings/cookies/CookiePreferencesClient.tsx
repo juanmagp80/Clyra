@@ -1,7 +1,5 @@
 'use client';
 
-import { useState, useEffect } from 'react';
-import { useRouter } from 'next/navigation';
 import Sidebar from '@/components/Sidebar';
 import TrialBanner from '@/components/TrialBanner';
 import { Button } from '@/components/ui/Button';
@@ -10,15 +8,16 @@ import { createSupabaseClient } from '@/src/lib/supabase-client';
 import { showToast } from '@/utils/toast';
 import {
   ArrowLeft,
-  Cookie,
-  Shield,
-  Eye,
-  Settings,
-  Save,
-  Trash2,
   Clock,
-  User
+  Cookie,
+  Eye,
+  Save,
+  Settings,
+  Shield,
+  Trash2
 } from 'lucide-react';
+import { useRouter } from 'next/navigation';
+import { useEffect, useState } from 'react';
 
 interface CookiePreferencesClientProps {
   userEmail: string;
@@ -128,10 +127,10 @@ export default function CookiePreferencesClient({ userEmail }: CookiePreferences
   return (
     <div className="flex h-screen bg-gray-50 dark:bg-gray-900">
       <Sidebar userEmail={userEmail} onLogout={handleLogout} />
-      
+
       <div className="flex-1 flex flex-col overflow-hidden ml-56">
         <TrialBanner userEmail={userEmail} />
-        
+
         <main className="flex-1 overflow-x-hidden overflow-y-auto bg-gray-50 dark:bg-gray-900">
           <div className="h-full px-6 py-8">
             {/* Header */}
@@ -146,7 +145,7 @@ export default function CookiePreferencesClient({ userEmail }: CookiePreferences
                   Volver a Configuración
                 </Button>
               </div>
-              
+
               <div className="flex items-center gap-3 mb-6">
                 <div className="p-2 bg-blue-100 dark:bg-blue-900 rounded-lg">
                   <Cookie className="w-6 h-6 text-blue-600 dark:text-blue-400" />
@@ -201,7 +200,7 @@ export default function CookiePreferencesClient({ userEmail }: CookiePreferences
                   {cookieTypes.map((type) => {
                     const Icon = type.icon;
                     const isEnabled = preferences[type.key];
-                    
+
                     return (
                       <div key={type.key} className="bg-white dark:bg-gray-800 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700">
                         <div className="p-6">
@@ -226,7 +225,7 @@ export default function CookiePreferencesClient({ userEmail }: CookiePreferences
                                 </p>
                               </div>
                             </div>
-                            
+
                             <div className="ml-4">
                               {type.required ? (
                                 <div className="w-12 h-6 bg-green-500 rounded-full flex items-center justify-end px-1">
@@ -235,11 +234,10 @@ export default function CookiePreferencesClient({ userEmail }: CookiePreferences
                               ) : (
                                 <button
                                   onClick={() => handlePreferenceChange(type.key, !isEnabled)}
-                                  className={`w-12 h-6 rounded-full flex items-center transition-all duration-200 ${
-                                    isEnabled 
-                                      ? `bg-${type.color}-500 justify-end` 
+                                  className={`w-12 h-6 rounded-full flex items-center transition-all duration-200 ${isEnabled
+                                      ? `bg-${type.color}-500 justify-end`
                                       : 'bg-gray-300 dark:bg-gray-600 justify-start'
-                                  } px-1`}
+                                    } px-1`}
                                 >
                                   <div className="w-4 h-4 bg-white rounded-full shadow"></div>
                                 </button>
@@ -263,7 +261,7 @@ export default function CookiePreferencesClient({ userEmail }: CookiePreferences
                       <Save className="w-4 h-4" />
                       {saving ? 'Guardando...' : 'Guardar Preferencias'}
                     </Button>
-                    
+
                     <Button
                       onClick={handleRevokeAll}
                       variant="outline"
@@ -274,11 +272,11 @@ export default function CookiePreferencesClient({ userEmail }: CookiePreferences
                       Revocar Todo
                     </Button>
                   </div>
-                  
+
                   <div className="mt-4 pt-4 border-t border-gray-200 dark:border-gray-600">
                     <p className="text-sm text-gray-500 dark:text-gray-400">
-                      💡 <strong>Nota:</strong> Los cambios se aplicarán inmediatamente. 
-                      Las cookies necesarias no se pueden desactivar ya que son esenciales 
+                      💡 <strong>Nota:</strong> Los cambios se aplicarán inmediatamente.
+                      Las cookies necesarias no se pueden desactivar ya que son esenciales
                       para el funcionamiento del sitio.
                     </p>
                   </div>

@@ -13,15 +13,15 @@ export default function CookiesPage() {
           <h1 className="text-3xl font-bold text-gray-900 mb-8">
             🍪 Política de Cookies
           </h1>
-          
+
           <div className="prose prose-gray max-w-none space-y-6">
             <section>
               <h2 className="text-2xl font-semibold text-gray-800 mb-4">
                 ¿Qué son las cookies?
               </h2>
               <p className="text-gray-600 leading-relaxed">
-                Las cookies son pequeños archivos de texto que se almacenan en tu dispositivo 
-                cuando visitas un sitio web. Nos ayudan a hacer que tu experiencia sea mejor 
+                Las cookies son pequeños archivos de texto que se almacenan en tu dispositivo
+                cuando visitas un sitio web. Nos ayudan a hacer que tu experiencia sea mejor
                 al recordar tus preferencias y analizar cómo usas nuestro sitio.
               </p>
             </section>
@@ -30,7 +30,7 @@ export default function CookiesPage() {
               <h2 className="text-2xl font-semibold text-gray-800 mb-4">
                 Tipos de cookies que utilizamos
               </h2>
-              
+
               <div className="space-y-4">
                 <div className="bg-green-50 border border-green-200 rounded-lg p-4">
                   <h3 className="text-lg font-semibold text-green-800 mb-2">
@@ -117,12 +117,12 @@ export default function CookiesPage() {
               <div className="space-y-3">
                 <h3 className="text-lg font-medium text-gray-700">Google Analytics</h3>
                 <p className="text-gray-600 text-sm">
-                  Usamos Google Analytics para analizar el uso del sitio. 
-                  Puedes optar por no participar visitando: 
-                  <a href="https://tools.google.com/dlpage/gaoptout" 
-                     className="text-blue-600 hover:underline" 
-                     target="_blank" 
-                     rel="noopener noreferrer">
+                  Usamos Google Analytics para analizar el uso del sitio.
+                  Puedes optar por no participar visitando:
+                  <a href="https://tools.google.com/dlpage/gaoptout"
+                    className="text-blue-600 hover:underline"
+                    target="_blank"
+                    rel="noopener noreferrer">
                     Google Analytics Opt-out
                   </a>
                 </p>

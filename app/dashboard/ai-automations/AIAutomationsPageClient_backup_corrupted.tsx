@@ -56,6 +56,11 @@ export default function AIAutomationsPageClient({ userEmail }: AIAutomationsPage
     const [aiAutomations, setAIAutomations] = useState<AIAutomation[]>([]);
     const [loading, setLoading] = useState(true);
 
+    // Filtrado de automatizaciones según la categoría seleccionada
+    const filteredAutomations = selectedCategory === 'all'
+        ? aiAutomations
+        : aiAutomations.filter(automation => automation.category === selectedCategory);
+
     // Funciones para ejecutar automatizaciones IA
     const handleAutomationExecution = async (automation: AIAutomation) => {
         console.log('🤖 Executing AI automation:', automation.name);
@@ -89,7 +94,6 @@ export default function AIAutomationsPageClient({ userEmail }: AIAutomationsPage
 
         try {
             console.log('🧠 Analyzing sentiment with OpenAI...');
-            
             // Crear automatización temporal en la base de datos
             const response = await fetch('/api/automations/execute', {
                 method: 'POST',
@@ -107,7 +111,6 @@ export default function AIAutomationsPageClient({ userEmail }: AIAutomationsPage
             if (response.ok) {
                 const result = await response.json();
                 alert(`✅ Análisis completado!\n\nSentimiento: ${result.sentiment}\nResumen: ${result.summary}\n\nSe ha creado una tarea de seguimiento automáticamente.`);
-                
                 // Actualizar contador de ejecuciones
                 setAIAutomations(prev => prev.map(a => 
                     a.id === automation.id 
@@ -387,211 +390,17 @@ export default function AIAutomationsPageClient({ userEmail }: AIAutomationsPage
         router.push('/login');
     };
 
-    const filteredAutomations = selectedCategory === 'all'
+    // ...eliminada la declaración duplicada de filteredAutomations...
 
-    const executeSentimentAnalysis = async (automation: AIAutomation) => {
-        // Para análisis de sentimiento, necesitamos input del usuario
-        const text = prompt('Introduce el texto a analizar (feedback del cliente):');
-        if (!text) return;
+    // ...eliminada la declaración duplicada de executeSentimentAnalysis...
 
-        try {
-            console.log('🧠 Analyzing sentiment with OpenAI...');
-            
-            // Crear automatización temporal en la base de datos
-            const response = await fetch('/api/automations/execute', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({
-                    type: 'analyze_feedback',
-                    data: {
-                        text: text,
-                        client_name: 'Cliente',
-                        context: 'Análisis manual desde IA dashboard'
-                    }
-                })
-            });
+    // ...eliminada la declaración duplicada de executeProposalGeneration...
 
-            if (response.ok) {
-                const result = await response.json();
-                alert(`✅ Análisis completado!\n\nSentimiento: ${result.sentiment}\nResumen: ${result.summary}\n\nSe ha creado una tarea de seguimiento automáticamente.`);
-                
-                // Actualizar contador de ejecuciones
-                setAIAutomations(prev => prev.map(a => 
-                    a.id === automation.id 
-                        ? { ...a, executionCount: a.executionCount + 1 }
-                        : a
-                ));
-            } else {
-                throw new Error('Error en la respuesta del servidor');
-            }
-        } catch (error) {
-            console.error('Error executing sentiment analysis:', error);
-            alert('❌ Error al ejecutar el análisis. Verifica que OpenAI esté configurado correctamente.');
-        }
-    };
+    // ...eliminada la declaración duplicada de executePricingOptimization...
 
-    const executeProposalGeneration = async (automation: AIAutomation) => {
-        const clientName = prompt('Nombre del cliente:');
-        if (!clientName) return;
-        
-        const projectBrief = prompt('Descripción del proyecto:');
-        if (!projectBrief) return;
+    // ...eliminada la declaración duplicada de executeTaskPrioritization...
 
-        try {
-            console.log('📝 Generating proposal with OpenAI...');
-            
-            const response = await fetch('/api/automations/execute', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({
-                    type: 'generate_content',
-                    data: {
-                        type: 'proposal',
-                        client_name: clientName,
-                        project_description: projectBrief,
-                        tone: 'professional'
-                    }
-                })
-            });
-
-            if (response.ok) {
-                const result = await response.json();
-                alert(`✅ Propuesta generada!\n\n${result.content}\n\nSe ha creado una notificación automáticamente.`);
-                
-                setAIAutomations(prev => prev.map(a => 
-                    a.id === automation.id 
-                        ? { ...a, executionCount: a.executionCount + 1 }
-                        : a
-                ));
-            } else {
-                throw new Error('Error en la respuesta del servidor');
-            }
-        } catch (error) {
-            console.error('Error executing proposal generation:', error);
-            alert('❌ Error al generar la propuesta. Verifica que OpenAI esté configurado correctamente.');
-        }
-    };
-
-    const executePricingOptimization = async (automation: AIAutomation) => {
-        const projectType = prompt('Tipo de proyecto (ej: desarrollo web, diseño, consultoría):');
-        if (!projectType) return;
-        
-        const complexity = prompt('Complejidad (low/medium/high):') || 'medium';
-
-        try {
-            console.log('💰 Optimizing pricing with OpenAI...');
-            
-            const response = await fetch('/api/automations/execute', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({
-                    type: 'analyze_pricing',
-                    data: {
-                        project_type: projectType,
-                        complexity: complexity,
-                        timeline: '4-6 semanas'
-                    }
-                })
-            });
-
-            if (response.ok) {
-                const result = await response.json();
-                alert(`✅ Análisis de precios completado!\n\nPrecio sugerido: €${result.suggested_price}\nRentabilidad: ${result.profit_margin}%\n\nSe ha creado una notificación con los detalles.`);
-                
-                setAIAutomations(prev => prev.map(a => 
-                    a.id === automation.id 
-                        ? { ...a, executionCount: a.executionCount + 1 }
-                        : a
-                ));
-            } else {
-                throw new Error('Error en la respuesta del servidor');
-            }
-        } catch (error) {
-            console.error('Error executing pricing optimization:', error);
-            alert('❌ Error al optimizar precios. Verifica que OpenAI esté configurado correctamente.');
-        }
-    };
-
-    const executeTaskPrioritization = async (automation: AIAutomation) => {
-        try {
-            console.log('⚡ Prioritizing tasks with OpenAI...');
-            
-            // Para demo, usar tareas simuladas
-            const mockTasks = [
-                { id: '1', title: 'Finalizar propuesta Cliente A', deadline: '2025-09-10' },
-                { id: '2', title: 'Reunión seguimiento Proyecto B', deadline: '2025-09-08' },
-                { id: '3', title: 'Revisión diseño Cliente C', deadline: '2025-09-15' }
-            ];
-            
-            const response = await fetch('/api/automations/execute', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({
-                    type: 'analyze_performance',
-                    data: {
-                        tasks: mockTasks,
-                        context: 'Priorización automática desde dashboard IA'
-                    }
-                })
-            });
-
-            if (response.ok) {
-                const result = await response.json();
-                alert(`✅ Tareas priorizadas!\n\nProductividad: ${result.productivity_score || '8'}/10\n\nRecomendación: ${result.top_recommendation || 'Enfócate en tareas con deadline más cercano'}\n\nSe ha creado una notificación con el análisis.`);
-                
-                setAIAutomations(prev => prev.map(a => 
-                    a.id === automation.id 
-                        ? { ...a, executionCount: a.executionCount + 1 }
-                        : a
-                ));
-            } else {
-                throw new Error('Error en la respuesta del servidor');
-            }
-        } catch (error) {
-            console.error('Error executing task prioritization:', error);
-            alert('❌ Error al priorizar tareas. Verifica que OpenAI esté configurado correctamente.');
-        }
-    };
-
-    const executeEmailGeneration = async (automation: AIAutomation) => {
-        const clientName = prompt('Nombre del cliente:');
-        if (!clientName) return;
-        
-        const emailType = prompt('Tipo de email (follow_up, meeting_reminder, project_update, welcome):') || 'follow_up';
-
-        try {
-            console.log('📧 Generating email with OpenAI...');
-            
-            const response = await fetch('/api/automations/execute', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/Json' },
-                body: JSON.stringify({
-                    type: 'optimize_communication',
-                    data: {
-                        email_type: emailType,
-                        client_name: clientName,
-                        tone: 'professional'
-                    }
-                })
-            });
-
-            if (response.ok) {
-                const result = await response.json();
-                alert(`✅ Email generado!\n\n${result.optimized_content || 'Email profesional generado con IA'}\n\nSe ha creado una notificación automáticamente.`);
-                
-                setAIAutomations(prev => prev.map(a => 
-                    a.id === automation.id 
-                        ? { ...a, executionCount: a.executionCount + 1 }
-                        : a
-                ));
-            } else {
-                throw new Error('Error en la respuesta del servidor');
-            }
-        } catch (error) {
-            console.error('Error executing email generation:', error);
-            alert('❌ Error al generar email. Verifica que OpenAI esté configurado correctamente.');
-        }
-    };
+    // ...eliminada la declaración duplicada de executeEmailGeneration...
 
     const getActionTypeFromAutomation = (type: string): string => {
         switch (type) {
@@ -610,9 +419,7 @@ export default function AIAutomationsPageClient({ userEmail }: AIAutomationsPage
         }
     };
 
-    const filteredAutomations = selectedCategory === 'all' 
-        ? aiAutomations 
-        : aiAutomations.filter(automation => automation.category === selectedCategory);
+    // ...eliminada la declaración duplicada de filteredAutomations...
 
     const getStatusIcon = (status: string) => {
         switch (status) {

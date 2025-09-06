@@ -8,7 +8,7 @@ const resend = new Resend(process.env.RESEND_API_KEY);
 export async function POST(request: NextRequest) {
     try {
         console.log('🚀 Iniciando proceso de envío de presupuesto...');
-        
+
         const { budgetId } = await request.json();
 
         if (!budgetId) {
@@ -93,7 +93,7 @@ export async function POST(request: NextRequest) {
         console.log('🔑 Verificando configuración de Resend...');
         console.log('🔑 RESEND_API_KEY presente:', !!process.env.RESEND_API_KEY);
         console.log('🔑 FROM_EMAIL:', process.env.FROM_EMAIL);
-        
+
         if (!process.env.RESEND_API_KEY) {
             console.warn('⚠️ RESEND_API_KEY no configurada, enviando simulado');
             return await sendSimulatedEmail(budget, supabase, budgetId, user.id);
@@ -104,11 +104,11 @@ export async function POST(request: NextRequest) {
         // Generar contenido del email
         const emailHtml = generateBudgetEmailHtml(budget, profile);
         const fromEmail = process.env.FROM_EMAIL || 'noreply@resend.dev';
-        
+
         // Email de respuesta (reply-to) - SIEMPRE usar el email del usuario autenticado
         // Este es el email al que deben llegar las respuestas del cliente
         const replyToEmail = user.email || fromEmail;
-        
+
         // Usar un nombre personalizado en el From para que sea más claro
         const fromName = profile?.full_name || profile?.company || 'Taskelio';
         const formattedFrom = `${fromName} <${fromEmail}>`;
@@ -127,7 +127,7 @@ export async function POST(request: NextRequest) {
             console.log('  - to:', budget.clients.email);
             console.log('  - reply_to:', replyToEmail);
             console.log('  - subject:', `Presupuesto: ${budget.title}`);
-            
+
             const emailResult = await resend.emails.send({
                 from: formattedFrom,
                 to: budget.clients.email,
@@ -188,9 +188,19 @@ export async function POST(request: NextRequest) {
         } catch (emailError) {
             console.error('❌ Error en Resend (catch):', emailError);
             console.error('❌ Tipo de error:', typeof emailError);
-            console.error('❌ Stack trace:', emailError.stack);
+            if (emailError instanceof Error) {
+                console.error('❌ Stack trace:', emailError.stack);
+            } else {
+                console.error('❌ Stack trace:', emailError);
+            }
+            let errorMsg = 'Failed to send email: ';
+            if (emailError instanceof Error) {
+                errorMsg += emailError.message;
+            } else {
+                errorMsg += String(emailError);
+            }
             return NextResponse.json(
-                { error: 'Failed to send email: ' + (emailError.message || emailError) },
+                { error: errorMsg },
                 { status: 500 }
             );
         }
@@ -208,10 +218,10 @@ export async function POST(request: NextRequest) {
 async function sendSimulatedEmail(budget: any, supabase: any, budgetId: string, userId: string) {
     console.log('📧 Modo simulación - enviando email a:', budget.clients.email);
     console.log('📄 Presupuesto:', budget.title, '- Total:', budget.total_amount);
-    
+
     // Simular delay
     await new Promise(resolve => setTimeout(resolve, 1000));
-    
+
     // Actualizar estado
     const { error: updateError } = await supabase
         .from('budgets')
@@ -260,7 +270,7 @@ function generateBudgetEmailHtml(budget: any, profile: any): string {
     const subtotal = budget.total_amount || 0;
     const taxAmount = subtotal * (budget.tax_rate / 100);
     const total = subtotal + taxAmount;
-    
+
     // Obtener información de la empresa/freelancer
     const companyName = profile?.company || profile?.full_name || 'Freelancer';
     const contactEmail = profile?.email || 'contacto@ejemplo.com';

@@ -1,40 +1,37 @@
 'use client';
 
-import React from 'react';
 import Sidebar from '@/components/Sidebar';
 import TrialBanner from '@/components/TrialBanner';
 import { Button } from '@/components/ui/Button';
 import { createSupabaseClient } from '@/src/lib/supabase-client';
 import { useTrialStatus } from '@/src/lib/useTrialStatus';
 import {
+    AlertTriangle,
+    ArrowRight,
+    BarChart,
+    BarChart3,
     Bot,
     Brain,
+    CheckCircle,
     ChevronRight,
-    Lightbulb,
+    Clock,
+    DollarSign,
+    FileText,
+    Mail,
     MessageSquare,
+    Pause,
+    Play,
+    Search,
+    Settings,
+    Star,
+    Target,
     TrendingUp,
     Users,
-    Zap,
-    Settings,
-    Play,
-    Pause,
-    BarChart3,
-    Mail,
-    DollarSign,
-    UserCheck,
-    Clock,
-    Star,
-    ArrowRight,
-    CheckCircle,
-    AlertTriangle,
-    FileText,
-    BarChart,
-    Target,
-    Search,
-    X
+    X,
+    Zap
 } from 'lucide-react';
 import { useRouter } from 'next/navigation';
-import { useEffect, useState } from 'react';
+import React, { useEffect, useState } from 'react';
 
 interface AIAutomation {
     id: string;
@@ -68,13 +65,13 @@ export default function AIAutomationsPageClient({ userEmail }: AIAutomationsPage
     const [executing, setExecuting] = useState<string | null>(null);
     const [showModal, setShowModal] = useState(false);
     const [currentAutomation, setCurrentAutomation] = useState<AIAutomation | null>(null);
-    const [modalData, setModalData] = useState<{[key: string]: any}>({});
+    const [modalData, setModalData] = useState<{ [key: string]: any }>({});
     const [userClients, setUserClients] = useState<any[]>([]);
     const [userProjects, setUserProjects] = useState<any[]>([]);
-    const [executionResults, setExecutionResults] = useState<{[key: string]: any}>({});
+    const [executionResults, setExecutionResults] = useState<{ [key: string]: any }>({});
     const [recentInsights, setRecentInsights] = useState<any[]>([]);
     const [showingResults, setShowingResults] = useState(false);
-    
+
     // Estado para toasts
     const [toast, setToast] = useState<{
         show: boolean;
@@ -92,6 +89,81 @@ export default function AIAutomationsPageClient({ userEmail }: AIAutomationsPage
         setTimeout(() => {
             setToast(prev => ({ ...prev, show: false }));
         }, 5000);
+    };
+
+    // Función para toggle del detector automático
+    const toggleAutoDetector = async (automationId: string, currentStatus: string) => {
+        if (!canUseFeatures) {
+            showToast('⭐ Esta función requiere un plan PRO.', 'warning');
+            return;
+        }
+
+        const newStatus = currentStatus === 'active' ? 'inactive' : 'active';
+
+        // Actualizar el estado local inmediatamente
+        setAIAutomations(prev => prev.map(automation =>
+            automation.id === automationId
+                ? { ...automation, status: newStatus as 'active' | 'inactive' | 'learning' }
+                : automation
+        ));
+
+        if (newStatus === 'active') {
+            // Cuando se activa, ejecutar inmediatamente una detección con envío de emails
+            await executeAutoDetectorWithEmails();
+            showToast('🔍 Detector de Eventos Automático ACTIVADO. Se ejecutará cada hora y se han enviado emails para eventos recientes.', 'success');
+        } else {
+            showToast('⏸️ Detector de Eventos Automático DESACTIVADO. No se ejecutarán detecciones automáticas.', 'info');
+        }
+    };
+
+    // Función para ejecutar el detector automático con envío real de emails
+    const executeAutoDetectorWithEmails = async () => {
+        try {
+            // Obtener user ID del usuario autenticado
+            const supabase = createSupabaseClient();
+            const { data: { user }, error: userError } = await supabase.auth.getUser();
+
+            if (userError || !user) {
+                throw new Error('Usuario no autenticado. Por favor inicia sesión.');
+            }
+
+            showToast('🤖 Ejecutando detector automático y enviando emails...', 'info');
+
+            // Usar directamente el ID del usuario en lugar del email
+            const response = await fetch('/api/ai/send-auto-emails', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({
+                    userId: user.id, // Usar ID directamente en lugar de email
+                    hours: 24,
+                    sendEmails: true
+                })
+            });
+
+            const result = await response.json();
+
+            if (!response.ok) {
+                console.error('❌ Error del servidor:', result);
+                throw new Error(result.error || 'Error ejecutando detector automático');
+            }
+
+            // Mostrar resultado detallado
+            const message = `🎉 Detector ejecutado exitosamente!\n\n` +
+                `📊 Eventos procesados: ${result.processedEvents}\n` +
+                `📧 Emails enviados: ${result.emailsSent}\n` +
+                `👤 Usuario: ${result.userInfo?.name || result.userInfo?.email || user.email}`;
+
+            showToast(message, 'success');
+
+            // Actualizar insights recientes
+            fetchRecentInsights();
+
+        } catch (error) {
+            console.error('❌ Error ejecutando detector automático:', error);
+            showToast(`❌ Error: ${error instanceof Error ? error.message : 'Error desconocido'}`, 'error');
+        }
     };
 
     // Función para validar si los datos del modal están completos
@@ -515,11 +587,11 @@ export default function AIAutomationsPageClient({ userEmail }: AIAutomationsPage
             case 'auto_detect':
                 // Importar el componente detector mejorado
                 const DetectorMejoradoUI = React.lazy(() => import('@/components/detector-mejorado-ui-simple'));
-                
+
                 return (
                     <React.Suspense fallback={<div className="p-4 text-center">Cargando detector...</div>}>
-                        <DetectorMejoradoUI 
-                            userId={userEmail} 
+                        <DetectorMejoradoUI
+                            userId={userEmail}
                             userEmail={userEmail}
                         />
                     </React.Suspense>
@@ -687,12 +759,19 @@ export default function AIAutomationsPageClient({ userEmail }: AIAutomationsPage
             return;
         }
 
+        // Caso especial: Detector de eventos automático
+        if (automation.type === 'auto_detect') {
+            // Para el detector automático solo mostramos información
+            showToast('🔍 El Detector de Eventos Automático está configurado para ejecutarse cada hora. Usa los botones Activar/Desactivar para controlarlo.', 'info');
+            return;
+        }
+
         // Preparar datos necesarios para el modal
         const clients = await fetchUserClients();
         const projects = await fetchUserProjects();
         setUserClients(clients);
         setUserProjects(projects);
-        
+
         // Mostrar modal específico según el tipo
         setCurrentAutomation(automation);
         setModalData({});
@@ -705,10 +784,10 @@ export default function AIAutomationsPageClient({ userEmail }: AIAutomationsPage
 
         setExecuting(currentAutomation.id);
         setShowModal(false);
-        
+
         try {
             console.log('🤖 Executing real AI automation:', currentAutomation.name);
-            
+
             let requestData: any = {};
             let automationType = '';
 
@@ -815,15 +894,15 @@ export default function AIAutomationsPageClient({ userEmail }: AIAutomationsPage
                 case 'auto_detect':
                     // Caso especial: detección automática de eventos
                     console.log('🔍 Executing automatic event detection...');
-                    
+
                     // Obtener user ID para el detector automático
                     const supabaseForAuto = createSupabaseClient();
                     const { data: { user: autoUser }, error: autoUserError } = await supabaseForAuto.auth.getUser();
-                    
+
                     if (autoUserError || !autoUser) {
                         throw new Error('Usuario no autenticado');
                     }
-                    
+
                     const autoResponse = await fetch('/api/ai/workflows/auto', {
                         method: 'POST',
                         headers: {
@@ -851,7 +930,7 @@ export default function AIAutomationsPageClient({ userEmail }: AIAutomationsPage
                         `🎉 ${autoResult.message}! Se detectaron ${autoResult.processedEvents} eventos y se generaron emails automáticamente.`,
                         'success'
                     );
-                    
+
                     fetchRecentInsights(); // Actualizar insights
                     setExecuting(null);
                     return; // Salir aquí para evitar el flujo normal
@@ -864,7 +943,7 @@ export default function AIAutomationsPageClient({ userEmail }: AIAutomationsPage
             // Obtener user ID real del usuario autenticado
             const supabase = createSupabaseClient();
             const { data: { user }, error: userError } = await supabase.auth.getUser();
-            
+
             if (userError || !user) {
                 throw new Error('Usuario no autenticado');
             }
@@ -895,8 +974,8 @@ export default function AIAutomationsPageClient({ userEmail }: AIAutomationsPage
             }));
 
             // Actualizar contador de ejecuciones
-            setAIAutomations(prev => prev.map(a => 
-                a.id === currentAutomation.id 
+            setAIAutomations(prev => prev.map(a =>
+                a.id === currentAutomation.id
                     ? { ...a, executionCount: a.executionCount + 1 }
                     : a
             ));
@@ -915,10 +994,10 @@ export default function AIAutomationsPageClient({ userEmail }: AIAutomationsPage
     // Función para mostrar resultado de manera profesional
     const showExecutionResult = (result: any, automation: AIAutomation) => {
         let resultMessage = `✅ ${automation.name} ejecutada correctamente!\n\n`;
-        
+
         // La nueva estructura del endpoint es: { success: true, data: { analysis, ... } }
         const data = result.data || {};
-        
+
         if (data.analysis) {
             const analysis = data.analysis;
             if (analysis.sentiment) {
@@ -940,14 +1019,14 @@ export default function AIAutomationsPageClient({ userEmail }: AIAutomationsPage
                 resultMessage += `💰 Precio sugerido: €${analysis.suggestedPrice}\n`;
             }
         }
-        
+
         // Verificar si se creó una tarea automática
         if (data.automatic_task_created || (data.analysis && data.analysis.sentiment === 'negative' && data.analysis.urgency === 'high')) {
             resultMessage += `\n🔥 Se creó una tarea automática de alta prioridad`;
         }
-        
+
         resultMessage += `\n📈 Insight guardado en tu dashboard`;
-        
+
         showToast(resultMessage, 'success');
     };
 
@@ -956,7 +1035,7 @@ export default function AIAutomationsPageClient({ userEmail }: AIAutomationsPage
         try {
             const supabase = createSupabaseClient();
             const user = (await supabase.auth.getUser()).data.user;
-            
+
             if (!user) return;
 
             const { data: insights, error } = await supabase
@@ -996,7 +1075,7 @@ export default function AIAutomationsPageClient({ userEmail }: AIAutomationsPage
         const now = new Date();
         const created = new Date(date);
         const diffInMinutes = Math.floor((now.getTime() - created.getTime()) / (1000 * 60));
-        
+
         if (diffInMinutes < 1) return 'hace unos segundos';
         if (diffInMinutes < 60) return `hace ${diffInMinutes} min`;
         if (diffInMinutes < 1440) return `hace ${Math.floor(diffInMinutes / 60)} h`;
@@ -1008,13 +1087,13 @@ export default function AIAutomationsPageClient({ userEmail }: AIAutomationsPage
         const supabase = createSupabaseClient();
         const user = (await supabase.auth.getUser()).data.user;
         if (!user) return [];
-        
+
         const { data, error } = await supabase
             .from('clients')
             .select('id, name, company')
             .eq('user_id', user.id)
             .order('name');
-        
+
         return error ? [] : data || [];
     };
 
@@ -1023,13 +1102,13 @@ export default function AIAutomationsPageClient({ userEmail }: AIAutomationsPage
         const supabase = createSupabaseClient();
         const user = (await supabase.auth.getUser()).data.user;
         if (!user) return [];
-        
+
         const { data, error } = await supabase
             .from('projects')
             .select('id, name, status')
             .eq('user_id', user.id)
             .order('name');
-        
+
         return error ? [] : data || [];
     };
 
@@ -1162,7 +1241,7 @@ export default function AIAutomationsPageClient({ userEmail }: AIAutomationsPage
             description: 'IA detecta automáticamente eventos en tu base de datos (contratos firmados, pagos, proyectos completados) y genera workflows',
             category: 'productivity',
             type: 'auto_detect',
-            status: 'active',
+            status: 'inactive',
             confidence: 95,
             successRate: 89,
             executionCount: 0,
@@ -1241,8 +1320,8 @@ export default function AIAutomationsPageClient({ userEmail }: AIAutomationsPage
         router.push('/login');
     };
 
-    const filteredAutomations = selectedCategory === 'all' 
-        ? aiAutomations 
+    const filteredAutomations = selectedCategory === 'all'
+        ? aiAutomations
         : aiAutomations.filter(automation => automation.category === selectedCategory);
 
     const getStatusIcon = (status: string) => {
@@ -1273,13 +1352,13 @@ export default function AIAutomationsPageClient({ userEmail }: AIAutomationsPage
     return (
         <div className="flex h-screen bg-gray-50 dark:bg-gray-900">
             <Sidebar userEmail={userEmail} onLogout={handleLogout} />
-            
+
             <div className="flex-1 flex flex-col overflow-hidden ml-56">
                 <TrialBanner userEmail={userEmail} />
-                
+
                 <main className="flex-1 overflow-x-hidden overflow-y-auto bg-gray-50 dark:bg-gray-900">
                     <div className="container mx-auto px-4 sm:px-6 py-8">
-                        
+
                         {/* Header */}
                         <div className="mb-8">
                             <div className="flex items-center justify-between mb-6">
@@ -1297,7 +1376,7 @@ export default function AIAutomationsPageClient({ userEmail }: AIAutomationsPage
                                         <CheckCircle className="h-4 w-4" />
                                         <span className="text-sm font-medium">OpenAI Activo</span>
                                     </div>
-                                    <Button 
+                                    <Button
                                         onClick={() => router.push('/dashboard/automations')}
                                         variant="outline"
                                         className="flex items-center gap-2"
@@ -1377,11 +1456,10 @@ export default function AIAutomationsPageClient({ userEmail }: AIAutomationsPage
                                     <button
                                         key={category.id}
                                         onClick={() => setSelectedCategory(category.id)}
-                                        className={`flex items-center gap-2 px-4 py-2 rounded-lg font-medium transition-all duration-200 ${
-                                            isSelected
+                                        className={`flex items-center gap-2 px-4 py-2 rounded-lg font-medium transition-all duration-200 ${isSelected
                                                 ? 'bg-blue-600 text-white shadow-lg'
                                                 : 'bg-white text-gray-700 hover:bg-gray-50 border border-gray-200'
-                                        }`}
+                                            }`}
                                     >
                                         <Icon className="h-4 w-4" />
                                         {category.name}
@@ -1504,14 +1582,46 @@ export default function AIAutomationsPageClient({ userEmail }: AIAutomationsPage
                                                             {getStatusText(automation.status)}
                                                         </span>
                                                     </div>
-                                                    <Button
-                                                        variant="outline"
-                                                        size="sm"
-                                                        className="opacity-0 group-hover:opacity-100 transition-opacity"
-                                                        disabled={executing === automation.id || (!canUseFeatures && automation.isPremium)}
-                                                    >
-                                                        {executing === automation.id ? 'Ejecutando...' : 'Ejecutar IA Real'}
-                                                    </Button>
+
+                                                    {/* Botones específicos para detector automático */}
+                                                    {automation.type === 'auto_detect' ? (
+                                                        <div className="flex gap-2">
+                                                            <Button
+                                                                variant={automation.status === 'active' ? 'destructive' : 'default'}
+                                                                size="sm"
+                                                                onClick={(e) => {
+                                                                    e.stopPropagation();
+                                                                    toggleAutoDetector(automation.id, automation.status);
+                                                                }}
+                                                                disabled={!canUseFeatures && automation.isPremium}
+                                                                className="min-w-[80px]"
+                                                            >
+                                                                {automation.status === 'active' ? 'Desactivar' : 'Activar'}
+                                                            </Button>
+                                                            <Button
+                                                                variant="outline"
+                                                                size="sm"
+                                                                onClick={(e) => {
+                                                                    e.stopPropagation();
+                                                                    executeAutoDetectorWithEmails();
+                                                                }}
+                                                                disabled={!canUseFeatures && automation.isPremium}
+                                                                className="min-w-[100px]"
+                                                            >
+                                                                📧 Ejecutar Ahora
+                                                            </Button>
+                                                        </div>
+                                                    ) : (
+                                                        /* Botón normal para otras automatizaciones */
+                                                        <Button
+                                                            variant="outline"
+                                                            size="sm"
+                                                            className="opacity-0 group-hover:opacity-100 transition-opacity"
+                                                            disabled={executing === automation.id || (!canUseFeatures && automation.isPremium)}
+                                                        >
+                                                            {executing === automation.id ? 'Ejecutando...' : 'Ejecutar IA Real'}
+                                                        </Button>
+                                                    )}
                                                 </div>
                                             </div>
                                         </div>
@@ -1575,16 +1685,15 @@ export default function AIAutomationsPageClient({ userEmail }: AIAutomationsPage
                                                     {insight.insight_type === 'sentiment_analysis' && insight.data_points.sentiment && (
                                                         <div className="flex items-center gap-2">
                                                             <span className="text-sm font-medium">Sentimiento:</span>
-                                                            <span className={`px-2 py-1 rounded-full text-xs font-medium ${
-                                                                insight.data_points.sentiment === 'positive' ? 'bg-green-100 text-green-800' :
-                                                                insight.data_points.sentiment === 'negative' ? 'bg-red-100 text-red-800' :
-                                                                'bg-yellow-100 text-yellow-800'
-                                                            }`}>
+                                                            <span className={`px-2 py-1 rounded-full text-xs font-medium ${insight.data_points.sentiment === 'positive' ? 'bg-green-100 text-green-800' :
+                                                                    insight.data_points.sentiment === 'negative' ? 'bg-red-100 text-red-800' :
+                                                                        'bg-yellow-100 text-yellow-800'
+                                                                }`}>
                                                                 {insight.data_points.sentiment.toUpperCase()}
                                                             </span>
                                                         </div>
                                                     )}
-                                                    
+
                                                     {insight.data_points.original_text && (
                                                         <div className="mt-2">
                                                             <span className="text-xs text-gray-600 dark:text-gray-400">
@@ -1633,23 +1742,23 @@ export default function AIAutomationsPageClient({ userEmail }: AIAutomationsPage
                             </p>
                             <div className="bg-white/20 rounded-lg p-4 mb-6">
                                 <p className="text-sm text-blue-100">
-                                    🧠 Análisis de sentimiento real de feedback de clientes<br/>
-                                    📧 Optimización automática de comunicaciones<br/>
-                                    📊 Análisis inteligente de propuestas y precios<br/>
-                                    ⚠️ Detección predictiva de riesgos en proyectos<br/>
-                                    � Análisis de rendimiento con insights personalizados<br/>
+                                    🧠 Análisis de sentimiento real de feedback de clientes<br />
+                                    📧 Optimización automática de comunicaciones<br />
+                                    📊 Análisis inteligente de propuestas y precios<br />
+                                    ⚠️ Detección predictiva de riesgos en proyectos<br />
+                                    � Análisis de rendimiento con insights personalizados<br />
                                     � Generación de contenido profesional automático
                                 </p>
                             </div>
                             <div className="flex flex-col sm:flex-row gap-4 justify-center">
-                                <Button 
+                                <Button
                                     variant="secondary"
                                     className="bg-white text-blue-600 hover:bg-gray-100"
                                     onClick={() => router.push('/dashboard/automations')}
                                 >
                                     Ver Automatizaciones Tradicionales
                                 </Button>
-                                <Button 
+                                <Button
                                     variant="secondary"
                                     className="bg-white/20 text-white hover:bg-white/30 border-white/30"
                                     onClick={() => window.open('https://openai.com/pricing', '_blank')}
@@ -1670,8 +1779,8 @@ export default function AIAutomationsPageClient({ userEmail }: AIAutomationsPage
                         <div className="flex items-center justify-between p-6 border-b">
                             <div className="flex items-center gap-3">
                                 <div className="p-2 bg-blue-100 rounded-lg">
-                                    {React.createElement(currentAutomation.icon, { 
-                                        className: "h-6 w-6 text-blue-600" 
+                                    {React.createElement(currentAutomation.icon, {
+                                        className: "h-6 w-6 text-blue-600"
                                     })}
                                 </div>
                                 <div>
@@ -1718,12 +1827,11 @@ export default function AIAutomationsPageClient({ userEmail }: AIAutomationsPage
             {/* Toast Component */}
             {toast.show && (
                 <div className="fixed bottom-4 right-4 z-50">
-                    <div className={`rounded-lg p-4 shadow-lg max-w-md ${
-                        toast.type === 'success' ? 'bg-green-500 text-white' :
-                        toast.type === 'error' ? 'bg-red-500 text-white' :
-                        toast.type === 'warning' ? 'bg-yellow-500 text-white' :
-                        'bg-blue-500 text-white'
-                    }`}>
+                    <div className={`rounded-lg p-4 shadow-lg max-w-md ${toast.type === 'success' ? 'bg-green-500 text-white' :
+                            toast.type === 'error' ? 'bg-red-500 text-white' :
+                                toast.type === 'warning' ? 'bg-yellow-500 text-white' :
+                                    'bg-blue-500 text-white'
+                        }`}>
                         <div className="flex items-start gap-3">
                             <div className="flex-shrink-0 mt-0.5">
                                 {toast.type === 'success' && <CheckCircle className="h-5 w-5" />}

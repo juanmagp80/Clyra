@@ -1,14 +1,14 @@
-import type { Metadata } from 'next';
-import { Inter } from 'next/font/google';
-import './globals.css';
-import './fallback.css';
-import '../styles/datepicker.css';
-import '../styles/datepicker-fix.css';
-import '../styles/toasts.css';
-import { ThemeProvider } from '@/components/providers/ThemeProvider';
-import { Toaster } from 'sonner';
 import CookieBanner from '@/components/CookieBanner';
 import CookieSettings from '@/components/CookieSettings';
+import { ThemeProvider } from '@/components/providers/ThemeProvider';
+import type { Metadata } from 'next';
+import { Inter } from 'next/font/google';
+import { Toaster } from 'sonner';
+import '../styles/datepicker-fix.css';
+import '../styles/datepicker.css';
+import '../styles/toasts.css';
+import './fallback.css';
+import './globals.css';
 
 // Configurar la fuente Inter como en Bonsai
 const inter = Inter({
@@ -46,7 +46,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
           {children}
           <CookieBanner />
           <CookieSettings />
-          <Toaster 
+          <Toaster
             position="top-right"
             expand={true}
             richColors={true}
