@@ -15,8 +15,10 @@ import {
     CheckCircle,
     ChevronRight,
     Clock,
+    Crystal,
     DollarSign,
     FileText,
+    Lightbulb,
     Mail,
     MessageSquare,
     Pause,
@@ -70,6 +72,7 @@ export default function AIAutomationsPageClient({ userEmail }: AIAutomationsPage
     const [userClients, setUserClients] = useState<any[]>([]);
     const [userProjects, setUserProjects] = useState<any[]>([]);
     const [userProposals, setUserProposals] = useState<any[]>([]);
+    const [userBudgets, setUserBudgets] = useState<any[]>([]);
     const [executionResults, setExecutionResults] = useState<{ [key: string]: any }>({});
     const [recentInsights, setRecentInsights] = useState<any[]>([]);
     const [showingResults, setShowingResults] = useState(false);
@@ -196,7 +199,7 @@ export default function AIAutomationsPageClient({ userEmail }: AIAutomationsPage
             case 'performance_analysis':
                 return modalData.period;
             case 'pricing_optimization':
-                return modalData.projectType?.trim() && modalData.scope?.trim() && modalData.currentPrice;
+                return modalData.budgetId;
             // 🔄 NUEVOS WORKFLOWS
             case 'smart_email':
                 return modalData.trigger?.trim() && modalData.context;
@@ -894,6 +897,216 @@ export default function AIAutomationsPageClient({ userEmail }: AIAutomationsPage
                     </div>
                 );
 
+            case 'pricing_optimization':
+                return (
+                    <div className="space-y-6">
+                        {/* Paso 1: Seleccionar Cliente */}
+                        <div>
+                            <label className="block text-sm font-medium text-gray-700 mb-2">
+                                Paso 1: Selecciona el cliente *
+                            </label>
+                            {userClients.length > 0 ? (
+                                <select
+                                    className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                                    value={modalData.selectedClientId || ''}
+                                    onChange={(e) => {
+                                        const clientId = e.target.value;
+                                        setModalData(prev => ({ 
+                                            ...prev, 
+                                            selectedClientId: clientId,
+                                            budgetId: '' // Reset presupuesto cuando cambia cliente
+                                        }));
+                                    }}
+                                >
+                                    <option value="">Selecciona un cliente...</option>
+                                    {userClients.map((client) => (
+                                        <option key={client.id} value={client.id}>
+                                            {client.name} {client.company ? `(${client.company})` : ''}
+                                        </option>
+                                    ))}
+                                </select>
+                            ) : (
+                                <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-4">
+                                    <p className="text-yellow-800 text-sm">
+                                        No tienes clientes registrados. Los presupuestos se mostrarán sin filtrar por cliente.
+                                    </p>
+                                </div>
+                            )}
+                        </div>
+
+                        {/* Paso 2: Seleccionar Presupuesto */}
+                        <div>
+                            <label className="block text-sm font-medium text-gray-700 mb-2">
+                                Paso 2: Selecciona el presupuesto a optimizar *
+                            </label>
+                            {userBudgets.length > 0 ? (
+                                <div>
+                                    {(() => {
+                                        const selectedClient = userClients.find(c => c.id === modalData.selectedClientId);
+                                        const filteredBudgets = modalData.selectedClientId && selectedClient
+                                            ? userBudgets.filter(b => b.client?.id === modalData.selectedClientId)
+                                            : userBudgets;
+
+                                        if (modalData.selectedClientId && filteredBudgets.length === 0) {
+                                            return (
+                                                <div className="bg-orange-50 border border-orange-200 rounded-lg p-4">
+                                                    <p className="text-orange-800 text-sm mb-2">
+                                                        No se encontraron presupuestos para este cliente.
+                                                    </p>
+                                                    <p className="text-orange-700 text-xs">
+                                                        Tip: Puedes seleccionar "Todos los presupuestos" para ver todos los presupuestos disponibles.
+                                                    </p>
+                                                </div>
+                                            );
+                                        }
+
+                                        return (
+                                            <select
+                                                className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                                                value={modalData.budgetId || ''}
+                                                onChange={(e) => setModalData(prev => ({ ...prev, budgetId: e.target.value }))}
+                                            >
+                                                <option value="">
+                                                    {modalData.selectedClientId 
+                                                        ? 'Selecciona un presupuesto de este cliente...' 
+                                                        : 'Selecciona cualquier presupuesto...'
+                                                    }
+                                                </option>
+                                                {filteredBudgets.map((budget: any) => (
+                                                    <option key={budget.id} value={budget.id}>
+                                                        💰 {budget.title} • 
+                                                        {budget.status} • 
+                                                        €{budget.total_amount?.toLocaleString() || '0'} •
+                                                        {new Date(budget.created_at).toLocaleDateString('es-ES')}
+                                                    </option>
+                                                ))}
+                                                
+                                                {/* Opción para ver todos los presupuestos */}
+                                                {modalData.selectedClientId && (
+                                                    <optgroup label="— O selecciona de todos los presupuestos —">
+                                                        {userBudgets.filter(b => !filteredBudgets.includes(b)).map((budget: any) => (
+                                                            <option key={budget.id} value={budget.id}>
+                                                                💰 {budget.title} • {budget.status} • 
+                                                                €{budget.total_amount?.toLocaleString() || '0'}
+                                                            </option>
+                                                        ))}
+                                                    </optgroup>
+                                                )}
+                                            </select>
+                                        );
+                                    })()}
+                                </div>
+                            ) : (
+                                <div className="text-center p-8 bg-gray-50 rounded-lg border border-gray-200">
+                                    <DollarSign className="h-12 w-12 text-yellow-500 mx-auto mb-4" />
+                                    <p className="text-gray-600 mb-2">No tienes presupuestos creados aún</p>
+                                    <p className="text-sm text-gray-500">
+                                        Ve a la sección de Presupuestos para crear tu primer presupuesto y luego podrás optimizarlo aquí.
+                                    </p>
+                                    <Button
+                                        onClick={() => router.push('/dashboard/budgets')}
+                                        className="mt-4 bg-green-600 hover:bg-green-700 text-white"
+                                    >
+                                        Ir a Presupuestos
+                                    </Button>
+                                </div>
+                            )}
+                        </div>
+
+                        {/* Información del presupuesto seleccionado */}
+                        {modalData.budgetId && (() => {
+                            const selectedBudget = userBudgets.find(b => b.id === modalData.budgetId);
+                            if (!selectedBudget) return null;
+                            
+                            return (
+                                <div className="bg-green-50 border border-green-200 rounded-lg p-4">
+                                    <div className="flex items-center gap-3 mb-3">
+                                        <div className="p-2 bg-green-100 rounded-lg">
+                                            <DollarSign className="h-5 w-5 text-green-600" />
+                                        </div>
+                                        <div>
+                                            <h4 className="font-medium text-green-900">Presupuesto Seleccionado para Optimización</h4>
+                                            <p className="text-sm text-green-700">{selectedBudget.title}</p>
+                                        </div>
+                                    </div>
+                                    <div className="grid grid-cols-2 gap-4 text-sm">
+                                        <div>
+                                            <span className="text-green-700">Estado:</span>
+                                            <span className={`ml-2 px-2 py-1 rounded-full text-xs font-medium ${
+                                                selectedBudget.status === 'approved' ? 'bg-green-100 text-green-800' :
+                                                selectedBudget.status === 'sent' ? 'bg-blue-100 text-blue-800' :
+                                                selectedBudget.status === 'rejected' ? 'bg-red-100 text-red-800' :
+                                                'bg-gray-100 text-gray-800'
+                                            }`}>
+                                                {selectedBudget.status}
+                                            </span>
+                                        </div>
+                                        <div>
+                                            <span className="text-green-700">Total:</span>
+                                            <span className="font-medium text-green-900 ml-2">
+                                                €{selectedBudget.total_amount?.toLocaleString() || '0'}
+                                            </span>
+                                        </div>
+                                        <div>
+                                            <span className="text-green-700">Cliente:</span>
+                                            <span className="font-medium text-green-900 ml-2">
+                                                {selectedBudget.client?.name || 'No especificado'}
+                                            </span>
+                                        </div>
+                                        <div>
+                                            <span className="text-green-700">Creado:</span>
+                                            <span className="font-medium text-green-900 ml-2">{new Date(selectedBudget.created_at).toLocaleDateString('es-ES')}</span>
+                                        </div>
+                                    </div>
+                                </div>
+                            );
+                        })()}
+
+                        {modalData.budgetId && (
+                            <div className="bg-gradient-to-br from-green-50 to-emerald-50 border border-green-200 rounded-xl p-6">
+                                <div className="flex items-center gap-3 mb-4">
+                                    <div className="p-3 bg-green-100 rounded-full">
+                                        <DollarSign className="h-6 w-6 text-green-600" />
+                                    </div>
+                                    <div>
+                                        <h4 className="font-bold text-green-900 text-lg">💰 Optimización de Precios IA</h4>
+                                        <p className="text-green-700 text-sm">OpenAI analizará el mercado y tu historial para optimizar precios</p>
+                                    </div>
+                                </div>
+                                
+                                <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6">
+                                    <div className="space-y-2">
+                                        <h5 className="text-sm font-medium text-green-900">📊 Análisis de Mercado:</h5>
+                                        <ul className="text-sm text-green-700 space-y-1">
+                                            <li>• <strong>Precios competitivos</strong> del sector</li>
+                                            <li>• <strong>Posicionamiento</strong> vs competencia</li>
+                                            <li>• <strong>Tendencias</strong> del mercado actual</li>
+                                            <li>• <strong>Evaluación de valor</strong> percibido</li>
+                                        </ul>
+                                    </div>
+                                    
+                                    <div className="space-y-2">
+                                        <h5 className="text-sm font-medium text-green-900">💡 Recomendaciones:</h5>
+                                        <ul className="text-sm text-green-700 space-y-1">
+                                            <li>• <strong>Ajustes específicos</strong> por item</li>
+                                            <li>• <strong>Estrategias de pricing</strong> personalizadas</li>
+                                            <li>• <strong>Servicios adicionales</strong> sugeridos</li>
+                                            <li>• <strong>Impacto financiero</strong> proyectado</li>
+                                        </ul>
+                                    </div>
+                                </div>
+                                
+                                <div className="bg-white rounded-lg p-4 border border-green-100">
+                                    <p className="text-sm text-green-800 flex items-center gap-2">
+                                        <Brain className="h-4 w-4" />
+                                        <strong>¡Optimización inteligente!</strong> La IA analizará cada item del presupuesto, comparará con datos de mercado y sugerirá mejoras específicas.
+                                    </p>
+                                </div>
+                            </div>
+                        )}
+                    </div>
+                );
+
             case 'performance_analysis':
                 return (
                     <div className="space-y-4">
@@ -1423,21 +1636,119 @@ export default function AIAutomationsPageClient({ userEmail }: AIAutomationsPage
                     return; // Salir aquí para evitar el flujo normal
                     break;
 
-                case 'performance_analysis':
-                    automationType = 'performance_analysis';
-                    requestData = {
-                        period: modalData.period
-                    };
+                case 'pricing_optimization':
+                    // Para optimización de precios, usar endpoint específico directamente
+                    console.log('💰 Executing pricing optimization...');
+
+                    const pricingResponse = await fetch('/api/ai/optimize-pricing', {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json',
+                        },
+                        body: JSON.stringify({
+                            budgetId: modalData.budgetId
+                        })
+                    });
+
+                    const pricingResult = await pricingResponse.json();
+
+                    if (!pricingResponse.ok) {
+                        throw new Error(pricingResult.error || 'Error optimizando precios del presupuesto');
+                    }
+
+                    // Guardar resultado
+                    if (pricingResult) {
+                        setExecutionResults(prev => ({
+                            ...prev,
+                            [currentAutomation.id]: pricingResult
+                        }));
+                    }
+
+                    const currentTotal = pricingResult.analysis.financial_impact?.current_total || pricingResult.budget.total_amount;
+                    const optimizedTotal = pricingResult.analysis.financial_impact?.optimized_total || currentTotal;
+                    const improvement = pricingResult.analysis.financial_impact?.percentage_improvement || 0;
+                    const improvementIcon = improvement > 0 ? '📈' : improvement < 0 ? '📉' : '📊';
+                    
+                    showToast(
+                        `💰 Optimización de precios completada para "${pricingResult.budget.title}"!\n${improvementIcon} Mejora potencial: ${improvement.toFixed(1)}%\n💵 Total optimizado: €${optimizedTotal.toLocaleString()}\n🎯 ${pricingResult.analysis.optimization_recommendations?.length || 0} recomendaciones`,
+                        'success'
+                    );
+
+                    // Mostrar botón para ver detalles del resultado
+                    setTimeout(() => {
+                        showToast(
+                            '📋 Análisis guardado. Haz clic en "Ver Resultados" para ver las estrategias de pricing y recomendaciones completas.',
+                            'info'
+                        );
+                    }, 3000);
+
+                    fetchRecentInsights(); // Actualizar insights
+                    setExecuting(null);
+                    return; // Salir aquí para evitar el flujo normal
                     break;
 
-                case 'pricing_optimization':
-                    automationType = 'pricing_optimization';
-                    requestData = {
-                        projectType: modalData.projectType,
-                        scope: modalData.scope,
-                        currentPrice: parseFloat(modalData.currentPrice)
+                case 'performance_analysis':
+                    // Caso especial: análisis de rendimiento
+                    console.log('📈 Executing performance analysis...');
+
+                    // Verificar autenticación antes de llamar API
+                    const supabaseAuth = createSupabaseClient();
+                    const { data: { user: authUser }, error: authUserError } = await supabaseAuth.auth.getUser();
+
+                    if (authUserError || !authUser) {
+                        throw new Error('Usuario no autenticado. Por favor, recarga la página.');
+                    }
+
+                    console.log('🔐 Usuario autenticado:', authUser.email);
+
+                    // Obtener token de sesión para incluir en headers
+                    const { data: { session } } = await supabaseAuth.auth.getSession();
+                    const headers: HeadersInit = {
+                        'Content-Type': 'application/json',
                     };
-                    break;
+
+                    // Agregar token de autorización si está disponible
+                    if (session?.access_token) {
+                        headers['Authorization'] = `Bearer ${session.access_token}`;
+                    }
+
+                    const performanceResponse = await fetch('/api/ai/analyze-performance', {
+                        method: 'POST',
+                        headers,
+                        body: JSON.stringify({
+                            period: modalData.period || '30_days',
+                            userId: authUser.id // Fallback para auth
+                        })
+                    });
+
+                    const performanceResult = await performanceResponse.json();
+
+                    console.log('📊 Performance analysis response:', {
+                        ok: performanceResponse.ok,
+                        status: performanceResponse.status,
+                        result: performanceResult
+                    });
+
+                    if (!performanceResponse.ok) {
+                        throw new Error(performanceResult.error || 'Error analizando rendimiento');
+                    }
+
+                    // Mostrar resultado específico para análisis de rendimiento
+                    if (currentAutomation) {
+                        setExecutionResults(prev => ({
+                            ...prev,
+                            [currentAutomation.id]: performanceResult
+                        }));
+                    }
+
+                    showToast(
+                        `📈 ¡Análisis completado! Score de productividad: ${performanceResult.analysis.productivity_analysis.overall_score}/10`,
+                        'success'
+                    );
+
+                    fetchRecentInsights(); // Actualizar insights
+                    setExecuting(null);
+                    return; // Salir aquí para evitar el flujo normal
 
                 // 🔄 NUEVOS WORKFLOWS AUTOMÁTICOS
                 case 'smart_email':
@@ -1619,6 +1930,34 @@ export default function AIAutomationsPageClient({ userEmail }: AIAutomationsPage
     // Función para mostrar resultado de manera profesional
     const showExecutionResult = (result: any, automation: AIAutomation) => {
         let resultMessage = `✅ ${automation.name} ejecutada correctamente!\n\n`;
+
+        // Manejar resultados específicos de performance analysis
+        if (automation.type === 'performance_analysis' && result.analysis) {
+            const analysis = result.analysis;
+            const metrics = result.metrics;
+            
+            resultMessage += `📊 Score de Productividad: ${analysis.productivity_analysis?.overall_score || 'N/A'}/10\n`;
+            resultMessage += `⏱️ Horas trabajadas: ${metrics?.totalWorkHours || 0}h\n`;
+            resultMessage += `💰 % Facturable: ${metrics?.billablePercentage || 0}%\n`;
+            resultMessage += `💵 €/hora: ${metrics?.revenuePerHour || 0}\n`;
+            
+            if (analysis.bottlenecks_identified?.length > 0) {
+                resultMessage += `🚫 Bottlenecks: ${analysis.bottlenecks_identified.length}\n`;
+            }
+            
+            if (analysis.opportunities?.length > 0) {
+                resultMessage += `🚀 Oportunidades: ${analysis.opportunities.length}\n`;
+            }
+            
+            if (analysis.actionable_recommendations?.length > 0) {
+                resultMessage += `💡 Recomendaciones: ${analysis.actionable_recommendations.length}\n`;
+            }
+
+            resultMessage += `\n📈 Datos analizados: ${result.summary?.data_points?.calendar_events || 0} eventos, ${result.summary?.data_points?.tracking_sessions || 0} sesiones`;
+            
+            showToast(resultMessage, 'success');
+            return;
+        }
 
         // La nueva estructura del endpoint es: { success: true, data: { analysis, ... } }
         const data = result.data || {};
@@ -1834,6 +2173,21 @@ export default function AIAutomationsPageClient({ userEmail }: AIAutomationsPage
             isNew: true
         },
         {
+            id: 'pricing-optimizer',
+            name: '💰 Optimizador de Precios',
+            description: 'Selecciona cliente → Elige presupuesto → IA analiza precios del mercado y sugiere optimizaciones estratégicas',
+            category: 'sales',
+            type: 'pricing_optimization',
+            status: 'active',
+            confidence: 85,
+            successRate: 87,
+            executionCount: 0,
+            aiFeatures: ['Análisis de Mercado', 'Datos Históricos', 'Pricing Inteligente', 'Estrategias Personalizadas'],
+            icon: DollarSign,
+            color: 'green',
+            isNew: true
+        },
+        {
             id: 'content-generator',
             name: '✍️ Generador de Contenido IA',
             description: 'IA crea contenido profesional personalizado: emails, propuestas, posts, artículos usando OpenAI',
@@ -1876,21 +2230,6 @@ export default function AIAutomationsPageClient({ userEmail }: AIAutomationsPage
             aiFeatures: ['Métricas Avanzadas', 'Identificación de Tendencias', 'Análisis de Productividad', 'Recomendaciones Personalizadas'],
             icon: BarChart,
             color: 'indigo',
-            isNew: true
-        },
-        {
-            id: 'pricing-optimizer',
-            name: '💰 Optimizador de Precios',
-            description: 'IA analiza datos del mercado y tu historial con OpenAI para sugerir precios óptimos y estrategias de pricing',
-            category: 'sales',
-            type: 'pricing_optimization',
-            status: 'active',
-            confidence: 85,
-            successRate: 87,
-            executionCount: 0,
-            aiFeatures: ['Análisis de Mercado', 'Datos Históricos', 'Pricing Inteligente', 'Estrategias Personalizadas'],
-            icon: DollarSign,
-            color: 'green',
             isNew: true
         },
         // 🔄 NUEVOS WORKFLOWS AUTOMÁTICOS
@@ -2035,6 +2374,24 @@ export default function AIAutomationsPageClient({ userEmail }: AIAutomationsPage
 
                 if (!proposalsError && proposals) {
                     setUserProposals(proposals);
+                }
+
+                // Cargar presupuestos
+                const { data: budgets, error: budgetsError } = await supabase
+                    .from('budgets')
+                    .select(`
+                        id, 
+                        title, 
+                        status, 
+                        total_amount, 
+                        created_at,
+                        client:clients(id, name, company)
+                    `)
+                    .eq('user_id', user.id)
+                    .order('created_at', { ascending: false });
+
+                if (!budgetsError && budgets) {
+                    setUserBudgets(budgets);
                 }
 
             } catch (error) {
@@ -2711,6 +3068,194 @@ export default function AIAutomationsPageClient({ userEmail }: AIAutomationsPage
                                 </>
                             )}
 
+                            {/* Resultados específicos para Análisis de Rendimiento */}
+                            {currentResults.analysis && currentResults.analysis.productivity_analysis && (
+                                <div className="space-y-6">
+                                    {/* Métricas Clave */}
+                                    <div className="bg-gradient-to-r from-blue-50 to-indigo-50 border border-blue-200 rounded-lg p-6">
+                                        <div className="flex items-center gap-3 mb-4">
+                                            <div className="p-3 bg-blue-100 rounded-full">
+                                                <TrendingUp className="h-6 w-6 text-blue-600" />
+                                            </div>
+                                            <div>
+                                                <h4 className="font-bold text-blue-900 text-lg">📈 Resumen de Rendimiento</h4>
+                                                <p className="text-sm text-blue-700">
+                                                    Período: {currentResults.period?.replace('_', ' ')?.replace('days', 'días') || 'N/A'}
+                                                </p>
+                                            </div>
+                                        </div>
+                                        
+                                        <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mt-4">
+                                            <div className="text-center">
+                                                <div className="text-2xl font-bold text-blue-600">
+                                                    {currentResults.analysis.productivity_analysis.overall_score || 'N/A'}/10
+                                                </div>
+                                                <div className="text-sm text-blue-700">Productividad</div>
+                                            </div>
+                                            <div className="text-center">
+                                                <div className="text-2xl font-bold text-green-600">
+                                                    {currentResults.metrics?.billablePercentage || 0}%
+                                                </div>
+                                                <div className="text-sm text-green-700">Facturable</div>
+                                            </div>
+                                            <div className="text-center">
+                                                <div className="text-2xl font-bold text-purple-600">
+                                                    €{currentResults.metrics?.revenuePerHour || 0}
+                                                </div>
+                                                <div className="text-sm text-purple-700">Por Hora</div>
+                                            </div>
+                                            <div className="text-center">
+                                                <div className="text-2xl font-bold text-orange-600">
+                                                    {currentResults.metrics?.totalWorkHours || 0}h
+                                                </div>
+                                                <div className="text-sm text-orange-700">Trabajadas</div>
+                                            </div>
+                                        </div>
+                                    </div>
+
+                                    {/* Bottlenecks y Oportunidades */}
+                                    <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                                        {/* Bottlenecks */}
+                                        {currentResults.analysis.bottlenecks_identified?.length > 0 && (
+                                            <div className="bg-white border-l-4 border-red-500 rounded-lg p-6 shadow-sm">
+                                                <div className="flex items-center gap-3 mb-3">
+                                                    <div className="p-2 bg-red-100 rounded-lg">
+                                                        <AlertTriangle className="h-5 w-5 text-red-600" />
+                                                    </div>
+                                                    <h5 className="font-semibold text-gray-900">🚫 Bottlenecks Detectados</h5>
+                                                </div>
+                                                <div className="space-y-3">
+                                                    {currentResults.analysis.bottlenecks_identified.map((bottleneck: any, index: number) => (
+                                                        <div key={index} className="bg-red-50 rounded-lg p-3">
+                                                            <div className="flex items-center gap-2 mb-1">
+                                                                <div className="text-sm font-medium text-red-900">{bottleneck.area}</div>
+                                                                <span className={`text-xs px-2 py-1 rounded-full ${
+                                                                    bottleneck.impact === 'alto' ? 'bg-red-200 text-red-800' :
+                                                                    bottleneck.impact === 'medio' ? 'bg-yellow-200 text-yellow-800' :
+                                                                    'bg-green-200 text-green-800'
+                                                                }`}>
+                                                                    {bottleneck.impact}
+                                                                </span>
+                                                            </div>
+                                                            <p className="text-sm text-red-700 mb-2">{bottleneck.description}</p>
+                                                            <p className="text-xs text-red-600 font-medium">💡 {bottleneck.solution}</p>
+                                                        </div>
+                                                    ))}
+                                                </div>
+                                            </div>
+                                        )}
+
+                                        {/* Oportunidades */}
+                                        {currentResults.analysis.opportunities?.length > 0 && (
+                                            <div className="bg-white border-l-4 border-green-500 rounded-lg p-6 shadow-sm">
+                                                <div className="flex items-center gap-3 mb-3">
+                                                    <div className="p-2 bg-green-100 rounded-lg">
+                                                        <Zap className="h-5 w-5 text-green-600" />
+                                                    </div>
+                                                    <h5 className="font-semibold text-gray-900">🚀 Oportunidades</h5>
+                                                </div>
+                                                <div className="space-y-3">
+                                                    {currentResults.analysis.opportunities.map((opportunity: any, index: number) => (
+                                                        <div key={index} className="bg-green-50 rounded-lg p-3">
+                                                            <div className="flex items-center gap-2 mb-1">
+                                                                <div className="text-sm font-medium text-green-900">{opportunity.opportunity}</div>
+                                                                <span className={`text-xs px-2 py-1 rounded-full ${
+                                                                    opportunity.priority === 'alta' ? 'bg-red-200 text-red-800' :
+                                                                    opportunity.priority === 'media' ? 'bg-yellow-200 text-yellow-800' :
+                                                                    'bg-green-200 text-green-800'
+                                                                }`}>
+                                                                    {opportunity.priority}
+                                                                </span>
+                                                            </div>
+                                                            <p className="text-sm text-green-700 mb-2">{opportunity.potential_impact}</p>
+                                                            <p className="text-xs text-green-600 font-medium">🛠️ {opportunity.implementation}</p>
+                                                        </div>
+                                                    ))}
+                                                </div>
+                                            </div>
+                                        )}
+                                    </div>
+
+                                    {/* Recomendaciones Accionables */}
+                                    {currentResults.analysis.actionable_recommendations?.length > 0 && (
+                                        <div className="bg-white border border-gray-200 rounded-lg p-6 shadow-sm">
+                                            <div className="flex items-center gap-3 mb-4">
+                                                <div className="p-2 bg-yellow-100 rounded-lg">
+                                                    <Lightbulb className="h-5 w-5 text-yellow-600" />
+                                                </div>
+                                                <h5 className="font-semibold text-gray-900">💡 Recomendaciones Accionables</h5>
+                                            </div>
+                                            <div className="grid gap-4">
+                                                {currentResults.analysis.actionable_recommendations.map((rec: any, index: number) => (
+                                                    <div key={index} className="border border-gray-200 rounded-lg p-4 hover:bg-gray-50 transition-colors">
+                                                        <div className="flex items-start justify-between">
+                                                            <div className="flex-1">
+                                                                <h6 className="font-medium text-gray-900 mb-1">{rec.action}</h6>
+                                                                <p className="text-sm text-gray-600 mb-2">{rec.expected_outcome}</p>
+                                                                <div className="flex items-center gap-4 text-xs text-gray-500">
+                                                                    <span>⏱️ {rec.timeframe}</span>
+                                                                    <span className={`px-2 py-1 rounded-full ${
+                                                                        rec.difficulty === 'fácil' ? 'bg-green-100 text-green-600' :
+                                                                        rec.difficulty === 'medio' ? 'bg-yellow-100 text-yellow-600' :
+                                                                        'bg-red-100 text-red-600'
+                                                                    }`}>
+                                                                        {rec.difficulty}
+                                                                    </span>
+                                                                </div>
+                                                            </div>
+                                                        </div>
+                                                    </div>
+                                                ))}
+                                            </div>
+                                        </div>
+                                    )}
+
+                                    {/* Predicciones Futuras */}
+                                    {currentResults.analysis.next_period_predictions && (
+                                        <div className="bg-gradient-to-r from-purple-50 to-pink-50 border border-purple-200 rounded-lg p-6">
+                                            <div className="flex items-center gap-3 mb-4">
+                                                <div className="p-2 bg-purple-100 rounded-lg">
+                                                    <Crystal className="h-5 w-5 text-purple-600" />
+                                                </div>
+                                                <h5 className="font-semibold text-purple-900">🔮 Predicciones Futuras</h5>
+                                            </div>
+                                            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                                                <div className="text-center">
+                                                    <div className="text-xl font-bold text-purple-600">
+                                                        {currentResults.analysis.next_period_predictions.productivity_forecast || 'N/A'}/10
+                                                    </div>
+                                                    <div className="text-sm text-purple-700">Productividad Proyectada</div>
+                                                </div>
+                                                <div className="text-center">
+                                                    <div className="text-xl font-bold text-green-600">
+                                                        €{currentResults.analysis.next_period_predictions.revenue_projection || 0}
+                                                    </div>
+                                                    <div className="text-sm text-green-700">Revenue Proyectado</div>
+                                                </div>
+                                                <div className="text-center">
+                                                    <div className="text-lg font-medium text-indigo-600">
+                                                        {currentResults.analysis.next_period_predictions.key_focus_areas?.length || 0}
+                                                    </div>
+                                                    <div className="text-sm text-indigo-700">Áreas de Enfoque</div>
+                                                </div>
+                                            </div>
+                                            {currentResults.analysis.next_period_predictions.key_focus_areas?.length > 0 && (
+                                                <div className="mt-4">
+                                                    <p className="text-sm text-purple-700 mb-2">🎯 Áreas clave para el próximo período:</p>
+                                                    <div className="flex flex-wrap gap-2">
+                                                        {currentResults.analysis.next_period_predictions.key_focus_areas.map((area: string, index: number) => (
+                                                            <span key={index} className="bg-purple-100 text-purple-800 text-xs px-2 py-1 rounded-full">
+                                                                {area}
+                                                            </span>
+                                                        ))}
+                                                    </div>
+                                                </div>
+                                            )}
+                                        </div>
+                                    )}
+                                </div>
+                            )}
+
                             {/* Resultados específicos para Análisis de Propuestas */}
                             {currentResults.proposal && currentResults.analysis && (
                                 <div className="space-y-6">
@@ -2920,6 +3465,173 @@ export default function AIAutomationsPageClient({ userEmail }: AIAutomationsPage
                                             </div>
                                         )}
                                     </div>
+                                </div>
+                            )}
+
+                            {/* Resultados específicos para Optimización de Precios */}
+                            {currentResults.budget && currentResults.analysis && (
+                                <div className="space-y-6">
+                                    {/* Información del Presupuesto */}
+                                    <div className="bg-gradient-to-r from-green-50 to-emerald-50 border border-green-200 rounded-lg p-6">
+                                        <div className="flex items-center gap-3 mb-4">
+                                            <div className="p-3 bg-green-100 rounded-full">
+                                                <DollarSign className="h-6 w-6 text-green-600" />
+                                            </div>
+                                            <div>
+                                                <h4 className="font-bold text-green-900 text-lg">{currentResults.budget.title}</h4>
+                                                <p className="text-sm text-green-700">
+                                                    Cliente: {currentResults.budget.client?.name} • Total: €{currentResults.budget.total_amount?.toLocaleString()} • Items: {currentResults.budget.items?.length || 0}
+                                                </p>
+                                            </div>
+                                        </div>
+                                    </div>
+
+                                    {/* Análisis de Mercado y Puntuación */}
+                                    <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                                        {/* Puntuación de Pricing */}
+                                        <div className="bg-white border-l-4 border-green-500 rounded-lg p-6 shadow-sm">
+                                            <div className="flex items-center gap-3 mb-3">
+                                                <div className="p-2 bg-green-100 rounded-lg">
+                                                    <Target className="h-5 w-5 text-green-600" />
+                                                </div>
+                                                <h5 className="font-semibold text-gray-900">Puntuación de Precios</h5>
+                                            </div>
+                                            <div className="text-3xl font-bold text-green-600 mb-2">
+                                                {currentResults.analysis.pricing_assessment?.current_pricing_score || 7}/10
+                                            </div>
+                                            <div className="w-full bg-gray-200 rounded-full h-3 mb-4">
+                                                <div 
+                                                    className="bg-gradient-to-r from-green-400 to-green-600 h-3 rounded-full transition-all duration-1000"
+                                                    style={{ width: `${((currentResults.analysis.pricing_assessment?.current_pricing_score || 7) / 10) * 100}%` }}
+                                                ></div>
+                                            </div>
+                                            <div className="text-sm text-gray-600 space-y-1">
+                                                <div>Probabilidad de aceptación: {currentResults.analysis.risk_assessment?.client_acceptance_probability || 75}%</div>
+                                            </div>
+                                        </div>
+
+                                        {/* Impacto Financiero */}
+                                        <div className="bg-white border-l-4 border-blue-500 rounded-lg p-6 shadow-sm">
+                                            <div className="flex items-center gap-3 mb-3">
+                                                <div className="p-2 bg-blue-100 rounded-lg">
+                                                    <TrendingUp className="h-5 w-5 text-blue-600" />
+                                                </div>
+                                                <h5 className="font-semibold text-gray-900">Impacto Financiero</h5>
+                                            </div>
+                                            <div className="space-y-3">
+                                                <div className="flex justify-between">
+                                                    <span className="text-sm text-gray-600">Total actual:</span>
+                                                    <span className="font-medium">€{(currentResults.analysis.financial_impact?.current_total || currentResults.budget.total_amount || 0).toLocaleString()}</span>
+                                                </div>
+                                                <div className="flex justify-between">
+                                                    <span className="text-sm text-gray-600">Total optimizado:</span>
+                                                    <span className="font-medium text-green-600">€{(currentResults.analysis.financial_impact?.optimized_total || currentResults.budget.total_amount || 0).toLocaleString()}</span>
+                                                </div>
+                                                <div className="flex justify-between border-t pt-2">
+                                                    <span className="text-sm font-medium text-gray-700">Mejora potencial:</span>
+                                                    <span className={`font-bold ${(currentResults.analysis.financial_impact?.percentage_improvement || 0) > 0 ? 'text-green-600' : 'text-red-600'}`}>
+                                                        {(currentResults.analysis.financial_impact?.percentage_improvement || 0).toFixed(1)}%
+                                                    </span>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+
+                                    {/* Análisis de Mercado */}
+                                    {currentResults.analysis.market_analysis && (
+                                        <div className="bg-white border border-gray-200 rounded-lg p-6">
+                                            <h5 className="font-semibold text-gray-900 mb-4 flex items-center gap-2">
+                                                <BarChart3 className="h-5 w-5 text-blue-600" />
+                                                Análisis de Mercado
+                                            </h5>
+                                            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                                                <div className="p-4 bg-blue-50 rounded-lg">
+                                                    <h6 className="font-medium text-blue-900 mb-2">Estándares del Sector</h6>
+                                                    <p className="text-sm text-blue-700">{currentResults.analysis.market_analysis.industry_standards || 'Análisis en proceso...'}</p>
+                                                </div>
+                                                <div className="p-4 bg-green-50 rounded-lg">
+                                                    <h6 className="font-medium text-green-900 mb-2">Posición Competitiva</h6>
+                                                    <p className="text-sm text-green-700">{currentResults.analysis.market_analysis.competitive_positioning || 'Evaluando competencia...'}</p>
+                                                </div>
+                                                <div className="p-4 bg-purple-50 rounded-lg">
+                                                    <h6 className="font-medium text-purple-900 mb-2">Tendencias</h6>
+                                                    <p className="text-sm text-purple-700">{currentResults.analysis.market_analysis.market_trends || 'Analizando tendencias...'}</p>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    )}
+
+                                    {/* Recomendaciones de Optimización */}
+                                    {currentResults.analysis.optimization_recommendations && currentResults.analysis.optimization_recommendations.length > 0 && (
+                                        <div className="bg-white border border-gray-200 rounded-lg p-6">
+                                            <h5 className="font-semibold text-gray-900 mb-4 flex items-center gap-2">
+                                                <Target className="h-5 w-5 text-green-600" />
+                                                Recomendaciones de Optimización ({currentResults.analysis.optimization_recommendations.length})
+                                            </h5>
+                                            <div className="space-y-4">
+                                                {currentResults.analysis.optimization_recommendations.map((recommendation: any, index: number) => (
+                                                    <div key={index} className="flex items-start gap-3 p-4 bg-green-50 rounded-lg border border-green-200">
+                                                        <div className="flex-shrink-0 w-8 h-8 bg-green-100 rounded-full flex items-center justify-center">
+                                                            <span className="text-sm font-medium text-green-600">{index + 1}</span>
+                                                        </div>
+                                                        <div className="flex-1">
+                                                            <h6 className="font-medium text-green-900 mb-1">{recommendation.item_name}</h6>
+                                                            <div className="text-sm text-green-700 mb-2">
+                                                                <span className="line-through">€{recommendation.current_price?.toLocaleString()}</span>
+                                                                <span className="mx-2">→</span>
+                                                                <span className="font-medium">€{recommendation.suggested_price?.toLocaleString()}</span>
+                                                                <span className={`ml-2 ${recommendation.adjustment_percentage > 0 ? 'text-green-600' : 'text-red-600'}`}>
+                                                                    ({recommendation.adjustment_percentage > 0 ? '+' : ''}{recommendation.adjustment_percentage?.toFixed(1)}%)
+                                                                </span>
+                                                            </div>
+                                                            <p className="text-sm text-green-800">{recommendation.reasoning}</p>
+                                                        </div>
+                                                    </div>
+                                                ))}
+                                            </div>
+                                        </div>
+                                    )}
+
+                                    {/* Estrategias de Pricing */}
+                                    {currentResults.analysis.pricing_strategies && currentResults.analysis.pricing_strategies.length > 0 && (
+                                        <div className="bg-white border border-gray-200 rounded-lg p-6">
+                                            <h5 className="font-semibold text-gray-900 mb-4 flex items-center gap-2">
+                                                <Brain className="h-5 w-5 text-purple-600" />
+                                                Estrategias de Pricing Recomendadas
+                                            </h5>
+                                            <div className="space-y-4">
+                                                {currentResults.analysis.pricing_strategies.map((strategy: any, index: number) => (
+                                                    <div key={index} className="p-4 bg-purple-50 rounded-lg border border-purple-200">
+                                                        <h6 className="font-medium text-purple-900 mb-2">{strategy.strategy}</h6>
+                                                        <p className="text-sm text-purple-700 mb-2">{strategy.description}</p>
+                                                        <div className="text-xs text-purple-600">
+                                                            <span className="font-medium">Impacto esperado:</span> {strategy.potential_impact}
+                                                        </div>
+                                                    </div>
+                                                ))}
+                                            </div>
+                                        </div>
+                                    )}
+
+                                    {/* Próximos Pasos */}
+                                    {currentResults.analysis.next_steps && currentResults.analysis.next_steps.length > 0 && (
+                                        <div className="bg-gradient-to-br from-gray-50 to-blue-50 border border-gray-200 rounded-lg p-6">
+                                            <h5 className="font-semibold text-gray-900 mb-4 flex items-center gap-2">
+                                                <CheckCircle className="h-5 w-5 text-blue-600" />
+                                                Próximos Pasos Recomendados
+                                            </h5>
+                                            <div className="space-y-2">
+                                                {currentResults.analysis.next_steps.map((step: string, index: number) => (
+                                                    <div key={index} className="flex items-start gap-2">
+                                                        <div className="flex-shrink-0 w-5 h-5 bg-blue-100 rounded-full flex items-center justify-center mt-0.5">
+                                                            <div className="w-2 h-2 bg-blue-600 rounded-full"></div>
+                                                        </div>
+                                                        <span className="text-sm text-gray-700">{step}</span>
+                                                    </div>
+                                                ))}
+                                            </div>
+                                        </div>
+                                    )}
                                 </div>
                             )}
 
