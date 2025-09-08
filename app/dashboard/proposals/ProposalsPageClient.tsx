@@ -22,6 +22,7 @@ import { useEffect, useState } from 'react';
 import TrialBanner from '../../../components/TrialBanner';
 import { useTrialStatus } from '../../../src/lib/useTrialStatus';
 import { showToast } from '@/utils/toast';
+import NewProposalModal from '@/components/proposals/NewProposalModal';
 
 interface Proposal {
     id: string;
@@ -70,6 +71,9 @@ export default function ProposalsPageClientBonsai({ userEmail }: ProposalsPageCl
         avg_response_time: 0
     });
 
+    // Estado para el modal de nueva propuesta
+    const [showNewProposalModal, setShowNewProposalModal] = useState(false);
+
     const router = useRouter();
     const supabase = createSupabaseClient();
 
@@ -98,8 +102,12 @@ export default function ProposalsPageClientBonsai({ userEmail }: ProposalsPageCl
             return;
         }
 
-        // Aquí iría la lógica para abrir modal de nueva propuesta
-        showToast.error('Funcionalidad de nueva propuesta - proximamente');
+        setShowNewProposalModal(true);
+    };
+
+    const handleNewProposalSuccess = () => {
+        loadProposals(); // Recargar la lista de propuestas
+        showToast.success('✅ Propuesta creada exitosamente. Ahora puedes analizarla con IA.');
     };
 
     const createSampleProposals = () => {
@@ -478,6 +486,14 @@ export default function ProposalsPageClientBonsai({ userEmail }: ProposalsPageCl
                     </div>
                 </div>
             </div>
+
+            {/* Modal de Nueva Propuesta */}
+            <NewProposalModal
+                isOpen={showNewProposalModal}
+                onClose={() => setShowNewProposalModal(false)}
+                onSuccess={handleNewProposalSuccess}
+                userEmail={userEmail}
+            />
         </div>
     );
 }

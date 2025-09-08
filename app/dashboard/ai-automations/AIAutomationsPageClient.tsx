@@ -23,6 +23,7 @@ import {
     Play,
     Search,
     Settings,
+    Shield,
     Star,
     Target,
     TrendingUp,
@@ -68,9 +69,17 @@ export default function AIAutomationsPageClient({ userEmail }: AIAutomationsPage
     const [modalData, setModalData] = useState<{ [key: string]: any }>({});
     const [userClients, setUserClients] = useState<any[]>([]);
     const [userProjects, setUserProjects] = useState<any[]>([]);
+    const [userProposals, setUserProposals] = useState<any[]>([]);
     const [executionResults, setExecutionResults] = useState<{ [key: string]: any }>({});
     const [recentInsights, setRecentInsights] = useState<any[]>([]);
     const [showingResults, setShowingResults] = useState(false);
+
+    // Estado para verificar mensajes de clientes
+    const [clientMessagesCount, setClientMessagesCount] = useState<{ [key: string]: number }>({});
+
+    // Estado para modal de resultados detallados
+    const [showResultsModal, setShowResultsModal] = useState(false);
+    const [currentResults, setCurrentResults] = useState<any>(null);
 
     // Estado para toasts
     const [toast, setToast] = useState<{
@@ -176,9 +185,12 @@ export default function AIAutomationsPageClient({ userEmail }: AIAutomationsPage
             case 'communication_optimization':
                 return modalData.originalMessage?.trim();
             case 'proposal_analysis':
-                return modalData.proposalText?.trim();
+                return modalData.proposalId; // Solo necesita que haya una propuesta seleccionada
             case 'content_generation':
                 return modalData.topic?.trim() && modalData.contentType?.trim();
+            case 'conversation_analysis':
+                // Validar que hay cliente y que tiene mensajes
+                return modalData.clientId && clientMessagesCount[modalData.clientId] > 0;
             case 'risk_detection':
                 return modalData.projectId;
             case 'performance_analysis':
@@ -292,49 +304,320 @@ export default function AIAutomationsPageClient({ userEmail }: AIAutomationsPage
 
             case 'proposal_analysis':
                 return (
-                    <div className="space-y-4">
+                    <div className="space-y-6">
+                        {/* Paso 1: Seleccionar Cliente */}
                         <div>
                             <label className="block text-sm font-medium text-gray-700 mb-2">
-                                Texto de la propuesta *
+                                Paso 1: Selecciona el cliente *
                             </label>
-                            <textarea
-                                className="w-full h-32 p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                                placeholder="Introduce el texto completo de tu propuesta..."
-                                value={modalData.proposalText || ''}
-                                onChange={(e) => setModalData(prev => ({ ...prev, proposalText: e.target.value }))}
-                            />
-                        </div>
-                        <div>
-                            <label className="block text-sm font-medium text-gray-700 mb-2">
-                                Tipo de proyecto
-                            </label>
-                            <input
-                                type="text"
-                                className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                                placeholder="ej: desarrollo web, diseño, consultoría..."
-                                value={modalData.projectType || ''}
-                                onChange={(e) => setModalData(prev => ({ ...prev, projectType: e.target.value }))}
-                            />
-                        </div>
-                        {userClients.length > 0 && (
-                            <div>
-                                <label className="block text-sm font-medium text-gray-700 mb-2">
-                                    Cliente objetivo (opcional)
-                                </label>
+                            {userClients.length > 0 ? (
                                 <select
                                     className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                                    value={modalData.clientId || ''}
-                                    onChange={(e) => setModalData(prev => ({ ...prev, clientId: e.target.value || null }))}
+                                    value={modalData.selectedClientId || ''}
+                                    onChange={(e) => {
+                                        const clientId = e.target.value;
+                                        setModalData(prev => ({
+                                            ...prev,
+                                            selectedClientId: clientId,
+                                            proposalId: '' // Reset propuesta cuando cambia cliente
+                                        }));
+                                    }}
                                 >
-                                    <option value="">Propuesta general</option>
+                                    <option value="">Selecciona un cliente...</option>
                                     {userClients.map((client) => (
                                         <option key={client.id} value={client.id}>
-                                            {client.name}
+                                            {client.name} {client.company ? `(${client.company})` : ''}
                                         </option>
                                     ))}
                                 </select>
+                            ) : (
+                                <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-4">
+                                    <p className="text-yellow-800 text-sm">
+                                        No tienes clientes registrados. Las propuestas se mostrarán por nombre del prospecto.
+                                    </p>
+                                </div>
+                            )}
+                        </div>
+
+                        {/* Paso 2: Seleccionar Propuesta */}
+                        <div>
+                            <label className="block text-sm font-medium text-gray-700 mb-2">
+                                Paso 2: Selecciona la propuesta a analizar *
+                            </label>
+                            {userProposals.length > 0 ? (
+                                <div>
+                                    {/* Filtrar propuestas por cliente seleccionado */}
+                                    {(() => {
+                                        const selectedClient = userClients.find(c => c.id === modalData.selectedClientId);
+                                        const filteredProposals = modalData.selectedClientId && selectedClient
+                                            ? userProposals.filter(p =>
+                                                p.prospect_name?.toLowerCase().includes(selectedClient.name.toLowerCase()) ||
+                                                p.prospect_email?.toLowerCase().includes(selectedClient.email?.toLowerCase() || '')
+                                            )
+                                            : userProposals;
+
+                                        if (modalData.selectedClientId && filteredProposals.length === 0) {
+                                            return (
+                                                <div className="bg-orange-50 border border-orange-200 rounded-lg p-4">
+                                                    <p className="text-orange-800 text-sm mb-2">
+                                                        No se encontraron propuestas para este cliente.
+                                                    </p>
+                                                    <p className="text-orange-700 text-xs">
+                                                        Tip: Puedes seleccionar "Todos los clientes" para ver todas las propuestas disponibles.
+                                                    </p>
+                                                </div>
+                                            );
+                                        }
+
+                                        return (
+                                            <select
+                                                className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                                                value={modalData.proposalId || ''}
+                                                onChange={(e) => setModalData(prev => ({ ...prev, proposalId: e.target.value }))}
+                                            >
+                                                <option value="">
+                                                    {modalData.selectedClientId
+                                                        ? 'Selecciona una propuesta de este cliente...'
+                                                        : 'Selecciona cualquier propuesta...'
+                                                    }
+                                                </option>
+                                                {filteredProposals.map((proposal) => (
+                                                    <option key={proposal.id} value={proposal.id}>
+                                                        📄 {proposal.title} • {proposal.prospect_name || 'Sin cliente'} •
+                                                        {proposal.status} • {proposal.total_amount} {proposal.currency} •
+                                                        {new Date(proposal.created_at).toLocaleDateString('es-ES')}
+                                                    </option>
+                                                ))}
+
+                                                {/* Opción para ver todas las propuestas */}
+                                                {modalData.selectedClientId && (
+                                                    <optgroup label="— O selecciona de todas las propuestas —">
+                                                        {userProposals.filter(p => !filteredProposals.includes(p)).map((proposal) => (
+                                                            <option key={proposal.id} value={proposal.id}>
+                                                                📄 {proposal.title} • {proposal.prospect_name || 'Sin cliente'} •
+                                                                {proposal.status} • {proposal.total_amount} {proposal.currency}
+                                                            </option>
+                                                        ))}
+                                                    </optgroup>
+                                                )}
+                                            </select>
+                                        );
+                                    })()}
+                                </div>
+                            ) : (
+                                <div className="text-center p-8 bg-gray-50 rounded-lg border border-gray-200">
+                                    <FileText className="h-12 w-12 text-gray-400 mx-auto mb-4" />
+                                    <p className="text-gray-600 mb-2">No tienes propuestas creadas aún</p>
+                                    <p className="text-sm text-gray-500">
+                                        Ve a la sección de Propuestas para crear tu primera propuesta y luego podrás analizarla aquí.
+                                    </p>
+                                    <Button
+                                        onClick={() => router.push('/dashboard/proposals')}
+                                        className="mt-4 bg-blue-600 hover:bg-blue-700 text-white"
+                                    >
+                                        Ir a Propuestas
+                                    </Button>
+                                </div>
+                            )}
+                        </div>
+
+                        {/* Información de la propuesta seleccionada */}
+                        {modalData.proposalId && (() => {
+                            const selectedProposal = userProposals.find(p => p.id === modalData.proposalId);
+                            if (!selectedProposal) return null;
+
+                            return (
+                                <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
+                                    <div className="flex items-center gap-3 mb-3">
+                                        <div className="p-2 bg-blue-100 rounded-lg">
+                                            <FileText className="h-5 w-5 text-blue-600" />
+                                        </div>
+                                        <div>
+                                            <h4 className="font-medium text-blue-900">Propuesta Seleccionada</h4>
+                                            <p className="text-sm text-blue-700">{selectedProposal.title}</p>
+                                        </div>
+                                    </div>
+                                    <div className="grid grid-cols-2 gap-4 text-sm">
+                                        <div>
+                                            <span className="text-blue-700">Cliente:</span>
+                                            <span className="font-medium text-blue-900 ml-2">{selectedProposal.prospect_name || 'No especificado'}</span>
+                                        </div>
+                                        <div>
+                                            <span className="text-blue-700">Valor:</span>
+                                            <span className="font-medium text-blue-900 ml-2">{selectedProposal.total_amount} {selectedProposal.currency}</span>
+                                        </div>
+                                        <div>
+                                            <span className="text-blue-700">Estado:</span>
+                                            <span className={`ml-2 px-2 py-1 rounded-full text-xs font-medium ${selectedProposal.status === 'sent' ? 'bg-orange-100 text-orange-800' :
+                                                    selectedProposal.status === 'draft' ? 'bg-gray-100 text-gray-800' :
+                                                        selectedProposal.status === 'viewed' ? 'bg-purple-100 text-purple-800' :
+                                                            selectedProposal.status === 'accepted' ? 'bg-green-100 text-green-800' :
+                                                                'bg-red-100 text-red-800'
+                                                }`}>
+                                                {selectedProposal.status}
+                                            </span>
+                                        </div>
+                                        <div>
+                                            <span className="text-blue-700">Creada:</span>
+                                            <span className="font-medium text-blue-900 ml-2">{new Date(selectedProposal.created_at).toLocaleDateString('es-ES')}</span>
+                                        </div>
+                                    </div>
+                                </div>
+                            );
+                        })()}
+                        {modalData.proposalId && (
+                            <div className="bg-gradient-to-br from-green-50 to-emerald-50 border border-green-200 rounded-xl p-6">
+                                <div className="flex items-center gap-3 mb-4">
+                                    <div className="p-3 bg-green-100 rounded-full">
+                                        <Brain className="h-6 w-6 text-green-600" />
+                                    </div>
+                                    <div>
+                                        <h4 className="font-bold text-green-900 text-lg">🤖 Análisis IA Completo</h4>
+                                        <p className="text-green-700 text-sm">OpenAI analizará automáticamente toda tu propuesta</p>
+                                    </div>
+                                </div>
+
+                                <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6">
+                                    <div className="space-y-2">
+                                        <h5 className="text-sm font-medium text-green-900">📊 Métricas y Puntuación:</h5>
+                                        <ul className="text-sm text-green-700 space-y-1">
+                                            <li>• <strong>Puntuación general</strong> (1-10)</li>
+                                            <li>• <strong>Probabilidad de éxito</strong> estimada</li>
+                                            <li>• <strong>Nivel de competitividad</strong> del precio</li>
+                                            <li>• <strong>Análisis vs mercado</strong></li>
+                                        </ul>
+                                    </div>
+
+                                    <div className="space-y-2">
+                                        <h5 className="text-sm font-medium text-green-900">💡 Recomendaciones IA:</h5>
+                                        <ul className="text-sm text-green-700 space-y-1">
+                                            <li>• <strong>Fortalezas</strong> identificadas</li>
+                                            <li>• <strong>Áreas de mejora</strong> específicas</li>
+                                            <li>• <strong>Sugerencias concretas</strong> de optimización</li>
+                                            <li>• <strong>Tips de conversión</strong> personalizados</li>
+                                        </ul>
+                                    </div>
+                                </div>
+
+                                <div className="bg-white rounded-lg p-4 border border-green-100">
+                                    <p className="text-sm text-green-800 flex items-center gap-2">
+                                        <Zap className="h-4 w-4" />
+                                        <strong>¡Sin escribir nada!</strong> La IA examinará automáticamente todos los campos de tu propuesta: servicios, precios, términos, timeline y más.
+                                    </p>
+                                </div>
                             </div>
                         )}
+                    </div>
+                );
+
+            case 'conversation_analysis':
+                return (
+                    <div className="space-y-6">
+                        <div>
+                            <label className="block text-sm font-medium text-gray-700 mb-2">
+                                Seleccionar Cliente *
+                            </label>
+                            <select
+                                className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                                value={modalData.clientId || ''}
+                                onChange={(e) => setModalData(prev => ({ ...prev, clientId: e.target.value }))}
+                            >
+                                <option value="">Seleccionar cliente para analizar...</option>
+                                {userClients.map((client) => (
+                                    <option key={client.id} value={client.id}>
+                                        {client.name} {client.company && `(${client.company})`}
+                                        {client.messageCount !== undefined && ` - ${client.messageCount} mensajes`}
+                                    </option>
+                                ))}
+                            </select>
+                            <p className="text-sm text-gray-500 mt-2">
+                                🤖 La IA analizará <strong>automáticamente</strong> toda la conversación con este cliente y proporcionará insights detallados.
+                            </p>
+                        </div>
+
+                        {/* Advertencia si el cliente seleccionado no tiene mensajes */}
+                        {modalData.clientId && clientMessagesCount[modalData.clientId] === 0 && (
+                            <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-4">
+                                <div className="flex items-center gap-2 mb-2">
+                                    <AlertTriangle className="h-5 w-5 text-yellow-600" />
+                                    <h5 className="font-medium text-yellow-900">Sin mensajes disponibles</h5>
+                                </div>
+                                <p className="text-sm text-yellow-700 mb-3">
+                                    Este cliente no tiene mensajes registrados en el sistema. Para poder analizar la conversación, necesitas:
+                                </p>
+                                <ul className="text-sm text-yellow-700 space-y-1 ml-4">
+                                    <li>• Ir a la sección <strong>Clientes</strong></li>
+                                    <li>• Agregar algunos mensajes de conversación</li>
+                                    <li>• Volver aquí para ejecutar el análisis</li>
+                                </ul>
+                                <div className="mt-3">
+                                    <Button
+                                        size="sm"
+                                        variant="outline"
+                                        onClick={() => {
+                                            setShowModal(false);
+                                            router.push('/dashboard/clients');
+                                        }}
+                                        className="text-yellow-700 border-yellow-300 hover:bg-yellow-100"
+                                    >
+                                        📝 Ir a Clientes
+                                    </Button>
+                                </div>
+                            </div>
+                        )}
+
+                        {/* Información del cliente seleccionado con mensajes */}
+                        {modalData.clientId && clientMessagesCount[modalData.clientId] > 0 && (
+                            <div className="bg-green-50 border border-green-200 rounded-lg p-4">
+                                <div className="flex items-center gap-2 mb-2">
+                                    <CheckCircle className="h-5 w-5 text-green-600" />
+                                    <h5 className="font-medium text-green-900">Cliente listo para análisis</h5>
+                                </div>
+                                <p className="text-sm text-green-700">
+                                    <strong>{userClients.find(c => c.id === modalData.clientId)?.name}</strong> tiene{' '}
+                                    <strong>{clientMessagesCount[modalData.clientId]} mensajes</strong> disponibles para analizar.
+                                    La IA procesará toda la conversación histórica y generará insights detallados.
+                                </p>
+                            </div>
+                        )}
+
+                        <div className="bg-gradient-to-br from-blue-50 to-indigo-50 border border-blue-200 rounded-lg p-6">
+                            <div className="flex items-center gap-3 mb-4">
+                                <div className="p-2 bg-blue-100 rounded-lg">
+                                    <Brain className="h-6 w-6 text-blue-600" />
+                                </div>
+                                <h4 className="font-semibold text-blue-900">Análisis Automático con IA</h4>
+                            </div>
+
+                            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                <div className="space-y-2">
+                                    <h5 className="text-sm font-medium text-blue-900">📊 Análisis de Comunicación:</h5>
+                                    <ul className="text-sm text-blue-700 space-y-1">
+                                        <li>• Tono general de la conversación</li>
+                                        <li>• Nivel de satisfacción del cliente</li>
+                                        <li>• Frecuencia y calidad de interacciones</li>
+                                        <li>• Puntos de tensión o conflicto</li>
+                                    </ul>
+                                </div>
+
+                                <div className="space-y-2">
+                                    <h5 className="text-sm font-medium text-blue-900">💡 Recomendaciones IA:</h5>
+                                    <ul className="text-sm text-blue-700 space-y-1">
+                                        <li>• Áreas de mejora específicas</li>
+                                        <li>• Sugerencias de próximos pasos</li>
+                                        <li>• Propuesta de mensaje optimizado</li>
+                                        <li>• Estrategias de relación cliente</li>
+                                    </ul>
+                                </div>
+                            </div>
+
+                            <div className="mt-4 p-3 bg-blue-100 rounded-lg">
+                                <p className="text-sm text-blue-800 flex items-center gap-2">
+                                    <Zap className="h-4 w-4" />
+                                    <strong>Sin escribir nada:</strong> Solo selecciona el cliente y la IA analizará automáticamente toda la conversación histórica.
+                                </p>
+                            </div>
+                        </div>
                     </div>
                 );
 
@@ -404,40 +687,208 @@ export default function AIAutomationsPageClient({ userEmail }: AIAutomationsPage
 
             case 'risk_detection':
                 return (
-                    <div className="space-y-4">
-                        {userProjects.length > 0 ? (
-                            <div>
-                                <label className="block text-sm font-medium text-gray-700 mb-2">
-                                    Proyecto a analizar *
-                                </label>
+                    <div className="space-y-6">
+                        {/* Paso 1: Seleccionar Cliente */}
+                        <div>
+                            <label className="block text-sm font-medium text-gray-700 mb-2">
+                                Paso 1: Selecciona el cliente *
+                            </label>
+                            {userClients.length > 0 ? (
                                 <select
                                     className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                                    value={modalData.projectId || ''}
-                                    onChange={(e) => setModalData(prev => ({ ...prev, projectId: e.target.value }))}
+                                    value={modalData.selectedClientId || ''}
+                                    onChange={(e) => {
+                                        const clientId = e.target.value;
+                                        setModalData(prev => ({ 
+                                            ...prev, 
+                                            selectedClientId: clientId,
+                                            projectId: '' // Reset proyecto cuando cambia cliente
+                                        }));
+                                    }}
                                 >
-                                    <option value="">Seleccionar proyecto</option>
-                                    {userProjects.map((project) => (
-                                        <option key={project.id} value={project.id}>
-                                            {project.name}
+                                    <option value="">Selecciona un cliente...</option>
+                                    {userClients.map((client) => (
+                                        <option key={client.id} value={client.id}>
+                                            {client.name} {client.company ? `(${client.company})` : ''}
                                         </option>
                                     ))}
                                 </select>
-                            </div>
-                        ) : (
-                            <div className="text-center py-8">
-                                <AlertTriangle className="h-12 w-12 text-yellow-500 mx-auto mb-4" />
-                                <h3 className="text-lg font-medium text-gray-900 mb-2">
-                                    No hay proyectos disponibles
-                                </h3>
-                                <p className="text-gray-500 mb-4">
-                                    Necesitas tener al menos un proyecto para usar esta automatización.
-                                </p>
-                                <Button
-                                    onClick={() => router.push('/dashboard/projects')}
-                                    className="bg-blue-600 hover:bg-blue-700"
-                                >
-                                    Crear Proyecto
-                                </Button>
+                            ) : (
+                                <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-4">
+                                    <p className="text-yellow-800 text-sm">
+                                        No tienes clientes registrados. Los proyectos se mostrarán sin filtrar por cliente.
+                                    </p>
+                                </div>
+                            )}
+                        </div>
+
+                        {/* Paso 2: Seleccionar Proyecto */}
+                        <div>
+                            <label className="block text-sm font-medium text-gray-700 mb-2">
+                                Paso 2: Selecciona el proyecto a analizar *
+                            </label>
+                            {userProjects.length > 0 ? (
+                                <div>
+                                    {/* Filtrar proyectos por cliente seleccionado */}
+                                    {(() => {
+                                        const selectedClient = userClients.find(c => c.id === modalData.selectedClientId);
+                                        const filteredProjects = modalData.selectedClientId && selectedClient
+                                            ? userProjects.filter(p => p.client_id === modalData.selectedClientId)
+                                            : userProjects;
+
+                                        if (modalData.selectedClientId && filteredProjects.length === 0) {
+                                            return (
+                                                <div className="bg-orange-50 border border-orange-200 rounded-lg p-4">
+                                                    <p className="text-orange-800 text-sm mb-2">
+                                                        No se encontraron proyectos para este cliente.
+                                                    </p>
+                                                    <p className="text-orange-700 text-xs">
+                                                        Tip: Puedes seleccionar "Todos los proyectos" para ver todos los proyectos disponibles.
+                                                    </p>
+                                                </div>
+                                            );
+                                        }
+
+                                        return (
+                                            <select
+                                                className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                                                value={modalData.projectId || ''}
+                                                onChange={(e) => setModalData(prev => ({ ...prev, projectId: e.target.value }))}
+                                            >
+                                                <option value="">
+                                                    {modalData.selectedClientId 
+                                                        ? 'Selecciona un proyecto de este cliente...' 
+                                                        : 'Selecciona cualquier proyecto...'
+                                                    }
+                                                </option>
+                                                {filteredProjects.map((project) => (
+                                                    <option key={project.id} value={project.id}>
+                                                        🏗️ {project.name} • 
+                                                        {project.status} • 
+                                                        {project.budget ? `${project.budget} ${project.currency || 'EUR'}` : 'Sin presupuesto'} •
+                                                        {new Date(project.created_at).toLocaleDateString('es-ES')}
+                                                    </option>
+                                                ))}
+                                                
+                                                {/* Opción para ver todos los proyectos */}
+                                                {modalData.selectedClientId && (
+                                                    <optgroup label="— O selecciona de todos los proyectos —">
+                                                        {userProjects.filter(p => !filteredProjects.includes(p)).map((project) => (
+                                                            <option key={project.id} value={project.id}>
+                                                                🏗️ {project.name} • {project.status} • 
+                                                                {project.budget ? `${project.budget} ${project.currency || 'EUR'}` : 'Sin presupuesto'}
+                                                            </option>
+                                                        ))}
+                                                    </optgroup>
+                                                )}
+                                            </select>
+                                        );
+                                    })()}
+                                </div>
+                            ) : (
+                                <div className="text-center p-8 bg-gray-50 rounded-lg border border-gray-200">
+                                    <AlertTriangle className="h-12 w-12 text-yellow-500 mx-auto mb-4" />
+                                    <p className="text-gray-600 mb-2">No tienes proyectos creados aún</p>
+                                    <p className="text-sm text-gray-500">
+                                        Ve a la sección de Proyectos para crear tu primer proyecto y luego podrás analizarlo aquí.
+                                    </p>
+                                    <Button
+                                        onClick={() => router.push('/dashboard/projects')}
+                                        className="mt-4 bg-blue-600 hover:bg-blue-700 text-white"
+                                    >
+                                        Ir a Proyectos
+                                    </Button>
+                                </div>
+                            )}
+                        </div>
+
+                        {/* Información del proyecto seleccionado */}
+                        {modalData.projectId && (() => {
+                            const selectedProject = userProjects.find(p => p.id === modalData.projectId);
+                            if (!selectedProject) return null;
+                            
+                            return (
+                                <div className="bg-red-50 border border-red-200 rounded-lg p-4">
+                                    <div className="flex items-center gap-3 mb-3">
+                                        <div className="p-2 bg-red-100 rounded-lg">
+                                            <AlertTriangle className="h-5 w-5 text-red-600" />
+                                        </div>
+                                        <div>
+                                            <h4 className="font-medium text-red-900">Proyecto Seleccionado para Análisis</h4>
+                                            <p className="text-sm text-red-700">{selectedProject.name}</p>
+                                        </div>
+                                    </div>
+                                    <div className="grid grid-cols-2 gap-4 text-sm">
+                                        <div>
+                                            <span className="text-red-700">Estado:</span>
+                                            <span className={`ml-2 px-2 py-1 rounded-full text-xs font-medium ${
+                                                selectedProject.status === 'completed' ? 'bg-green-100 text-green-800' :
+                                                selectedProject.status === 'in_progress' ? 'bg-blue-100 text-blue-800' :
+                                                selectedProject.status === 'on_hold' ? 'bg-yellow-100 text-yellow-800' :
+                                                'bg-gray-100 text-gray-800'
+                                            }`}>
+                                                {selectedProject.status}
+                                            </span>
+                                        </div>
+                                        <div>
+                                            <span className="text-red-700">Presupuesto:</span>
+                                            <span className="font-medium text-red-900 ml-2">
+                                                {selectedProject.budget ? `${selectedProject.budget} ${selectedProject.currency || 'EUR'}` : 'No especificado'}
+                                            </span>
+                                        </div>
+                                        <div>
+                                            <span className="text-red-700">Progreso:</span>
+                                            <span className="font-medium text-red-900 ml-2">{selectedProject.progress || 0}%</span>
+                                        </div>
+                                        <div>
+                                            <span className="text-red-700">Creado:</span>
+                                            <span className="font-medium text-red-900 ml-2">{new Date(selectedProject.created_at).toLocaleDateString('es-ES')}</span>
+                                        </div>
+                                    </div>
+                                </div>
+                            );
+                        })()}
+
+                        {modalData.projectId && (
+                            <div className="bg-gradient-to-br from-red-50 to-orange-50 border border-red-200 rounded-xl p-6">
+                                <div className="flex items-center gap-3 mb-4">
+                                    <div className="p-3 bg-red-100 rounded-full">
+                                        <AlertTriangle className="h-6 w-6 text-red-600" />
+                                    </div>
+                                    <div>
+                                        <h4 className="font-bold text-red-900 text-lg">⚠️ Análisis de Riesgos IA</h4>
+                                        <p className="text-red-700 text-sm">OpenAI analizará automáticamente todos los aspectos del proyecto</p>
+                                    </div>
+                                </div>
+                                
+                                <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6">
+                                    <div className="space-y-2">
+                                        <h5 className="text-sm font-medium text-red-900">🎯 Detección de Riesgos:</h5>
+                                        <ul className="text-sm text-red-700 space-y-1">
+                                            <li>• <strong>Nivel de riesgo general</strong> (1-10)</li>
+                                            <li>• <strong>Riesgos identificados</strong> por categoría</li>
+                                            <li>• <strong>Problemas críticos</strong> detectados</li>
+                                            <li>• <strong>Probabilidad de éxito</strong> estimada</li>
+                                        </ul>
+                                    </div>
+                                    
+                                    <div className="space-y-2">
+                                        <h5 className="text-sm font-medium text-red-900">🛡️ Planes de Mitigación:</h5>
+                                        <ul className="text-sm text-red-700 space-y-1">
+                                            <li>• <strong>Acciones específicas</strong> para cada riesgo</li>
+                                            <li>• <strong>Señales de alerta temprana</strong></li>
+                                            <li>• <strong>Recomendaciones</strong> preventivas</li>
+                                            <li>• <strong>Próximas acciones</strong> inmediatas</li>
+                                        </ul>
+                                    </div>
+                                </div>
+                                
+                                <div className="bg-white rounded-lg p-4 border border-red-100">
+                                    <p className="text-sm text-red-800 flex items-center gap-2">
+                                        <Brain className="h-4 w-4" />
+                                        <strong>¡Análisis automático completo!</strong> La IA examinará proyecto, tareas, timeline, presupuesto y más para detectar riesgos potenciales.
+                                    </p>
+                                </div>
                             </div>
                         )}
                     </div>
@@ -813,13 +1264,49 @@ export default function AIAutomationsPageClient({ userEmail }: AIAutomationsPage
                     break;
 
                 case 'proposal_analysis':
-                    automationType = 'proposal_analysis';
-                    requestData = {
-                        proposalText: modalData.proposalText,
-                        clientId: modalData.clientId,
-                        projectType: modalData.projectType
-                    };
-                    break;
+                    // Para análisis de propuesta, usar endpoint específico directamente
+                    console.log('📊 Executing proposal analysis...');
+
+                    const proposalResponse = await fetch('/api/ai/analyze-proposal', {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json',
+                        },
+                        body: JSON.stringify({
+                            proposalId: modalData.proposalId
+                        })
+                    });
+
+                    const proposalResult = await proposalResponse.json();
+
+                    if (!proposalResponse.ok) {
+                        throw new Error(proposalResult.error || 'Error analizando propuesta');
+                    }
+
+                    // Guardar resultado
+                    if (proposalResult) {
+                        setExecutionResults(prev => ({
+                            ...prev,
+                            [currentAutomation.id]: proposalResult
+                        }));
+                    }
+
+                    showToast(
+                        `📊 Análisis completado para "${proposalResult.proposal.title}"! Puntuación: ${proposalResult.analysis.overall_score}/10`,
+                        'success'
+                    );
+
+                    // Mostrar botón para ver detalles del resultado
+                    setTimeout(() => {
+                        showToast(
+                            '📋 Análisis guardado. Haz clic en "Ver Resultados" en la tarjeta de la automatización para ver las recomendaciones completas.',
+                            'info'
+                        );
+                    }, 3000);
+
+                    fetchRecentInsights(); // Actualizar insights
+                    setExecuting(null);
+                    return; // Salir aquí para evitar el flujo normal
 
                 case 'content_generation':
                     automationType = 'content_generation';
@@ -831,11 +1318,109 @@ export default function AIAutomationsPageClient({ userEmail }: AIAutomationsPage
                     };
                     break;
 
+                case 'conversation_analysis':
+                    // Para análisis de conversación, usar endpoint específico directamente
+                    console.log('🧠 Executing conversation analysis...');
+
+                    const convResponse = await fetch('/api/ai/optimize-message', {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json',
+                        },
+                        body: JSON.stringify({
+                            clientId: modalData.clientId,
+                            action: 'analyze'
+                        })
+                    });
+
+                    const convResult = await convResponse.json();
+
+                    if (!convResponse.ok) {
+                        // Manejar caso específico de no hay mensajes
+                        if (convResult.error === 'No hay mensajes en esta conversación') {
+                            showToast(
+                                '📭 No hay mensajes con este cliente aún.\n\n💡 Sugerencia: Agrega algunos mensajes en la sección de Clientes para poder analizar la conversación.',
+                                'warning'
+                            );
+                            setExecuting(null);
+                            return;
+                        }
+
+                        throw new Error(convResult.error || 'Error analizando conversación');
+                    }
+
+                    // Mostrar resultado específico para análisis de conversación
+                    if (currentAutomation) {
+                        setExecutionResults(prev => ({
+                            ...prev,
+                            [currentAutomation.id]: convResult
+                        }));
+                    }
+
+                    showToast(
+                        `🧠 Análisis completado para ${convResult.client}! Se encontraron ${convResult.messagesCount} mensajes analizados.`,
+                        'success'
+                    );
+
+                    // Mostrar botón para ver detalles del resultado
+                    setTimeout(() => {
+                        showToast(
+                            '� Análisis guardado. Haz clic en "Ver Resultados" en la tarjeta de la automatización para ver las recomendaciones completas.',
+                            'info'
+                        );
+                    }, 3000);
+
+                    fetchRecentInsights(); // Actualizar insights
+                    setExecuting(null);
+                    return; // Salir aquí para evitar el flujo normal
+
                 case 'risk_detection':
-                    automationType = 'risk_detection';
-                    requestData = {
-                        projectId: modalData.projectId
-                    };
+                    // Para detección de riesgos, usar endpoint específico directamente
+                    console.log('⚠️ Executing project risk detection...');
+
+                    const riskResponse = await fetch('/api/ai/analyze-project-risks', {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json',
+                        },
+                        body: JSON.stringify({
+                            projectId: modalData.projectId
+                        })
+                    });
+
+                    const riskResult = await riskResponse.json();
+
+                    if (!riskResponse.ok) {
+                        throw new Error(riskResult.error || 'Error analizando riesgos del proyecto');
+                    }
+
+                    // Guardar resultado
+                    if (riskResult) {
+                        setExecutionResults(prev => ({
+                            ...prev,
+                            [currentAutomation.id]: riskResult
+                        }));
+                    }
+
+                    const riskLevel = riskResult.analysis.overall_risk_score;
+                    const riskColor = riskLevel >= 7 ? '🔴' : riskLevel >= 5 ? '🟡' : '🟢';
+                    
+                    showToast(
+                        `⚠️ Análisis de riesgos completado para "${riskResult.project.name}"!\n${riskColor} Nivel de riesgo: ${riskLevel}/10\n🛡️ ${riskResult.analysis.identified_risks.length} riesgos identificados`,
+                        'success'
+                    );
+
+                    // Mostrar botón para ver detalles del resultado
+                    setTimeout(() => {
+                        showToast(
+                            '📋 Análisis guardado. Haz clic en "Ver Resultados" en la tarjeta de la automatización para ver el plan de mitigación completo.',
+                            'info'
+                        );
+                    }, 3000);
+
+                    fetchRecentInsights(); // Actualizar insights
+                    setExecuting(null);
+                    return; // Salir aquí para evitar el flujo normal
                     break;
 
                 case 'performance_analysis':
@@ -921,13 +1506,53 @@ export default function AIAutomationsPageClient({ userEmail }: AIAutomationsPage
                     }
 
                     // Mostrar resultado específico para detector automático
-                    setExecutionResults(prev => ({
-                        ...prev,
-                        [currentAutomation.id]: autoResult
-                    }));
+                    if (currentAutomation) {
+                        setExecutionResults(prev => ({
+                            ...prev,
+                            [currentAutomation.id]: autoResult
+                        }));
+                    }
 
                     showToast(
                         `🎉 ${autoResult.message}! Se detectaron ${autoResult.processedEvents} eventos y se generaron emails automáticamente.`,
+                        'success'
+                    );
+
+                    fetchRecentInsights(); // Actualizar insights
+                    setExecuting(null);
+                    return; // Salir aquí para evitar el flujo normal
+
+                case 'conversation_analysis':
+                    // Para análisis de conversación, usar endpoint específico
+                    console.log('🧠 Executing conversation analysis...');
+
+                    const analyzeResponse = await fetch('/api/ai/optimize-message', {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json',
+                        },
+                        body: JSON.stringify({
+                            clientId: modalData.clientId,
+                            action: 'analyze'
+                        })
+                    });
+
+                    const analyzeResult = await analyzeResponse.json();
+
+                    if (!analyzeResponse.ok) {
+                        throw new Error(analyzeResult.error || 'Error analizando conversación');
+                    }
+
+                    // Mostrar resultado específico para análisis de conversación
+                    if (currentAutomation) {
+                        setExecutionResults(prev => ({
+                            ...prev,
+                            [currentAutomation.id]: analyzeResult
+                        }));
+                    }
+
+                    showToast(
+                        `🧠 Análisis completado para ${analyzeResult.client}! Se encontraron ${analyzeResult.messagesCount} mensajes analizados.`,
                         'success'
                     );
 
@@ -1017,6 +1642,15 @@ export default function AIAutomationsPageClient({ userEmail }: AIAutomationsPage
                 resultMessage += `📊 Score general: ${analysis.overallScore}/100\n`;
             } else if (analysis.suggestedPrice) {
                 resultMessage += `💰 Precio sugerido: €${analysis.suggestedPrice}\n`;
+            } else if (analysis.overall_risk_score) {
+                // Para análisis de riesgos de proyecto
+                const riskLevel = analysis.overall_risk_score;
+                const riskColor = riskLevel >= 7 ? '🔴' : riskLevel >= 5 ? '🟡' : '🟢';
+                resultMessage += `${riskColor} Nivel de riesgo: ${riskLevel}/10\n`;
+                resultMessage += `🛡️ Riesgos identificados: ${analysis.identified_risks?.length || 0}\n`;
+                if (analysis.mitigation_plans?.length > 0) {
+                    resultMessage += `📋 Planes de mitigación: ${analysis.mitigation_plans.length}\n`;
+                }
             }
         }
 
@@ -1063,6 +1697,7 @@ export default function AIAutomationsPageClient({ userEmail }: AIAutomationsPage
             case 'communication_optimization': return '💬';
             case 'proposal_analysis': return '📊';
             case 'content_generation': return '📝';
+            case 'conversation_analysis': return '🧠';
             case 'risk_detection': return '⚠️';
             case 'performance_analysis': return '📈';
             case 'pricing_optimization': return '💰';
@@ -1094,7 +1729,31 @@ export default function AIAutomationsPageClient({ userEmail }: AIAutomationsPage
             .eq('user_id', user.id)
             .order('name');
 
-        return error ? [] : data || [];
+        if (error) return [];
+
+        // Para cada cliente, obtener el conteo de mensajes
+        const clientsWithMessageCount = await Promise.all(
+            (data || []).map(async (client: any) => {
+                const { count } = await supabase
+                    .from('client_messages')
+                    .select('*', { count: 'exact', head: true })
+                    .eq('client_id', client.id);
+
+                return {
+                    ...client,
+                    messageCount: count || 0
+                };
+            })
+        );
+
+        // Actualizar el estado de conteo de mensajes
+        const messageCountMap: { [key: string]: number } = {};
+        clientsWithMessageCount.forEach(client => {
+            messageCountMap[client.id] = client.messageCount;
+        });
+        setClientMessagesCount(messageCountMap);
+
+        return clientsWithMessageCount;
     };
 
     // Función auxiliar para obtener proyectos del usuario
@@ -1130,6 +1789,21 @@ export default function AIAutomationsPageClient({ userEmail }: AIAutomationsPage
             isNew: true
         },
         {
+            id: 'conversation-analyzer',
+            name: '🧠 Analizador de Conversaciones',
+            description: 'IA analiza automáticamente toda la conversación con un cliente usando OpenAI. Solo selecciona el cliente y obtén insights completos.',
+            category: 'client_management',
+            type: 'conversation_analysis',
+            status: 'active',
+            confidence: 91,
+            successRate: 88,
+            executionCount: 0,
+            aiFeatures: ['Análisis Automático de Conversaciones', 'Evaluación de Satisfacción', 'Detección de Tono', 'Recomendaciones Específicas'],
+            icon: MessageSquare,
+            color: 'indigo',
+            isNew: true
+        },
+        {
             id: 'communication-optimizer',
             name: '📧 Optimizador de Comunicación',
             description: 'IA mejora automáticamente tus mensajes y emails usando OpenAI para maximizar efectividad y profesionalismo',
@@ -1140,21 +1814,21 @@ export default function AIAutomationsPageClient({ userEmail }: AIAutomationsPage
             successRate: 93,
             executionCount: 0,
             aiFeatures: ['Optimización de Tono', 'Mejora de Claridad', 'Personalización por Cliente', 'Sugerencias de Mejora'],
-            icon: MessageSquare,
+            icon: Mail,
             color: 'green',
             isNew: true
         },
         {
             id: 'proposal-analyzer',
             name: '📊 Analizador de Propuestas',
-            description: 'IA evalúa tus propuestas comerciales con OpenAI, identifica fortalezas/debilidades y sugiere mejoras',
+            description: 'Selecciona cliente → Elige propuesta → IA analiza automáticamente calidad, precios y sugiere mejoras específicas',
             category: 'sales',
             type: 'proposal_analysis',
             status: 'active',
             confidence: 88,
             successRate: 86,
             executionCount: 0,
-            aiFeatures: ['Score de Calidad', 'Análisis de Competitividad', 'Identificación de Gaps', 'Sugerencias de Mejora'],
+            aiFeatures: ['Análisis de Propuestas Reales', 'Score de Calidad', 'Análisis de Competitividad', 'Sugerencias de Mejora Específicas'],
             icon: FileText,
             color: 'purple',
             isNew: true
@@ -1307,6 +1981,69 @@ export default function AIAutomationsPageClient({ userEmail }: AIAutomationsPage
 
     useEffect(() => {
         setLoading(true);
+
+        // Cargar datos del usuario
+        const loadUserData = async () => {
+            try {
+                const supabase = createSupabaseClient();
+                const { data: { user }, error: userError } = await supabase.auth.getUser();
+
+                if (userError || !user) {
+                    console.error('Error obteniendo usuario:', userError);
+                    return;
+                }
+
+                // Cargar clientes
+                const { data: clients, error: clientsError } = await supabase
+                    .from('clients')
+                    .select('id, name, email, company')
+                    .eq('user_id', user.id)
+                    .order('name');
+
+                if (!clientsError && clients) {
+                    setUserClients(clients);
+
+                    // Verificar cuántos mensajes tiene cada cliente
+                    const messageCounts: { [key: string]: number } = {};
+                    for (const client of clients) {
+                        const { count } = await supabase
+                            .from('client_messages')
+                            .select('*', { count: 'exact', head: true })
+                            .eq('client_id', client.id);
+                        messageCounts[client.id] = count || 0;
+                    }
+                    setClientMessagesCount(messageCounts);
+                }
+
+                // Cargar proyectos
+                const { data: projects, error: projectsError } = await supabase
+                    .from('projects')
+                    .select('id, name, client_id, status')
+                    .eq('user_id', user.id)
+                    .order('created_at', { ascending: false });
+
+                if (!projectsError && projects) {
+                    setUserProjects(projects);
+                }
+
+                // Cargar propuestas
+                const { data: proposals, error: proposalsError } = await supabase
+                    .from('proposals')
+                    .select('id, title, prospect_name, status, total_amount, currency, created_at')
+                    .eq('user_id', user.id)
+                    .order('created_at', { ascending: false });
+
+                if (!proposalsError && proposals) {
+                    setUserProposals(proposals);
+                }
+
+            } catch (error) {
+                console.error('Error cargando datos del usuario:', error);
+            }
+        };
+
+        loadUserData();
+
         setTimeout(() => {
             setAIAutomations(predefinedAutomations);
             setLoading(false);
@@ -1350,14 +2087,14 @@ export default function AIAutomationsPageClient({ userEmail }: AIAutomationsPage
     };
 
     return (
-        <div className="flex h-screen bg-gray-50 dark:bg-gray-900">
+        <div className="flex min-h-screen bg-gray-50 dark:bg-gray-900">
             <Sidebar userEmail={userEmail} onLogout={handleLogout} />
 
-            <div className="flex-1 flex flex-col overflow-hidden ml-56">
+            <div className="flex-1 flex flex-col overflow-hidden ml-56 min-h-screen">
                 <TrialBanner userEmail={userEmail} />
 
-                <main className="flex-1 overflow-x-hidden overflow-y-auto bg-gray-50 dark:bg-gray-900">
-                    <div className="container mx-auto px-4 sm:px-6 py-8">
+                <main className="flex-1 overflow-x-hidden overflow-y-auto bg-gray-50 dark:bg-gray-900 min-h-screen">
+                    <div className="w-full px-0 sm:px-0 py-8">
 
                         {/* Header */}
                         <div className="mb-8">
@@ -1365,7 +2102,7 @@ export default function AIAutomationsPageClient({ userEmail }: AIAutomationsPage
                                 <div>
                                     <h1 className="text-3xl font-bold text-gray-900 dark:text-white flex items-center">
                                         <Brain className="h-8 w-8 mr-3 text-blue-600" />
-                                        Automatizaciones IA Reales
+                                        Automatizaciones IA
                                     </h1>
                                     <p className="text-gray-600 dark:text-gray-400 mt-2">
                                         Automatizaciones IA conectadas con OpenAI GPT-4o-mini que funcionan con tus datos reales
@@ -1457,8 +2194,8 @@ export default function AIAutomationsPageClient({ userEmail }: AIAutomationsPage
                                         key={category.id}
                                         onClick={() => setSelectedCategory(category.id)}
                                         className={`flex items-center gap-2 px-4 py-2 rounded-lg font-medium transition-all duration-200 ${isSelected
-                                                ? 'bg-blue-600 text-white shadow-lg'
-                                                : 'bg-white text-gray-700 hover:bg-gray-50 border border-gray-200'
+                                            ? 'bg-blue-600 text-white shadow-lg'
+                                            : 'bg-white text-gray-700 hover:bg-gray-50 border border-gray-200'
                                             }`}
                                     >
                                         <Icon className="h-4 w-4" />
@@ -1498,12 +2235,22 @@ export default function AIAutomationsPageClient({ userEmail }: AIAutomationsPage
 
                                             {/* Success indicator */}
                                             {executionResults[automation.id] && (
-                                                <div className="absolute top-3 right-3 bg-green-100 text-green-800 px-2 py-1 rounded-full text-xs font-medium">
-                                                    ✅ Ejecutada
+                                                <div className="absolute top-3 right-3 flex items-center gap-2">
+                                                    <button
+                                                        onClick={(e) => {
+                                                            e.stopPropagation();
+                                                            setCurrentResults(executionResults[automation.id]);
+                                                            setShowResultsModal(true);
+                                                        }}
+                                                        className="bg-blue-100 text-blue-800 px-3 py-1 rounded-full text-xs font-medium hover:bg-blue-200 transition-colors"
+                                                    >
+                                                        � Ver Resultados
+                                                    </button>
+                                                    <div className="bg-green-100 text-green-800 px-2 py-1 rounded-full text-xs font-medium">
+                                                        ✅ Ejecutada
+                                                    </div>
                                                 </div>
-                                            )}
-
-                                            <div className="p-6">{/* Header */}
+                                            )}                                            <div className="p-6">{/* Header */}
                                                 <div className="flex items-start justify-between mb-4">
                                                     <div className="flex items-start gap-3">
                                                         <div className={`p-3 bg-${automation.color}-100 rounded-lg`}>
@@ -1630,6 +2377,117 @@ export default function AIAutomationsPageClient({ userEmail }: AIAutomationsPage
                             </div>
                         )}
 
+                        {/* Resultados de Análisis Recientes */}
+                        {Object.keys(executionResults).length > 0 && (
+                            <div className="mt-12">
+                                <div className="flex items-center justify-between mb-6">
+                                    <h2 className="text-2xl font-bold text-gray-900 dark:text-white flex items-center">
+                                        <Brain className="h-6 w-6 mr-3 text-indigo-600" />
+                                        Análisis Ejecutados Recientemente
+                                    </h2>
+                                </div>
+
+                                <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                                    {Object.entries(executionResults).map(([automationId, result]) => {
+                                        const automation = aiAutomations.find(a => a.id === automationId);
+                                        if (!automation) return null;
+
+                                        return (
+                                            <div
+                                                key={automationId}
+                                                className="bg-white dark:bg-gray-800 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700 p-6 hover:shadow-md transition-shadow cursor-pointer"
+                                                onClick={() => {
+                                                    setCurrentResults(result);
+                                                    setShowResultsModal(true);
+                                                }}
+                                            >
+                                                <div className="flex items-start justify-between mb-4">
+                                                    <div className="flex items-start gap-3">
+                                                        <div className="p-2 bg-indigo-100 rounded-lg">
+                                                            {React.createElement(automation.icon, {
+                                                                className: "h-5 w-5 text-indigo-600"
+                                                            })}
+                                                        </div>
+                                                        <div className="flex-1">
+                                                            <h3 className="font-semibold text-gray-900 dark:text-white mb-1">
+                                                                {automation.name}
+                                                            </h3>
+                                                            {result.client && (
+                                                                <p className="text-sm text-gray-600 dark:text-gray-400">
+                                                                    Cliente: <strong>{result.client}</strong>
+                                                                </p>
+                                                            )}
+                                                        </div>
+                                                    </div>
+                                                    <div className="text-right">
+                                                        <div className="bg-green-100 text-green-800 px-2 py-1 rounded-full text-xs font-medium mb-2">
+                                                            ✅ Completado
+                                                        </div>
+                                                        <div className="text-xs text-gray-500">
+                                                            Hace unos momentos
+                                                        </div>
+                                                    </div>
+                                                </div>
+
+                                                {/* Vista previa de resultados */}
+                                                {result.analysis && (
+                                                    <div className="space-y-3">
+                                                        {result.analysis.overallTone && (
+                                                            <div className="flex items-center gap-2">
+                                                                <span className="text-sm text-gray-600">🎭 Tono:</span>
+                                                                <span className={`px-2 py-1 rounded-full text-xs font-medium ${result.analysis.overallTone === 'positive' ? 'bg-green-100 text-green-800' :
+                                                                        result.analysis.overallTone === 'negative' ? 'bg-red-100 text-red-800' :
+                                                                            'bg-yellow-100 text-yellow-800'
+                                                                    }`}>
+                                                                    {result.analysis.overallTone.toUpperCase()}
+                                                                </span>
+                                                            </div>
+                                                        )}
+
+                                                        {result.analysis.satisfactionLevel && (
+                                                            <div className="flex items-center gap-2">
+                                                                <span className="text-sm text-gray-600">😊 Satisfacción:</span>
+                                                                <span className={`px-2 py-1 rounded-full text-xs font-medium ${result.analysis.satisfactionLevel === 'high' ? 'bg-green-100 text-green-800' :
+                                                                        result.analysis.satisfactionLevel === 'low' ? 'bg-red-100 text-red-800' :
+                                                                            'bg-yellow-100 text-yellow-800'
+                                                                    }`}>
+                                                                    {result.analysis.satisfactionLevel.toUpperCase()}
+                                                                </span>
+                                                            </div>
+                                                        )}
+
+                                                        {result.messagesCount && (
+                                                            <div className="flex items-center gap-2">
+                                                                <span className="text-sm text-gray-600">📨 Mensajes analizados:</span>
+                                                                <span className="text-sm font-medium text-gray-900 dark:text-white">
+                                                                    {result.messagesCount}
+                                                                </span>
+                                                            </div>
+                                                        )}
+
+                                                        <div className="mt-4 pt-3 border-t border-gray-200">
+                                                            <Button
+                                                                variant="outline"
+                                                                size="sm"
+                                                                className="w-full text-indigo-600 border-indigo-600 hover:bg-indigo-50"
+                                                                onClick={(e) => {
+                                                                    e.stopPropagation();
+                                                                    setCurrentResults(result);
+                                                                    setShowResultsModal(true);
+                                                                }}
+                                                            >
+                                                                � Ver Resultados Completos
+                                                            </Button>
+                                                        </div>
+                                                    </div>
+                                                )}
+                                            </div>
+                                        );
+                                    })}
+                                </div>
+                            </div>
+                        )}
+
                         {/* Resultados Recientes */}
                         {recentInsights.length > 0 && (
                             <div className="mt-12">
@@ -1686,8 +2544,8 @@ export default function AIAutomationsPageClient({ userEmail }: AIAutomationsPage
                                                         <div className="flex items-center gap-2">
                                                             <span className="text-sm font-medium">Sentimiento:</span>
                                                             <span className={`px-2 py-1 rounded-full text-xs font-medium ${insight.data_points.sentiment === 'positive' ? 'bg-green-100 text-green-800' :
-                                                                    insight.data_points.sentiment === 'negative' ? 'bg-red-100 text-red-800' :
-                                                                        'bg-yellow-100 text-yellow-800'
+                                                                insight.data_points.sentiment === 'negative' ? 'bg-red-100 text-red-800' :
+                                                                    'bg-yellow-100 text-yellow-800'
                                                                 }`}>
                                                                 {insight.data_points.sentiment.toUpperCase()}
                                                             </span>
@@ -1772,6 +2630,726 @@ export default function AIAutomationsPageClient({ userEmail }: AIAutomationsPage
                 </main>
             </div>
 
+            {/* Modal de Resultados Detallados */}
+            {showResultsModal && currentResults && (
+                <div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4">
+                    <div className="bg-white rounded-lg max-w-4xl w-full max-h-[90vh] overflow-y-auto">
+                        <div className="flex items-center justify-between p-6 border-b">
+                            <div className="flex items-center gap-3">
+                                <div className="p-2 bg-green-100 rounded-lg">
+                                    <Brain className="h-6 w-6 text-green-600" />
+                                </div>
+                                <div>
+                                    <h3 className="text-lg font-semibold text-gray-900">
+                                        🧠 Resultados del Análisis de IA
+                                    </h3>
+                                    <p className="text-sm text-gray-500">
+                                        Análisis completo de la conversación con el cliente
+                                    </p>
+                                </div>
+                            </div>
+                            <button
+                                onClick={() => setShowResultsModal(false)}
+                                className="p-2 hover:bg-gray-100 rounded-lg transition-colors"
+                            >
+                                <X className="h-5 w-5 text-gray-500" />
+                            </button>
+                        </div>
+
+                        <div className="p-6 space-y-6">
+                            {/* Información del Cliente */}
+                            {currentResults.client && (
+                                <div className="bg-gradient-to-r from-blue-50 to-indigo-50 border border-blue-200 rounded-lg p-6">
+                                    <div className="flex items-center gap-3 mb-4">
+                                        <div className="p-3 bg-blue-100 rounded-full">
+                                            <Users className="h-6 w-6 text-blue-600" />
+                                        </div>
+                                        <div>
+                                            <h4 className="font-bold text-blue-900 text-lg">{currentResults.client}</h4>
+                                            {currentResults.messagesCount && (
+                                                <p className="text-sm text-blue-700">
+                                                    📨 {currentResults.messagesCount} mensajes analizados por IA
+                                                </p>
+                                            )}
+                                        </div>
+                                    </div>
+                                </div>
+                            )}
+
+                            {/* Debug: Completamente deshabilitado */}
+                            {false && process.env.NODE_ENV === 'development' && (
+                                <>
+                                    {/* Debug: Mostrar estructura de datos */}
+                                    <div className="bg-gray-100 border border-gray-300 rounded-lg p-4">
+                                        <h5 className="font-medium text-gray-900 mb-2">🔧 Debug - Estructura de Datos:</h5>
+                                        <pre className="text-xs text-gray-700 overflow-auto max-h-40 bg-white p-3 rounded border">
+                                            {JSON.stringify(currentResults, null, 2)}
+                                        </pre>
+                                    </div>
+
+                                    {/* Verificar si hay análisis estructurado */}
+                                    {currentResults.analysis ? (
+                                        <div className="bg-green-50 border border-green-200 rounded-lg p-4">
+                                            <h5 className="font-medium text-green-900 mb-2">✅ Análisis Estructurado Detectado</h5>
+                                            <p className="text-sm text-green-700">
+                                                El análisis tiene la estructura correcta. Los campos disponibles son:
+                                            </p>
+                                            <ul className="text-xs text-green-600 mt-2 space-y-1">
+                                                {Object.keys(currentResults.analysis || {}).map(key => (
+                                                    <li key={key}>• {key}: {typeof currentResults.analysis[key]}</li>
+                                                ))}
+                                            </ul>
+                                        </div>
+                                    ) : (
+                                        <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-4">
+                                            <h5 className="font-medium text-yellow-900 mb-2">⚠️ Sin Análisis Estructurado</h5>
+                                            <p className="text-sm text-yellow-700">
+                                                No se encontró el campo `analysis` o está vacío. Mostrando resultado raw...
+                                            </p>
+                                        </div>
+                                    )}
+                                </>
+                            )}
+
+                            {/* Resultados específicos para Análisis de Propuestas */}
+                            {currentResults.proposal && currentResults.analysis && (
+                                <div className="space-y-6">
+                                    {/* Información de la Propuesta */}
+                                    <div className="bg-gradient-to-r from-purple-50 to-indigo-50 border border-purple-200 rounded-lg p-6">
+                                        <div className="flex items-center gap-3 mb-4">
+                                            <div className="p-3 bg-purple-100 rounded-full">
+                                                <FileText className="h-6 w-6 text-purple-600" />
+                                            </div>
+                                            <div>
+                                                <h4 className="font-bold text-purple-900 text-lg">{currentResults.proposal.title}</h4>
+                                                <p className="text-sm text-purple-700">
+                                                    Cliente: {currentResults.proposal.client} • Estado: {currentResults.proposal.status} • Valor: {currentResults.proposal.value} {currentResults.proposal.currency}
+                                                </p>
+                                            </div>
+                                        </div>
+                                    </div>
+
+                                    {/* Puntuación General y Competitividad */}
+                                    <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                                        {/* Puntuación General */}
+                                        <div className="bg-white border-l-4 border-green-500 rounded-lg p-6 shadow-sm">
+                                            <div className="flex items-center gap-3 mb-3">
+                                                <div className="p-2 bg-green-100 rounded-lg">
+                                                    <Target className="h-5 w-5 text-green-600" />
+                                                </div>
+                                                <h5 className="font-semibold text-gray-900">Puntuación General</h5>
+                                            </div>
+                                            <div className="flex items-center gap-4">
+                                                <div className="text-3xl font-bold text-green-600">
+                                                    {currentResults.analysis.overall_score}/10
+                                                </div>
+                                                <div className="flex-1">
+                                                    <div className="w-full bg-gray-200 rounded-full h-3">
+                                                        <div
+                                                            className="bg-green-500 h-3 rounded-full transition-all duration-500"
+                                                            style={{ width: `${(currentResults.analysis.overall_score / 10) * 100}%` }}
+                                                        ></div>
+                                                    </div>
+                                                    <p className="text-sm text-gray-600 mt-1">
+                                                        Probabilidad de éxito: {Math.round(currentResults.analysis.success_probability * 100)}%
+                                                    </p>
+                                                </div>
+                                            </div>
+                                        </div>
+
+                                        {/* Competitividad */}
+                                        <div className="bg-white border-l-4 border-blue-500 rounded-lg p-6 shadow-sm">
+                                            <div className="flex items-center gap-3 mb-3">
+                                                <div className="p-2 bg-blue-100 rounded-lg">
+                                                    <DollarSign className="h-5 w-5 text-blue-600" />
+                                                </div>
+                                                <h5 className="font-semibold text-gray-900">Análisis de Precio</h5>
+                                            </div>
+                                            <div className={`inline-flex items-center px-4 py-2 rounded-full text-sm font-medium ${currentResults.analysis.competitiveness === 'high' ? 'bg-green-100 text-green-800' :
+                                                    currentResults.analysis.competitiveness === 'low' ? 'bg-red-100 text-red-800' :
+                                                        'bg-yellow-100 text-yellow-800'
+                                                }`}>
+                                                {currentResults.analysis.competitiveness === 'high' ? '🏆 Alta Competitividad' :
+                                                    currentResults.analysis.competitiveness === 'low' ? '⚠️ Baja Competitividad' :
+                                                        '📊 Competitividad Media'}
+                                            </div>
+                                            {currentResults.analysis.pricing_analysis && (
+                                                <p className="text-sm text-gray-600 mt-2">
+                                                    {currentResults.analysis.pricing_analysis.recommendation}
+                                                </p>
+                                            )}
+                                        </div>
+                                    </div>
+
+                                    {/* Fortalezas y Debilidades */}
+                                    <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                                        {/* Fortalezas */}
+                                        {currentResults.analysis.strengths && currentResults.analysis.strengths.length > 0 && (
+                                            <div className="bg-green-50 border border-green-200 rounded-lg p-6">
+                                                <div className="flex items-center gap-3 mb-4">
+                                                    <div className="p-2 bg-green-100 rounded-lg">
+                                                        <CheckCircle className="h-5 w-5 text-green-600" />
+                                                    </div>
+                                                    <h5 className="font-semibold text-green-900">Fortalezas Identificadas</h5>
+                                                </div>
+                                                <ul className="space-y-2">
+                                                    {currentResults.analysis.strengths.map((strength: string, index: number) => (
+                                                        <li key={index} className="flex items-start gap-2 text-sm text-green-800">
+                                                            <span className="text-green-500 mt-1">✓</span>
+                                                            {strength}
+                                                        </li>
+                                                    ))}
+                                                </ul>
+                                            </div>
+                                        )}
+
+                                        {/* Debilidades */}
+                                        {currentResults.analysis.weaknesses && currentResults.analysis.weaknesses.length > 0 && (
+                                            <div className="bg-red-50 border border-red-200 rounded-lg p-6">
+                                                <div className="flex items-center gap-3 mb-4">
+                                                    <div className="p-2 bg-red-100 rounded-lg">
+                                                        <AlertTriangle className="h-5 w-5 text-red-600" />
+                                                    </div>
+                                                    <h5 className="font-semibold text-red-900">Áreas de Mejora</h5>
+                                                </div>
+                                                <ul className="space-y-2">
+                                                    {currentResults.analysis.weaknesses.map((weakness: string, index: number) => (
+                                                        <li key={index} className="flex items-start gap-2 text-sm text-red-800">
+                                                            <span className="text-red-500 mt-1">⚠</span>
+                                                            {weakness}
+                                                        </li>
+                                                    ))}
+                                                </ul>
+                                            </div>
+                                        )}
+                                    </div>
+
+                                    {/* Factores de Riesgo */}
+                                    {currentResults.analysis.risk_factors && currentResults.analysis.risk_factors.length > 0 && (
+                                        <div className="bg-orange-50 border border-orange-200 rounded-lg p-6">
+                                            <div className="flex items-center gap-3 mb-4">
+                                                <div className="p-2 bg-orange-100 rounded-lg">
+                                                    <AlertTriangle className="h-5 w-5 text-orange-600" />
+                                                </div>
+                                                <h5 className="font-semibold text-orange-900">Factores de Riesgo</h5>
+                                            </div>
+                                            <ul className="space-y-2">
+                                                {currentResults.analysis.risk_factors.map((risk: string, index: number) => (
+                                                    <li key={index} className="flex items-start gap-2 text-sm text-orange-800">
+                                                        <span className="text-orange-500 mt-1">⚠</span>
+                                                        {risk}
+                                                    </li>
+                                                ))}
+                                            </ul>
+                                        </div>
+                                    )}
+
+                                    {/* Sugerencias de Mejora */}
+                                    {currentResults.analysis.improvement_suggestions && currentResults.analysis.improvement_suggestions.length > 0 && (
+                                        <div className="bg-gradient-to-br from-indigo-50 to-purple-50 border border-indigo-200 rounded-xl p-8">
+                                            <div className="flex items-center gap-3 mb-6">
+                                                <div className="p-3 bg-indigo-100 rounded-full">
+                                                    <Brain className="h-7 w-7 text-indigo-600" />
+                                                </div>
+                                                <div>
+                                                    <h4 className="font-bold text-indigo-900 text-xl">Sugerencias de Mejora IA</h4>
+                                                    <p className="text-indigo-700 text-sm">Recomendaciones para optimizar tu propuesta</p>
+                                                </div>
+                                            </div>
+
+                                            <div className="space-y-4">
+                                                {currentResults.analysis.improvement_suggestions.map((suggestion: string, index: number) => (
+                                                    <div key={index} className="bg-white rounded-lg p-4 border border-indigo-100 shadow-sm">
+                                                        <div className="flex items-start gap-3">
+                                                            <div className="flex-shrink-0 w-8 h-8 bg-indigo-100 rounded-full flex items-center justify-center mt-1">
+                                                                <span className="text-indigo-600 font-semibold text-sm">{index + 1}</span>
+                                                            </div>
+                                                            <div className="flex-1">
+                                                                <p className="text-gray-800 font-medium leading-relaxed">{suggestion}</p>
+                                                            </div>
+                                                        </div>
+                                                    </div>
+                                                ))}
+                                            </div>
+                                        </div>
+                                    )}
+
+                                    {/* Próximas Acciones y Tips de Conversión */}
+                                    <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                                        {/* Próximas Acciones */}
+                                        {currentResults.analysis.next_actions && currentResults.analysis.next_actions.length > 0 && (
+                                            <div className="bg-gradient-to-br from-emerald-50 to-teal-50 border border-emerald-200 rounded-xl p-6">
+                                                <div className="flex items-center gap-3 mb-4">
+                                                    <div className="p-2 bg-emerald-100 rounded-lg">
+                                                        <ArrowRight className="h-5 w-5 text-emerald-600" />
+                                                    </div>
+                                                    <h5 className="font-semibold text-emerald-900">Próximas Acciones</h5>
+                                                </div>
+                                                <ul className="space-y-3">
+                                                    {currentResults.analysis.next_actions.map((action: string, index: number) => (
+                                                        <li key={index} className="flex items-start gap-3">
+                                                            <div className="flex-shrink-0 w-6 h-6 bg-emerald-100 rounded-full flex items-center justify-center mt-0.5">
+                                                                <span className="text-emerald-600 font-semibold text-xs">{index + 1}</span>
+                                                            </div>
+                                                            <p className="text-emerald-800 text-sm font-medium">{action}</p>
+                                                        </li>
+                                                    ))}
+                                                </ul>
+                                            </div>
+                                        )}
+
+                                        {/* Tips de Conversión */}
+                                        {currentResults.analysis.conversion_tips && currentResults.analysis.conversion_tips.length > 0 && (
+                                            <div className="bg-gradient-to-br from-yellow-50 to-orange-50 border border-yellow-200 rounded-xl p-6">
+                                                <div className="flex items-center gap-3 mb-4">
+                                                    <div className="p-2 bg-yellow-100 rounded-lg">
+                                                        <TrendingUp className="h-5 w-5 text-yellow-600" />
+                                                    </div>
+                                                    <h5 className="font-semibold text-yellow-900">Tips de Conversión</h5>
+                                                </div>
+                                                <ul className="space-y-3">
+                                                    {currentResults.analysis.conversion_tips.map((tip: string, index: number) => (
+                                                        <li key={index} className="flex items-start gap-3">
+                                                            <div className="flex-shrink-0 w-6 h-6 bg-yellow-100 rounded-full flex items-center justify-center mt-0.5">
+                                                                <span className="text-yellow-600 font-semibold text-xs">💡</span>
+                                                            </div>
+                                                            <p className="text-yellow-800 text-sm font-medium">{tip}</p>
+                                                        </li>
+                                                    ))}
+                                                </ul>
+                                            </div>
+                                        )}
+                                    </div>
+                                </div>
+                            )}
+
+                            {/* Resultados específicos para Análisis de Riesgos de Proyecto */}
+                            {currentResults.project && currentResults.analysis && currentResults.analysis.overall_risk_score && (
+                                <div className="space-y-6">
+                                    {/* Información del Proyecto */}
+                                    <div className="bg-gradient-to-r from-red-50 to-orange-50 border border-red-200 rounded-lg p-6">
+                                        <div className="flex items-center gap-3 mb-4">
+                                            <div className="p-3 bg-red-100 rounded-full">
+                                                <AlertTriangle className="h-6 w-6 text-red-600" />
+                                            </div>
+                                            <div>
+                                                <h4 className="font-bold text-red-900 text-lg">{currentResults.project.name}</h4>
+                                                <p className="text-sm text-red-700">
+                                                    Estado: {currentResults.project.status} • Progreso: {currentResults.project.progress || 0}% • Presupuesto: {currentResults.project.budget ? `${currentResults.project.budget} ${currentResults.project.currency || 'EUR'}` : 'No especificado'}
+                                                </p>
+                                            </div>
+                                        </div>
+                                    </div>
+
+                                    {/* Nivel de Riesgo General */}
+                                    <div className="bg-white border-l-4 border-red-500 rounded-lg p-6 shadow-sm">
+                                        <div className="flex items-center gap-3 mb-4">
+                                            <div className="p-2 bg-red-100 rounded-lg">
+                                                <Target className="h-5 w-5 text-red-600" />
+                                            </div>
+                                            <h5 className="font-semibold text-gray-900">Nivel de Riesgo General</h5>
+                                        </div>
+                                        <div className="flex items-center gap-4">
+                                            <div className={`text-3xl font-bold ${
+                                                currentResults.analysis.overall_risk_score >= 7 ? 'text-red-600' :
+                                                currentResults.analysis.overall_risk_score >= 5 ? 'text-yellow-600' :
+                                                'text-green-600'
+                                            }`}>
+                                                {currentResults.analysis.overall_risk_score}/10
+                                            </div>
+                                            <div className="flex-1">
+                                                <div className="w-full bg-gray-200 rounded-full h-3">
+                                                    <div
+                                                        className={`h-3 rounded-full transition-all duration-500 ${
+                                                            currentResults.analysis.overall_risk_score >= 7 ? 'bg-red-500' :
+                                                            currentResults.analysis.overall_risk_score >= 5 ? 'bg-yellow-500' :
+                                                            'bg-green-500'
+                                                        }`}
+                                                        style={{ width: `${(currentResults.analysis.overall_risk_score / 10) * 100}%` }}
+                                                    ></div>
+                                                </div>
+                                                <p className="text-sm text-gray-600 mt-1">
+                                                    {currentResults.analysis.overall_risk_score >= 7 ? '🔴 Riesgo Alto' :
+                                                     currentResults.analysis.overall_risk_score >= 5 ? '🟡 Riesgo Moderado' :
+                                                     '🟢 Riesgo Bajo'}
+                                                </p>
+                                            </div>
+                                        </div>
+                                    </div>
+
+                                    {/* Riesgos Identificados por Categoría */}
+                                    {currentResults.analysis.identified_risks && currentResults.analysis.identified_risks.length > 0 && (
+                                        <div className="bg-gradient-to-br from-red-50 to-orange-50 border border-red-200 rounded-xl p-6">
+                                            <div className="flex items-center gap-3 mb-6">
+                                                <div className="p-3 bg-red-100 rounded-full">
+                                                    <AlertTriangle className="h-6 w-6 text-red-600" />
+                                                </div>
+                                                <div>
+                                                    <h4 className="font-bold text-red-900 text-xl">Riesgos Identificados</h4>
+                                                    <p className="text-red-700 text-sm">{currentResults.analysis.identified_risks.length} riesgos detectados automáticamente</p>
+                                                </div>
+                                            </div>
+
+                                            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                                {currentResults.analysis.identified_risks.map((risk: any, index: number) => {
+                                                    // Verificar la estructura del riesgo
+                                                    const riskCategory = risk.category || risk.type || risk.name || `Riesgo ${index + 1}`;
+                                                    const riskDescription = risk.description || risk.details || risk.issue || 'Sin descripción disponible';
+                                                    const riskSeverity = risk.severity || risk.level || 'medium';
+                                                    const riskProbability = risk.probability || risk.severity_score || 0;
+                                                    
+                                                    return (
+                                                        <div key={index} className="bg-white rounded-lg p-4 border border-red-100 shadow-sm">
+                                                            <div className="flex items-start gap-3">
+                                                                <div className={`flex-shrink-0 w-8 h-8 rounded-full flex items-center justify-center mt-1 ${
+                                                                    riskSeverity === 'high' || riskProbability >= 7 ? 'bg-red-100' :
+                                                                    riskSeverity === 'medium' || riskProbability >= 4 ? 'bg-yellow-100' :
+                                                                    'bg-green-100'
+                                                                }`}>
+                                                                    <span className={`font-semibold text-xs ${
+                                                                        riskSeverity === 'high' || riskProbability >= 7 ? 'text-red-600' :
+                                                                        riskSeverity === 'medium' || riskProbability >= 4 ? 'text-yellow-600' :
+                                                                        'text-green-600'
+                                                                    }`}>
+                                                                        {riskSeverity === 'high' || riskProbability >= 7 ? '🔴' : 
+                                                                         riskSeverity === 'medium' || riskProbability >= 4 ? '🟡' : '🟢'}
+                                                                    </span>
+                                                                </div>
+                                                                <div className="flex-1">
+                                                                    <h6 className="font-medium text-gray-900 mb-1 capitalize">{riskCategory}</h6>
+                                                                    <p className="text-gray-700 text-sm leading-relaxed">{riskDescription}</p>
+                                                                    {(riskProbability > 0) && (
+                                                                        <p className="text-gray-500 text-xs mt-2">
+                                                                            Severidad: {typeof riskProbability === 'number' ? `${riskProbability}/10` : riskProbability}
+                                                                        </p>
+                                                                    )}
+                                                                </div>
+                                                            </div>
+                                                        </div>
+                                                    );
+                                                })}
+                                            </div>
+                                        </div>
+                                    )}
+
+                                    {/* Planes de Mitigación */}
+                                    {((currentResults.analysis.mitigation_plan && currentResults.analysis.mitigation_plan.length > 0) || 
+                                      (currentResults.analysis.mitigation_plans && currentResults.analysis.mitigation_plans.length > 0)) && (
+                                        <div className="bg-gradient-to-br from-blue-50 to-indigo-50 border border-blue-200 rounded-xl p-6">
+                                            <div className="flex items-center gap-3 mb-6">
+                                                <div className="p-3 bg-blue-100 rounded-full">
+                                                    <Shield className="h-6 w-6 text-blue-600" />
+                                                </div>
+                                                <div>
+                                                    <h4 className="font-bold text-blue-900 text-xl">Planes de Mitigación</h4>
+                                                    <p className="text-blue-700 text-sm">Estrategias específicas para reducir riesgos</p>
+                                                </div>
+                                            </div>
+
+                                            <div className="space-y-4">
+                                                {(currentResults.analysis.mitigation_plan || currentResults.analysis.mitigation_plans || []).map((plan: any, index: number) => {
+                                                    const planRisk = plan.risk || plan.risk_category || plan.category || `Plan ${index + 1}`;
+                                                    const planActions = plan.actions || plan.steps || plan.tasks || [];
+                                                    const planResponsible = plan.responsible || plan.owner || 'No asignado';
+                                                    const planTimeline = plan.timeline || plan.timeframe || '';
+                                                    
+                                                    return (
+                                                        <div key={index} className="bg-white rounded-lg p-4 border border-blue-100 shadow-sm">
+                                                            <div className="flex items-start gap-3">
+                                                                <div className="flex-shrink-0 w-8 h-8 bg-blue-100 rounded-full flex items-center justify-center mt-1">
+                                                                    <span className="text-blue-600 font-semibold text-sm">{index + 1}</span>
+                                                                </div>
+                                                                <div className="flex-1">
+                                                                    <h6 className="font-medium text-gray-900 mb-2">{planRisk}</h6>
+                                                                    <div className="space-y-2">
+                                                                        {Array.isArray(planActions) && planActions.map((action: string, actionIndex: number) => (
+                                                                            <div key={actionIndex} className="flex items-start gap-2">
+                                                                                <span className="text-blue-500 text-xs mt-1">▶</span>
+                                                                                <p className="text-gray-700 text-sm leading-relaxed">{action}</p>
+                                                                            </div>
+                                                                        ))}
+                                                                    </div>
+                                                                    <div className="flex items-center gap-4 mt-3 text-xs">
+                                                                        {planResponsible && (
+                                                                            <p className="text-blue-600 font-medium">👤 {planResponsible}</p>
+                                                                        )}
+                                                                        {planTimeline && (
+                                                                            <p className="text-gray-500">⏱️ {planTimeline}</p>
+                                                                        )}
+                                                                    </div>
+                                                                </div>
+                                                            </div>
+                                                        </div>
+                                                    );
+                                                })}
+                                            </div>
+                                        </div>
+                                    )}
+
+                                    {/* Señales de Alerta Temprana */}
+                                    {currentResults.analysis.early_warning_signs && currentResults.analysis.early_warning_signs.length > 0 && (
+                                        <div className="bg-gradient-to-br from-yellow-50 to-orange-50 border border-yellow-200 rounded-xl p-6">
+                                            <div className="flex items-center gap-3 mb-6">
+                                                <div className="p-3 bg-yellow-100 rounded-full">
+                                                    <AlertTriangle className="h-6 w-6 text-yellow-600" />
+                                                </div>
+                                                <div>
+                                                    <h4 className="font-bold text-yellow-900 text-xl">Señales de Alerta Temprana</h4>
+                                                    <p className="text-yellow-700 text-sm">Indicadores clave para monitorear</p>
+                                                </div>
+                                            </div>
+
+                                            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                                {currentResults.analysis.early_warning_signs.map((sign: string, index: number) => (
+                                                    <div key={index} className="bg-white rounded-lg p-4 border border-yellow-100 shadow-sm">
+                                                        <div className="flex items-start gap-3">
+                                                            <span className="text-yellow-500 mt-1">⚠️</span>
+                                                            <p className="text-gray-700 text-sm leading-relaxed">{sign}</p>
+                                                        </div>
+                                                    </div>
+                                                ))}
+                                            </div>
+                                        </div>
+                                    )}
+
+                                    {/* Próximas Acciones Recomendadas */}
+                                    {currentResults.analysis.next_actions && currentResults.analysis.next_actions.length > 0 && (
+                                        <div className="bg-gradient-to-br from-emerald-50 to-teal-50 border border-emerald-200 rounded-xl p-6">
+                                            <div className="flex items-center gap-3 mb-6">
+                                                <div className="p-3 bg-emerald-100 rounded-full">
+                                                    <CheckCircle className="h-6 w-6 text-emerald-600" />
+                                                </div>
+                                                <div>
+                                                    <h4 className="font-bold text-emerald-900 text-xl">Próximas Acciones</h4>
+                                                    <p className="text-emerald-700 text-sm">Pasos inmediatos recomendados por IA</p>
+                                                </div>
+                                            </div>
+
+                                            <div className="space-y-3">
+                                                {currentResults.analysis.next_actions.map((action: string, index: number) => (
+                                                    <div key={index} className="bg-white rounded-lg p-4 border border-emerald-100 shadow-sm">
+                                                        <div className="flex items-start gap-3">
+                                                            <div className="flex-shrink-0 w-6 h-6 bg-emerald-100 rounded-full flex items-center justify-center mt-0.5">
+                                                                <span className="text-emerald-600 font-semibold text-xs">✓</span>
+                                                            </div>
+                                                            <p className="text-gray-800 font-medium leading-relaxed">{action}</p>
+                                                        </div>
+                                                    </div>
+                                                ))}
+                                            </div>
+                                        </div>
+                                    )}
+                                </div>
+                            )}
+
+                            {/* Resumen del Análisis - Solo para conversaciones */}
+                            {currentResults?.analysis && Object.keys(currentResults.analysis).length > 0 && !currentResults.proposal && (
+                                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                                    {/* Tono General */}
+                                    {currentResults.analysis.overallTone && (
+                                        <div className="bg-white border-l-4 border-purple-500 rounded-lg p-6 shadow-sm">
+                                            <div className="flex items-center gap-3 mb-3">
+                                                <div className="p-2 bg-purple-100 rounded-lg">
+                                                    <MessageSquare className="h-5 w-5 text-purple-600" />
+                                                </div>
+                                                <h5 className="font-semibold text-gray-900">Tono de Conversación</h5>
+                                            </div>
+                                            <div className={`inline-flex items-center px-4 py-2 rounded-full text-sm font-medium ${currentResults.analysis.overallTone === 'positive' ? 'bg-green-100 text-green-800' :
+                                                    currentResults.analysis.overallTone === 'negative' ? 'bg-red-100 text-red-800' :
+                                                        'bg-yellow-100 text-yellow-800'
+                                                }`}>
+                                                {currentResults.analysis.overallTone === 'positive' ? '😊 Positivo' :
+                                                    currentResults.analysis.overallTone === 'negative' ? '😟 Negativo' :
+                                                        '😐 Neutral'}
+                                            </div>
+                                            {currentResults.analysis.confidence && (
+                                                <p className="text-sm text-gray-600 mt-2">
+                                                    Confianza: {Math.round(currentResults.analysis.confidence * 100)}%
+                                                </p>
+                                            )}
+                                        </div>
+                                    )}
+
+                                    {/* Satisfacción del Cliente */}
+                                    {currentResults.analysis.satisfactionLevel && (
+                                        <div className="bg-white border-l-4 border-green-500 rounded-lg p-6 shadow-sm">
+                                            <div className="flex items-center gap-3 mb-3">
+                                                <div className="p-2 bg-green-100 rounded-lg">
+                                                    <Star className="h-5 w-5 text-green-600" />
+                                                </div>
+                                                <h5 className="font-semibold text-gray-900">Satisfacción del Cliente</h5>
+                                            </div>
+                                            <div className={`inline-flex items-center px-4 py-2 rounded-full text-sm font-medium ${currentResults.analysis.satisfactionLevel === 'high' ? 'bg-green-100 text-green-800' :
+                                                    currentResults.analysis.satisfactionLevel === 'low' ? 'bg-red-100 text-red-800' :
+                                                        'bg-yellow-100 text-yellow-800'
+                                                }`}>
+                                                {currentResults.analysis.satisfactionLevel === 'high' ? '⭐ Alta' :
+                                                    currentResults.analysis.satisfactionLevel === 'low' ? '🔴 Baja' :
+                                                        '🟡 Media'}
+                                            </div>
+                                            {currentResults.analysis.satisfactionScore && (
+                                                <p className="text-sm text-gray-600 mt-2">
+                                                    Puntuación: {currentResults.analysis.satisfactionScore}/10
+                                                </p>
+                                            )}
+                                        </div>
+                                    )}
+                                </div>
+                            )}
+
+                            {/* Recomendaciones Principales - Destacadas */}
+                            {currentResults.analysis?.recommendations && currentResults.analysis.recommendations.length > 0 && (
+                                <div className="bg-gradient-to-br from-indigo-50 to-purple-50 border border-indigo-200 rounded-xl p-8">
+                                    <div className="flex items-center gap-3 mb-6">
+                                        <div className="p-3 bg-indigo-100 rounded-full">
+                                            <Brain className="h-7 w-7 text-indigo-600" />
+                                        </div>
+                                        <div>
+                                            <h4 className="font-bold text-indigo-900 text-xl">Recomendaciones de IA</h4>
+                                            <p className="text-indigo-700 text-sm">Insights personalizados para mejorar tu comunicación</p>
+                                        </div>
+                                    </div>
+
+                                    <div className="space-y-4">
+                                        {currentResults.analysis.recommendations.map((rec: string, index: number) => (
+                                            <div key={index} className="bg-white rounded-lg p-4 border border-indigo-100 shadow-sm">
+                                                <div className="flex items-start gap-3">
+                                                    <div className="flex-shrink-0 w-8 h-8 bg-indigo-100 rounded-full flex items-center justify-center mt-1">
+                                                        <span className="text-indigo-600 font-semibold text-sm">{index + 1}</span>
+                                                    </div>
+                                                    <div className="flex-1">
+                                                        <p className="text-gray-800 font-medium leading-relaxed">{rec}</p>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        ))}
+                                    </div>
+                                </div>
+                            )}
+
+                            {/* Próximo Mensaje Sugerido - Destacado */}
+                            {currentResults.analysis?.nextMessage && (
+                                <div className="bg-gradient-to-br from-emerald-50 to-teal-50 border border-emerald-200 rounded-xl p-8">
+                                    <div className="flex items-center gap-3 mb-6">
+                                        <div className="p-3 bg-emerald-100 rounded-full">
+                                            <Mail className="h-7 w-7 text-emerald-600" />
+                                        </div>
+                                        <div>
+                                            <h4 className="font-bold text-emerald-900 text-xl">Mensaje Optimizado por IA</h4>
+                                            <p className="text-emerald-700 text-sm">Listo para copiar y enviar</p>
+                                        </div>
+                                    </div>
+
+                                    <div className="bg-white rounded-lg p-6 border border-emerald-100 shadow-sm mb-4">
+                                        <div className="prose prose-sm max-w-none">
+                                            <p className="text-gray-800 leading-relaxed whitespace-pre-wrap font-medium">
+                                                {currentResults.analysis.nextMessage}
+                                            </p>
+                                        </div>
+                                    </div>
+
+                                    <div className="flex gap-3">
+                                        <Button
+                                            onClick={() => {
+                                                navigator.clipboard.writeText(currentResults.analysis.nextMessage);
+                                                showToast('📋 Mensaje copiado al portapapeles', 'success');
+                                            }}
+                                            className="bg-emerald-600 hover:bg-emerald-700 text-white"
+                                        >
+                                            � Copiar Mensaje
+                                        </Button>
+                                    </div>
+                                </div>
+                            )}
+
+                            {/* Puntos Fuertes y Áreas de Mejora */}
+                            {(currentResults.analysis?.strengths?.length > 0 || currentResults.analysis?.improvementAreas?.length > 0) && (
+                                <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                                    {/* Puntos Fuertes */}
+                                    {currentResults.analysis?.strengths && currentResults.analysis.strengths.length > 0 && (
+                                        <div className="bg-white border border-green-200 rounded-lg p-6">
+                                            <div className="flex items-center gap-3 mb-4">
+                                                <div className="p-2 bg-green-100 rounded-lg">
+                                                    <CheckCircle className="h-5 w-5 text-green-600" />
+                                                </div>
+                                                <h5 className="font-semibold text-green-900">💪 Puntos Fuertes</h5>
+                                            </div>
+                                            <ul className="space-y-3">
+                                                {currentResults.analysis.strengths.map((strength: string, index: number) => (
+                                                    <li key={index} className="flex items-start gap-3">
+                                                        <span className="text-green-500 mt-1">✅</span>
+                                                        <span className="text-gray-700 text-sm leading-relaxed">{strength}</span>
+                                                    </li>
+                                                ))}
+                                            </ul>
+                                        </div>
+                                    )}
+
+                                    {/* Áreas de Mejora */}
+                                    {currentResults.analysis?.improvementAreas && currentResults.analysis.improvementAreas.length > 0 && (
+                                        <div className="bg-white border border-orange-200 rounded-lg p-6">
+                                            <div className="flex items-center gap-3 mb-4">
+                                                <div className="p-2 bg-orange-100 rounded-lg">
+                                                    <Target className="h-5 w-5 text-orange-600" />
+                                                </div>
+                                                <h5 className="font-semibold text-orange-900">🎯 Áreas de Mejora</h5>
+                                            </div>
+                                            <ul className="space-y-3">
+                                                {currentResults.analysis.improvementAreas.map((area: string, index: number) => (
+                                                    <li key={index} className="flex items-start gap-3">
+                                                        <span className="text-orange-500 mt-1">⚠️</span>
+                                                        <span className="text-gray-700 text-sm leading-relaxed">{area}</span>
+                                                    </li>
+                                                ))}
+                                            </ul>
+                                        </div>
+                                    )}
+                                </div>
+                            )}
+
+                            {/* Información Técnica - Compacta */}
+                            <div className="bg-gray-50 border border-gray-200 rounded-lg p-4">
+                                <div className="flex items-center justify-between text-sm">
+                                    <div className="flex items-center gap-2">
+                                        <Zap className="h-4 w-4 text-gray-500" />
+                                        <span className="text-gray-600">Procesado con OpenAI GPT-4o-mini</span>
+                                    </div>
+                                    <div className="flex items-center gap-2">
+                                        <Clock className="h-4 w-4 text-gray-500" />
+                                        <span className="text-gray-600">{new Date().toLocaleDateString('es-ES')}</span>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div className="flex justify-between items-center gap-3 p-6 border-t bg-gray-50">
+                            <div className="text-sm text-gray-600">
+                                💡 Resultados procesados con IA avanzada
+                            </div>
+                            <div className="flex gap-3">
+                                <Button
+                                    variant="outline"
+                                    onClick={() => setShowResultsModal(false)}
+                                >
+                                    Cerrar
+                                </Button>
+                                {currentResults.analysis?.nextMessage && (
+                                    <Button
+                                        onClick={() => {
+                                            navigator.clipboard.writeText(currentResults.analysis.nextMessage);
+                                            showToast('📋 Mensaje copiado listo para enviar', 'success');
+                                        }}
+                                        className="bg-emerald-600 hover:bg-emerald-700"
+                                    >
+                                        📋 Copiar Mensaje
+                                    </Button>
+                                )}
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            )}
+
             {/* Modal Profesional para Entrada de Datos */}
             {showModal && currentAutomation && (
                 <div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4">
@@ -1828,9 +3406,9 @@ export default function AIAutomationsPageClient({ userEmail }: AIAutomationsPage
             {toast.show && (
                 <div className="fixed bottom-4 right-4 z-50">
                     <div className={`rounded-lg p-4 shadow-lg max-w-md ${toast.type === 'success' ? 'bg-green-500 text-white' :
-                            toast.type === 'error' ? 'bg-red-500 text-white' :
-                                toast.type === 'warning' ? 'bg-yellow-500 text-white' :
-                                    'bg-blue-500 text-white'
+                        toast.type === 'error' ? 'bg-red-500 text-white' :
+                            toast.type === 'warning' ? 'bg-yellow-500 text-white' :
+                                'bg-blue-500 text-white'
                         }`}>
                         <div className="flex items-start gap-3">
                             <div className="flex-shrink-0 mt-0.5">
