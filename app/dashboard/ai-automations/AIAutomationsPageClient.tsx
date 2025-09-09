@@ -1,7 +1,6 @@
 'use client';
 
 import Sidebar from '@/components/Sidebar';
-import TrialBanner from '@/components/TrialBanner';
 import { Button } from '@/components/ui/Button';
 import { createSupabaseClient } from '@/src/lib/supabase-client';
 import { useTrialStatus } from '@/src/lib/useTrialStatus';
@@ -95,12 +94,11 @@ export default function AIAutomationsPageClient({ userEmail }: AIAutomationsPage
         type: 'info'
     });
 
-    // Función para mostrar toast
-    const showToast = (message: string, type: 'success' | 'error' | 'warning' | 'info' = 'info') => {
-        setToast({ show: true, message, type });
-        setTimeout(() => {
-            setToast(prev => ({ ...prev, show: false }));
-        }, 5000);
+    // Función para mostrar toast - Siempre verde, solo cierre manual
+    const showToast = (message: string, type: 'success' | 'error' | 'warning' | 'info' = 'success') => {
+        // Siempre usar tipo 'success' para que sea verde
+        setToast({ show: true, message, type: 'success' });
+        // Sin timeout automático - solo cierre manual
     };
 
     // Función para toggle del detector automático
@@ -124,7 +122,7 @@ export default function AIAutomationsPageClient({ userEmail }: AIAutomationsPage
             await executeAutoDetectorWithEmails();
             showToast('🔍 Detector de Eventos Automático ACTIVADO. Se ejecutará cada hora y se han enviado emails para eventos recientes.', 'success');
         } else {
-            showToast('⏸️ Detector de Eventos Automático DESACTIVADO. No se ejecutarán detecciones automáticas.', 'info');
+            showToast('⏸️ Detector de Eventos Automático DESACTIVADO. No se ejecutarán detecciones automáticas.');
         }
     };
 
@@ -139,7 +137,7 @@ export default function AIAutomationsPageClient({ userEmail }: AIAutomationsPage
                 throw new Error('Usuario no autenticado. Por favor inicia sesión.');
             }
 
-            showToast('🤖 Ejecutando detector automático y enviando emails...', 'info');
+            showToast('🤖 Ejecutando detector automático y enviando emails...');
 
             // Usar directamente el ID del usuario en lugar del email
             const response = await fetch('/api/ai/send-auto-emails', {
@@ -452,10 +450,10 @@ export default function AIAutomationsPageClient({ userEmail }: AIAutomationsPage
                                         <div>
                                             <span className="text-blue-700">Estado:</span>
                                             <span className={`ml-2 px-2 py-1 rounded-full text-xs font-medium ${selectedProposal.status === 'sent' ? 'bg-orange-100 text-orange-800' :
-                                                    selectedProposal.status === 'draft' ? 'bg-gray-100 text-gray-800' :
-                                                        selectedProposal.status === 'viewed' ? 'bg-purple-100 text-purple-800' :
-                                                            selectedProposal.status === 'accepted' ? 'bg-green-100 text-green-800' :
-                                                                'bg-red-100 text-red-800'
+                                                selectedProposal.status === 'draft' ? 'bg-gray-100 text-gray-800' :
+                                                    selectedProposal.status === 'viewed' ? 'bg-purple-100 text-purple-800' :
+                                                        selectedProposal.status === 'accepted' ? 'bg-green-100 text-green-800' :
+                                                            'bg-red-100 text-red-800'
                                                 }`}>
                                                 {selectedProposal.status}
                                             </span>
@@ -702,8 +700,8 @@ export default function AIAutomationsPageClient({ userEmail }: AIAutomationsPage
                                     value={modalData.selectedClientId || ''}
                                     onChange={(e) => {
                                         const clientId = e.target.value;
-                                        setModalData(prev => ({ 
-                                            ...prev, 
+                                        setModalData(prev => ({
+                                            ...prev,
                                             selectedClientId: clientId,
                                             projectId: '' // Reset proyecto cuando cambia cliente
                                         }));
@@ -759,26 +757,26 @@ export default function AIAutomationsPageClient({ userEmail }: AIAutomationsPage
                                                 onChange={(e) => setModalData(prev => ({ ...prev, projectId: e.target.value }))}
                                             >
                                                 <option value="">
-                                                    {modalData.selectedClientId 
-                                                        ? 'Selecciona un proyecto de este cliente...' 
+                                                    {modalData.selectedClientId
+                                                        ? 'Selecciona un proyecto de este cliente...'
                                                         : 'Selecciona cualquier proyecto...'
                                                     }
                                                 </option>
                                                 {filteredProjects.map((project) => (
                                                     <option key={project.id} value={project.id}>
-                                                        🏗️ {project.name} • 
-                                                        {project.status} • 
+                                                        🏗️ {project.name} •
+                                                        {project.status} •
                                                         {project.budget ? `${project.budget} ${project.currency || 'EUR'}` : 'Sin presupuesto'} •
                                                         {new Date(project.created_at).toLocaleDateString('es-ES')}
                                                     </option>
                                                 ))}
-                                                
+
                                                 {/* Opción para ver todos los proyectos */}
                                                 {modalData.selectedClientId && (
                                                     <optgroup label="— O selecciona de todos los proyectos —">
                                                         {userProjects.filter(p => !filteredProjects.includes(p)).map((project) => (
                                                             <option key={project.id} value={project.id}>
-                                                                🏗️ {project.name} • {project.status} • 
+                                                                🏗️ {project.name} • {project.status} •
                                                                 {project.budget ? `${project.budget} ${project.currency || 'EUR'}` : 'Sin presupuesto'}
                                                             </option>
                                                         ))}
@@ -809,7 +807,7 @@ export default function AIAutomationsPageClient({ userEmail }: AIAutomationsPage
                         {modalData.projectId && (() => {
                             const selectedProject = userProjects.find(p => p.id === modalData.projectId);
                             if (!selectedProject) return null;
-                            
+
                             return (
                                 <div className="bg-red-50 border border-red-200 rounded-lg p-4">
                                     <div className="flex items-center gap-3 mb-3">
@@ -824,12 +822,11 @@ export default function AIAutomationsPageClient({ userEmail }: AIAutomationsPage
                                     <div className="grid grid-cols-2 gap-4 text-sm">
                                         <div>
                                             <span className="text-red-700">Estado:</span>
-                                            <span className={`ml-2 px-2 py-1 rounded-full text-xs font-medium ${
-                                                selectedProject.status === 'completed' ? 'bg-green-100 text-green-800' :
-                                                selectedProject.status === 'in_progress' ? 'bg-blue-100 text-blue-800' :
-                                                selectedProject.status === 'on_hold' ? 'bg-yellow-100 text-yellow-800' :
-                                                'bg-gray-100 text-gray-800'
-                                            }`}>
+                                            <span className={`ml-2 px-2 py-1 rounded-full text-xs font-medium ${selectedProject.status === 'completed' ? 'bg-green-100 text-green-800' :
+                                                    selectedProject.status === 'in_progress' ? 'bg-blue-100 text-blue-800' :
+                                                        selectedProject.status === 'on_hold' ? 'bg-yellow-100 text-yellow-800' :
+                                                            'bg-gray-100 text-gray-800'
+                                                }`}>
                                                 {selectedProject.status}
                                             </span>
                                         </div>
@@ -863,7 +860,7 @@ export default function AIAutomationsPageClient({ userEmail }: AIAutomationsPage
                                         <p className="text-red-700 text-sm">OpenAI analizará automáticamente todos los aspectos del proyecto</p>
                                     </div>
                                 </div>
-                                
+
                                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6">
                                     <div className="space-y-2">
                                         <h5 className="text-sm font-medium text-red-900">🎯 Detección de Riesgos:</h5>
@@ -874,7 +871,7 @@ export default function AIAutomationsPageClient({ userEmail }: AIAutomationsPage
                                             <li>• <strong>Probabilidad de éxito</strong> estimada</li>
                                         </ul>
                                     </div>
-                                    
+
                                     <div className="space-y-2">
                                         <h5 className="text-sm font-medium text-red-900">🛡️ Planes de Mitigación:</h5>
                                         <ul className="text-sm text-red-700 space-y-1">
@@ -885,7 +882,7 @@ export default function AIAutomationsPageClient({ userEmail }: AIAutomationsPage
                                         </ul>
                                     </div>
                                 </div>
-                                
+
                                 <div className="bg-white rounded-lg p-4 border border-red-100">
                                     <p className="text-sm text-red-800 flex items-center gap-2">
                                         <Brain className="h-4 w-4" />
@@ -911,8 +908,8 @@ export default function AIAutomationsPageClient({ userEmail }: AIAutomationsPage
                                     value={modalData.selectedClientId || ''}
                                     onChange={(e) => {
                                         const clientId = e.target.value;
-                                        setModalData(prev => ({ 
-                                            ...prev, 
+                                        setModalData(prev => ({
+                                            ...prev,
                                             selectedClientId: clientId,
                                             budgetId: '' // Reset presupuesto cuando cambia cliente
                                         }));
@@ -967,26 +964,26 @@ export default function AIAutomationsPageClient({ userEmail }: AIAutomationsPage
                                                 onChange={(e) => setModalData(prev => ({ ...prev, budgetId: e.target.value }))}
                                             >
                                                 <option value="">
-                                                    {modalData.selectedClientId 
-                                                        ? 'Selecciona un presupuesto de este cliente...' 
+                                                    {modalData.selectedClientId
+                                                        ? 'Selecciona un presupuesto de este cliente...'
                                                         : 'Selecciona cualquier presupuesto...'
                                                     }
                                                 </option>
                                                 {filteredBudgets.map((budget: any) => (
                                                     <option key={budget.id} value={budget.id}>
-                                                        💰 {budget.title} • 
-                                                        {budget.status} • 
+                                                        💰 {budget.title} •
+                                                        {budget.status} •
                                                         €{budget.total_amount?.toLocaleString() || '0'} •
                                                         {new Date(budget.created_at).toLocaleDateString('es-ES')}
                                                     </option>
                                                 ))}
-                                                
+
                                                 {/* Opción para ver todos los presupuestos */}
                                                 {modalData.selectedClientId && (
                                                     <optgroup label="— O selecciona de todos los presupuestos —">
                                                         {userBudgets.filter(b => !filteredBudgets.includes(b)).map((budget: any) => (
                                                             <option key={budget.id} value={budget.id}>
-                                                                💰 {budget.title} • {budget.status} • 
+                                                                💰 {budget.title} • {budget.status} •
                                                                 €{budget.total_amount?.toLocaleString() || '0'}
                                                             </option>
                                                         ))}
@@ -1017,7 +1014,7 @@ export default function AIAutomationsPageClient({ userEmail }: AIAutomationsPage
                         {modalData.budgetId && (() => {
                             const selectedBudget = userBudgets.find(b => b.id === modalData.budgetId);
                             if (!selectedBudget) return null;
-                            
+
                             return (
                                 <div className="bg-green-50 border border-green-200 rounded-lg p-4">
                                     <div className="flex items-center gap-3 mb-3">
@@ -1032,12 +1029,11 @@ export default function AIAutomationsPageClient({ userEmail }: AIAutomationsPage
                                     <div className="grid grid-cols-2 gap-4 text-sm">
                                         <div>
                                             <span className="text-green-700">Estado:</span>
-                                            <span className={`ml-2 px-2 py-1 rounded-full text-xs font-medium ${
-                                                selectedBudget.status === 'approved' ? 'bg-green-100 text-green-800' :
-                                                selectedBudget.status === 'sent' ? 'bg-blue-100 text-blue-800' :
-                                                selectedBudget.status === 'rejected' ? 'bg-red-100 text-red-800' :
-                                                'bg-gray-100 text-gray-800'
-                                            }`}>
+                                            <span className={`ml-2 px-2 py-1 rounded-full text-xs font-medium ${selectedBudget.status === 'approved' ? 'bg-green-100 text-green-800' :
+                                                    selectedBudget.status === 'sent' ? 'bg-blue-100 text-blue-800' :
+                                                        selectedBudget.status === 'rejected' ? 'bg-red-100 text-red-800' :
+                                                            'bg-gray-100 text-gray-800'
+                                                }`}>
                                                 {selectedBudget.status}
                                             </span>
                                         </div>
@@ -1073,7 +1069,7 @@ export default function AIAutomationsPageClient({ userEmail }: AIAutomationsPage
                                         <p className="text-green-700 text-sm">OpenAI analizará el mercado y tu historial para optimizar precios</p>
                                     </div>
                                 </div>
-                                
+
                                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6">
                                     <div className="space-y-2">
                                         <h5 className="text-sm font-medium text-green-900">📊 Análisis de Mercado:</h5>
@@ -1084,7 +1080,7 @@ export default function AIAutomationsPageClient({ userEmail }: AIAutomationsPage
                                             <li>• <strong>Evaluación de valor</strong> percibido</li>
                                         </ul>
                                     </div>
-                                    
+
                                     <div className="space-y-2">
                                         <h5 className="text-sm font-medium text-green-900">💡 Recomendaciones:</h5>
                                         <ul className="text-sm text-green-700 space-y-1">
@@ -1095,7 +1091,7 @@ export default function AIAutomationsPageClient({ userEmail }: AIAutomationsPage
                                         </ul>
                                     </div>
                                 </div>
-                                
+
                                 <div className="bg-white rounded-lg p-4 border border-green-100">
                                     <p className="text-sm text-green-800 flex items-center gap-2">
                                         <Brain className="h-4 w-4" />
@@ -1426,7 +1422,7 @@ export default function AIAutomationsPageClient({ userEmail }: AIAutomationsPage
         // Caso especial: Detector de eventos automático
         if (automation.type === 'auto_detect') {
             // Para el detector automático solo mostramos información
-            showToast('🔍 El Detector de Eventos Automático está configurado para ejecutarse cada hora. Usa los botones Activar/Desactivar para controlarlo.', 'info');
+            showToast('🔍 El Detector de Eventos Automático está configurado para ejecutarse cada hora. Usa los botones Activar/Desactivar para controlarlo.');
             return;
         }
 
@@ -1491,6 +1487,15 @@ export default function AIAutomationsPageClient({ userEmail }: AIAutomationsPage
                     });
 
                     const proposalResult = await proposalResponse.json();
+                    
+                    console.log('🔍 PROPOSAL ANALYSIS RESULT:', {
+                        ok: proposalResponse.ok,
+                        status: proposalResponse.status,
+                        hasResult: !!proposalResult,
+                        resultKeys: proposalResult ? Object.keys(proposalResult) : [],
+                        hasAnalysis: !!proposalResult.analysis,
+                        error: proposalResult.error
+                    });
 
                     if (!proposalResponse.ok) {
                         throw new Error(proposalResult.error || 'Error analizando propuesta');
@@ -1509,15 +1514,9 @@ export default function AIAutomationsPageClient({ userEmail }: AIAutomationsPage
                         'success'
                     );
 
-                    // Mostrar botón para ver detalles del resultado
-                    setTimeout(() => {
-                        showToast(
-                            '📋 Análisis guardado. Haz clic en "Ver Resultados" en la tarjeta de la automatización para ver las recomendaciones completas.',
-                            'info'
-                        );
-                    }, 3000);
+                    // Eliminado setTimeout con popup adicional - información ya incluida en popup principal
 
-                    fetchRecentInsights(); // Actualizar insights
+                    updateInsightsDelayed(); // Actualizar insights con retraso
                     setExecuting(null);
                     return; // Salir aquí para evitar el flujo normal
 
@@ -1575,15 +1574,9 @@ export default function AIAutomationsPageClient({ userEmail }: AIAutomationsPage
                         'success'
                     );
 
-                    // Mostrar botón para ver detalles del resultado
-                    setTimeout(() => {
-                        showToast(
-                            '� Análisis guardado. Haz clic en "Ver Resultados" en la tarjeta de la automatización para ver las recomendaciones completas.',
-                            'info'
-                        );
-                    }, 3000);
+                    // Eliminado setTimeout con popup adicional - información ya incluida en popup principal
 
-                    fetchRecentInsights(); // Actualizar insights
+                    updateInsightsDelayed(); // Actualizar insights con retraso
                     setExecuting(null);
                     return; // Salir aquí para evitar el flujo normal
 
@@ -1617,21 +1610,15 @@ export default function AIAutomationsPageClient({ userEmail }: AIAutomationsPage
 
                     const riskLevel = riskResult.analysis.overall_risk_score;
                     const riskColor = riskLevel >= 7 ? '🔴' : riskLevel >= 5 ? '🟡' : '🟢';
-                    
+
                     showToast(
                         `⚠️ Análisis de riesgos completado para "${riskResult.project.name}"!\n${riskColor} Nivel de riesgo: ${riskLevel}/10\n🛡️ ${riskResult.analysis.identified_risks.length} riesgos identificados`,
                         'success'
                     );
 
-                    // Mostrar botón para ver detalles del resultado
-                    setTimeout(() => {
-                        showToast(
-                            '📋 Análisis guardado. Haz clic en "Ver Resultados" en la tarjeta de la automatización para ver el plan de mitigación completo.',
-                            'info'
-                        );
-                    }, 3000);
+                    // Eliminado setTimeout con popup adicional - información ya incluida en popup principal
 
-                    fetchRecentInsights(); // Actualizar insights
+                    updateInsightsDelayed(); // Actualizar insights con retraso
                     setExecuting(null);
                     return; // Salir aquí para evitar el flujo normal
                     break;
@@ -1668,21 +1655,15 @@ export default function AIAutomationsPageClient({ userEmail }: AIAutomationsPage
                     const optimizedTotal = pricingResult.analysis.financial_impact?.optimized_total || currentTotal;
                     const improvement = pricingResult.analysis.financial_impact?.percentage_improvement || 0;
                     const improvementIcon = improvement > 0 ? '📈' : improvement < 0 ? '📉' : '📊';
-                    
+
                     showToast(
                         `💰 Optimización de precios completada para "${pricingResult.budget.title}"!\n${improvementIcon} Mejora potencial: ${improvement.toFixed(1)}%\n💵 Total optimizado: €${optimizedTotal.toLocaleString()}\n🎯 ${pricingResult.analysis.optimization_recommendations?.length || 0} recomendaciones`,
                         'success'
                     );
 
-                    // Mostrar botón para ver detalles del resultado
-                    setTimeout(() => {
-                        showToast(
-                            '📋 Análisis guardado. Haz clic en "Ver Resultados" para ver las estrategias de pricing y recomendaciones completas.',
-                            'info'
-                        );
-                    }, 3000);
+                    // Eliminado setTimeout con popup adicional - información ya incluida en popup principal
 
-                    fetchRecentInsights(); // Actualizar insights
+                    updateInsightsDelayed(); // Actualizar insights con retraso
                     setExecuting(null);
                     return; // Salir aquí para evitar el flujo normal
                     break;
@@ -1739,14 +1720,19 @@ export default function AIAutomationsPageClient({ userEmail }: AIAutomationsPage
                             ...prev,
                             [currentAutomation.id]: performanceResult
                         }));
+                        
+                        // Actualizar contador de ejecuciones
+                        setAIAutomations(prev => prev.map(a =>
+                            a.id === currentAutomation.id
+                                ? { ...a, executionCount: a.executionCount + 1 }
+                                : a
+                        ));
+                        
+                        // Mostrar resultado unificado
+                        showExecutionResult(performanceResult, currentAutomation);
                     }
-
-                    showToast(
-                        `📈 ¡Análisis completado! Score de productividad: ${performanceResult.analysis.productivity_analysis.overall_score}/10`,
-                        'success'
-                    );
-
-                    fetchRecentInsights(); // Actualizar insights
+                    
+                    updateInsightsDelayed(); // Actualizar insights con retraso
                     setExecuting(null);
                     return; // Salir aquí para evitar el flujo normal
 
@@ -1829,7 +1815,7 @@ export default function AIAutomationsPageClient({ userEmail }: AIAutomationsPage
                         'success'
                     );
 
-                    fetchRecentInsights(); // Actualizar insights
+                    updateInsightsDelayed(); // Actualizar insights con retraso
                     setExecuting(null);
                     return; // Salir aquí para evitar el flujo normal
 
@@ -1867,7 +1853,7 @@ export default function AIAutomationsPageClient({ userEmail }: AIAutomationsPage
                         'success'
                     );
 
-                    fetchRecentInsights(); // Actualizar insights
+                    updateInsightsDelayed(); // Actualizar insights con retraso
                     setExecuting(null);
                     return; // Salir aquí para evitar el flujo normal
 
@@ -1929,33 +1915,43 @@ export default function AIAutomationsPageClient({ userEmail }: AIAutomationsPage
 
     // Función para mostrar resultado de manera profesional
     const showExecutionResult = (result: any, automation: AIAutomation) => {
+        console.log('🎯 RESULTADO RECIBIDO:', {
+            automationType: automation.type,
+            automationName: automation.name,
+            resultStructure: Object.keys(result),
+            hasAnalysis: !!result.analysis,
+            hasData: !!result.data,
+            resultPreview: JSON.stringify(result).substring(0, 200) + '...'
+        });
+
         let resultMessage = `✅ ${automation.name} ejecutada correctamente!\n\n`;
 
         // Manejar resultados específicos de performance analysis
         if (automation.type === 'performance_analysis' && result.analysis) {
             const analysis = result.analysis;
             const metrics = result.metrics;
-            
+
             resultMessage += `📊 Score de Productividad: ${analysis.productivity_analysis?.overall_score || 'N/A'}/10\n`;
             resultMessage += `⏱️ Horas trabajadas: ${metrics?.totalWorkHours || 0}h\n`;
             resultMessage += `💰 % Facturable: ${metrics?.billablePercentage || 0}%\n`;
             resultMessage += `💵 €/hora: ${metrics?.revenuePerHour || 0}\n`;
-            
+
             if (analysis.bottlenecks_identified?.length > 0) {
                 resultMessage += `🚫 Bottlenecks: ${analysis.bottlenecks_identified.length}\n`;
             }
-            
+
             if (analysis.opportunities?.length > 0) {
                 resultMessage += `🚀 Oportunidades: ${analysis.opportunities.length}\n`;
             }
-            
+
             if (analysis.actionable_recommendations?.length > 0) {
                 resultMessage += `💡 Recomendaciones: ${analysis.actionable_recommendations.length}\n`;
             }
 
             resultMessage += `\n📈 Datos analizados: ${result.summary?.data_points?.calendar_events || 0} eventos, ${result.summary?.data_points?.tracking_sessions || 0} sesiones`;
-            
-            showToast(resultMessage, 'success');
+            resultMessage += `\n\n✅ Insight guardado en tu dashboard`;
+
+            showToast(resultMessage);
             return;
         }
 
@@ -1998,35 +1994,86 @@ export default function AIAutomationsPageClient({ userEmail }: AIAutomationsPage
             resultMessage += `\n🔥 Se creó una tarea automática de alta prioridad`;
         }
 
-        resultMessage += `\n📈 Insight guardado en tu dashboard`;
+        resultMessage += `\n\n✅ Insight guardado en tu dashboard`;
 
-        showToast(resultMessage, 'success');
+        showToast(resultMessage);
+        
+        console.log('💾 AUTOMATIZACIÓN TERMINADA - programando actualizaciones...');
+        console.log('🔧 Tipo:', automation.type);
+        console.log('📝 Nombre:', automation.name);
+        console.log('📊 Resultado tiene analysis:', !!result.analysis);
+        
+        // Actualización adicional después del toast para asegurar que aparezca el nuevo insight
+        setTimeout(() => {
+            console.log('🔄 Actualización adicional post-toast...');
+            fetchRecentInsights();
+        }, 5000); // 5 segundos después del toast
     };
 
     // Función para cargar insights recientes del usuario
     const fetchRecentInsights = async () => {
         try {
+            console.log('🔄 Actualizando insights recientes...');
             const supabase = createSupabaseClient();
             const user = (await supabase.auth.getUser()).data.user;
 
-            if (!user) return;
+            if (!user) {
+                console.log('❌ No hay usuario autenticado');
+                return;
+            }
+
+            console.log('👤 Usuario autenticado:', user.email);
 
             const { data: insights, error } = await supabase
                 .from('ai_insights')
                 .select('*')
                 .eq('user_id', user.id)
                 .order('created_at', { ascending: false })
-                .limit(10);
+                .limit(20); // Aumentar a 20 para ver más resultados
 
             if (error) {
-                console.error('Error fetching insights:', error);
+                console.error('❌ Error fetching insights:', error);
                 return;
             }
 
+            console.log(`✅ Se encontraron ${insights?.length || 0} insights:`, insights?.slice(0, 3).map(i => ({ 
+                id: i.id, 
+                type: i.insight_type, 
+                created: i.created_at,
+                title: i.title,
+                description: i.description?.substring(0, 50) + '...',
+                timeAgo: getTimeAgo(i.created_at)
+            })));
+
+            console.log('📊 Primeros 3 insights completos:', insights?.slice(0, 3));
+            console.log('🕐 Insight más reciente:', insights?.[0] ? {
+                created: insights[0].created_at,
+                timeAgo: getTimeAgo(insights[0].created_at),
+                type: insights[0].insight_type,
+                title: insights[0].title
+            } : 'No hay insights');
+
             setRecentInsights(insights || []);
+            
+            console.log('🔄 Estado actualizado, recentInsights.length será:', insights?.length || 0);
         } catch (error) {
-            console.error('Error in fetchRecentInsights:', error);
+            console.error('❌ Error in fetchRecentInsights:', error);
         }
+    };
+
+    // Función auxiliar para actualizar insights con retraso
+    const updateInsightsDelayed = () => {
+        console.log('⏰ Programando actualización de insights...');
+        setTimeout(async () => {
+            console.log('⏰ EJECUTANDO actualización después de ejecución...');
+            console.log('📊 Estado actual antes de actualizar:', recentInsights.length);
+            
+            // Esperar un momento adicional
+            await new Promise(resolve => setTimeout(resolve, 500));
+            
+            await fetchRecentInsights();
+            console.log('📊 Estado después de actualizar:', recentInsights.length);
+        }, 3000); // Aumentar a 3 segundos para dar más tiempo al servidor
     };
 
     // Función para obtener el icono según el tipo de insight
@@ -2043,6 +2090,40 @@ export default function AIAutomationsPageClient({ userEmail }: AIAutomationsPage
             default: return '🤖';
         }
     };
+
+    // Función para formatear tiempo relativo
+    // Función para combinar resultados de sesión actual con historial de BD
+    const getCombinedResults = () => {
+        const currentSessionResults = Object.entries(executionResults).map(([automationId, result]) => {
+            const automation = aiAutomations.find(a => a.id === automationId);
+            return {
+                id: `session_${automationId}_${Date.now()}`,
+                type: 'session',
+                automation,
+                result,
+                created_at: new Date().toISOString(),
+                isRecent: true, // Marcar como reciente para destacar
+                title: automation?.name || 'Automatización',
+                description: `Ejecutada en esta sesión`,
+                insight_type: automation?.type || 'unknown',
+                data_points: result.analysis || {},
+                recommendations: result.analysis?.recommendations || [],
+                confidence_score: result.analysis?.confidence || 0.9
+            };
+        });
+
+        const databaseResults = recentInsights.map(insight => ({
+            ...insight,
+            type: 'database',
+            isRecent: false
+        }));
+
+        // Combinar y ordenar por fecha más reciente primero
+        const combined = [...currentSessionResults, ...databaseResults];
+        return combined.sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime());
+    };
+
+    const combinedResults = getCombinedResults();
 
     // Función para formatear tiempo relativo
     const getTimeAgo = (date: string) => {
@@ -2448,10 +2529,9 @@ export default function AIAutomationsPageClient({ userEmail }: AIAutomationsPage
             <Sidebar userEmail={userEmail} onLogout={handleLogout} />
 
             <div className="flex-1 flex flex-col overflow-hidden ml-56 min-h-screen">
-                <TrialBanner userEmail={userEmail} />
 
                 <main className="flex-1 overflow-x-hidden overflow-y-auto bg-gray-50 dark:bg-gray-900 min-h-screen">
-                    <div className="w-full px-0 sm:px-0 py-8">
+                    <div className="w-full px-6 sm:px-8 lg:px-12 py-8">
 
                         {/* Header */}
                         <div className="mb-8">
@@ -2723,7 +2803,7 @@ export default function AIAutomationsPageClient({ userEmail }: AIAutomationsPage
                                                             className="opacity-0 group-hover:opacity-100 transition-opacity"
                                                             disabled={executing === automation.id || (!canUseFeatures && automation.isPremium)}
                                                         >
-                                                            {executing === automation.id ? 'Ejecutando...' : 'Ejecutar IA Real'}
+                                                            {executing === automation.id ? 'Ejecutando...' : 'Ejecutar '}IA
                                                         </Button>
                                                     )}
                                                 </div>
@@ -2734,124 +2814,13 @@ export default function AIAutomationsPageClient({ userEmail }: AIAutomationsPage
                             </div>
                         )}
 
-                        {/* Resultados de Análisis Recientes */}
-                        {Object.keys(executionResults).length > 0 && (
-                            <div className="mt-12">
-                                <div className="flex items-center justify-between mb-6">
-                                    <h2 className="text-2xl font-bold text-gray-900 dark:text-white flex items-center">
-                                        <Brain className="h-6 w-6 mr-3 text-indigo-600" />
-                                        Análisis Ejecutados Recientemente
-                                    </h2>
-                                </div>
-
-                                <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-                                    {Object.entries(executionResults).map(([automationId, result]) => {
-                                        const automation = aiAutomations.find(a => a.id === automationId);
-                                        if (!automation) return null;
-
-                                        return (
-                                            <div
-                                                key={automationId}
-                                                className="bg-white dark:bg-gray-800 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700 p-6 hover:shadow-md transition-shadow cursor-pointer"
-                                                onClick={() => {
-                                                    setCurrentResults(result);
-                                                    setShowResultsModal(true);
-                                                }}
-                                            >
-                                                <div className="flex items-start justify-between mb-4">
-                                                    <div className="flex items-start gap-3">
-                                                        <div className="p-2 bg-indigo-100 rounded-lg">
-                                                            {React.createElement(automation.icon, {
-                                                                className: "h-5 w-5 text-indigo-600"
-                                                            })}
-                                                        </div>
-                                                        <div className="flex-1">
-                                                            <h3 className="font-semibold text-gray-900 dark:text-white mb-1">
-                                                                {automation.name}
-                                                            </h3>
-                                                            {result.client && (
-                                                                <p className="text-sm text-gray-600 dark:text-gray-400">
-                                                                    Cliente: <strong>{result.client}</strong>
-                                                                </p>
-                                                            )}
-                                                        </div>
-                                                    </div>
-                                                    <div className="text-right">
-                                                        <div className="bg-green-100 text-green-800 px-2 py-1 rounded-full text-xs font-medium mb-2">
-                                                            ✅ Completado
-                                                        </div>
-                                                        <div className="text-xs text-gray-500">
-                                                            Hace unos momentos
-                                                        </div>
-                                                    </div>
-                                                </div>
-
-                                                {/* Vista previa de resultados */}
-                                                {result.analysis && (
-                                                    <div className="space-y-3">
-                                                        {result.analysis.overallTone && (
-                                                            <div className="flex items-center gap-2">
-                                                                <span className="text-sm text-gray-600">🎭 Tono:</span>
-                                                                <span className={`px-2 py-1 rounded-full text-xs font-medium ${result.analysis.overallTone === 'positive' ? 'bg-green-100 text-green-800' :
-                                                                        result.analysis.overallTone === 'negative' ? 'bg-red-100 text-red-800' :
-                                                                            'bg-yellow-100 text-yellow-800'
-                                                                    }`}>
-                                                                    {result.analysis.overallTone.toUpperCase()}
-                                                                </span>
-                                                            </div>
-                                                        )}
-
-                                                        {result.analysis.satisfactionLevel && (
-                                                            <div className="flex items-center gap-2">
-                                                                <span className="text-sm text-gray-600">😊 Satisfacción:</span>
-                                                                <span className={`px-2 py-1 rounded-full text-xs font-medium ${result.analysis.satisfactionLevel === 'high' ? 'bg-green-100 text-green-800' :
-                                                                        result.analysis.satisfactionLevel === 'low' ? 'bg-red-100 text-red-800' :
-                                                                            'bg-yellow-100 text-yellow-800'
-                                                                    }`}>
-                                                                    {result.analysis.satisfactionLevel.toUpperCase()}
-                                                                </span>
-                                                            </div>
-                                                        )}
-
-                                                        {result.messagesCount && (
-                                                            <div className="flex items-center gap-2">
-                                                                <span className="text-sm text-gray-600">📨 Mensajes analizados:</span>
-                                                                <span className="text-sm font-medium text-gray-900 dark:text-white">
-                                                                    {result.messagesCount}
-                                                                </span>
-                                                            </div>
-                                                        )}
-
-                                                        <div className="mt-4 pt-3 border-t border-gray-200">
-                                                            <Button
-                                                                variant="outline"
-                                                                size="sm"
-                                                                className="w-full text-indigo-600 border-indigo-600 hover:bg-indigo-50"
-                                                                onClick={(e) => {
-                                                                    e.stopPropagation();
-                                                                    setCurrentResults(result);
-                                                                    setShowResultsModal(true);
-                                                                }}
-                                                            >
-                                                                � Ver Resultados Completos
-                                                            </Button>
-                                                        </div>
-                                                    </div>
-                                                )}
-                                            </div>
-                                        );
-                                    })}
-                                </div>
-                            </div>
-                        )}
-
-                        {/* Resultados Recientes */}
-                        {recentInsights.length > 0 && (
+                        {/* Todos los Resultados - Unificados y Persistentes */}
+                        {combinedResults.length > 0 && (
                             <div className="mt-12">
                                 <div className="flex items-center justify-between mb-6">
                                     <h2 className="text-2xl font-bold text-gray-900 dark:text-white flex items-center">
                                         <BarChart className="h-6 w-6 mr-3 text-green-600" />
-                                        Resultados Recientes
+                                        🚀 Todos los Resultados ({combinedResults.length})
                                     </h2>
                                     <Button
                                         variant="outline"
@@ -2863,56 +2832,99 @@ export default function AIAutomationsPageClient({ userEmail }: AIAutomationsPage
                                 </div>
 
                                 <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
-                                    {(showingResults ? recentInsights : recentInsights.slice(0, 4)).map((insight, index) => (
+                                    {(showingResults ? combinedResults : combinedResults.slice(0, 6)).map((item, index) => (
                                         <div
-                                            key={insight.id}
-                                            className="bg-white dark:bg-gray-800 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700 p-6 hover:shadow-md transition-shadow"
+                                            key={item.id}
+                                            className={`rounded-lg shadow-sm border p-6 hover:shadow-md transition-all duration-200 cursor-pointer group ${
+                                                item.isRecent 
+                                                    ? 'bg-gradient-to-br from-green-50 to-emerald-50 border-green-200 border-2' 
+                                                    : 'bg-white dark:bg-gray-800 border-gray-200 dark:border-gray-700'
+                                            }`}
+                                            onClick={() => {
+                                                if (item.type === 'session') {
+                                                    setCurrentResults(item.result);
+                                                } else {
+                                                    // Convertir insight a formato de resultado para mostrar en modal
+                                                    const convertedResult = {
+                                                        client: item.entity_id || 'Cliente no especificado',
+                                                        analysis: {
+                                                            overallTone: item.data_points?.sentiment || 'neutral',
+                                                            satisfactionLevel: item.data_points?.satisfaction || 'medium',
+                                                            keyInsights: item.recommendations || [],
+                                                            summary: item.description,
+                                                            originalText: item.data_points?.original_text || '',
+                                                            recommendations: item.recommendations || [],
+                                                            confidenceScore: item.confidence_score || 0.8
+                                                        },
+                                                        messagesCount: item.data_points?.messages_analyzed || 1,
+                                                        timestamp: item.created_at
+                                                    };
+                                                    setCurrentResults(convertedResult);
+                                                }
+                                                setShowResultsModal(true);
+                                            }}
                                         >
+                                            {/* Indicador de resultado reciente */}
+                                            {item.isRecent && (
+                                                <div className="absolute top-3 right-3 bg-green-500 text-white px-2 py-1 rounded-full text-xs font-medium animate-pulse">
+                                                    ✨ Recién ejecutada
+                                                </div>
+                                            )}
+
                                             <div className="flex items-start justify-between mb-4">
                                                 <div className="flex items-start gap-3">
                                                     <div className="text-2xl">
-                                                        {getInsightIcon(insight.insight_type)}
+                                                        {item.type === 'session' && item.automation 
+                                                            ? React.createElement(item.automation.icon, { className: "h-6 w-6 text-green-600" })
+                                                            : getInsightIcon(item.insight_type)
+                                                        }
                                                     </div>
                                                     <div className="flex-1">
                                                         <h3 className="font-semibold text-gray-900 dark:text-white mb-1">
-                                                            {insight.title}
+                                                            {item.title}
                                                         </h3>
                                                         <p className="text-sm text-gray-600 dark:text-gray-400">
-                                                            {insight.description}
+                                                            {item.description}
                                                         </p>
+                                                        {item.type === 'session' && item.result?.client && (
+                                                            <p className="text-sm text-green-700 font-medium mt-1">
+                                                                Cliente: {item.result.client}
+                                                            </p>
+                                                        )}
                                                     </div>
                                                 </div>
                                                 <div className="text-right">
                                                     <div className="text-xs text-gray-500 dark:text-gray-400">
-                                                        {getTimeAgo(insight.created_at)}
+                                                        {getTimeAgo(item.created_at)}
                                                     </div>
-                                                    {insight.confidence_score && (
+                                                    {item.confidence_score && (
                                                         <div className="text-xs font-medium text-green-600 mt-1">
-                                                            {Math.round(insight.confidence_score * 100)}% confianza
+                                                            {Math.round(item.confidence_score * 100)}% confianza
                                                         </div>
                                                     )}
                                                 </div>
                                             </div>
 
                                             {/* Datos específicos según el tipo */}
-                                            {insight.data_points && (
+                                            {item.data_points && (
                                                 <div className="mt-4 p-3 bg-gray-50 dark:bg-gray-700 rounded-lg">
-                                                    {insight.insight_type === 'sentiment_analysis' && insight.data_points.sentiment && (
+                                                    {item.data_points.sentiment && (
                                                         <div className="flex items-center gap-2">
                                                             <span className="text-sm font-medium">Sentimiento:</span>
-                                                            <span className={`px-2 py-1 rounded-full text-xs font-medium ${insight.data_points.sentiment === 'positive' ? 'bg-green-100 text-green-800' :
-                                                                insight.data_points.sentiment === 'negative' ? 'bg-red-100 text-red-800' :
+                                                            <span className={`px-2 py-1 rounded-full text-xs font-medium ${
+                                                                item.data_points.sentiment === 'positive' ? 'bg-green-100 text-green-800' :
+                                                                item.data_points.sentiment === 'negative' ? 'bg-red-100 text-red-800' :
                                                                     'bg-yellow-100 text-yellow-800'
                                                                 }`}>
-                                                                {insight.data_points.sentiment.toUpperCase()}
+                                                                {item.data_points.sentiment.toUpperCase()}
                                                             </span>
                                                         </div>
                                                     )}
 
-                                                    {insight.data_points.original_text && (
+                                                    {item.data_points.original_text && (
                                                         <div className="mt-2">
                                                             <span className="text-xs text-gray-600 dark:text-gray-400">
-                                                                "{insight.data_points.original_text.substring(0, 100)}..."
+                                                                "{item.data_points.original_text.substring(0, 100)}..."
                                                             </span>
                                                         </div>
                                                     )}
@@ -2920,69 +2932,82 @@ export default function AIAutomationsPageClient({ userEmail }: AIAutomationsPage
                                             )}
 
                                             {/* Recomendaciones */}
-                                            {insight.recommendations && insight.recommendations.length > 0 && (
+                                            {item.recommendations && item.recommendations.length > 0 && (
                                                 <div className="mt-4">
                                                     <div className="text-xs font-medium text-gray-700 dark:text-gray-300 mb-2">
                                                         💡 Recomendaciones:
                                                     </div>
                                                     <div className="text-xs text-gray-600 dark:text-gray-400">
-                                                        {insight.recommendations.slice(0, 2).join(' • ')}
+                                                        {item.recommendations.slice(0, 2).join(' • ')}
                                                     </div>
                                                 </div>
                                             )}
+
+                                            {/* Botón Ver Detalles */}
+                                            <div className="mt-4 pt-3 border-t border-gray-200 dark:border-gray-600">
+                                                <Button
+                                                    variant="outline"
+                                                    size="sm"
+                                                    className={`w-full group-hover:shadow-md transition-all duration-200 ${
+                                                        item.isRecent 
+                                                            ? 'text-green-600 border-green-600 hover:bg-green-50' 
+                                                            : 'text-blue-600 border-blue-600 hover:bg-blue-50'
+                                                    }`}
+                                                    onClick={(e) => {
+                                                        e.stopPropagation();
+                                                        if (item.type === 'session') {
+                                                            setCurrentResults(item.result);
+                                                        } else {
+                                                            const convertedResult = {
+                                                                client: item.entity_id || 'Cliente no especificado',
+                                                                analysis: {
+                                                                    overallTone: item.data_points?.sentiment || 'neutral',
+                                                                    satisfactionLevel: item.data_points?.satisfaction || 'medium',
+                                                                    keyInsights: item.recommendations || [],
+                                                                    summary: item.description,
+                                                                    originalText: item.data_points?.original_text || '',
+                                                                    recommendations: item.recommendations || [],
+                                                                    confidenceScore: item.confidence_score || 0.8
+                                                                },
+                                                                messagesCount: item.data_points?.messages_analyzed || 1,
+                                                                timestamp: item.created_at
+                                                            };
+                                                            setCurrentResults(convertedResult);
+                                                        }
+                                                        setShowResultsModal(true);
+                                                    }}
+                                                >
+                                                    🔍 Ver Análisis Completo
+                                                </Button>
+                                            </div>
                                         </div>
                                     ))}
                                 </div>
 
-                                {recentInsights.length > 4 && !showingResults && (
+                                {combinedResults.length > 6 && !showingResults && (
                                     <div className="text-center mt-4">
                                         <Button
                                             variant="outline"
                                             onClick={() => setShowingResults(true)}
                                             className="text-blue-600 border-blue-600 hover:bg-blue-50"
                                         >
-                                            Ver {recentInsights.length - 4} resultados más
+                                            Ver {combinedResults.length - 6} resultados más
                                         </Button>
                                     </div>
                                 )}
                             </div>
                         )}
 
-                        {/* CTA para insights generados */}
-                        <div className="mt-12 bg-gradient-to-r from-blue-600 to-indigo-600 rounded-lg p-8 text-white text-center">
-                            <Brain className="h-12 w-12 mx-auto mb-4" />
-                            <h3 className="text-2xl font-bold mb-2">🤖 Automatizaciones IA Reales con OpenAI</h3>
-                            <p className="text-blue-100 mb-6">
-                                Estas automatizaciones están conectadas con OpenAI GPT-4o-mini y funcionan con tus datos reales
-                            </p>
-                            <div className="bg-white/20 rounded-lg p-4 mb-6">
-                                <p className="text-sm text-blue-100">
-                                    🧠 Análisis de sentimiento real de feedback de clientes<br />
-                                    📧 Optimización automática de comunicaciones<br />
-                                    📊 Análisis inteligente de propuestas y precios<br />
-                                    ⚠️ Detección predictiva de riesgos en proyectos<br />
-                                    � Análisis de rendimiento con insights personalizados<br />
-                                    � Generación de contenido profesional automático
-                                </p>
+                        {/* Mensaje cuando no hay resultados */}
+                        {combinedResults.length === 0 && (
+                            <div className="mt-12 text-center py-8">
+                                <div className="text-gray-500 dark:text-gray-400">
+                                    <BarChart className="h-12 w-12 mx-auto mb-4 opacity-50" />
+                                    <h3 className="text-lg font-medium mb-2">No hay resultados</h3>
+                                    <p className="text-sm">Ejecuta una automatización para ver los resultados aquí</p>
+                                </div>
                             </div>
-                            <div className="flex flex-col sm:flex-row gap-4 justify-center">
-                                <Button
-                                    variant="secondary"
-                                    className="bg-white text-blue-600 hover:bg-gray-100"
-                                    onClick={() => router.push('/dashboard/automations')}
-                                >
-                                    Ver Automatizaciones Tradicionales
-                                </Button>
-                                <Button
-                                    variant="secondary"
-                                    className="bg-white/20 text-white hover:bg-white/30 border-white/30"
-                                    onClick={() => window.open('https://openai.com/pricing', '_blank')}
-                                >
-                                    <Search className="h-4 w-4 mr-2" />
-                                    Ver Precios OpenAI
-                                </Button>
-                            </div>
-                        </div>
+                        )}
                     </div>
                 </main>
             </div>
@@ -3084,7 +3109,7 @@ export default function AIAutomationsPageClient({ userEmail }: AIAutomationsPage
                                                 </p>
                                             </div>
                                         </div>
-                                        
+
                                         <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mt-4">
                                             <div className="text-center">
                                                 <div className="text-2xl font-bold text-blue-600">
@@ -3129,11 +3154,10 @@ export default function AIAutomationsPageClient({ userEmail }: AIAutomationsPage
                                                         <div key={index} className="bg-red-50 rounded-lg p-3">
                                                             <div className="flex items-center gap-2 mb-1">
                                                                 <div className="text-sm font-medium text-red-900">{bottleneck.area}</div>
-                                                                <span className={`text-xs px-2 py-1 rounded-full ${
-                                                                    bottleneck.impact === 'alto' ? 'bg-red-200 text-red-800' :
-                                                                    bottleneck.impact === 'medio' ? 'bg-yellow-200 text-yellow-800' :
-                                                                    'bg-green-200 text-green-800'
-                                                                }`}>
+                                                                <span className={`text-xs px-2 py-1 rounded-full ${bottleneck.impact === 'alto' ? 'bg-red-200 text-red-800' :
+                                                                        bottleneck.impact === 'medio' ? 'bg-yellow-200 text-yellow-800' :
+                                                                            'bg-green-200 text-green-800'
+                                                                    }`}>
                                                                     {bottleneck.impact}
                                                                 </span>
                                                             </div>
@@ -3159,11 +3183,10 @@ export default function AIAutomationsPageClient({ userEmail }: AIAutomationsPage
                                                         <div key={index} className="bg-green-50 rounded-lg p-3">
                                                             <div className="flex items-center gap-2 mb-1">
                                                                 <div className="text-sm font-medium text-green-900">{opportunity.opportunity}</div>
-                                                                <span className={`text-xs px-2 py-1 rounded-full ${
-                                                                    opportunity.priority === 'alta' ? 'bg-red-200 text-red-800' :
-                                                                    opportunity.priority === 'media' ? 'bg-yellow-200 text-yellow-800' :
-                                                                    'bg-green-200 text-green-800'
-                                                                }`}>
+                                                                <span className={`text-xs px-2 py-1 rounded-full ${opportunity.priority === 'alta' ? 'bg-red-200 text-red-800' :
+                                                                        opportunity.priority === 'media' ? 'bg-yellow-200 text-yellow-800' :
+                                                                            'bg-green-200 text-green-800'
+                                                                    }`}>
                                                                     {opportunity.priority}
                                                                 </span>
                                                             </div>
@@ -3194,11 +3217,10 @@ export default function AIAutomationsPageClient({ userEmail }: AIAutomationsPage
                                                                 <p className="text-sm text-gray-600 mb-2">{rec.expected_outcome}</p>
                                                                 <div className="flex items-center gap-4 text-xs text-gray-500">
                                                                     <span>⏱️ {rec.timeframe}</span>
-                                                                    <span className={`px-2 py-1 rounded-full ${
-                                                                        rec.difficulty === 'fácil' ? 'bg-green-100 text-green-600' :
-                                                                        rec.difficulty === 'medio' ? 'bg-yellow-100 text-yellow-600' :
-                                                                        'bg-red-100 text-red-600'
-                                                                    }`}>
+                                                                    <span className={`px-2 py-1 rounded-full ${rec.difficulty === 'fácil' ? 'bg-green-100 text-green-600' :
+                                                                            rec.difficulty === 'medio' ? 'bg-yellow-100 text-yellow-600' :
+                                                                                'bg-red-100 text-red-600'
+                                                                        }`}>
                                                                         {rec.difficulty}
                                                                     </span>
                                                                 </div>
@@ -3311,8 +3333,8 @@ export default function AIAutomationsPageClient({ userEmail }: AIAutomationsPage
                                                 <h5 className="font-semibold text-gray-900">Análisis de Precio</h5>
                                             </div>
                                             <div className={`inline-flex items-center px-4 py-2 rounded-full text-sm font-medium ${currentResults.analysis.competitiveness === 'high' ? 'bg-green-100 text-green-800' :
-                                                    currentResults.analysis.competitiveness === 'low' ? 'bg-red-100 text-red-800' :
-                                                        'bg-yellow-100 text-yellow-800'
+                                                currentResults.analysis.competitiveness === 'low' ? 'bg-red-100 text-red-800' :
+                                                    'bg-yellow-100 text-yellow-800'
                                                 }`}>
                                                 {currentResults.analysis.competitiveness === 'high' ? '🏆 Alta Competitividad' :
                                                     currentResults.analysis.competitiveness === 'low' ? '⚠️ Baja Competitividad' :
@@ -3500,7 +3522,7 @@ export default function AIAutomationsPageClient({ userEmail }: AIAutomationsPage
                                                 {currentResults.analysis.pricing_assessment?.current_pricing_score || 7}/10
                                             </div>
                                             <div className="w-full bg-gray-200 rounded-full h-3 mb-4">
-                                                <div 
+                                                <div
                                                     className="bg-gradient-to-r from-green-400 to-green-600 h-3 rounded-full transition-all duration-1000"
                                                     style={{ width: `${((currentResults.analysis.pricing_assessment?.current_pricing_score || 7) / 10) * 100}%` }}
                                                 ></div>
@@ -3662,28 +3684,26 @@ export default function AIAutomationsPageClient({ userEmail }: AIAutomationsPage
                                             <h5 className="font-semibold text-gray-900">Nivel de Riesgo General</h5>
                                         </div>
                                         <div className="flex items-center gap-4">
-                                            <div className={`text-3xl font-bold ${
-                                                currentResults.analysis.overall_risk_score >= 7 ? 'text-red-600' :
-                                                currentResults.analysis.overall_risk_score >= 5 ? 'text-yellow-600' :
-                                                'text-green-600'
-                                            }`}>
+                                            <div className={`text-3xl font-bold ${currentResults.analysis.overall_risk_score >= 7 ? 'text-red-600' :
+                                                    currentResults.analysis.overall_risk_score >= 5 ? 'text-yellow-600' :
+                                                        'text-green-600'
+                                                }`}>
                                                 {currentResults.analysis.overall_risk_score}/10
                                             </div>
                                             <div className="flex-1">
                                                 <div className="w-full bg-gray-200 rounded-full h-3">
                                                     <div
-                                                        className={`h-3 rounded-full transition-all duration-500 ${
-                                                            currentResults.analysis.overall_risk_score >= 7 ? 'bg-red-500' :
-                                                            currentResults.analysis.overall_risk_score >= 5 ? 'bg-yellow-500' :
-                                                            'bg-green-500'
-                                                        }`}
+                                                        className={`h-3 rounded-full transition-all duration-500 ${currentResults.analysis.overall_risk_score >= 7 ? 'bg-red-500' :
+                                                                currentResults.analysis.overall_risk_score >= 5 ? 'bg-yellow-500' :
+                                                                    'bg-green-500'
+                                                            }`}
                                                         style={{ width: `${(currentResults.analysis.overall_risk_score / 10) * 100}%` }}
                                                     ></div>
                                                 </div>
                                                 <p className="text-sm text-gray-600 mt-1">
                                                     {currentResults.analysis.overall_risk_score >= 7 ? '🔴 Riesgo Alto' :
-                                                     currentResults.analysis.overall_risk_score >= 5 ? '🟡 Riesgo Moderado' :
-                                                     '🟢 Riesgo Bajo'}
+                                                        currentResults.analysis.overall_risk_score >= 5 ? '🟡 Riesgo Moderado' :
+                                                            '🟢 Riesgo Bajo'}
                                                 </p>
                                             </div>
                                         </div>
@@ -3709,22 +3729,20 @@ export default function AIAutomationsPageClient({ userEmail }: AIAutomationsPage
                                                     const riskDescription = risk.description || risk.details || risk.issue || 'Sin descripción disponible';
                                                     const riskSeverity = risk.severity || risk.level || 'medium';
                                                     const riskProbability = risk.probability || risk.severity_score || 0;
-                                                    
+
                                                     return (
                                                         <div key={index} className="bg-white rounded-lg p-4 border border-red-100 shadow-sm">
                                                             <div className="flex items-start gap-3">
-                                                                <div className={`flex-shrink-0 w-8 h-8 rounded-full flex items-center justify-center mt-1 ${
-                                                                    riskSeverity === 'high' || riskProbability >= 7 ? 'bg-red-100' :
-                                                                    riskSeverity === 'medium' || riskProbability >= 4 ? 'bg-yellow-100' :
-                                                                    'bg-green-100'
-                                                                }`}>
-                                                                    <span className={`font-semibold text-xs ${
-                                                                        riskSeverity === 'high' || riskProbability >= 7 ? 'text-red-600' :
-                                                                        riskSeverity === 'medium' || riskProbability >= 4 ? 'text-yellow-600' :
-                                                                        'text-green-600'
+                                                                <div className={`flex-shrink-0 w-8 h-8 rounded-full flex items-center justify-center mt-1 ${riskSeverity === 'high' || riskProbability >= 7 ? 'bg-red-100' :
+                                                                        riskSeverity === 'medium' || riskProbability >= 4 ? 'bg-yellow-100' :
+                                                                            'bg-green-100'
                                                                     }`}>
-                                                                        {riskSeverity === 'high' || riskProbability >= 7 ? '🔴' : 
-                                                                         riskSeverity === 'medium' || riskProbability >= 4 ? '🟡' : '🟢'}
+                                                                    <span className={`font-semibold text-xs ${riskSeverity === 'high' || riskProbability >= 7 ? 'text-red-600' :
+                                                                            riskSeverity === 'medium' || riskProbability >= 4 ? 'text-yellow-600' :
+                                                                                'text-green-600'
+                                                                        }`}>
+                                                                        {riskSeverity === 'high' || riskProbability >= 7 ? '🔴' :
+                                                                            riskSeverity === 'medium' || riskProbability >= 4 ? '🟡' : '🟢'}
                                                                     </span>
                                                                 </div>
                                                                 <div className="flex-1">
@@ -3745,58 +3763,58 @@ export default function AIAutomationsPageClient({ userEmail }: AIAutomationsPage
                                     )}
 
                                     {/* Planes de Mitigación */}
-                                    {((currentResults.analysis.mitigation_plan && currentResults.analysis.mitigation_plan.length > 0) || 
-                                      (currentResults.analysis.mitigation_plans && currentResults.analysis.mitigation_plans.length > 0)) && (
-                                        <div className="bg-gradient-to-br from-blue-50 to-indigo-50 border border-blue-200 rounded-xl p-6">
-                                            <div className="flex items-center gap-3 mb-6">
-                                                <div className="p-3 bg-blue-100 rounded-full">
-                                                    <Shield className="h-6 w-6 text-blue-600" />
+                                    {((currentResults.analysis.mitigation_plan && currentResults.analysis.mitigation_plan.length > 0) ||
+                                        (currentResults.analysis.mitigation_plans && currentResults.analysis.mitigation_plans.length > 0)) && (
+                                            <div className="bg-gradient-to-br from-blue-50 to-indigo-50 border border-blue-200 rounded-xl p-6">
+                                                <div className="flex items-center gap-3 mb-6">
+                                                    <div className="p-3 bg-blue-100 rounded-full">
+                                                        <Shield className="h-6 w-6 text-blue-600" />
+                                                    </div>
+                                                    <div>
+                                                        <h4 className="font-bold text-blue-900 text-xl">Planes de Mitigación</h4>
+                                                        <p className="text-blue-700 text-sm">Estrategias específicas para reducir riesgos</p>
+                                                    </div>
                                                 </div>
-                                                <div>
-                                                    <h4 className="font-bold text-blue-900 text-xl">Planes de Mitigación</h4>
-                                                    <p className="text-blue-700 text-sm">Estrategias específicas para reducir riesgos</p>
-                                                </div>
-                                            </div>
 
-                                            <div className="space-y-4">
-                                                {(currentResults.analysis.mitigation_plan || currentResults.analysis.mitigation_plans || []).map((plan: any, index: number) => {
-                                                    const planRisk = plan.risk || plan.risk_category || plan.category || `Plan ${index + 1}`;
-                                                    const planActions = plan.actions || plan.steps || plan.tasks || [];
-                                                    const planResponsible = plan.responsible || plan.owner || 'No asignado';
-                                                    const planTimeline = plan.timeline || plan.timeframe || '';
-                                                    
-                                                    return (
-                                                        <div key={index} className="bg-white rounded-lg p-4 border border-blue-100 shadow-sm">
-                                                            <div className="flex items-start gap-3">
-                                                                <div className="flex-shrink-0 w-8 h-8 bg-blue-100 rounded-full flex items-center justify-center mt-1">
-                                                                    <span className="text-blue-600 font-semibold text-sm">{index + 1}</span>
-                                                                </div>
-                                                                <div className="flex-1">
-                                                                    <h6 className="font-medium text-gray-900 mb-2">{planRisk}</h6>
-                                                                    <div className="space-y-2">
-                                                                        {Array.isArray(planActions) && planActions.map((action: string, actionIndex: number) => (
-                                                                            <div key={actionIndex} className="flex items-start gap-2">
-                                                                                <span className="text-blue-500 text-xs mt-1">▶</span>
-                                                                                <p className="text-gray-700 text-sm leading-relaxed">{action}</p>
-                                                                            </div>
-                                                                        ))}
+                                                <div className="space-y-4">
+                                                    {(currentResults.analysis.mitigation_plan || currentResults.analysis.mitigation_plans || []).map((plan: any, index: number) => {
+                                                        const planRisk = plan.risk || plan.risk_category || plan.category || `Plan ${index + 1}`;
+                                                        const planActions = plan.actions || plan.steps || plan.tasks || [];
+                                                        const planResponsible = plan.responsible || plan.owner || 'No asignado';
+                                                        const planTimeline = plan.timeline || plan.timeframe || '';
+
+                                                        return (
+                                                            <div key={index} className="bg-white rounded-lg p-4 border border-blue-100 shadow-sm">
+                                                                <div className="flex items-start gap-3">
+                                                                    <div className="flex-shrink-0 w-8 h-8 bg-blue-100 rounded-full flex items-center justify-center mt-1">
+                                                                        <span className="text-blue-600 font-semibold text-sm">{index + 1}</span>
                                                                     </div>
-                                                                    <div className="flex items-center gap-4 mt-3 text-xs">
-                                                                        {planResponsible && (
-                                                                            <p className="text-blue-600 font-medium">👤 {planResponsible}</p>
-                                                                        )}
-                                                                        {planTimeline && (
-                                                                            <p className="text-gray-500">⏱️ {planTimeline}</p>
-                                                                        )}
+                                                                    <div className="flex-1">
+                                                                        <h6 className="font-medium text-gray-900 mb-2">{planRisk}</h6>
+                                                                        <div className="space-y-2">
+                                                                            {Array.isArray(planActions) && planActions.map((action: string, actionIndex: number) => (
+                                                                                <div key={actionIndex} className="flex items-start gap-2">
+                                                                                    <span className="text-blue-500 text-xs mt-1">▶</span>
+                                                                                    <p className="text-gray-700 text-sm leading-relaxed">{action}</p>
+                                                                                </div>
+                                                                            ))}
+                                                                        </div>
+                                                                        <div className="flex items-center gap-4 mt-3 text-xs">
+                                                                            {planResponsible && (
+                                                                                <p className="text-blue-600 font-medium">👤 {planResponsible}</p>
+                                                                            )}
+                                                                            {planTimeline && (
+                                                                                <p className="text-gray-500">⏱️ {planTimeline}</p>
+                                                                            )}
+                                                                        </div>
                                                                     </div>
                                                                 </div>
                                                             </div>
-                                                        </div>
-                                                    );
-                                                })}
+                                                        );
+                                                    })}
+                                                </div>
                                             </div>
-                                        </div>
-                                    )}
+                                        )}
 
                                     {/* Señales de Alerta Temprana */}
                                     {currentResults.analysis.early_warning_signs && currentResults.analysis.early_warning_signs.length > 0 && (
@@ -3867,8 +3885,8 @@ export default function AIAutomationsPageClient({ userEmail }: AIAutomationsPage
                                                 <h5 className="font-semibold text-gray-900">Tono de Conversación</h5>
                                             </div>
                                             <div className={`inline-flex items-center px-4 py-2 rounded-full text-sm font-medium ${currentResults.analysis.overallTone === 'positive' ? 'bg-green-100 text-green-800' :
-                                                    currentResults.analysis.overallTone === 'negative' ? 'bg-red-100 text-red-800' :
-                                                        'bg-yellow-100 text-yellow-800'
+                                                currentResults.analysis.overallTone === 'negative' ? 'bg-red-100 text-red-800' :
+                                                    'bg-yellow-100 text-yellow-800'
                                                 }`}>
                                                 {currentResults.analysis.overallTone === 'positive' ? '😊 Positivo' :
                                                     currentResults.analysis.overallTone === 'negative' ? '😟 Negativo' :
@@ -3892,8 +3910,8 @@ export default function AIAutomationsPageClient({ userEmail }: AIAutomationsPage
                                                 <h5 className="font-semibold text-gray-900">Satisfacción del Cliente</h5>
                                             </div>
                                             <div className={`inline-flex items-center px-4 py-2 rounded-full text-sm font-medium ${currentResults.analysis.satisfactionLevel === 'high' ? 'bg-green-100 text-green-800' :
-                                                    currentResults.analysis.satisfactionLevel === 'low' ? 'bg-red-100 text-red-800' :
-                                                        'bg-yellow-100 text-yellow-800'
+                                                currentResults.analysis.satisfactionLevel === 'low' ? 'bg-red-100 text-red-800' :
+                                                    'bg-yellow-100 text-yellow-800'
                                                 }`}>
                                                 {currentResults.analysis.satisfactionLevel === 'high' ? '⭐ Alta' :
                                                     currentResults.analysis.satisfactionLevel === 'low' ? '🔴 Baja' :
@@ -4114,31 +4132,41 @@ export default function AIAutomationsPageClient({ userEmail }: AIAutomationsPage
                 </div>
             )}
 
-            {/* Toast Component */}
+            {/* Toast Component - Solo verde, cierre manual */}
             {toast.show && (
-                <div className="fixed bottom-4 right-4 z-50">
-                    <div className={`rounded-lg p-4 shadow-lg max-w-md ${toast.type === 'success' ? 'bg-green-500 text-white' :
-                        toast.type === 'error' ? 'bg-red-500 text-white' :
-                            toast.type === 'warning' ? 'bg-yellow-500 text-white' :
-                                'bg-blue-500 text-white'
-                        }`}>
-                        <div className="flex items-start gap-3">
-                            <div className="flex-shrink-0 mt-0.5">
-                                {toast.type === 'success' && <CheckCircle className="h-5 w-5" />}
-                                {toast.type === 'error' && <X className="h-5 w-5" />}
-                                {toast.type === 'warning' && <AlertTriangle className="h-5 w-5" />}
-                                {toast.type === 'info' && <MessageSquare className="h-5 w-5" />}
+                <div className="fixed inset-0 z-50 flex items-center justify-center">
+                    {/* Overlay semitransparente - NO cierra al hacer click */}
+                    <div className="absolute inset-0 bg-black/20 backdrop-blur-sm" />
+
+                    {/* Toast centrado - Siempre verde */}
+                    <div className="relative rounded-xl p-6 shadow-2xl max-w-md mx-4 transform transition-all duration-500 ease-out animate-bounceIn bg-gradient-to-r from-green-500 to-green-600 text-white border-2 border-white/20">
+
+                        {/* Botón de cerrar en la esquina superior derecha */}
+                        <button
+                            onClick={() => setToast(prev => ({ ...prev, show: false }))}
+                            className="absolute -top-2 -right-2 w-8 h-8 bg-white/20 hover:bg-white/30 rounded-full flex items-center justify-center transition-all duration-200 hover:scale-110 backdrop-blur-sm border border-white/30"
+                        >
+                            <X className="h-4 w-4 text-white" />
+                        </button>
+
+                        <div className="flex items-start gap-4 pr-4">
+                            <div className="flex-shrink-0 mt-1">
+                                <CheckCircle className="h-6 w-6 animate-pulse" />
                             </div>
                             <div className="flex-1">
-                                <p className="text-sm font-medium whitespace-pre-line">
+                                <p className="text-base font-semibold whitespace-pre-line leading-relaxed">
                                     {toast.message}
                                 </p>
                             </div>
+                        </div>
+
+                        {/* Botón de cerrar alternativo en la parte inferior */}
+                        <div className="mt-4 flex justify-center">
                             <button
                                 onClick={() => setToast(prev => ({ ...prev, show: false }))}
-                                className="flex-shrink-0 hover:opacity-75"
+                                className="px-4 py-2 bg-white/20 hover:bg-white/30 rounded-lg text-white font-medium transition-all duration-200 hover:scale-105 backdrop-blur-sm border border-white/30"
                             >
-                                <X className="h-4 w-4" />
+                                Cerrar
                             </button>
                         </div>
                     </div>

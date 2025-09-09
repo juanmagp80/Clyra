@@ -4,11 +4,10 @@ import ClientMessageAlert from '@/components/ClientMessageAlert';
 import NotificationBell from '@/components/NotificationBell';
 import SubscriptionStatus from '@/components/SubscriptionStatus';
 import { Button } from '@/components/ui/Button';
-import { cn } from '@/src/lib/utils';
 import { useTrialStatus } from '@/src/lib/useTrialStatus';
+import { cn } from '@/src/lib/utils';
 import {
   BarChart3,
-  Bell,
   Bot,
   Brain,
   Briefcase,
@@ -93,8 +92,6 @@ const navigation: NavigationItem[] = [
     name: 'Automaciones IA',
     href: '/dashboard/ai-automations',
     icon: Brain,
-    isNew: true,
-    isPremium: true,
   },
   {
     name: 'Propuestas',
@@ -188,7 +185,7 @@ export default function Sidebar({ userEmail, onLogout }: SidebarProps) {
               PRO
             </span>
           )}
-          
+
           {/* Campana de notificaciones */}
           <div className="flex items-center gap-1">
             <NotificationBell userEmail={userEmail} />
@@ -201,7 +198,7 @@ export default function Sidebar({ userEmail, onLogout }: SidebarProps) {
       <nav className="flex-1 overflow-y-auto space-y-1 px-3 py-4 min-h-0">
         {navigation.map((item) => {
           // Lógica especial para Dashboard: solo activo cuando estás exactamente en /dashboard
-          const isActive = item.href === '/dashboard' 
+          const isActive = item.href === '/dashboard'
             ? pathname === '/dashboard'
             : pathname === item.href || pathname.startsWith(item.href + '/');
           const IconComponent = item.icon;

@@ -1,6 +1,10 @@
 import { NextResponse } from 'next/server';
 import { createClient } from '@supabase/supabase-js';
-import { openaiService } from '@/lib/openai';
+import OpenAI from 'openai';
+
+const openai = new OpenAI({
+  apiKey: process.env.OPENAI_API_KEY,
+});
 
 export async function GET(req: Request) {
   try {
@@ -128,7 +132,7 @@ export async function GET(req: Request) {
     return sum + hours;
   }, 0) || 0;
 
-  const avgProductivity = events?.length > 0 ? 
+  const avgProductivity = (events && events.length > 0) ? 
     events.reduce((sum, e) => sum + (e.productivity_score || 0), 0) / events.length : 0;
 
   const totalRevenue = invoices?.filter(i => i.status === 'paid')
@@ -210,11 +214,31 @@ Proporciona un análisis en formato JSON con esta estructura exacta:
   }
 }`;
 
-    const analysis = await openaiService.generateCompletion(analysisPrompt, user.id, 'development_optimization');
+    const completion = await openai.chat.completions.create({
+      model: "gpt-4o-mini",
+      messages: [
+        {
+          role: "system",
+          content: "Eres un experto consultor en productividad y desarrollo. Proporciona análisis detallados en formato JSON."
+        },
+        {
+          role: "user",
+          content: analysisPrompt
+        }
+      ],
+      response_format: { type: "json_object" },
+      temperature: 0.7,
+      max_tokens: 3000
+    });
+
+    const analysisContent = completion.choices[0].message.content;
+    if (!analysisContent) {
+      throw new Error('No se recibió respuesta de OpenAI');
+    }
     
     let aiAnalysis;
     try {
-      aiAnalysis = JSON.parse(analysis);
+      aiAnalysis = JSON.parse(analysisContent);
     } catch (parseError) {
       console.error('Error parsing AI response:', parseError);
       aiAnalysis = {
@@ -237,7 +261,7 @@ Proporciona un análisis en formato JSON con esta estructura exacta:
       success: true,
       analysis: aiAnalysis,
       debug_logs: {
-        user_id: user.id,
+        user_id: user_id,
         date_range: `${past90.toISOString()} to ${now.toISOString()}`,
         events_found: events?.length || 0,
         first_event: events?.[0] || null,

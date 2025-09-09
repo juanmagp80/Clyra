@@ -19,7 +19,7 @@ export async function GET(req: Request) {
     console.log('🔧 CREANDO DATOS REALES PARA ANÁLISIS');
 
     // Obtener o crear un cliente
-    let { data: clients } = await supabase
+    const { data: clients } = await supabase
       .from('clients')
       .select('id')
       .eq('user_id', user_id)
@@ -43,7 +43,7 @@ export async function GET(req: Request) {
     }
 
     // Obtener o crear un proyecto
-    let { data: projects } = await supabase
+    const { data: projects } = await supabase
       .from('projects')
       .select('id')
       .eq('user_id', user_id)
