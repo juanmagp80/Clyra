@@ -15,7 +15,7 @@ import {
     CheckCircle,
     ChevronRight,
     Clock,
-    Crystal,
+    // Crystal,
     DollarSign,
     FileText,
     Lightbulb,
@@ -3215,7 +3215,7 @@ export default function AIAutomationsPageClient({ userEmail }: AIAutomationsPage
                                         <div className="bg-gradient-to-r from-purple-50 to-pink-50 border border-purple-200 rounded-lg p-6">
                                             <div className="flex items-center gap-3 mb-4">
                                                 <div className="p-2 bg-purple-100 rounded-lg">
-                                                    <Crystal className="h-5 w-5 text-purple-600" />
+                                                    {/* Icono eliminado por ausencia de componente Crystal */}
                                                 </div>
                                                 <h5 className="font-semibold text-purple-900">🔮 Predicciones Futuras</h5>
                                             </div>

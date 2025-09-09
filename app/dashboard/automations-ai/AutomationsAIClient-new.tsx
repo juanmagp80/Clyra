@@ -3,7 +3,7 @@
 import { useState, useEffect } from 'react';
 import { Button } from '@/components/ui/Button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/Card';
-import Sidebar from '@/components/Sidebar';
+import { Sidebar } from '@/components/Sidebar';
 import { 
   Brain, 
   Mail, 
@@ -38,12 +38,6 @@ interface UsageStats {
 }
 
 export default function AutomationsAIClient() {
-  // Función de logout para Sidebar
-  const onLogout = async () => {
-    // Aquí puedes agregar la lógica real de logout, por ejemplo limpiar sesión, llamar a API, redirigir, etc.
-    // Por ahora solo mostramos un alert
-    alert('Sesión cerrada');
-  };
   const [selectedAutomation, setSelectedAutomation] = useState<string | null>(null);
   const [isGenerating, setIsGenerating] = useState(false);
   const [result, setResult] = useState<string>('');
@@ -69,16 +63,6 @@ export default function AutomationsAIClient() {
   });
 
   const automations = [
-    {
-      id: 'optimize_development_new',
-      title: '📈 Analizador de Productividad Avanzado',
-      description: 'IA analiza tu productividad, tiempo trabajado y rendimiento de los últimos 90 días con datos reales',
-      icon: TrendingUp,
-      category: 'Productividad',
-      cost: '~€0.0025',
-      status: 'active',
-      color: 'bg-orange-500/10 border-orange-500/20 text-orange-300'
-    },
     {
       id: 'email_generation',
       title: 'Generación Inteligente de Emails',
@@ -138,16 +122,6 @@ export default function AutomationsAIClient() {
       cost: '~€0.0018',
       status: 'coming_soon',
       color: 'bg-rose-500/10 border-rose-500/20 text-rose-300'
-    },
-    {
-      id: 'optimize_development',
-      title: 'Optimización de Desarrollo',
-      description: 'Analiza tu productividad, tiempo trabajado y rendimiento de los últimos 90 días',
-      icon: TrendingUp,
-      category: 'Productividad',
-      cost: '~€0.0025',
-      status: 'active',
-      color: 'bg-orange-500/10 border-orange-500/20 text-orange-300'
     }
   ];
 
@@ -231,97 +205,9 @@ export default function AutomationsAIClient() {
     }
   };
 
-  const optimizeDevelopment = async () => {
-    setIsGenerating(true);
-    try {
-      const response = await fetch('/api/ai/optimize-development');
-      if (!response.ok) {
-        throw new Error('Error al obtener análisis de desarrollo');
-      }
-      
-      const data = await response.json();
-      
-      // Mostrar logs de debug en consola de forma muy visible
-      console.log('🔍🔍🔍 DEBUG LOGS - INICIO 🔍🔍🔍');
-      console.log('User ID:', data.debug_logs?.user_id);
-      console.log('Eventos encontrados:', data.debug_logs?.events_found);
-      console.log('Primer evento:', data.debug_logs?.first_event);
-      console.log('Métricas calculadas:', data.debug_logs?.calculated_metrics);
-      console.log('🔍�🔍 DEBUG LOGS - FIN 🔍🔍🔍');
-      console.log('�📊 RAW DATA COMPLETO:', data);
-      
-      if (data.success && data.analysis) {
-        // Formatear el resultado para mostrar de manera más visual
-        const analysis = data.analysis;
-        const formattedResult = `🧠 Resultados del Análisis de IA
-Análisis completo de productividad de los últimos 90 días
-
-📈 Resumen de Rendimiento
-Período: last 90_días
-
-${analysis.productivity_score}/10
-Productividad
-${analysis.billable_percentage}%
-Facturable
-€${analysis.hourly_rate}
-Por Hora
-${analysis.total_hours}h
-Trabajadas
-
-🚫 Bottlenecks Detectados
-${analysis.bottlenecks?.map(b => `${b.issue}
-${b.description}
-
-💡 ${b.severity === 'high' ? 'CRÍTICO' : b.severity === 'medium' ? 'IMPORTANTE' : 'MENOR'}: Requiere atención ${b.severity === 'high' ? 'inmediata' : 'próximamente'}.`).join('\n\n') || 'No se detectaron problemas críticos.'}
-
-🚀 Oportunidades
-${analysis.opportunities?.map(o => `${o.area}
-${o.impact.charAt(0).toUpperCase() + o.impact.slice(1)}
-${o.description}
-
-🛠️ Impacto esperado: ${o.impact === 'high' ? 'Alto' : o.impact === 'medium' ? 'Medio' : 'Bajo'}.`).join('\n\n') || 'Análisis de oportunidades no disponible.'}
-
-💡 Recomendaciones Accionables
-${analysis.recommendations?.map(r => `${r.action}
-${r.description || 'Implementar para mejorar el rendimiento general.'}
-
-⏱️ ${r.timeline === 'immediate' ? 'Inmediato' : r.timeline === 'short_term' ? 'Corto plazo' : 'Largo plazo'}
-${r.effort.charAt(0).toUpperCase() + r.effort.slice(1)}
-`).join('\n') || 'No hay recomendaciones específicas disponibles.'}
-
-🔮 Predicciones Futuras
-${analysis.predictions?.projected_productivity || 'N/A'}/10
-Productividad Proyectada
-€${analysis.predictions?.projected_revenue || 0}
-Revenue Proyectado
-${analysis.predictions?.focus_areas?.length || 0}
-Áreas de Enfoque
-
-🎯 Áreas clave para el próximo período:
-${analysis.predictions?.focus_areas?.map(area => `• ${area.charAt(0).toUpperCase() + area.slice(1)}`).join('\n') || '• Seguimiento de tiempo\n• Aumento de horas facturables\n• Mejora de la comunicación con clientes'}
-
-📊 Datos Analizados:
-• ${data.raw_data?.events || 0} eventos de calendario
-• ${data.raw_data?.tasks || 0} tareas completadas
-• ${data.raw_data?.invoices || 0} facturas procesadas
-• ${data.raw_data?.messages || 0} mensajes con clientes`;
-
-        setResult(formattedResult);
-        fetchUsageStats(); // Actualizar estadísticas
-      } else {
-        setResult(`Error en el análisis: ${data.error || 'Datos insuficientes'}\n\nDatos encontrados:\n${JSON.stringify(data.raw_data, null, 2)}`);
-      }
-    } catch (error) {
-      console.error('Error:', error);
-      alert('Error al optimizar desarrollo');
-    } finally {
-      setIsGenerating(false);
-    }
-  };
-
   return (
     <div className="flex min-h-screen bg-black">
-  <Sidebar onLogout={onLogout} />
+      <Sidebar />
       
       <div className="flex-1 pl-64">
         <div className="p-6">
@@ -626,105 +512,6 @@ ${analysis.predictions?.focus_areas?.map(area => `• ${area.charAt(0).toUpperCa
                         <>
                           <BarChart3 className="w-4 h-4 mr-2" />
                           Analizar Proyecto
-                        </>
-                      )}
-                    </Button>
-                  </CardContent>
-                </Card>
-              )}
-
-              {/* Analizador de Productividad Avanzado - NUEVO */}
-              {selectedAutomation === 'optimize_development_new' && (
-                <Card className="mt-6 bg-gray-900/50 border-gray-700">
-                  <CardHeader>
-                    <CardTitle className="text-white flex items-center gap-2">
-                      <TrendingUp className="w-5 h-5 text-orange-400" />
-                      📈 Analizador de Productividad Avanzado
-                    </CardTitle>
-                    <CardDescription className="text-gray-400">
-                      IA analiza tu productividad real de los últimos 90 días usando todos tus datos de la base de datos.
-                    </CardDescription>
-                  </CardHeader>
-                  <CardContent className="space-y-4">
-                    <div className="bg-orange-500/10 border border-orange-500/20 rounded-lg p-4">
-                      <h4 className="text-orange-300 font-medium mb-2">🔍 Análisis que incluye:</h4>
-                      <ul className="text-gray-400 text-sm space-y-1">
-                        <li>• ⏰ Horas trabajadas y tiempo facturable</li>
-                        <li>• 📅 Eventos de calendario con seguimiento de tiempo</li>
-                        <li>• ✅ Tareas completadas por categoría</li>
-                        <li>• 💰 Facturas emitidas y estado de pagos</li>
-                        <li>• 📋 Presupuestos aprobados y conversión</li>
-                        <li>• 💬 Comunicación con clientes</li>
-                        <li>• 📊 Métricas de productividad y eficiencia</li>
-                      </ul>
-                    </div>
-
-                    <div className="bg-blue-500/10 border border-blue-500/20 rounded-lg p-3">
-                      <p className="text-blue-300 text-sm">
-                        ✨ Este análisis usa OpenAI GPT-4o-mini para generar insights personalizados basados en tus datos reales.
-                      </p>
-                    </div>
-
-                    <Button 
-                      onClick={optimizeDevelopment}
-                      disabled={isGenerating}
-                      className="w-full bg-orange-600 hover:bg-orange-700"
-                    >
-                      {isGenerating ? (
-                        <>
-                          <Clock className="w-4 h-4 mr-2 animate-spin" />
-                          Analizando productividad...
-                        </>
-                      ) : (
-                        <>
-                          <TrendingUp className="w-4 h-4 mr-2" />
-                          🧠 Analizar Productividad con IA
-                        </>
-                      )}
-                    </Button>
-                  </CardContent>
-                </Card>
-              )}
-
-              {/* Optimización de Desarrollo - ORIGINAL */}
-              {selectedAutomation === 'optimize_development' && (
-                <Card className="mt-6 bg-gray-900/50 border-gray-700">
-                  <CardHeader>
-                    <CardTitle className="text-white flex items-center gap-2">
-                      <TrendingUp className="w-5 h-5 text-orange-400" />
-                      Optimización de Desarrollo
-                    </CardTitle>
-                    <CardDescription className="text-gray-400">
-                      Analiza tu productividad, tiempo trabajado y rendimiento de los últimos 90 días usando datos reales de tu base de datos.
-                    </CardDescription>
-                  </CardHeader>
-                  <CardContent className="space-y-4">
-                    <div className="bg-orange-500/10 border border-orange-500/20 rounded-lg p-4">
-                      <h4 className="text-orange-300 font-medium mb-2">📊 Datos que se analizarán:</h4>
-                      <ul className="text-gray-400 text-sm space-y-1">
-                        <li>• Eventos de calendario y tiempo trabajado</li>
-                        <li>• Tareas completadas y tiempo invertido</li>
-                        <li>• Facturas emitidas y estado de pagos</li>
-                        <li>• Presupuestos aprobados</li>
-                        <li>• Interacciones con clientes</li>
-                        <li>• Productividad y eficiencia</li>
-                      </ul>
-                    </div>
-
-                    <Button 
-                      onClick={optimizeDevelopment}
-                      disabled={isGenerating}
-                      className="w-full bg-orange-600 hover:bg-orange-700"
-                    >
-                      {isGenerating ? (
-                        <>
-                          <Clock className="w-4 h-4 mr-2 animate-spin" />
-                          Analizando datos...
-                        </>
-                      ) : (
-                        <>
-                          <TrendingUp className="w-4 h-4 mr-2" />
-                          Optimizar Desarrollo
                         </>
                       )}
                     </Button>
