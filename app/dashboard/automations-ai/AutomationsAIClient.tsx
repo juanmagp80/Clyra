@@ -324,16 +324,16 @@ ${analysis.predictions?.focus_areas?.length || 0}
     <div className="flex min-h-screen bg-black">
   <Sidebar onLogout={onLogout} />
       
-      <div className="flex-1 pl-64">
-        <div className="p-6">
+      <div className="flex-1 pl-48 lg:pl-64">
+        <div className="p-4 lg:p-6">
           {/* Header */}
-          <div className="flex items-center justify-between mb-8">
+          <div className="flex flex-col lg:flex-row lg:items-center justify-between mb-6 lg:mb-8 gap-4">
             <div>
-              <h1 className="text-3xl font-bold flex items-center gap-3 text-white">
-                <Brain className="w-8 h-8 text-blue-400" />
+              <h1 className="text-2xl lg:text-3xl font-bold flex items-center gap-3 text-white">
+                <Brain className="w-6 h-6 lg:w-8 lg:h-8 text-blue-400" />
                 Automatizaciones IA
               </h1>
-              <p className="text-gray-400 mt-2">
+              <p className="text-gray-400 mt-2 text-sm lg:text-base">
                 Inteligencia artificial que trabaja para ti 24/7
               </p>
             </div>
@@ -342,7 +342,7 @@ ${analysis.predictions?.focus_areas?.length || 0}
               <Button
                 variant="outline"
                 onClick={() => setShowUsageStats(!showUsageStats)}
-                className="border-gray-700 hover:bg-gray-800"
+                className="border-gray-700 hover:bg-gray-800 text-sm"
               >
                 <Euro className="w-4 h-4 mr-2" />
                 Uso y Costos
@@ -352,95 +352,97 @@ ${analysis.predictions?.focus_areas?.length || 0}
 
           {/* Usage Stats Panel */}
           {showUsageStats && usageStats && (
-            <Card className="mb-8 bg-gray-900/50 border-gray-700">
+            <Card className="mb-6 lg:mb-8 bg-gray-900/50 border-gray-700">
               <CardHeader>
-                <CardTitle className="flex items-center gap-2 text-green-400">
+                <CardTitle className="flex items-center gap-2 text-green-400 text-lg">
                   <TrendingUp className="w-5 h-5" />
                   Estadísticas de Uso - Mes Actual
                 </CardTitle>
               </CardHeader>
               <CardContent>
-                <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-                  <div className="text-center">
-                    <p className="text-2xl font-bold text-green-400">
+                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+                  <div className="text-center p-3 bg-gray-800/50 rounded-lg">
+                    <p className="text-xl lg:text-2xl font-bold text-green-400">
                       €{usageStats.currentMonth.total_cost_usd.toFixed(4)}
                     </p>
-                    <p className="text-sm text-gray-400">Gastado este mes</p>
+                    <p className="text-xs lg:text-sm text-gray-400">Gastado este mes</p>
                   </div>
-                  <div className="text-center">
-                    <p className="text-2xl font-bold text-blue-400">
+                  <div className="text-center p-3 bg-gray-800/50 rounded-lg">
+                    <p className="text-xl lg:text-2xl font-bold text-blue-400">
                       {usageStats.currentMonth.total_requests}
                     </p>
-                    <p className="text-sm text-gray-400">Automatizaciones</p>
+                    <p className="text-xs lg:text-sm text-gray-400">Automatizaciones</p>
                   </div>
-                  <div className="text-center">
-                    <p className="text-2xl font-bold text-purple-400">
+                  <div className="text-center p-3 bg-gray-800/50 rounded-lg">
+                    <p className="text-xl lg:text-2xl font-bold text-purple-400">
                       €{usageStats.currentMonth.projected_monthly_cost.toFixed(3)}
                     </p>
-                    <p className="text-sm text-gray-400">Proyección mensual</p>
+                    <p className="text-xs lg:text-sm text-gray-400">Proyección mensual</p>
                   </div>
-                  <div className="text-center">
-                    <p className="text-2xl font-bold text-cyan-400">
+                  <div className="text-center p-3 bg-gray-800/50 rounded-lg">
+                    <p className="text-xl lg:text-2xl font-bold text-cyan-400">
                       €{(usageStats.currentMonth.total_requests > 0 ? usageStats.currentMonth.total_cost_usd / usageStats.currentMonth.total_requests : 0).toFixed(4)}
                     </p>
-                    <p className="text-sm text-gray-400">Costo promedio</p>
+                    <p className="text-xs lg:text-sm text-gray-400">Costo promedio</p>
                   </div>
                 </div>
               </CardContent>
             </Card>
           )}
 
-          <div className="grid lg:grid-cols-3 gap-8">
+          <div className="grid xl:grid-cols-5 gap-6 lg:gap-8">
             {/* Lista de Automatizaciones */}
-            <div className="lg:col-span-2">
-              <h2 className="text-xl font-semibold mb-4 flex items-center gap-2 text-white">
+            <div className="xl:col-span-3">
+              <h2 className="text-lg lg:text-xl font-semibold mb-4 flex items-center gap-2 text-white">
                 <Sparkles className="w-5 h-5 text-yellow-400" />
                 Automatizaciones Disponibles
               </h2>
               
-              <div className="grid gap-4">
+              <div className="grid gap-3 lg:gap-4">
                 {automations.map((automation) => (
                   <Card 
                     key={automation.id}
-                    className={`cursor-pointer transition-all duration-200 ${
+                    className={`cursor-pointer transition-all duration-200 ai-automations-card ${
                       selectedAutomation === automation.id 
                         ? 'border-blue-500 bg-blue-500/5' 
                         : 'bg-gray-900/50 border-gray-700 hover:border-gray-600'
                     }`}
                     onClick={() => automation.status === 'active' ? setSelectedAutomation(automation.id) : null}
                   >
-                    <CardHeader className="pb-3">
-                      <div className="flex items-center justify-between">
-                        <div className="flex items-center gap-3">
-                          <div className={`p-2 rounded-lg ${automation.color}`}>
-                            <automation.icon className="w-5 h-5" />
+                    <CardHeader className="pb-2 lg:pb-3 ai-automations-card-header">
+                      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+                        <div className="flex items-start gap-3 min-w-0 flex-1">
+                          <div className={`p-2 rounded-lg ${automation.color} flex-shrink-0 mt-0.5`}>
+                            <automation.icon className="w-4 h-4 lg:w-5 lg:h-5" />
                           </div>
-                          <div>
-                            <CardTitle className="text-lg text-white">{automation.title}</CardTitle>
-                            <div className="flex items-center gap-2 mt-1">
-                              <span className="text-xs bg-gray-700 px-2 py-1 rounded text-gray-300">
+                          <div className="min-w-0 flex-1">
+                            <CardTitle className="text-sm lg:text-base text-white line-clamp-2 leading-tight">{automation.title}</CardTitle>
+                            <div className="flex flex-wrap items-center gap-1.5 mt-1.5">
+                              <span className="text-xs bg-gray-700 px-1.5 py-0.5 rounded text-gray-300 whitespace-nowrap">
                                 {automation.category}
                               </span>
-                              <span className="text-xs text-green-400">
+                              <span className="text-xs text-green-400 whitespace-nowrap">
                                 {automation.cost}
                               </span>
                             </div>
                           </div>
                         </div>
                         
-                        {automation.status === 'coming_soon' ? (
-                          <span className="text-xs bg-yellow-500/20 text-yellow-300 px-2 py-1 rounded border border-yellow-500/30">
-                            Próximamente
-                          </span>
-                        ) : (
-                          <span className="text-xs bg-green-500/20 text-green-300 px-2 py-1 rounded border border-green-500/30">
-                            Activo
-                          </span>
-                        )}
+                        <div className="flex-shrink-0 sm:self-start">
+                          {automation.status === 'coming_soon' ? (
+                            <span className="text-xs bg-yellow-500/20 text-yellow-300 px-2 py-1 rounded border border-yellow-500/30 whitespace-nowrap">
+                              Próximamente
+                            </span>
+                          ) : (
+                            <span className="text-xs bg-green-500/20 text-green-300 px-2 py-1 rounded border border-green-500/30 whitespace-nowrap">
+                              Activo
+                            </span>
+                          )}
+                        </div>
                       </div>
                     </CardHeader>
-                    <CardContent>
-                      <CardDescription className="text-gray-300">
+                    <CardContent className="pt-0">
+                      <CardDescription className="text-gray-300 text-xs lg:text-sm line-clamp-2 leading-relaxed">
                         {automation.description}
                       </CardDescription>
                     </CardContent>
@@ -450,20 +452,20 @@ ${analysis.predictions?.focus_areas?.length || 0}
             </div>
 
             {/* Panel de Configuración */}
-            <div>
+            <div className="xl:col-span-2">
               {selectedAutomation === 'email_generation' && (
                 <Card className="bg-gray-900/50 border-gray-700">
                   <CardHeader>
-                    <CardTitle className="text-blue-400">Generar Email</CardTitle>
-                    <CardDescription className="text-gray-400">
+                    <CardTitle className="text-blue-400 text-lg">Generar Email</CardTitle>
+                    <CardDescription className="text-gray-400 text-sm">
                       La IA creará un email profesional basado en tus datos
                     </CardDescription>
                   </CardHeader>
                   <CardContent className="space-y-4">
                     <div>
-                      <label className="block text-sm font-medium mb-1 text-gray-300">Tipo de Email</label>
+                      <label className="block text-sm font-medium mb-2 text-gray-300">Tipo de Email</label>
                       <select 
-                        className="w-full p-2 bg-gray-800 border border-gray-600 rounded text-white"
+                        className="w-full p-2.5 bg-gray-800 border border-gray-600 rounded text-white text-sm focus:border-blue-500 focus:outline-none"
                         value={emailForm.type}
                         onChange={(e) => setEmailForm({...emailForm, type: e.target.value})}
                       >
@@ -477,10 +479,10 @@ ${analysis.predictions?.focus_areas?.length || 0}
                     </div>
 
                     <div>
-                      <label className="block text-sm font-medium mb-1 text-gray-300">Cliente *</label>
+                      <label className="block text-sm font-medium mb-2 text-gray-300">Cliente *</label>
                       <input 
                         type="text"
-                        className="w-full p-2 bg-gray-800 border border-gray-600 rounded text-white"
+                        className="w-full p-2.5 bg-gray-800 border border-gray-600 rounded text-white text-sm focus:border-blue-500 focus:outline-none"
                         value={emailForm.clientName}
                         onChange={(e) => setEmailForm({...emailForm, clientName: e.target.value})}
                         placeholder="Nombre del cliente"
@@ -488,10 +490,10 @@ ${analysis.predictions?.focus_areas?.length || 0}
                     </div>
 
                     <div>
-                      <label className="block text-sm font-medium mb-1 text-gray-300">Proyecto</label>
+                      <label className="block text-sm font-medium mb-2 text-gray-300">Proyecto</label>
                       <input 
                         type="text"
-                        className="w-full p-2 bg-gray-800 border border-gray-600 rounded text-white"
+                        className="w-full p-2.5 bg-gray-800 border border-gray-600 rounded text-white text-sm focus:border-blue-500 focus:outline-none"
                         value={emailForm.projectName}
                         onChange={(e) => setEmailForm({...emailForm, projectName: e.target.value})}
                         placeholder="Nombre del proyecto"
@@ -499,9 +501,9 @@ ${analysis.predictions?.focus_areas?.length || 0}
                     </div>
 
                     <div>
-                      <label className="block text-sm font-medium mb-1 text-gray-300">Contexto</label>
+                      <label className="block text-sm font-medium mb-2 text-gray-300">Contexto</label>
                       <textarea 
-                        className="w-full p-2 bg-gray-800 border border-gray-600 rounded h-20 text-white"
+                        className="w-full p-2.5 bg-gray-800 border border-gray-600 rounded h-20 text-white text-sm resize-none focus:border-blue-500 focus:outline-none"
                         value={emailForm.context}
                         onChange={(e) => setEmailForm({...emailForm, context: e.target.value})}
                         placeholder="Información adicional..."
@@ -509,9 +511,9 @@ ${analysis.predictions?.focus_areas?.length || 0}
                     </div>
 
                     <div>
-                      <label className="block text-sm font-medium mb-1 text-gray-300">Tono</label>
+                      <label className="block text-sm font-medium mb-2 text-gray-300">Tono</label>
                       <select 
-                        className="w-full p-2 bg-gray-800 border border-gray-600 rounded text-white"
+                        className="w-full p-2.5 bg-gray-800 border border-gray-600 rounded text-white text-sm focus:border-blue-500 focus:outline-none"
                         value={emailForm.tone}
                         onChange={(e) => setEmailForm({...emailForm, tone: e.target.value})}
                       >
@@ -524,7 +526,7 @@ ${analysis.predictions?.focus_areas?.length || 0}
                     <Button 
                       onClick={generateEmail}
                       disabled={isGenerating}
-                      className="w-full bg-blue-600 hover:bg-blue-700"
+                      className="w-full bg-blue-600 hover:bg-blue-700 h-10"
                     >
                       {isGenerating ? (
                         <>
@@ -545,7 +547,7 @@ ${analysis.predictions?.focus_areas?.length || 0}
               {selectedAutomation === 'project_analysis' && (
                 <Card className="bg-gray-900/50 border-gray-700">
                   <CardHeader>
-                    <CardTitle className="text-green-400">Analizar Proyecto</CardTitle>
+                    <CardTitle className="text-green-400 text-lg">Analizar Proyecto</CardTitle>
                     <CardDescription className="text-gray-400">
                       La IA evaluará el estado y proporcionará recomendaciones
                     </CardDescription>
@@ -735,16 +737,16 @@ ${analysis.predictions?.focus_areas?.length || 0}
 
               {/* Resultado */}
               {result && (
-                <Card className="mt-6 bg-gray-900/50 border-gray-700">
+                <Card className="mt-4 lg:mt-6 bg-gray-900/50 border-gray-700">
                   <CardHeader>
-                    <CardTitle className="text-green-400 flex items-center gap-2">
+                    <CardTitle className="text-green-400 flex items-center gap-2 text-lg">
                       <CheckCircle className="w-5 h-5" />
                       Resultado
                     </CardTitle>
                   </CardHeader>
                   <CardContent>
-                    <div className="bg-gray-800 p-4 rounded border">
-                      <pre className="whitespace-pre-wrap text-sm text-gray-300">
+                    <div className="bg-gray-800 p-3 lg:p-4 rounded border max-h-96 overflow-y-auto">
+                      <pre className="whitespace-pre-wrap text-xs lg:text-sm text-gray-300 leading-relaxed">
                         {result}
                       </pre>
                     </div>

@@ -211,4 +211,95 @@
     font-size: 0.875rem;
     color: rgb(107 114 128);
   }
+
+  /* Optimizaciones para pantallas normales (1366x768, 1440x900, etc.) */
+  @media screen and (min-width: 1024px) and (max-width: 1600px) {
+    .ai-automations-grid {
+      display: grid;
+      grid-template-columns: 1fr;
+      gap: 1.5rem;
+    }
+    
+    .ai-automations-card {
+      padding: 1rem;
+    }
+    
+    .ai-automations-card-header {
+      padding-bottom: 0.75rem;
+    }
+    
+    .ai-automations-form-field {
+      margin-bottom: 1rem;
+    }
+    
+    .ai-automations-form-input {
+      padding: 0.625rem;
+      font-size: 0.875rem;
+    }
+  }
+
+  /* Para pantallas más pequeñas */
+  @media screen and (max-width: 1023px) {
+    .ai-automations-sidebar-offset {
+      padding-left: 12rem !important;
+    }
+  }
+}
+
+/* Dashboard optimization for normal resolution screens */
+@layer utilities {
+  /* Optimize dashboard cards for normal screens (1366x768, 1440x900) */
+  @media screen and (min-width: 1024px) and (max-width: 1600px) {
+    .dashboard-metrics-grid {
+      grid-template-columns: repeat(3, minmax(200px, 1fr));
+      gap: 1rem;
+    }
+    
+    .dashboard-card-normal {
+      padding: 0.875rem;
+      min-height: 85px;
+    }
+    
+    .dashboard-card-normal .metric-number {
+      font-size: 1.25rem;
+      line-height: 1.75rem;
+    }
+    
+    .dashboard-card-normal .metric-icon {
+      width: 1.25rem;
+      height: 1.25rem;
+    }
+    
+    .dashboard-card-normal .metric-label {
+      font-size: 0.75rem;
+    }
+    
+    /* Secondary stats grid for normal screens */
+    .dashboard-secondary-grid {
+      grid-template-columns: repeat(4, minmax(150px, 1fr));
+      gap: 1rem;
+    }
+    
+    .dashboard-secondary-card {
+      padding: 1rem;
+    }
+    
+    .dashboard-secondary-card .metric-number {
+      font-size: 1.125rem;
+      line-height: 1.75rem;
+    }
+  }
+  
+  /* For smaller screens */
+  @media screen and (max-width: 1023px) {
+    .dashboard-metrics-grid {
+      grid-template-columns: repeat(2, 1fr);
+      gap: 0.75rem;
+    }
+    
+    .dashboard-card-normal {
+      padding: 0.75rem;
+      min-height: 80px;
+    }
+  }
 }

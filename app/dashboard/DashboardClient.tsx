@@ -927,22 +927,22 @@ export default function DashboardBonsai({
                         </div>
                     ) : (
                         <>
-                            {/* Estadísticas Principales */}
-                            <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-3 xl:grid-cols-6 gap-4 lg:gap-6 mb-8">
+                            {/* Estadísticas Principales - Optimizado para pantallas normales */}
+                            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 2xl:grid-cols-6 gap-4 lg:gap-6 mb-8">
                                 {/* Total Clients */}
                                 <div
                                     onClick={() => router.push('/dashboard/clients')}
-                                    className="bg-white rounded-lg shadow-sm border border-gray-200 p-4 sm:p-6 hover:shadow-md transition-shadow cursor-pointer min-h-[100px]"
+                                    className="bg-white rounded-lg shadow-sm border border-gray-200 p-3 lg:p-4 xl:p-6 hover:shadow-md transition-shadow cursor-pointer min-h-[90px] lg:min-h-[100px]"
                                 >
-                                    <div className="flex items-start space-x-3">
+                                    <div className="flex items-start space-x-2 lg:space-x-3">
                                         <div className="flex-shrink-0">
-                                            <Users className="h-6 w-6 sm:h-8 sm:w-8 text-blue-600" />
+                                            <Users className="h-5 w-5 lg:h-6 lg:w-6 xl:h-8 xl:w-8 text-blue-600" />
                                         </div>
                                         <div className="flex-1 min-w-0">
-                                            <p className="text-xs sm:text-sm font-medium text-gray-600 mb-1">Clientes</p>
+                                            <p className="text-xs lg:text-sm font-medium text-gray-600 mb-1">Clientes</p>
                                             <div className="flex items-center justify-between">
-                                                <p className="text-lg sm:text-2xl font-semibold text-gray-900 truncate">{metrics.totalClients}</p>
-                                                <ArrowRight className="h-3 w-3 sm:h-4 sm:w-4 text-gray-400 flex-shrink-0 ml-2" />
+                                                <p className="text-xl lg:text-2xl xl:text-3xl font-semibold text-gray-900 truncate">{metrics.totalClients}</p>
+                                                <ArrowRight className="h-3 w-3 lg:h-4 lg:w-4 text-gray-400 flex-shrink-0 ml-1 lg:ml-2" />
                                             </div>
                                         </div>
                                     </div>
@@ -951,44 +951,44 @@ export default function DashboardBonsai({
                                 {/* Active Projects */}
                                 <div
                                     onClick={() => router.push('/dashboard/projects')}
-                                    className="bg-white rounded-lg shadow-sm border border-gray-200 p-4 sm:p-6 hover:shadow-md transition-shadow cursor-pointer min-h-[100px]"
+                                    className="bg-white rounded-lg shadow-sm border border-gray-200 p-3 lg:p-4 xl:p-6 hover:shadow-md transition-shadow cursor-pointer min-h-[90px] lg:min-h-[100px]"
                                 >
-                                    <div className="flex items-start space-x-3">
+                                    <div className="flex items-start space-x-2 lg:space-x-3">
                                         <div className="flex-shrink-0">
-                                            <Briefcase className="h-6 w-6 sm:h-8 sm:w-8 text-green-600" />
+                                            <Briefcase className="h-5 w-5 lg:h-6 lg:w-6 xl:h-8 xl:w-8 text-green-600" />
                                         </div>
                                         <div className="flex-1 min-w-0">
-                                            <p className="text-xs sm:text-sm font-medium text-gray-600 mb-1">Proyectos Activos</p>
+                                            <p className="text-xs lg:text-sm font-medium text-gray-600 mb-1">Proyectos Activos</p>
                                             <div className="flex items-center justify-between">
-                                                <p className="text-lg sm:text-2xl font-semibold text-gray-900 truncate">{metrics.activeProjects}</p>
-                                                <ArrowRight className="h-3 w-3 sm:h-4 sm:w-4 text-gray-400 flex-shrink-0 ml-2" />
+                                                <p className="text-xl lg:text-2xl xl:text-3xl font-semibold text-gray-900 truncate">{metrics.activeProjects}</p>
+                                                <ArrowRight className="h-3 w-3 lg:h-4 lg:w-4 text-gray-400 flex-shrink-0 ml-1 lg:ml-2" />
                                             </div>
                                         </div>
                                     </div>
                                 </div>
 
                                 {/* Completed Projects */}
-                                <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-4 sm:p-6 min-h-[100px]">
-                                    <div className="flex items-start space-x-3">
+                                <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-3 lg:p-4 xl:p-6 min-h-[90px] lg:min-h-[100px]">
+                                    <div className="flex items-start space-x-2 lg:space-x-3">
                                         <div className="flex-shrink-0">
-                                            <CheckCircle className="h-6 w-6 sm:h-8 sm:w-8 text-purple-600" />
+                                            <CheckCircle className="h-5 w-5 lg:h-6 lg:w-6 xl:h-8 xl:w-8 text-purple-600" />
                                         </div>
                                         <div className="flex-1 min-w-0">
-                                            <p className="text-xs sm:text-sm font-medium text-gray-600 mb-1">Completados</p>
-                                            <p className="text-lg sm:text-2xl font-semibold text-gray-900 truncate">{metrics.completedProjects}</p>
+                                            <p className="text-xs lg:text-sm font-medium text-gray-600 mb-1">Completados</p>
+                                            <p className="text-xl lg:text-2xl xl:text-3xl font-semibold text-gray-900 truncate">{metrics.completedProjects}</p>
                                         </div>
                                     </div>
                                 </div>
 
                                 {/* Monthly Revenue */}
-                                <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-4 sm:p-6 min-h-[100px]">
-                                    <div className="flex items-start space-x-3">
+                                <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-3 lg:p-4 xl:p-6 min-h-[90px] lg:min-h-[100px]">
+                                    <div className="flex items-start space-x-2 lg:space-x-3">
                                         <div className="flex-shrink-0">
-                                            <DollarSign className="h-6 w-6 sm:h-8 sm:w-8 text-amber-600" />
+                                            <DollarSign className="h-5 w-5 lg:h-6 lg:w-6 xl:h-8 xl:w-8 text-amber-600" />
                                         </div>
                                         <div className="flex-1 min-w-0">
-                                            <p className="text-xs sm:text-sm font-medium text-gray-600 mb-1">Presupuestos</p>
-                                            <p className="text-lg sm:text-2xl font-semibold text-gray-900 truncate">
+                                            <p className="text-xs lg:text-sm font-medium text-gray-600 mb-1">Presupuestos</p>
+                                            <p className="text-base lg:text-xl xl:text-2xl font-semibold text-gray-900 truncate">
                                                 €{metrics.monthlyRevenue.toLocaleString()}
                                             </p>
                                         </div>
@@ -998,33 +998,33 @@ export default function DashboardBonsai({
                                 {/* Paid Invoices */}
                                 <div 
                                     onClick={() => router.push('/dashboard/invoices')}
-                                    className="bg-white rounded-lg shadow-sm border border-gray-200 p-4 sm:p-6 hover:shadow-md transition-shadow cursor-pointer min-h-[100px]"
+                                    className="bg-white rounded-lg shadow-sm border border-gray-200 p-3 lg:p-4 xl:p-6 hover:shadow-md transition-shadow cursor-pointer min-h-[90px] lg:min-h-[100px]"
                                 >
-                                    <div className="flex items-start space-x-3">
+                                    <div className="flex items-start space-x-2 lg:space-x-3">
                                         <div className="flex-shrink-0">
-                                            <CheckCircle className="h-6 w-6 sm:h-8 sm:w-8 text-green-600" />
+                                            <CheckCircle className="h-5 w-5 lg:h-6 lg:w-6 xl:h-8 xl:w-8 text-green-600" />
                                         </div>
                                         <div className="flex-1 min-w-0">
-                                            <p className="text-xs sm:text-sm font-medium text-gray-600 mb-1">Facturas Pagadas</p>
+                                            <p className="text-xs lg:text-sm font-medium text-gray-600 mb-1">Facturas Pagadas</p>
                                             <div className="flex items-center justify-between">
-                                                <p className="text-lg sm:text-2xl font-semibold text-gray-900 truncate">
+                                                <p className="text-base lg:text-xl xl:text-2xl font-semibold text-gray-900 truncate">
                                                     €{metrics.paidInvoices.toLocaleString()}
                                                 </p>
-                                                <ArrowRight className="h-3 w-3 sm:h-4 sm:w-4 text-gray-400 flex-shrink-0 ml-2" />
+                                                <ArrowRight className="h-3 w-3 lg:h-4 lg:w-4 text-gray-400 flex-shrink-0 ml-1 lg:ml-2" />
                                             </div>
                                         </div>
                                     </div>
                                 </div>
 
                                 {/* Total Task Time */}
-                                <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-4 sm:p-6 min-h-[100px]">
-                                    <div className="flex items-start space-x-3">
+                                <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-3 lg:p-4 xl:p-6 min-h-[90px] lg:min-h-[100px]">
+                                    <div className="flex items-start space-x-2 lg:space-x-3">
                                         <div className="flex-shrink-0">
-                                            <Clock className="h-6 w-6 sm:h-8 sm:w-8 text-blue-600" />
+                                            <Clock className="h-5 w-5 lg:h-6 lg:w-6 xl:h-8 xl:w-8 text-blue-600" />
                                         </div>
                                         <div className="flex-1 min-w-0">
-                                            <p className="text-xs sm:text-sm font-medium text-gray-600 mb-1">TIEMPO ACUMULADO</p>
-                                            <p className="text-lg sm:text-2xl font-semibold text-gray-900 truncate">
+                                            <p className="text-xs lg:text-sm font-medium text-gray-600 mb-1">TIEMPO ACUMULADO</p>
+                                            <p className="text-base lg:text-xl xl:text-2xl font-semibold text-gray-900 truncate">
                                                 {(() => {
                                                     const h = Math.floor(totalTaskTime / 3600);
                                                     const m = Math.floor((totalTaskTime % 3600) / 60);
@@ -1167,46 +1167,46 @@ export default function DashboardBonsai({
                                 </div>
                             </div>
 
-                            {/* Estadísticas Adicionales - Estilo Bonsai */}
-                            <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 lg:grid-cols-4 gap-4 lg:gap-6 mb-8">
+                            {/* Estadísticas Adicionales - Optimizado para pantallas normales */}
+                            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 lg:gap-6 mb-8">
                                 {/* Proyectos Completados */}
-                                <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6 text-center">
-                                    <div className="w-12 h-12 bg-green-600 rounded-lg mx-auto mb-4 flex items-center justify-center">
-                                        <Briefcase className="w-6 h-6 text-white" />
+                                <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-4 lg:p-6 text-center">
+                                    <div className="w-10 h-10 lg:w-12 lg:h-12 bg-green-600 rounded-lg mx-auto mb-3 lg:mb-4 flex items-center justify-center">
+                                        <Briefcase className="w-5 h-5 lg:w-6 lg:h-6 text-white" />
                                     </div>
-                                    <h4 className="text-2xl font-bold text-gray-900">{metrics.completedProjects}</h4>
-                                    <p className="text-sm text-gray-600">Completados</p>
+                                    <h4 className="text-xl lg:text-2xl xl:text-3xl font-bold text-gray-900">{metrics.completedProjects}</h4>
+                                    <p className="text-xs lg:text-sm text-gray-600">Completados</p>
                                 </div>
 
                                 {/* Facturación Promedio */}
-                                <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6 text-center">
-                                    <div className="w-12 h-12 bg-purple-600 rounded-lg mx-auto mb-4 flex items-center justify-center">
-                                        <DollarSign className="w-6 h-6 text-white" />
+                                <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-4 lg:p-6 text-center">
+                                    <div className="w-10 h-10 lg:w-12 lg:h-12 bg-purple-600 rounded-lg mx-auto mb-3 lg:mb-4 flex items-center justify-center">
+                                        <DollarSign className="w-5 h-5 lg:w-6 lg:h-6 text-white" />
                                     </div>
-                                    <h4 className="text-2xl font-bold text-gray-900">
+                                    <h4 className="text-base lg:text-xl xl:text-2xl font-bold text-gray-900">
                                         €{metrics.completedProjects > 0 ? Math.round(metrics.monthlyRevenue / metrics.completedProjects).toLocaleString() : '0'}
                                     </h4>
-                                    <p className="text-sm text-gray-600">Por proyecto</p>
+                                    <p className="text-xs lg:text-sm text-gray-600">Por proyecto</p>
                                 </div>
 
                                 {/* Horas Facturables */}
-                                <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6 text-center">
-                                    <div className="w-12 h-12 bg-blue-600 rounded-lg mx-auto mb-4 flex items-center justify-center">
-                                        <Clock className="w-6 h-6 text-white" />
+                                <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-4 lg:p-6 text-center">
+                                    <div className="w-10 h-10 lg:w-12 lg:h-12 bg-blue-600 rounded-lg mx-auto mb-3 lg:mb-4 flex items-center justify-center">
+                                        <Clock className="w-5 h-5 lg:w-6 lg:h-6 text-white" />
                                     </div>
-                                    <h4 className="text-2xl font-bold text-gray-900">{metrics.billableHoursThisWeek}h</h4>
-                                    <p className="text-sm text-gray-600">Facturables</p>
+                                    <h4 className="text-xl lg:text-2xl xl:text-3xl font-bold text-gray-900">{metrics.billableHoursThisWeek}h</h4>
+                                    <p className="text-xs lg:text-sm text-gray-600">Facturables</p>
                                 </div>
 
                                 {/* Eficiencia */}
-                                <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6 text-center">
-                                    <div className="w-12 h-12 bg-orange-600 rounded-lg mx-auto mb-4 flex items-center justify-center">
-                                        <Target className="w-6 h-6 text-white" />
+                                <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-4 lg:p-6 text-center">
+                                    <div className="w-10 h-10 lg:w-12 lg:h-12 bg-orange-600 rounded-lg mx-auto mb-3 lg:mb-4 flex items-center justify-center">
+                                        <Target className="w-5 h-5 lg:w-6 lg:h-6 text-white" />
                                     </div>
-                                    <h4 className="text-2xl font-bold text-gray-900">
+                                    <h4 className="text-xl lg:text-2xl xl:text-3xl font-bold text-gray-900">
                                         {metrics.hoursThisWeek > 0 ? Math.round((metrics.billableHoursThisWeek / metrics.hoursThisWeek) * 100) : 0}%
                                     </h4>
-                                    <p className="text-sm text-gray-600">Eficiencia</p>
+                                    <p className="text-xs lg:text-sm text-gray-600">Eficiencia</p>
                                 </div>
                             </div>
 

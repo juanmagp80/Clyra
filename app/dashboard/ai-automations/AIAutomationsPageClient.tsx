@@ -823,9 +823,9 @@ export default function AIAutomationsPageClient({ userEmail }: AIAutomationsPage
                                         <div>
                                             <span className="text-red-700">Estado:</span>
                                             <span className={`ml-2 px-2 py-1 rounded-full text-xs font-medium ${selectedProject.status === 'completed' ? 'bg-green-100 text-green-800' :
-                                                    selectedProject.status === 'in_progress' ? 'bg-blue-100 text-blue-800' :
-                                                        selectedProject.status === 'on_hold' ? 'bg-yellow-100 text-yellow-800' :
-                                                            'bg-gray-100 text-gray-800'
+                                                selectedProject.status === 'in_progress' ? 'bg-blue-100 text-blue-800' :
+                                                    selectedProject.status === 'on_hold' ? 'bg-yellow-100 text-yellow-800' :
+                                                        'bg-gray-100 text-gray-800'
                                                 }`}>
                                                 {selectedProject.status}
                                             </span>
@@ -1030,9 +1030,9 @@ export default function AIAutomationsPageClient({ userEmail }: AIAutomationsPage
                                         <div>
                                             <span className="text-green-700">Estado:</span>
                                             <span className={`ml-2 px-2 py-1 rounded-full text-xs font-medium ${selectedBudget.status === 'approved' ? 'bg-green-100 text-green-800' :
-                                                    selectedBudget.status === 'sent' ? 'bg-blue-100 text-blue-800' :
-                                                        selectedBudget.status === 'rejected' ? 'bg-red-100 text-red-800' :
-                                                            'bg-gray-100 text-gray-800'
+                                                selectedBudget.status === 'sent' ? 'bg-blue-100 text-blue-800' :
+                                                    selectedBudget.status === 'rejected' ? 'bg-red-100 text-red-800' :
+                                                        'bg-gray-100 text-gray-800'
                                                 }`}>
                                                 {selectedBudget.status}
                                             </span>
@@ -1487,7 +1487,7 @@ export default function AIAutomationsPageClient({ userEmail }: AIAutomationsPage
                     });
 
                     const proposalResult = await proposalResponse.json();
-                    
+
                     console.log('🔍 PROPOSAL ANALYSIS RESULT:', {
                         ok: proposalResponse.ok,
                         status: proposalResponse.status,
@@ -1720,18 +1720,18 @@ export default function AIAutomationsPageClient({ userEmail }: AIAutomationsPage
                             ...prev,
                             [currentAutomation.id]: performanceResult
                         }));
-                        
+
                         // Actualizar contador de ejecuciones
                         setAIAutomations(prev => prev.map(a =>
                             a.id === currentAutomation.id
                                 ? { ...a, executionCount: a.executionCount + 1 }
                                 : a
                         ));
-                        
+
                         // Mostrar resultado unificado
                         showExecutionResult(performanceResult, currentAutomation);
                     }
-                    
+
                     updateInsightsDelayed(); // Actualizar insights con retraso
                     setExecuting(null);
                     return; // Salir aquí para evitar el flujo normal
@@ -1997,12 +1997,12 @@ export default function AIAutomationsPageClient({ userEmail }: AIAutomationsPage
         resultMessage += `\n\n✅ Insight guardado en tu dashboard`;
 
         showToast(resultMessage);
-        
+
         console.log('💾 AUTOMATIZACIÓN TERMINADA - programando actualizaciones...');
         console.log('🔧 Tipo:', automation.type);
         console.log('📝 Nombre:', automation.name);
         console.log('📊 Resultado tiene analysis:', !!result.analysis);
-        
+
         // Actualización adicional después del toast para asegurar que aparezca el nuevo insight
         setTimeout(() => {
             console.log('🔄 Actualización adicional post-toast...');
@@ -2043,9 +2043,9 @@ export default function AIAutomationsPageClient({ userEmail }: AIAutomationsPage
                 created_at: string;
                 title: string;
                 description?: string;
-            }) => ({ 
-                id: i.id, 
-                type: i.insight_type, 
+            }) => ({
+                id: i.id,
+                type: i.insight_type,
                 created: i.created_at,
                 title: i.title,
                 description: i.description?.substring(0, 50) + '...',
@@ -2061,7 +2061,7 @@ export default function AIAutomationsPageClient({ userEmail }: AIAutomationsPage
             } : 'No hay insights');
 
             setRecentInsights(insights || []);
-            
+
             console.log('🔄 Estado actualizado, recentInsights.length será:', insights?.length || 0);
         } catch (error) {
             console.error('❌ Error in fetchRecentInsights:', error);
@@ -2074,10 +2074,10 @@ export default function AIAutomationsPageClient({ userEmail }: AIAutomationsPage
         setTimeout(async () => {
             console.log('⏰ EJECUTANDO actualización después de ejecución...');
             console.log('📊 Estado actual antes de actualizar:', recentInsights.length);
-            
+
             // Esperar un momento adicional
             await new Promise(resolve => setTimeout(resolve, 500));
-            
+
             await fetchRecentInsights();
             console.log('📊 Estado después de actualizar:', recentInsights.length);
         }, 3000); // Aumentar a 3 segundos para dar más tiempo al servidor
@@ -2549,14 +2549,11 @@ export default function AIAutomationsPageClient({ userEmail }: AIAutomationsPage
                                         Automatizaciones IA
                                     </h1>
                                     <p className="text-gray-600 dark:text-gray-400 mt-2">
-                                        Automatizaciones IA conectadas con OpenAI GPT-4o-mini que funcionan con tus datos reales
+                                        Automatizaciones IA conectadas con OpenAI GPT-4o-mini
                                     </p>
                                 </div>
                                 <div className="flex items-center gap-4">
-                                    <div className="bg-gradient-to-r from-green-600 to-blue-600 text-white px-4 py-2 rounded-lg flex items-center gap-2">
-                                        <CheckCircle className="h-4 w-4" />
-                                        <span className="text-sm font-medium">OpenAI Activo</span>
-                                    </div>
+
                                     <Button
                                         onClick={() => router.push('/dashboard/automations')}
                                         variant="outline"
@@ -2679,22 +2676,22 @@ export default function AIAutomationsPageClient({ userEmail }: AIAutomationsPage
 
                                             {/* Success indicator */}
                                             {executionResults[automation.id] && (
-                                                <div className="absolute top-3 right-3 flex items-center gap-2">
+                                                <div className="absolute bottom-3 right-3 flex items-center gap-2 z-20">
                                                     <button
                                                         onClick={(e) => {
                                                             e.stopPropagation();
                                                             setCurrentResults(executionResults[automation.id]);
                                                             setShowResultsModal(true);
                                                         }}
-                                                        className="bg-blue-100 text-blue-800 px-3 py-1 rounded-full text-xs font-medium hover:bg-blue-200 transition-colors"
+                                                        className="bg-blue-100 text-blue-800 px-3 py-1 rounded-full text-xs font-medium hover:bg-blue-200 transition-colors shadow-sm"
                                                     >
                                                         � Ver Resultados
                                                     </button>
-                                                    <div className="bg-green-100 text-green-800 px-2 py-1 rounded-full text-xs font-medium">
+                                                    <div className="bg-green-100 text-green-800 px-2 py-1 rounded-full text-xs font-medium shadow-sm">
                                                         ✅ Ejecutada
                                                     </div>
                                                 </div>
-                                            )}                                            <div className="p-6">{/* Header */}
+                                            )}                                            <div className="p-6 pb-16">{/* Header */}
                                                 <div className="flex items-start justify-between mb-4">
                                                     <div className="flex items-start gap-3">
                                                         <div className={`p-3 bg-${automation.color}-100 rounded-lg`}>
@@ -2842,11 +2839,10 @@ export default function AIAutomationsPageClient({ userEmail }: AIAutomationsPage
                                     {(showingResults ? combinedResults : combinedResults.slice(0, 6)).map((item, index) => (
                                         <div
                                             key={item.id}
-                                            className={`rounded-lg shadow-sm border p-6 hover:shadow-md transition-all duration-200 cursor-pointer group ${
-                                                item.isRecent 
-                                                    ? 'bg-gradient-to-br from-green-50 to-emerald-50 border-green-200 border-2' 
+                                            className={`rounded-lg shadow-sm border p-6 hover:shadow-md transition-all duration-200 cursor-pointer group ${item.isRecent
+                                                    ? 'bg-gradient-to-br from-green-50 to-emerald-50 border-green-200 border-2'
                                                     : 'bg-white dark:bg-gray-800 border-gray-200 dark:border-gray-700'
-                                            }`}
+                                                }`}
                                             onClick={() => {
                                                 if (item.type === 'session') {
                                                     setCurrentResults(item.result);
@@ -2873,7 +2869,7 @@ export default function AIAutomationsPageClient({ userEmail }: AIAutomationsPage
                                         >
                                             {/* Indicador de resultado reciente */}
                                             {item.isRecent && (
-                                                <div className="absolute top-3 right-3 bg-green-500 text-white px-2 py-1 rounded-full text-xs font-medium animate-pulse">
+                                                <div className="absolute bottom-3 right-3 bg-green-500 text-white px-2 py-1 rounded-full text-xs font-medium animate-pulse z-20 shadow-sm">
                                                     ✨ Recién ejecutada
                                                 </div>
                                             )}
@@ -2881,7 +2877,7 @@ export default function AIAutomationsPageClient({ userEmail }: AIAutomationsPage
                                             <div className="flex items-start justify-between mb-4">
                                                 <div className="flex items-start gap-3">
                                                     <div className="text-2xl">
-                                                        {item.type === 'session' && item.automation 
+                                                        {item.type === 'session' && item.automation
                                                             ? React.createElement(item.automation.icon, { className: "h-6 w-6 text-green-600" })
                                                             : getInsightIcon(item.insight_type)
                                                         }
@@ -2918,10 +2914,9 @@ export default function AIAutomationsPageClient({ userEmail }: AIAutomationsPage
                                                     {item.data_points.sentiment && (
                                                         <div className="flex items-center gap-2">
                                                             <span className="text-sm font-medium">Sentimiento:</span>
-                                                            <span className={`px-2 py-1 rounded-full text-xs font-medium ${
-                                                                item.data_points.sentiment === 'positive' ? 'bg-green-100 text-green-800' :
-                                                                item.data_points.sentiment === 'negative' ? 'bg-red-100 text-red-800' :
-                                                                    'bg-yellow-100 text-yellow-800'
+                                                            <span className={`px-2 py-1 rounded-full text-xs font-medium ${item.data_points.sentiment === 'positive' ? 'bg-green-100 text-green-800' :
+                                                                    item.data_points.sentiment === 'negative' ? 'bg-red-100 text-red-800' :
+                                                                        'bg-yellow-100 text-yellow-800'
                                                                 }`}>
                                                                 {item.data_points.sentiment.toUpperCase()}
                                                             </span>
@@ -2955,11 +2950,10 @@ export default function AIAutomationsPageClient({ userEmail }: AIAutomationsPage
                                                 <Button
                                                     variant="outline"
                                                     size="sm"
-                                                    className={`w-full group-hover:shadow-md transition-all duration-200 ${
-                                                        item.isRecent 
-                                                            ? 'text-green-600 border-green-600 hover:bg-green-50' 
+                                                    className={`w-full group-hover:shadow-md transition-all duration-200 ${item.isRecent
+                                                            ? 'text-green-600 border-green-600 hover:bg-green-50'
                                                             : 'text-blue-600 border-blue-600 hover:bg-blue-50'
-                                                    }`}
+                                                        }`}
                                                     onClick={(e) => {
                                                         e.stopPropagation();
                                                         if (item.type === 'session') {
@@ -3162,8 +3156,8 @@ export default function AIAutomationsPageClient({ userEmail }: AIAutomationsPage
                                                             <div className="flex items-center gap-2 mb-1">
                                                                 <div className="text-sm font-medium text-red-900">{bottleneck.area}</div>
                                                                 <span className={`text-xs px-2 py-1 rounded-full ${bottleneck.impact === 'alto' ? 'bg-red-200 text-red-800' :
-                                                                        bottleneck.impact === 'medio' ? 'bg-yellow-200 text-yellow-800' :
-                                                                            'bg-green-200 text-green-800'
+                                                                    bottleneck.impact === 'medio' ? 'bg-yellow-200 text-yellow-800' :
+                                                                        'bg-green-200 text-green-800'
                                                                     }`}>
                                                                     {bottleneck.impact}
                                                                 </span>
@@ -3191,8 +3185,8 @@ export default function AIAutomationsPageClient({ userEmail }: AIAutomationsPage
                                                             <div className="flex items-center gap-2 mb-1">
                                                                 <div className="text-sm font-medium text-green-900">{opportunity.opportunity}</div>
                                                                 <span className={`text-xs px-2 py-1 rounded-full ${opportunity.priority === 'alta' ? 'bg-red-200 text-red-800' :
-                                                                        opportunity.priority === 'media' ? 'bg-yellow-200 text-yellow-800' :
-                                                                            'bg-green-200 text-green-800'
+                                                                    opportunity.priority === 'media' ? 'bg-yellow-200 text-yellow-800' :
+                                                                        'bg-green-200 text-green-800'
                                                                     }`}>
                                                                     {opportunity.priority}
                                                                 </span>
@@ -3225,8 +3219,8 @@ export default function AIAutomationsPageClient({ userEmail }: AIAutomationsPage
                                                                 <div className="flex items-center gap-4 text-xs text-gray-500">
                                                                     <span>⏱️ {rec.timeframe}</span>
                                                                     <span className={`px-2 py-1 rounded-full ${rec.difficulty === 'fácil' ? 'bg-green-100 text-green-600' :
-                                                                            rec.difficulty === 'medio' ? 'bg-yellow-100 text-yellow-600' :
-                                                                                'bg-red-100 text-red-600'
+                                                                        rec.difficulty === 'medio' ? 'bg-yellow-100 text-yellow-600' :
+                                                                            'bg-red-100 text-red-600'
                                                                         }`}>
                                                                         {rec.difficulty}
                                                                     </span>
@@ -3692,8 +3686,8 @@ export default function AIAutomationsPageClient({ userEmail }: AIAutomationsPage
                                         </div>
                                         <div className="flex items-center gap-4">
                                             <div className={`text-3xl font-bold ${currentResults.analysis.overall_risk_score >= 7 ? 'text-red-600' :
-                                                    currentResults.analysis.overall_risk_score >= 5 ? 'text-yellow-600' :
-                                                        'text-green-600'
+                                                currentResults.analysis.overall_risk_score >= 5 ? 'text-yellow-600' :
+                                                    'text-green-600'
                                                 }`}>
                                                 {currentResults.analysis.overall_risk_score}/10
                                             </div>
@@ -3701,8 +3695,8 @@ export default function AIAutomationsPageClient({ userEmail }: AIAutomationsPage
                                                 <div className="w-full bg-gray-200 rounded-full h-3">
                                                     <div
                                                         className={`h-3 rounded-full transition-all duration-500 ${currentResults.analysis.overall_risk_score >= 7 ? 'bg-red-500' :
-                                                                currentResults.analysis.overall_risk_score >= 5 ? 'bg-yellow-500' :
-                                                                    'bg-green-500'
+                                                            currentResults.analysis.overall_risk_score >= 5 ? 'bg-yellow-500' :
+                                                                'bg-green-500'
                                                             }`}
                                                         style={{ width: `${(currentResults.analysis.overall_risk_score / 10) * 100}%` }}
                                                     ></div>
@@ -3741,12 +3735,12 @@ export default function AIAutomationsPageClient({ userEmail }: AIAutomationsPage
                                                         <div key={index} className="bg-white rounded-lg p-4 border border-red-100 shadow-sm">
                                                             <div className="flex items-start gap-3">
                                                                 <div className={`flex-shrink-0 w-8 h-8 rounded-full flex items-center justify-center mt-1 ${riskSeverity === 'high' || riskProbability >= 7 ? 'bg-red-100' :
-                                                                        riskSeverity === 'medium' || riskProbability >= 4 ? 'bg-yellow-100' :
-                                                                            'bg-green-100'
+                                                                    riskSeverity === 'medium' || riskProbability >= 4 ? 'bg-yellow-100' :
+                                                                        'bg-green-100'
                                                                     }`}>
                                                                     <span className={`font-semibold text-xs ${riskSeverity === 'high' || riskProbability >= 7 ? 'text-red-600' :
-                                                                            riskSeverity === 'medium' || riskProbability >= 4 ? 'text-yellow-600' :
-                                                                                'text-green-600'
+                                                                        riskSeverity === 'medium' || riskProbability >= 4 ? 'text-yellow-600' :
+                                                                            'text-green-600'
                                                                         }`}>
                                                                         {riskSeverity === 'high' || riskProbability >= 7 ? '🔴' :
                                                                             riskSeverity === 'medium' || riskProbability >= 4 ? '🟡' : '🟢'}
