@@ -3,7 +3,7 @@
 import { useState, useEffect } from 'react';
 import { Button } from '@/components/ui/Button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/Card';
-import { Sidebar } from '@/components/Sidebar';
+import Sidebar from '@/components/Sidebar';
 import { 
   Brain, 
   Mail, 
@@ -207,7 +207,7 @@ export default function AutomationsAIClient() {
 
   return (
     <div className="flex min-h-screen bg-black">
-      <Sidebar />
+  <Sidebar onLogout={() => { console.log('Logout'); }} />
       
       <div className="flex-1 pl-64">
         <div className="p-6">

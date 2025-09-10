@@ -2036,7 +2036,14 @@ export default function AIAutomationsPageClient({ userEmail }: AIAutomationsPage
                 return;
             }
 
-            console.log(`✅ Se encontraron ${insights?.length || 0} insights:`, insights?.slice(0, 3).map(i => ({ 
+
+            console.log(`✅ Se encontraron ${insights?.length || 0} insights:`, insights?.slice(0, 3).map((i: {
+                id: string;
+                insight_type: string;
+                created_at: string;
+                title: string;
+                description?: string;
+            }) => ({ 
                 id: i.id, 
                 type: i.insight_type, 
                 created: i.created_at,

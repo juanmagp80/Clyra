@@ -269,20 +269,21 @@ ${analysis.total_hours}h
 Trabajadas
 
 🚫 Bottlenecks Detectados
-${analysis.bottlenecks?.map(b => `${b.issue}
+${analysis.bottlenecks?.map((b: { issue: string; description: string; severity: string }) => `${b.issue}
 ${b.description}
 
 💡 ${b.severity === 'high' ? 'CRÍTICO' : b.severity === 'medium' ? 'IMPORTANTE' : 'MENOR'}: Requiere atención ${b.severity === 'high' ? 'inmediata' : 'próximamente'}.`).join('\n\n') || 'No se detectaron problemas críticos.'}
 
 🚀 Oportunidades
-${analysis.opportunities?.map(o => `${o.area}
+
+${analysis.opportunities?.map((o: { area: string; impact: string; description: string }) => `${o.area}
 ${o.impact.charAt(0).toUpperCase() + o.impact.slice(1)}
 ${o.description}
 
 🛠️ Impacto esperado: ${o.impact === 'high' ? 'Alto' : o.impact === 'medium' ? 'Medio' : 'Bajo'}.`).join('\n\n') || 'Análisis de oportunidades no disponible.'}
 
 💡 Recomendaciones Accionables
-${analysis.recommendations?.map(r => `${r.action}
+${analysis.recommendations?.map((r: { action: string; description?: string; timeline: string; effort: string }) => `${r.action}
 ${r.description || 'Implementar para mejorar el rendimiento general.'}
 
 ⏱️ ${r.timeline === 'immediate' ? 'Inmediato' : r.timeline === 'short_term' ? 'Corto plazo' : 'Largo plazo'}
@@ -298,7 +299,7 @@ ${analysis.predictions?.focus_areas?.length || 0}
 Áreas de Enfoque
 
 🎯 Áreas clave para el próximo período:
-${analysis.predictions?.focus_areas?.map(area => `• ${area.charAt(0).toUpperCase() + area.slice(1)}`).join('\n') || '• Seguimiento de tiempo\n• Aumento de horas facturables\n• Mejora de la comunicación con clientes'}
+  ${analysis.predictions?.focus_areas?.map((area: string) => `• ${area.charAt(0).toUpperCase() + area.slice(1)}`).join('\n') || '• Seguimiento de tiempo\n• Aumento de horas facturables\n• Mejora de la comunicación con clientes'}
 
 📊 Datos Analizados:
 • ${data.raw_data?.events || 0} eventos de calendario

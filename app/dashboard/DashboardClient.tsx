@@ -608,7 +608,7 @@ export default function DashboardBonsai({
             console.log('🔍 Time entries sample:', timeEntries?.slice(0, 3));
 
             // Si no hay time_entries, usar tasks como fallback (pero solo el tiempo de esta semana)
-            let hasTimeEntries = timeEntries && timeEntries.length > 0;
+            const hasTimeEntries = timeEntries && timeEntries.length > 0;
             let tasksData = null;
 
             if (!hasTimeEntries) {

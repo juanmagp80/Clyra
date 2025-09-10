@@ -202,7 +202,7 @@ export default function NewProposalModal({ isOpen, onClose, onSuccess, userEmail
 
     const handleSubmit = async () => {
         if (!proposalData.title.trim() || !proposalData.prospect_name.trim()) {
-            showToast('Por favor completa al menos el título y el nombre del cliente', 'error');
+            showToast.error('Por favor completa al menos el título y el nombre del cliente');
             return;
         }
 
@@ -247,14 +247,14 @@ export default function NewProposalModal({ isOpen, onClose, onSuccess, userEmail
                 throw new Error('Error creando la propuesta');
             }
 
-            showToast('✅ Propuesta creada exitosamente', 'success');
+            showToast.success('✅ Propuesta creada exitosamente');
             resetForm();
             onSuccess();
             onClose();
 
         } catch (error) {
             console.error('Error submitting proposal:', error);
-            showToast(`❌ Error: ${error instanceof Error ? error.message : 'Error desconocido'}`, 'error');
+            showToast.error(`❌ Error: ${error instanceof Error ? error.message : 'Error desconocido'}`);
         } finally {
             setLoading(false);
         }
@@ -262,7 +262,7 @@ export default function NewProposalModal({ isOpen, onClose, onSuccess, userEmail
 
     const nextStep = () => {
         if (step === 1 && (!proposalData.title.trim() || !proposalData.prospect_name.trim())) {
-            showToast('Por favor completa el título y el nombre del cliente', 'warning');
+            showToast.warning('Por favor completa el título y el nombre del cliente');
             return;
         }
         setStep(prev => Math.min(prev + 1, 4));
