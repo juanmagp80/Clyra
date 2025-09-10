@@ -47,6 +47,9 @@ export default function DashboardBonsai({
         billableHoursThisWeek: 0
     });
 
+    // Estado para el tiempo total acumulado
+    const [totalAccumulatedTime, setTotalAccumulatedTime] = useState(0);
+
     // Estado para las categorías reales
     const [categoryData, setCategoryData] = useState<Array<{
         category: string;
@@ -115,6 +118,9 @@ export default function DashboardBonsai({
                     hoursThisMonth: 140,
                     billableHoursThisWeek: 25
                 });
+
+                // Datos demo para tiempo acumulado (342 horas = 1,231,200 segundos)
+                setTotalAccumulatedTime(1231200);
 
                 setRecentActivity([
                     {
@@ -257,6 +263,27 @@ export default function DashboardBonsai({
                 return sum + (task.total_time_seconds || 0);
             }, 0) || 0;
 
+            // Calcular tiempo total de time_entries (en segundos) - TODAS las entradas, no solo de la semana
+            let totalTimeEntriesTime = 0;
+            try {
+                const { data: allTimeEntries } = await supabase
+                    .from('time_entries')
+                    .select('duration_seconds')
+                    .eq('user_id', user.id);
+                
+                totalTimeEntriesTime = allTimeEntries?.reduce((sum: number, entry: any) => {
+                    return sum + (entry.duration_seconds || 0);
+                }, 0) || 0;
+                
+                console.log('📊 Tiempo total de tasks:', Math.round(totalTaskTime / 3600 * 10) / 10, 'horas');
+                console.log('📊 Tiempo total de time_entries:', Math.round(totalTimeEntriesTime / 3600 * 10) / 10, 'horas');
+            } catch (error) {
+                console.warn('Error calculando time_entries totales:', error);
+            }
+
+            // Usar el mayor tiempo entre tasks y time_entries para el tiempo total acumulado
+            const totalAccumulatedSeconds = Math.max(totalTaskTime, totalTimeEntriesTime);
+
             // Calcular tiempo de time_entries de la semana
             const totalMinutesThisWeek = weeklyTimeData?.reduce((sum: number, entry: any) => {
                 return sum + ((entry.duration_seconds || 0) / 60);
@@ -308,6 +335,9 @@ export default function DashboardBonsai({
 
             // Las horas facturables son aproximadamente el 80% de las horas totales
             const billableHoursThisWeek = Math.round((Math.max(hoursFromTasks, hoursFromTimeEntries) * 0.8) * 10) / 10;
+
+            // Actualizar el tiempo total acumulado
+            setTotalAccumulatedTime(totalAccumulatedSeconds);
 
             setMetrics({
                 totalClients: clients?.length || 0,
@@ -1026,8 +1056,8 @@ export default function DashboardBonsai({
                                             <p className="text-xs lg:text-sm font-medium text-gray-600 mb-1">TIEMPO ACUMULADO</p>
                                             <p className="text-base lg:text-xl xl:text-2xl font-semibold text-gray-900 truncate">
                                                 {(() => {
-                                                    const h = Math.floor(totalTaskTime / 3600);
-                                                    const m = Math.floor((totalTaskTime % 3600) / 60);
+                                                    const h = Math.floor(totalAccumulatedTime / 3600);
+                                                    const m = Math.floor((totalAccumulatedTime % 3600) / 60);
                                                     return `${h}h ${m}m`;
                                                 })()}
                                             </p>
