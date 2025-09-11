@@ -22,7 +22,7 @@ interface BudgetItem {
     title: string;
     description: string;
     quantity: number;
-    unit_price: number;
+    unit_price?: number;
     type: 'hours' | 'fixed' | 'milestone';
 }
 
@@ -50,7 +50,7 @@ export function CreateBudgetClient({ userEmail }: CreateBudgetClientProps) {
             title: '',
             description: '',
             quantity: 1,
-            unit_price: 0,
+            unit_price: undefined as unknown as number,
             type: 'hours'
         }
     ]);
@@ -102,7 +102,7 @@ export function CreateBudgetClient({ userEmail }: CreateBudgetClientProps) {
             title: '',
             description: '',
             quantity: 1,
-            unit_price: 0,
+            unit_price: undefined as unknown as number,
             type: 'hours'
         };
         setBudgetItems([...budgetItems, newItem]);
@@ -121,7 +121,7 @@ export function CreateBudgetClient({ userEmail }: CreateBudgetClientProps) {
     };
 
     const calculateSubtotal = () => {
-        return budgetItems.reduce((total, item) => total + (item.quantity * item.unit_price), 0);
+        return budgetItems.reduce((total, item) => total + (item.quantity * (item.unit_price || 0)), 0);
     };
 
     const calculateTax = () => {
@@ -138,7 +138,7 @@ export function CreateBudgetClient({ userEmail }: CreateBudgetClientProps) {
             return;
         }
 
-        if (budgetItems.some(item => !item.title.trim() || item.unit_price <= 0)) {
+        if (budgetItems.some(item => !item.title.trim() || !item.unit_price)) {
             showToast.error('Por favor completa todos los items del presupuesto');
             return;
         }
@@ -412,7 +412,7 @@ export function CreateBudgetClient({ userEmail }: CreateBudgetClientProps) {
                                                     Total
                                                 </label>
                                                 <div className="w-full px-3 py-2 bg-gray-50 border border-gray-300 rounded-lg text-gray-900 font-medium">
-                                                    €{(item.quantity * item.unit_price).toLocaleString()}
+                                                    €{(item.quantity * (item.unit_price || 0)).toLocaleString()}
                                                 </div>
                                             </div>
                                         </div>

@@ -112,24 +112,6 @@ const BudgetDropdownMenu = ({
                         </DropdownMenuItem>
                     </>
                 )}
-                {budget.status === 'sent' && (
-                    <>
-                        <DropdownMenuItem
-                            onClick={() => onApprove(budget.id)}
-                            className="flex items-center text-green-600 focus:text-green-600 hover:text-green-700"
-                        >
-                            <Check className="w-4 h-4 mr-2" />
-                            Aprobar
-                        </DropdownMenuItem>
-                        <DropdownMenuItem
-                            onClick={() => onReject(budget.id)}
-                            className="flex items-center text-red-600 focus:text-red-600 hover:text-red-700"
-                        >
-                            <X className="w-4 h-4 mr-2" />
-                            Rechazar
-                        </DropdownMenuItem>
-                    </>
-                )}
                 <DropdownMenuSeparator />
                 <DropdownMenuItem
                     onClick={() => onDownloadPDF(budget.id)}
@@ -434,12 +416,6 @@ export function BudgetsPageClient({ userEmail }: BudgetsPageClientProps) {
                 return;
             }
 
-            setBudgets(budgets.map(budget =>
-                budget.id === budgetId
-                    ? { ...budget, status: 'approved' as const }
-                    : budget
-            ));
-
             showToast.success('✅ Presupuesto aprobado correctamente');
             await loadBudgets();
 
@@ -467,190 +443,12 @@ export function BudgetsPageClient({ userEmail }: BudgetsPageClientProps) {
                 return;
             }
 
-            setBudgets(budgets.map(budget =>
-                budget.id === budgetId
-                    ? { ...budget, status: 'rejected' as const }
-                    : budget
-            ));
-
             showToast.success('❌ Presupuesto rechazado correctamente');
             await loadBudgets();
 
         } catch (error) {
             console.error('Error:', error);
             showToast.error('Error al rechazar el presupuesto');
-        }
-    };
-
-    const handleDownloadPDF = async (budgetId: string) => {
-        try {
-            showToast.info('Generando PDF...');
-            
-            const supabase = createSupabaseClient();
-            
-            // Obtener el presupuesto con sus items y datos del cliente
-            const { data: budget, error: budgetError } = await supabase
-                .from('budgets')
-                .select(`
-                    *,
-                    budget_items(*),
-                    clients(
-                        name,
-                        email,
-                        address,
-                        phone,
-                        tax_id
-                    )
-                `)
-                .eq('id', budgetId)
-                .single();
-
-            if (budgetError || !budget) {
-                console.error('Error fetching budget:', budgetError);
-                showToast.error('Error al obtener los datos del presupuesto');
-                return;
-            }
-
-            // Importar dinámicamente pdfkit-browserify
-            const PDFDocument = (await import('pdfkit-browserify')).default;
-            const blobStream = (await import('blob-stream')).default;
-
-            // Crear el documento PDF
-            const doc = new PDFDocument({
-                size: 'A4',
-                margin: 50
-            });
-
-            // Crear un stream para el PDF
-            const stream = doc.pipe(blobStream());
-
-            // Encabezado
-            doc.fontSize(20)
-                .text('PRESUPUESTO', { align: 'center' })
-                .moveDown();
-
-            // Información del presupuesto
-            doc.fontSize(12)
-                .text(`Número: #${budget.id}`)
-                .text(`Fecha: ${new Date(budget.created_at).toLocaleDateString('es-ES')}`)
-                .text(`Estado: ${budget.status.toUpperCase()}`)
-                .moveDown();
-
-            // Información del cliente
-            doc.fontSize(14)
-                .text('CLIENTE', { underline: true })
-                .fontSize(12)
-                .text(budget.clients.name)
-                .text(budget.clients.address || '')
-                .text(budget.clients.email)
-                .text(`CIF/NIF: ${budget.clients.tax_id || ''}`)
-                .moveDown();
-
-            // Tabla de items
-            doc.fontSize(14)
-                .text('DETALLES DEL PRESUPUESTO', { underline: true })
-                .moveDown();
-
-            // Encabezados de la tabla
-            let startX = 50;
-            let startY = doc.y;
-
-            doc.fontSize(10)
-                .text('Descripción', startX, startY)
-                .text('Cantidad', startX + 300, startY)
-                .text('Precio', startX + 380, startY)
-                .text('Total', startX + 460, startY)
-                .moveDown();
-
-            // Línea separadora
-            doc.moveTo(50, doc.y)
-                .lineTo(550, doc.y)
-                .stroke()
-                .moveDown();
-
-            // Items
-            let subtotal = 0;
-            budget.budget_items.forEach((item: any) => {
-                const itemTotal = item.quantity * item.unit_price;
-                subtotal += itemTotal;
-
-                doc.text(item.title, startX)
-                    .text(item.quantity.toString(), startX + 300)
-                    .text(`€${item.unit_price.toLocaleString('es-ES', { minimumFractionDigits: 2 })}`, startX + 380)
-                    .text(`€${itemTotal.toLocaleString('es-ES', { minimumFractionDigits: 2 })}`, startX + 460)
-                    .moveDown();
-
-                if (item.description) {
-                    doc.fontSize(8)
-                        .text(item.description, startX, doc.y - 10, { width: 280 })
-                        .fontSize(10)
-                        .moveDown();
-                }
-            });
-
-            // Línea separadora
-            doc.moveTo(50, doc.y)
-                .lineTo(550, doc.y)
-                .stroke()
-                .moveDown();
-
-            // Totales
-            const tax = (subtotal * (budget.tax_rate || 0)) / 100;
-            const total = subtotal + tax;
-
-            doc.fontSize(10)
-                .text('Subtotal:', 380, doc.y)
-                .text(`€${subtotal.toLocaleString('es-ES', { minimumFractionDigits: 2 })}`, 460)
-                .moveDown();
-
-            doc.text(`IVA (${budget.tax_rate}%):`, 380)
-                .text(`€${tax.toLocaleString('es-ES', { minimumFractionDigits: 2 })}`, 460)
-                .moveDown();
-
-            doc.fontSize(12)
-                .text('TOTAL:', 380)
-                .text(`€${total.toLocaleString('es-ES', { minimumFractionDigits: 2 })}`, 460)
-                .moveDown();
-
-            // Notas y condiciones
-            if (budget.notes) {
-                doc.moveDown()
-                    .fontSize(14)
-                    .text('NOTAS', { underline: true })
-                    .fontSize(10)
-                    .text(budget.notes)
-                    .moveDown();
-            }
-
-            if (budget.terms_conditions) {
-                doc.moveDown()
-                    .fontSize(14)
-                    .text('TÉRMINOS Y CONDICIONES', { underline: true })
-                    .fontSize(10)
-                    .text(budget.terms_conditions)
-                    .moveDown();
-            }
-
-            // Finalizar el documento
-            doc.end();
-
-            // Cuando el stream termine, crear el blob y descargar
-            stream.on('finish', () => {
-                const blob = stream.toBlob('application/pdf');
-                const url = window.URL.createObjectURL(blob);
-                const a = document.createElement('a');
-                a.href = url;
-                a.download = `presupuesto-${budgetId}.pdf`;
-                document.body.appendChild(a);
-                a.click();
-                window.URL.revokeObjectURL(url);
-                document.body.removeChild(a);
-                showToast.success('PDF generado correctamente');
-            });
-
-        } catch (error) {
-            console.error('Error downloading PDF:', error);
-            showToast.error('Error al generar el PDF');
         }
     };
 
@@ -790,7 +588,7 @@ export function BudgetsPageClient({ userEmail }: BudgetsPageClientProps) {
                                 <Filter className="w-4 h-4 text-gray-400" />
                                 <select
                                     value={statusFilter}
-                                    onChange={(e) => setStatusFilter(e.target.value)}
+                                    onChange={(e) => setStatusFilter(e.value)}
                                     className="px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent dark:bg-gray-700 dark:text-white"
                                 >
                                     <option value="all">Todos los estados</option>
