@@ -167,7 +167,7 @@ export function CreateBudgetClient({ userEmail }: CreateBudgetClientProps) {
                 .select()
                 .single();
 
-            if (budgetError) {
+            if (budgetError && Object.keys(budgetError).length > 0) {
                 console.error('Error creating budget:', budgetError);
                 showToast.error('Error al crear presupuesto');
                 return;
@@ -187,7 +187,7 @@ export function CreateBudgetClient({ userEmail }: CreateBudgetClientProps) {
                 .from('budget_items')
                 .insert(itemsToInsert);
 
-            if (itemsError) {
+            if (itemsError && Object.keys(itemsError).length > 0) {
                 console.error('Error creating budget items:', itemsError);
                 showToast.error('Error al crear items del presupuesto');
                 return;

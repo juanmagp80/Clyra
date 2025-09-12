@@ -1,5 +1,6 @@
 import CookieBanner from '@/components/CookieBanner';
 import CookieSettings from '@/components/CookieSettings';
+import { CookieCleanupProvider } from '@/components/CookieCleanupProvider';
 import { ThemeProvider } from '@/components/providers/ThemeProvider';
 import type { Metadata } from 'next';
 import { Inter } from 'next/font/google';
@@ -35,15 +36,16 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
   return (
     <html lang="es" suppressHydrationWarning>
       <body suppressHydrationWarning={true} className={`${inter.className} transition-colors duration-300 antialiased`}>
-        <ThemeProvider
-          attribute="class"
-          defaultTheme="light"
-          enableSystem={false}
-          disableTransitionOnChange={false}
-          themes={['light']}
-          forcedTheme="light"
-        >
-          {children}
+        <CookieCleanupProvider>
+          <ThemeProvider
+            attribute="class"
+            defaultTheme="light"
+            enableSystem={false}
+            disableTransitionOnChange={false}
+            themes={['light']}
+            forcedTheme="light"
+          >
+            {children}
           <CookieBanner />
           <CookieSettings />
           <Toaster
@@ -67,7 +69,8 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
               },
             }}
           />
-        </ThemeProvider>
+          </ThemeProvider>
+        </CookieCleanupProvider>
       </body>
     </html>
   );

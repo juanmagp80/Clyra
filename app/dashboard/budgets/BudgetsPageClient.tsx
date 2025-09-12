@@ -13,6 +13,9 @@ import {
 } from '@/components/ui/dropdown-menu';
 import { createSupabaseClient } from '@/src/lib/supabase-client';
 import { useTrialStatus } from '@/src/lib/useTrialStatus';
+import { cleanSupabaseCookies, hasCorruptedSupabaseCookies } from '@/src/utils/cookie-cleanup';
+import { useSupabaseErrorHandler, debugSupabaseResult } from '@/src/hooks/useSupabaseErrorHandler';
+import { debugSupabaseCookies, checkAuthenticationState } from '@/src/utils/auth-debug';
 import { showToast } from '@/utils/toast';
 import {
     Calculator,
@@ -169,8 +172,24 @@ interface BudgetsPageClientProps {
     userEmail: string;
 }
 
+// Helper function para validar errores de Supabase
+const isSupabaseError = (error: any): boolean => {
+    if (!error || typeof error !== 'object') return false;
+    
+    // Si es null o undefined, no es error
+    if (error === null || error === undefined) return false;
+    
+    // Si es un objeto vacío, no es error
+    const keys = Object.keys(error);
+    if (keys.length === 0) return false;
+    
+    // Solo considerar error si tiene propiedades específicas de error de Supabase
+    return !!(error.message || error.code || error.details || error.hint || error.status);
+};
+
 export function BudgetsPageClient({ userEmail }: BudgetsPageClientProps) {
     const router = useRouter();
+    const { handleSupabaseOperation } = useSupabaseErrorHandler();
     const [budgets, setBudgets] = useState<Budget[]>([]);
     const [loading, setLoading] = useState(true);
     const [searchTerm, setSearchTerm] = useState('');
@@ -205,6 +224,17 @@ export function BudgetsPageClient({ userEmail }: BudgetsPageClientProps) {
     const { canUseFeatures } = useTrialStatus(userEmail);
 
     useEffect(() => {
+        // Verificar y limpiar cookies corruptas antes de cargar datos
+        if (hasCorruptedSupabaseCookies()) {
+            console.warn('🍪 Detected corrupted Supabase cookies, cleaning...');
+            cleanSupabaseCookies();
+            return;
+        }
+        
+        // Debug de cookies y estado de autenticación
+        debugSupabaseCookies();
+        checkAuthenticationState();
+        
         loadBudgets();
     }, [userEmail]);
 
@@ -322,7 +352,7 @@ export function BudgetsPageClient({ userEmail }: BudgetsPageClientProps) {
                 .select()
                 .single();
 
-            if (budgetError) {
+            if (isSupabaseError(budgetError)) {
                 console.error('Error duplicating budget:', budgetError);
                 showToast.error('Error al duplicar el presupuesto');
                 return;
@@ -488,26 +518,27 @@ export function BudgetsPageClient({ userEmail }: BudgetsPageClientProps) {
             
             const supabase = createSupabaseClient();
             
-            // Obtener el presupuesto con sus items y datos del cliente
-            const { data: budget, error: budgetError } = await supabase
-                .from('budgets')
-                .select(`
-                    *,
-                    budget_items(*),
-                    clients(
-                        name,
-                        email,
-                        address,
-                        phone,
-                        tax_id
-                    )
-                `)
-                .eq('id', budgetId)
-                .single();
+            // Usar el nuevo hook para manejar la operación de Supabase
+            const { data: budget, success } = await handleSupabaseOperation(
+                () => supabase
+                    .from('budgets')
+                    .select(`
+                        *,
+                        budget_items(*),
+                        clients(
+                            name,
+                            email,
+                            phone,
+                            company
+                        )
+                    `)
+                    .eq('id', budgetId)
+                    .single(),
+                'obtener presupuesto para PDF'
+            );
 
-            if (budgetError || !budget) {
-                console.error('Error fetching budget:', budgetError);
-                showToast.error('Error al obtener los datos del presupuesto');
+            if (!success || !budget) {
+                // El error ya fue mostrado por el hook
                 return;
             }
 
@@ -515,120 +546,436 @@ export function BudgetsPageClient({ userEmail }: BudgetsPageClientProps) {
             const PDFDocument = (await import('pdfkit-browserify')).default;
             const blobStream = (await import('blob-stream')).default;
 
+            // Obtener información del usuario/freelancer
+            const { data: { user } } = await supabase.auth.getUser();
+            let freelancerInfo = null;
+            let budgetNumber = 'PREP-001';
+            
+            if (user) {
+                // Obtener información del freelancer
+                const { data: profileData } = await supabase
+                    .from('profiles')
+                    .select('full_name, company, phone, website, email')
+                    .eq('id', user.id)
+                    .single();
+                freelancerInfo = profileData;
+
+                // Usar el budget_reference existente o generar uno temporal si no existe
+                budgetNumber = budget.budget_reference || `PREP-${budget.id.slice(0, 8)}`;
+            }
+
             // Crear el documento PDF
             const doc = new PDFDocument({
                 size: 'A4',
-                margin: 50
+                margin: 40,
+                bufferPages: true
             });
 
             // Crear un stream para el PDF
             const stream = doc.pipe(blobStream());
 
-            // Encabezado
-            doc.fontSize(20)
-                .text('PRESUPUESTO', { align: 'center' })
-                .moveDown();
+            // Colores y configuración mejorados
+            const primaryColor = '#1e40af'; // Azul más profesional
+            const secondaryColor = '#f1f5f9';
+            const accentColor = '#0ea5e9';
+            const grayColor = '#64748b';
+            const lightGrayColor = '#f8fafc';
+            const darkColor = '#0f172a';
+            const textColor = '#334155';
 
-            // Información del presupuesto
+            // Configuración de página
+            const pageWidth = 595;
+            const pageHeight = 842;
+            const marginLeft = 40;
+            const marginRight = 40;
+            const contentWidth = pageWidth - marginLeft - marginRight;
+
+            // === ENCABEZADO PROFESIONAL ===
+            // Fondo degradado del encabezado
+            doc.rect(0, 0, pageWidth, 100)
+               .fillAndStroke(primaryColor, primaryColor);
+
+            // Título principal
+            doc.fillColor('white')
+               .fontSize(32)
+               .font('Helvetica-Bold')
+               .text('PRESUPUESTO', marginLeft, 25);
+
+            // Información del documento en el encabezado
             doc.fontSize(12)
-                .text(`Número: #${budget.id}`)
-                .text(`Fecha: ${new Date(budget.created_at).toLocaleDateString('es-ES')}`)
-                .text(`Estado: ${budget.status.toUpperCase()}`)
-                .moveDown();
+               .font('Helvetica')
+               .text(`Nº ${budgetNumber}`, pageWidth - 200, 30)
+               .text(`Fecha: ${new Date(budget.created_at).toLocaleDateString('es-ES')}`, pageWidth - 200, 50)
+               .text(`Estado: ${budget.status.toUpperCase()}`, pageWidth - 200, 70);
 
-            // Información del cliente
-            doc.fontSize(14)
-                .text('CLIENTE', { underline: true })
-                .fontSize(12)
-                .text(budget.clients.name)
-                .text(budget.clients.address || '')
-                .text(budget.clients.email)
-                .text(`CIF/NIF: ${budget.clients.tax_id || ''}`)
-                .moveDown();
+            // === SECCIÓN DE INFORMACIÓN DE CONTACTO MEJORADA ===
+            let yPosition = 120;
 
-            // Tabla de items
-            doc.fontSize(14)
-                .text('DETALLES DEL PRESUPUESTO', { underline: true })
-                .moveDown();
+            // Cajas de información con fondo
+            // Caja del freelancer (izquierda)
+            doc.rect(marginLeft, yPosition, (contentWidth / 2) - 10, 120)
+               .fillAndStroke(lightGrayColor, '#e2e8f0');
 
-            // Encabezados de la tabla
-            let startX = 50;
-            let startY = doc.y;
+            // Caja del cliente (derecha)  
+            doc.rect(marginLeft + (contentWidth / 2) + 10, yPosition, (contentWidth / 2) - 10, 120)
+               .fillAndStroke(lightGrayColor, '#e2e8f0');
 
-            doc.fontSize(10)
-                .text('Descripción', startX, startY)
-                .text('Cantidad', startX + 300, startY)
-                .text('Precio', startX + 380, startY)
-                .text('Total', startX + 460, startY)
-                .moveDown();
+            // === INFORMACIÓN DEL FREELANCER ===
+            let freelancerY = yPosition + 15;
+            doc.fillColor(primaryColor)
+               .fontSize(12)
+               .font('Helvetica-Bold')
+               .text('EMISOR', marginLeft + 10, freelancerY);
 
-            // Línea separadora
-            doc.moveTo(50, doc.y)
-                .lineTo(550, doc.y)
-                .stroke()
-                .moveDown();
+            freelancerY += 20;
+            doc.fillColor(darkColor)
+               .fontSize(11)
+               .font('Helvetica');
 
-            // Items
+            if (freelancerInfo) {
+                // Nombre de la empresa o freelancer
+                const displayName = freelancerInfo.company || freelancerInfo.full_name || 'Freelancer';
+                doc.font('Helvetica-Bold')
+                   .text(displayName, marginLeft + 10, freelancerY);
+                freelancerY += 15;
+
+                // Nombre personal si hay empresa
+                if (freelancerInfo.company && freelancerInfo.full_name) {
+                    doc.font('Helvetica')
+                       .fillColor(textColor)
+                       .text(freelancerInfo.full_name, marginLeft + 10, freelancerY);
+                    freelancerY += 12;
+                }
+
+                // Email
+                if (user?.email) {
+                    doc.font('Helvetica')
+                       .fillColor(textColor)
+                       .text(`Email: ${user.email}`, marginLeft + 10, freelancerY);
+                    freelancerY += 12;
+                }
+
+                // Teléfono
+                if (freelancerInfo.phone) {
+                    doc.text(`Tel: ${freelancerInfo.phone}`, marginLeft + 10, freelancerY);
+                    freelancerY += 12;
+                }
+
+                // Sitio web
+                if (freelancerInfo.website) {
+                    doc.text(`Web: ${freelancerInfo.website}`, marginLeft + 10, freelancerY);
+                }
+            } else {
+                doc.font('Helvetica-Bold')
+                   .text('Freelancer Profesional', marginLeft + 10, freelancerY);
+                freelancerY += 15;
+                if (user?.email) {
+                    doc.font('Helvetica')
+                       .fillColor(textColor)
+                       .text(`Email: ${user.email}`, marginLeft + 10, freelancerY);
+                }
+            }
+
+            // === INFORMACIÓN DEL CLIENTE ===
+            let clientY = yPosition + 15;
+            const clientX = marginLeft + (contentWidth / 2) + 20;
+            
+            doc.fillColor(primaryColor)
+               .fontSize(12)
+               .font('Helvetica-Bold')
+               .text('CLIENTE', clientX, clientY);
+
+            clientY += 20;
+            doc.fillColor(darkColor)
+               .fontSize(11)
+               .font('Helvetica-Bold')
+               .text(budget.clients.name, clientX, clientY);
+
+            clientY += 15;
+            doc.font('Helvetica')
+               .fillColor(textColor);
+
+            if (budget.clients.email) {
+                doc.text(`Email: ${budget.clients.email}`, clientX, clientY);
+                clientY += 12;
+            }
+            
+            if (budget.clients.phone) {
+                doc.text(`Tel: ${budget.clients.phone}`, clientX, clientY);
+                clientY += 12;
+            }
+
+            if (budget.clients.address) {
+                doc.text(`Dirección: ${budget.clients.address}`, clientX, clientY, { width: (contentWidth / 2) - 30 });
+            }
+
+            // === ESPACIADO Y LÍNEA SEPARADORA ===
+            yPosition = 260; // Posición fija después de las cajas de información
+            
+            doc.moveTo(marginLeft, yPosition)
+               .lineTo(pageWidth - marginRight, yPosition)
+               .strokeColor('#cbd5e1')
+               .lineWidth(2)
+               .stroke();
+
+            // === TÍTULO Y DESCRIPCIÓN DEL PRESUPUESTO ===
+            yPosition += 25;
+            
+            if (budget.title) {
+                doc.fillColor(primaryColor)
+                   .fontSize(18)
+                   .font('Helvetica-Bold')
+                   .text(budget.title, marginLeft, yPosition);
+                yPosition += 30;
+            }
+
+            if (budget.description) {
+                doc.fillColor(textColor)
+                   .fontSize(11)
+                   .font('Helvetica')
+                   .text(budget.description, marginLeft, yPosition, { width: contentWidth });
+                yPosition += 35;
+            }
+
+            // === TABLA DE ITEMS PROFESIONAL ===
+            yPosition += 15;
+
+            // Encabezado de tabla mejorado
+            const tableHeaderY = yPosition;
+            doc.rect(marginLeft, tableHeaderY, contentWidth, 30)
+               .fillAndStroke(primaryColor, primaryColor);
+
+            doc.fillColor('white')
+               .fontSize(12)
+               .font('Helvetica-Bold')
+               .text('DESCRIPCIÓN', marginLeft + 15, tableHeaderY + 10)
+               .text('CANT.', marginLeft + 320, tableHeaderY + 10)
+               .text('PRECIO', marginLeft + 380, tableHeaderY + 10)
+               .text('TOTAL', marginLeft + 450, tableHeaderY + 10);
+
+            yPosition += 35;
+
+            // Items del presupuesto con mejor espaciado
             let subtotal = 0;
-            budget.budget_items.forEach((item: any) => {
+            let rowHeight = 0;
+
+            budget.budget_items.forEach((item: any, index: number) => {
                 const itemTotal = item.quantity * item.unit_price;
                 subtotal += itemTotal;
 
-                doc.text(item.title, startX)
-                    .text(item.quantity.toString(), startX + 300)
-                    .text(`€${item.unit_price.toLocaleString('es-ES', { minimumFractionDigits: 2 })}`, startX + 380)
-                    .text(`€${itemTotal.toLocaleString('es-ES', { minimumFractionDigits: 2 })}`, startX + 460)
-                    .moveDown();
+                // Calcular altura necesaria para la fila
+                const titleLines = Math.ceil(doc.widthOfString(item.title) / 300);
+                const descLines = item.description ? Math.ceil(doc.widthOfString(item.description) / 300) : 0;
+                rowHeight = Math.max(25, (titleLines * 12) + (descLines * 10) + 15);
 
-                if (item.description) {
-                    doc.fontSize(8)
-                        .text(item.description, startX, doc.y - 10, { width: 280 })
-                        .fontSize(10)
-                        .moveDown();
+                // Verificar si necesitamos una nueva página
+                if (yPosition + rowHeight > pageHeight - 150) {
+                    doc.addPage();
+                    yPosition = 50;
                 }
+
+                // Fila alternada con mejor contraste
+                if (index % 2 === 0) {
+                    doc.rect(marginLeft, yPosition - 5, contentWidth, rowHeight)
+                       .fillAndStroke(lightGrayColor, lightGrayColor);
+                }
+
+                // Contenido de la fila
+                doc.fillColor(darkColor)
+                   .fontSize(11)
+                   .font('Helvetica-Bold')
+                   .text(item.title, marginLeft + 15, yPosition, { width: 300 });
+
+                let currentY = yPosition;
+                if (item.description) {
+                    currentY += 15;
+                    doc.fillColor(textColor)
+                       .fontSize(9)
+                       .font('Helvetica')
+                       .text(item.description, marginLeft + 15, currentY, { width: 300 });
+                }
+
+                // Cantidad, precio y total alineados
+                doc.fillColor(darkColor)
+                   .fontSize(11)
+                   .font('Helvetica')
+                   .text(item.quantity.toString(), marginLeft + 330, yPosition)
+                   .text(`€${item.unit_price.toLocaleString('es-ES', { minimumFractionDigits: 2 })}`, marginLeft + 385, yPosition)
+                   .font('Helvetica-Bold')
+                   .text(`€${itemTotal.toLocaleString('es-ES', { minimumFractionDigits: 2 })}`, marginLeft + 455, yPosition);
+
+                yPosition += rowHeight + 5;
             });
 
-            // Línea separadora
-            doc.moveTo(50, doc.y)
-                .lineTo(550, doc.y)
-                .stroke()
-                .moveDown();
+            // === SECCIÓN DE TOTALES MEJORADA ===
+            yPosition += 25;
 
-            // Totales
-            const tax = (subtotal * (budget.tax_rate || 0)) / 100;
+            // Verificar si necesitamos nueva página para los totales
+            if (yPosition > pageHeight - 200) {
+                doc.addPage();
+                yPosition = 50;
+            }
+            
+            // Área de totales con fondo
+            const totalsBoxY = yPosition;
+            const totalsBoxWidth = 250;
+            const totalsBoxX = pageWidth - marginRight - totalsBoxWidth;
+
+            doc.rect(totalsBoxX, totalsBoxY, totalsBoxWidth, 100)
+               .fillAndStroke(secondaryColor, '#cbd5e1');
+
+            yPosition += 15;
+
+            const tax = (subtotal * (budget.tax_rate || 21)) / 100;
             const total = subtotal + tax;
 
-            doc.fontSize(10)
-                .text('Subtotal:', 380, doc.y)
-                .text(`€${subtotal.toLocaleString('es-ES', { minimumFractionDigits: 2 })}`, 460)
-                .moveDown();
+            // Subtotal
+            doc.fillColor(textColor)
+               .fontSize(12)
+               .font('Helvetica')
+               .text('Subtotal:', totalsBoxX + 15, yPosition)
+               .text(`€${subtotal.toLocaleString('es-ES', { minimumFractionDigits: 2 })}`, totalsBoxX + 150, yPosition, { align: 'right' });
 
-            doc.text(`IVA (${budget.tax_rate}%):`, 380)
-                .text(`€${tax.toLocaleString('es-ES', { minimumFractionDigits: 2 })}`, 460)
-                .moveDown();
+            yPosition += 20;
 
-            doc.fontSize(12)
-                .text('TOTAL:', 380)
-                .text(`€${total.toLocaleString('es-ES', { minimumFractionDigits: 2 })}`, 460)
-                .moveDown();
+            // IVA
+            doc.text(`IVA (${budget.tax_rate || 21}%):`, totalsBoxX + 15, yPosition)
+               .text(`€${tax.toLocaleString('es-ES', { minimumFractionDigits: 2 })}`, totalsBoxX + 150, yPosition, { align: 'right' });
 
-            // Notas y condiciones
+            yPosition += 25;
+
+            // Total principal destacado
+            doc.rect(totalsBoxX + 10, yPosition - 8, totalsBoxWidth - 20, 30)
+               .fillAndStroke(primaryColor, primaryColor);
+
+            doc.fillColor('white')
+               .fontSize(16)
+               .font('Helvetica-Bold')
+               .text('TOTAL:', totalsBoxX + 20, yPosition)
+               .text(`€${total.toLocaleString('es-ES', { minimumFractionDigits: 2 })}`, totalsBoxX + 150, yPosition);
+
+            yPosition = totalsBoxY + 120;
+
+            // === NOTAS Y CONDICIONES MEJORADAS ===
+            yPosition += 30;
+
+            if (budget.notes || budget.terms_conditions) {
+                // Verificar si necesitamos nueva página
+                if (yPosition > pageHeight - 150) {
+                    doc.addPage();
+                    yPosition = 50;
+                }
+            }
+
             if (budget.notes) {
-                doc.moveDown()
-                    .fontSize(14)
-                    .text('NOTAS', { underline: true })
-                    .fontSize(10)
-                    .text(budget.notes)
-                    .moveDown();
+                // Caja para las notas
+                doc.rect(marginLeft, yPosition, contentWidth, 15)
+                   .fillAndStroke(accentColor, accentColor);
+                
+                doc.fillColor('white')
+                   .fontSize(12)
+                   .font('Helvetica-Bold')
+                   .text('NOTAS ADICIONALES', marginLeft + 15, yPosition + 4);
+                
+                yPosition += 25;
+                doc.fontSize(11)
+                   .font('Helvetica')
+                   .fillColor(textColor)
+                   .text(budget.notes, marginLeft, yPosition, { 
+                       width: contentWidth,
+                       lineGap: 3
+                   });
+                yPosition += 35;
             }
 
             if (budget.terms_conditions) {
-                doc.moveDown()
-                    .fontSize(14)
-                    .text('TÉRMINOS Y CONDICIONES', { underline: true })
-                    .fontSize(10)
-                    .text(budget.terms_conditions)
-                    .moveDown();
+                // Caja para términos y condiciones
+                doc.rect(marginLeft, yPosition, contentWidth, 15)
+                   .fillAndStroke('#dc2626', '#dc2626');
+                
+                doc.fillColor('white')
+                   .fontSize(12)
+                   .font('Helvetica-Bold')
+                   .text('TÉRMINOS Y CONDICIONES', marginLeft + 15, yPosition + 4);
+                
+                yPosition += 25;
+                doc.fontSize(10)
+                   .font('Helvetica')
+                   .fillColor(textColor)
+                   .text(budget.terms_conditions, marginLeft, yPosition, { 
+                       width: contentWidth,
+                       lineGap: 2
+                   });
+                yPosition += 35;
+            }
+
+            // === PIE DE PÁGINA PROFESIONAL ===
+            const footerY = pageHeight - 100;
+
+            // Asegurar que estamos en la última página para el pie
+            if (yPosition > footerY - 50) {
+                doc.addPage();
+                yPosition = 50;
+            }
+
+            // Línea separadora del pie más elegante
+            doc.moveTo(marginLeft, footerY)
+               .lineTo(pageWidth - marginRight, footerY)
+               .strokeColor('#cbd5e1')
+               .lineWidth(2)
+               .stroke();
+
+            // Información del pie en dos columnas
+            const footerTextY = footerY + 20;
+            
+            // Columna izquierda - Información de validez
+            doc.fontSize(10)
+               .fillColor(textColor)
+               .font('Helvetica')
+               .text('• Este presupuesto es válido por 30 días desde la fecha de emisión.', marginLeft, footerTextY)
+               .text(`• Generado el ${new Date().toLocaleDateString('es-ES')} a las ${new Date().toLocaleTimeString('es-ES')}`, marginLeft, footerTextY + 15);
+
+            // Columna derecha - Estado del presupuesto
+            const statusColors: { [key: string]: string } = {
+                'draft': '#64748b',
+                'sent': '#0ea5e9',
+                'approved': '#10b981',
+                'rejected': '#ef4444'
+            };
+
+            const statusLabels: { [key: string]: string } = {
+                'draft': 'BORRADOR',
+                'sent': 'ENVIADO',
+                'approved': 'APROBADO',
+                'rejected': 'RECHAZADO'
+            };
+
+            const statusColor = statusColors[budget.status] || '#64748b';
+            const statusLabel = statusLabels[budget.status] || budget.status.toUpperCase();
+
+            // Badge del estado más elegante
+            const statusBadgeX = pageWidth - marginRight - 120;
+            doc.rect(statusBadgeX, footerTextY - 5, 110, 25)
+               .fillAndStroke(statusColor, statusColor);
+
+            doc.fillColor('white')
+               .fontSize(10)
+               .font('Helvetica-Bold')
+               .text(statusLabel, statusBadgeX + 10, footerTextY + 3);
+
+            // Información adicional de contacto en el pie
+            if (freelancerInfo && (freelancerInfo.phone || freelancerInfo.website)) {
+                doc.fontSize(8)
+                   .fillColor(grayColor)
+                   .font('Helvetica');
+                
+                let contactInfo = '';
+                if (freelancerInfo.phone) contactInfo += `Tel: ${freelancerInfo.phone}  `;
+                if (freelancerInfo.website) contactInfo += `Web: ${freelancerInfo.website}`;
+                
+                if (contactInfo) {
+                    doc.text(contactInfo, marginLeft, footerY + 65);
+                }
             }
 
             // Finalizar el documento

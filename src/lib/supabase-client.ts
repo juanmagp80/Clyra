@@ -15,6 +15,27 @@ export const isSupabaseConfigured = () => {
               supabaseUrl.startsWith('https://'));
 };
 
+// Función para limpiar cookies corruptas de Supabase
+const cleanCorruptedSupabaseCookies = () => {
+    try {
+        // Obtener todas las cookies
+        const cookies = document.cookie.split(';');
+        
+        // Buscar cookies de Supabase que puedan estar corruptas
+        cookies.forEach(cookie => {
+            const trimmedCookie = cookie.trim();
+            if (trimmedCookie.startsWith('sb-') && trimmedCookie.includes('base64-')) {
+                const cookieName = trimmedCookie.split('=')[0];
+                // Eliminar la cookie corrupta
+                document.cookie = `${cookieName}=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/;`;
+                console.log('🧹 Cleaned corrupted Supabase cookie:', cookieName);
+            }
+        });
+    } catch (error) {
+        console.warn('Error cleaning cookies:', error);
+    }
+};
+
 // Cliente de Supabase para componentes de cliente (navegador)
 export const createSupabaseClient = () => {
     if (!isSupabaseConfigured()) {
@@ -39,7 +60,24 @@ export const createSupabaseClient = () => {
             },
         } as any; // Usamos 'as any' para el mock
     }
-    return createBrowserClient(supabaseUrl!, supabaseAnonKey!);
+    
+    try {
+        return createBrowserClient(supabaseUrl!, supabaseAnonKey!);
+    } catch (error: any) {
+        // Si hay error de cookies corruptas, limpiarlas e intentar de nuevo
+        if (error.message && error.message.includes('parse cookie')) {
+            console.warn('🔧 Detected corrupted Supabase cookies, cleaning...');
+            cleanCorruptedSupabaseCookies();
+            
+            try {
+                return createBrowserClient(supabaseUrl!, supabaseAnonKey!);
+            } catch (retryError) {
+                console.error('Failed to create Supabase client after cookie cleanup:', retryError);
+                throw retryError;
+            }
+        }
+        throw error;
+    }
 };
 
 // Exportamos una instancia singleton para uso general si es necesario,
