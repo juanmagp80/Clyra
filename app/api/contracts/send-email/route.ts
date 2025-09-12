@@ -104,7 +104,7 @@ export async function POST(request: NextRequest) {
             // Configurar el email con el PDF adjunto usando dominio verificado
             const freelancerName = profile?.full_name || user.email?.split('@')[0] || 'Freelancer';
             const fromEmail = `${freelancerName} <noreply@taskelio.app>`;
-            
+
             const emailData = {
                 from: fromEmail,
                 to: [contract.clients.email],
@@ -173,11 +173,11 @@ function generateEmailHtml(contract: any, profile: any, user: any): string {
     const extractNameFromEmail = (email: string) => {
         return email.split('@')[0].replace(/[._]/g, ' ').replace(/\b\w/g, l => l.toUpperCase());
     };
-    
-    const companyName = profile?.company_name || profile?.full_name || 
-                       (user?.email ? extractNameFromEmail(user.email) : 'Freelancer');
-    const userName = profile?.full_name || 
-                     (user?.email ? extractNameFromEmail(user.email) : 'Freelancer');
+
+    const companyName = profile?.company_name || profile?.full_name ||
+        (user?.email ? extractNameFromEmail(user.email) : 'Freelancer');
+    const userName = profile?.full_name ||
+        (user?.email ? extractNameFromEmail(user.email) : 'Freelancer');
 
     return `
     <!DOCTYPE html>

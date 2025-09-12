@@ -162,7 +162,7 @@ export default function ContractDetailClient({ contractId, userEmail }: Contract
             // Función para detectar el tipo de servicio
             const detectServiceType = (title: string, description: string): string => {
                 const text = (title + ' ' + description).toLowerCase();
-                
+
                 if (text.includes('desarrollo') || text.includes('programacion') || text.includes('software') || text.includes('web') || text.includes('app')) {
                     return 'desarrollo';
                 }
@@ -336,35 +336,35 @@ CONFIDENCIALIDAD: Toda información intercambiada será tratada de forma confide
 
             // Header con línea decorativa
             doc.rect(marginLeft, 60, contentWidth, 3)
-               .fill(primaryColor);
+                .fill(primaryColor);
 
             doc.fontSize(26)
-               .fillColor(primaryColor)
-               .font('Helvetica-Bold')
-               .text('CONTRATO DE SERVICIOS', marginLeft, 80, {
-                   width: contentWidth,
-                   align: 'center'
-               });
+                .fillColor(primaryColor)
+                .font('Helvetica-Bold')
+                .text('CONTRATO DE SERVICIOS', marginLeft, 80, {
+                    width: contentWidth,
+                    align: 'center'
+                });
 
             // Título del contrato con fondo
             doc.rect(marginLeft, 125, contentWidth, 35)
-               .fill(lightGrayColor);
+                .fill(lightGrayColor);
 
             doc.fontSize(16)
-               .fillColor(blackColor)
-               .font('Helvetica-Bold')
-               .text(cleanText(contract.title), marginLeft + 15, 135, {
-                   width: contentWidth - 30,
-                   align: 'center'
-               });
+                .fillColor(blackColor)
+                .font('Helvetica-Bold')
+                .text(cleanText(contract.title), marginLeft + 15, 135, {
+                    width: contentWidth - 30,
+                    align: 'center'
+                });
 
             let currentY = 180;
 
             // Información del cliente en tabla
             doc.fontSize(14)
-               .fillColor(primaryColor)
-               .font('Helvetica-Bold')
-               .text('INFORMACION DEL CLIENTE', marginLeft, currentY);
+                .fillColor(primaryColor)
+                .font('Helvetica-Bold')
+                .text('INFORMACION DEL CLIENTE', marginLeft, currentY);
 
             currentY += 25;
 
@@ -376,46 +376,46 @@ CONFIDENCIALIDAD: Toda información intercambiada será tratada de forma confide
 
             // Fondo de la tabla
             doc.rect(marginLeft, tableStartY, contentWidth, rowHeight * 4)
-               .stroke('#e2e8f0');
+                .stroke('#e2e8f0');
 
             doc.fontSize(10)
-               .fillColor(blackColor)
-               .font('Helvetica');
+                .fillColor(blackColor)
+                .font('Helvetica');
 
             // Fila 1: Cliente
             doc.font('Helvetica-Bold')
-               .text('Cliente:', marginLeft + 10, tableStartY + 7)
-               .font('Helvetica')
-               .text(cleanText(contract.client.name), marginLeft + col1Width + 10, tableStartY + 7);
+                .text('Cliente:', marginLeft + 10, tableStartY + 7)
+                .font('Helvetica')
+                .text(cleanText(contract.client.name), marginLeft + col1Width + 10, tableStartY + 7);
 
             // Fila 2: Email
             const emailY = tableStartY + rowHeight;
             doc.font('Helvetica-Bold')
-               .text('Email:', marginLeft + 10, emailY + 7)
-               .font('Helvetica')
-               .text(contract.client.email || 'No especificado', marginLeft + col1Width + 10, emailY + 7);
+                .text('Email:', marginLeft + 10, emailY + 7)
+                .font('Helvetica')
+                .text(contract.client.email || 'No especificado', marginLeft + col1Width + 10, emailY + 7);
 
             // Fila 3: Empresa
             const companyY = tableStartY + rowHeight * 2;
             doc.font('Helvetica-Bold')
-               .text('Empresa:', marginLeft + 10, companyY + 7)
-               .font('Helvetica')
-               .text(cleanText(contract.client.company || 'No especificado'), marginLeft + col1Width + 10, companyY + 7);
+                .text('Empresa:', marginLeft + 10, companyY + 7)
+                .font('Helvetica')
+                .text(cleanText(contract.client.company || 'No especificado'), marginLeft + col1Width + 10, companyY + 7);
 
             // Fila 4: Fecha de creación
             const dateY = tableStartY + rowHeight * 3;
             doc.font('Helvetica-Bold')
-               .text('Fecha creacion:', marginLeft + 10, dateY + 7)
-               .font('Helvetica')
-               .text(new Date(contract.created_at).toLocaleDateString('es-ES'), marginLeft + col1Width + 10, dateY + 7);
+                .text('Fecha creacion:', marginLeft + 10, dateY + 7)
+                .font('Helvetica')
+                .text(new Date(contract.created_at).toLocaleDateString('es-ES'), marginLeft + col1Width + 10, dateY + 7);
 
             currentY = tableStartY + rowHeight * 4 + 20;
 
             // Información del contrato
             doc.fontSize(14)
-               .fillColor(primaryColor)
-               .font('Helvetica-Bold')
-               .text('DETALLES DEL CONTRATO', marginLeft, currentY);
+                .fillColor(primaryColor)
+                .font('Helvetica-Bold')
+                .text('DETALLES DEL CONTRATO', marginLeft, currentY);
 
             currentY += 25;
 
@@ -433,20 +433,20 @@ CONFIDENCIALIDAD: Toda información intercambiada será tratada de forma confide
 
             // Fondo de la tabla de contrato
             doc.rect(marginLeft, contractTableStartY, contentWidth, contractTableHeight)
-               .stroke('#e2e8f0');
+                .stroke('#e2e8f0');
 
             doc.fontSize(10)
-               .fillColor(blackColor);
+                .fillColor(blackColor);
 
             contractRows.forEach((row, index) => {
                 const rowY = contractTableStartY + (index * rowHeight);
-                
+
                 doc.font('Helvetica-Bold')
-                   .text(row[0], marginLeft + 10, rowY + 7)
-                   .font('Helvetica')
-                   .text(row[1], marginLeft + col1Width + 10, rowY + 7, {
-                       width: col2Width - 20
-                   });
+                    .text(row[0], marginLeft + 10, rowY + 7)
+                    .font('Helvetica')
+                    .text(row[1], marginLeft + col1Width + 10, rowY + 7, {
+                        width: col2Width - 20
+                    });
             });
 
             currentY = contractTableStartY + contractTableHeight + 30;
@@ -457,9 +457,9 @@ CONFIDENCIALIDAD: Toda información intercambiada será tratada de forma confide
 
             // Contenido del contrato
             doc.fontSize(14)
-               .fillColor(primaryColor)
-               .font('Helvetica-Bold')
-               .text('TERMINOS Y CONDICIONES DEL CONTRATO', marginLeft, currentY);
+                .fillColor(primaryColor)
+                .font('Helvetica-Bold')
+                .text('TERMINOS Y CONDICIONES DEL CONTRATO', marginLeft, currentY);
 
             currentY += 25;
 
@@ -467,45 +467,45 @@ CONFIDENCIALIDAD: Toda información intercambiada será tratada de forma confide
             const contractSections = professionalContent.split('\n\n');
 
             doc.fontSize(10)
-               .fillColor(blackColor)
-               .font('Helvetica');
+                .fillColor(blackColor)
+                .font('Helvetica');
 
             for (const section of contractSections) {
                 if (section.trim()) {
                     // Calcular altura necesaria para la sección
-                    const textHeight = doc.heightOfString(section, { 
+                    const textHeight = doc.heightOfString(section, {
                         width: contentWidth - 20,
                         lineGap: 3
                     });
-                    
+
                     // Verificar si necesitamos una nueva página
                     if (currentY + textHeight + 25 > 720) {
                         doc.addPage();
                         currentY = 50;
-                        
+
                         // Repetir el header en la nueva página
                         doc.fontSize(14)
-                           .fillColor(primaryColor)
-                           .font('Helvetica-Bold')
-                           .text('TERMINOS Y CONDICIONES (continuacion)', marginLeft, currentY);
-                        
+                            .fillColor(primaryColor)
+                            .font('Helvetica-Bold')
+                            .text('TERMINOS Y CONDICIONES (continuacion)', marginLeft, currentY);
+
                         currentY += 30;
                         doc.fontSize(10)
-                           .fillColor(blackColor)
-                           .font('Helvetica');
+                            .fillColor(blackColor)
+                            .font('Helvetica');
                     }
 
                     // Detectar si es un título de sección (en mayúsculas y seguido de :)
                     const isTitle = section.includes(':') && section.split(':')[0].toUpperCase() === section.split(':')[0];
-                    
+
                     if (isTitle) {
                         doc.fontSize(11)
-                           .fillColor(primaryColor)
-                           .font('Helvetica-Bold');
+                            .fillColor(primaryColor)
+                            .font('Helvetica-Bold');
                     } else {
                         doc.fontSize(10)
-                           .fillColor(blackColor)
-                           .font('Helvetica');
+                            .fillColor(blackColor)
+                            .font('Helvetica');
                     }
 
                     // Renderizar la sección
@@ -521,7 +521,7 @@ CONFIDENCIALIDAD: Toda información intercambiada será tratada de forma confide
 
             // Añadir información específica del contrato
             currentY += 20;
-            
+
             // Verificar si necesitamos una nueva página para la información final
             if (currentY + 150 > 720) {
                 doc.addPage();
@@ -529,9 +529,9 @@ CONFIDENCIALIDAD: Toda información intercambiada será tratada de forma confide
             }
 
             doc.fontSize(12)
-               .fillColor(primaryColor)
-               .font('Helvetica-Bold')
-               .text('INFORMACION CONTRACTUAL ESPECIFICA', marginLeft, currentY);
+                .fillColor(primaryColor)
+                .font('Helvetica-Bold')
+                .text('INFORMACION CONTRACTUAL ESPECIFICA', marginLeft, currentY);
 
             currentY += 20;
 
@@ -544,8 +544,8 @@ CONFIDENCIALIDAD: Toda información intercambiada será tratada de forma confide
             ];
 
             doc.fontSize(10)
-               .fillColor(blackColor)
-               .font('Helvetica');
+                .fillColor(blackColor)
+                .font('Helvetica');
 
             contractInfo.forEach(info => {
                 doc.text(cleanText(info), marginLeft + 10, currentY, {
@@ -564,65 +564,65 @@ CONFIDENCIALIDAD: Toda información intercambiada será tratada de forma confide
             }
 
             doc.fontSize(12)
-               .fillColor(primaryColor)
-               .font('Helvetica-Bold')
-               .text('FIRMAS Y ACEPTACION', marginLeft, currentY);
+                .fillColor(primaryColor)
+                .font('Helvetica-Bold')
+                .text('FIRMAS Y ACEPTACION', marginLeft, currentY);
 
             currentY += 30;
 
             // Crear tabla de firmas
             const signatureWidth = (contentWidth - 20) / 2;
-            
+
             // Cliente
             doc.fontSize(10)
-               .fillColor(blackColor)
-               .font('Helvetica-Bold')
-               .text('CLIENTE:', marginLeft, currentY);
-            
+                .fillColor(blackColor)
+                .font('Helvetica-Bold')
+                .text('CLIENTE:', marginLeft, currentY);
+
             doc.font('Helvetica')
-               .text(`${contract.client.name}`, marginLeft, currentY + 15);
-            
+                .text(`${contract.client.name}`, marginLeft, currentY + 15);
+
             if (contract.client.company) {
                 doc.text(`${contract.client.company}`, marginLeft, currentY + 30);
             }
 
             // Línea de firma del cliente
             doc.moveTo(marginLeft, currentY + 60)
-               .lineTo(marginLeft + signatureWidth - 10, currentY + 60)
-               .stroke(grayColor);
-               
+                .lineTo(marginLeft + signatureWidth - 10, currentY + 60)
+                .stroke(grayColor);
+
             doc.fontSize(9)
-               .text('Firma del Cliente', marginLeft, currentY + 70);
-            
+                .text('Firma del Cliente', marginLeft, currentY + 70);
+
             // Freelancer (lado derecho)
             const freelancerX = marginLeft + signatureWidth + 20;
-            
+
             doc.fontSize(10)
-               .fillColor(blackColor)
-               .font('Helvetica-Bold')
-               .text('FREELANCER:', freelancerX, currentY);
-            
+                .fillColor(blackColor)
+                .font('Helvetica-Bold')
+                .text('FREELANCER:', freelancerX, currentY);
+
             doc.font('Helvetica')
-               .text('Servicios Profesionales', freelancerX, currentY + 15);
-            
+                .text('Servicios Profesionales', freelancerX, currentY + 15);
+
             // Línea de firma del freelancer
             doc.moveTo(freelancerX, currentY + 60)
-               .lineTo(freelancerX + signatureWidth - 10, currentY + 60)
-               .stroke(grayColor);
-               
+                .lineTo(freelancerX + signatureWidth - 10, currentY + 60)
+                .stroke(grayColor);
+
             doc.fontSize(9)
-               .text('Firma del Freelancer', freelancerX, currentY + 70);
+                .text('Firma del Freelancer', freelancerX, currentY + 70);
 
             currentY += 100;
 
             // Fecha de firma
             doc.fontSize(10)
-               .fillColor(blackColor)
-               .font('Helvetica')
-               .text(`Fecha de firma: _________________`, marginLeft, currentY, {
-                   width: contentWidth,
-                   align: 'center'
-               });
+                .fillColor(blackColor)
+                .font('Helvetica')
+                .text(`Fecha de firma: _________________`, marginLeft, currentY, {
+                    width: contentWidth,
+                    align: 'center'
+                });
 
             currentY += 30;
 
@@ -636,28 +636,28 @@ CONFIDENCIALIDAD: Toda información intercambiada será tratada de forma confide
             }
 
             doc.moveTo(marginLeft, currentY)
-               .lineTo(marginLeft + contentWidth, currentY)
-               .stroke(grayColor);
+                .lineTo(marginLeft + contentWidth, currentY)
+                .stroke(grayColor);
 
             currentY += 20;
 
             // Footer profesional
             doc.fontSize(9)
-               .fillColor(grayColor)
-               .font('Helvetica')
-               .text('Documento generado por Taskelio CRM', marginLeft, currentY, {
-                   width: contentWidth,
-                   align: 'center'
-               });
+                .fillColor(grayColor)
+                .font('Helvetica')
+                .text('Documento generado por Taskelio CRM', marginLeft, currentY, {
+                    width: contentWidth,
+                    align: 'center'
+                });
 
             currentY += 15;
 
             doc.fontSize(8)
-               .text(`Fecha de generacion: ${new Date().toLocaleDateString('es-ES')} - ${new Date().toLocaleTimeString('es-ES', { hour: '2-digit', minute: '2-digit' })}`, 
-                      marginLeft, currentY, { 
-                          width: contentWidth, 
-                          align: 'center' 
-                      });
+                .text(`Fecha de generacion: ${new Date().toLocaleDateString('es-ES')} - ${new Date().toLocaleTimeString('es-ES', { hour: '2-digit', minute: '2-digit' })}`,
+                    marginLeft, currentY, {
+                    width: contentWidth,
+                    align: 'center'
+                });
 
             // Finalizar el documento
             doc.end();
@@ -667,13 +667,13 @@ CONFIDENCIALIDAD: Toda información intercambiada será tratada de forma confide
                 const blob = stream.toBlob('application/pdf');
                 const url = window.URL.createObjectURL(blob);
                 const a = document.createElement('a');
-                
+
                 // Crear nombre de archivo más limpio
                 const cleanTitle = contract.title
                     .replace(/[^a-zA-Z0-9\s]/g, '')
                     .replace(/\s+/g, '-')
                     .toLowerCase();
-                
+
                 a.href = url;
                 a.download = `contrato-${cleanTitle}-${contract.id.substring(0, 8)}.pdf`;
                 document.body.appendChild(a);
@@ -721,7 +721,7 @@ CONFIDENCIALIDAD: Toda información intercambiada será tratada de forma confide
 
             showToast.success('✅ Contrato enviado por email correctamente');
             console.log('📧 Email enviado exitosamente:', result.emailId);
-            
+
         } catch (error) {
             console.error('Error sending contract email:', error);
             showToast.error('Error al enviar el contrato por email');
