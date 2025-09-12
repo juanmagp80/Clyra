@@ -66,7 +66,7 @@ export default function Home() {
     {
       name: "Carlos Ruiz",
       role: "Desarrollador Independiente",
-      company: "Barcelona", 
+      company: "Barcelona",
       content: "Venir de herramientas complejas a Taskelio fue liberador. Mismas funciones, precio justo y sin frustraciones.",
       growth: "Workflow simplificado"
     },
@@ -152,7 +152,7 @@ export default function Home() {
           </h1>
 
           {/* Subheadline */}
-          <p className="text-xl md:text-2xl text-gray-300 mb-8 max-w-3xl mx-auto leading-relaxed">
+          <p className="text-xl md:text-2xl text-gray-100 mb-8 max-w-3xl mx-auto leading-relaxed">
             <span className="text-white font-semibold">CRM + Automatizaciones IA + Facturación</span> en una plataforma simple y accesible.
             <br />
             <span className="text-blue-400 font-medium">Sin complejidad enterprise, con inteligencia artificial incluida.</span>
@@ -161,20 +161,20 @@ export default function Home() {
           {/* Pricing Comparison - Fix overlap */}
           <div className="bg-gradient-to-r from-gray-800/50 to-gray-900/50 border border-gray-700/50 rounded-2xl p-6 mb-12 max-w-4xl mx-auto">
             <div className="text-center mb-4">
-              <p className="text-sm text-gray-400 mb-2">Lo que pagas por un CRM completo</p>
+              <p className="text-sm text-gray-200 mb-2">Lo que pagas por un CRM completo</p>
             </div>
             <div className="grid md:grid-cols-4 gap-4 text-center">
-              <div className="space-y-2 opacity-60">
-                <p className="text-xs text-gray-500">Enterprise CRMs</p>
-                <p className="text-lg text-gray-500">€45-150/mes</p>
+              <div className="space-y-2">
+                <p className="text-xs text-white">Enterprise CRMs</p>
+                <p className="text-lg text-white">€45-150/mes</p>
               </div>
-              <div className="space-y-2 opacity-60">
-                <p className="text-xs text-gray-500">Mid-market</p>
-                <p className="text-lg text-gray-500">€25-80/mes</p>
+              <div className="space-y-2">
+                <p className="text-xs text-white">Mid-market</p>
+                <p className="text-lg text-white">€25-80/mes</p>
               </div>
-              <div className="space-y-2 opacity-60">
-                <p className="text-xs text-gray-500">Basic tools</p>
-                <p className="text-lg text-gray-500">€15-45/mes</p>
+              <div className="space-y-2">
+                <p className="text-xs text-white">Basic tools</p>
+                <p className="text-lg text-white">€15-45/mes</p>
               </div>
               <div className="space-y-3">
                 <div className="flex justify-center mb-2">
@@ -182,12 +182,12 @@ export default function Home() {
                     Taskelio
                   </span>
                 </div>
-                <p className="text-xs text-gray-400">Con IA integrada</p>
+                <p className="text-xs text-gray-200">Con IA integrada</p>
                 <p className="text-2xl font-bold text-white">€10/mes</p>
               </div>
             </div>
             <div className="text-center mt-4">
-              <p className="text-xs text-gray-400">
+              <p className="text-xs text-gray-200">
                 CRM + IA + Automatizaciones + Facturación • Todo incluido
               </p>
             </div>
@@ -206,13 +206,13 @@ export default function Home() {
                 <ArrowRight className="ml-2 h-5 w-5 group-hover:translate-x-1 transition-transform" />
               </Button>
             </Link>
-            <p className="text-xs text-gray-400 mt-2">
+            <p className="text-xs text-gray-200 mt-2">
               14 días gratis • Sin tarjeta requerida • Cancela cuando quieras
             </p>
           </div>
 
           {/* Social Proof */}
-          <div className="flex items-center justify-center gap-8 text-sm text-gray-400">
+          <div className="flex items-center justify-center gap-8 text-sm text-gray-200">
             <div className="flex items-center gap-2">
               <CheckCircle className="w-4 h-4 text-green-400" />
               <span>Sin tarjeta de crédito</span>
@@ -239,7 +239,7 @@ export default function Home() {
                     {metric.value}
                   </h3>
                   <p className="text-white font-medium">{metric.label}</p>
-                  <p className="text-sm text-gray-400 mt-1">{metric.sublabel}</p>
+                  <p className="text-sm text-gray-200 mt-1">{metric.sublabel}</p>
                 </div>
               </div>
             ))}
@@ -253,7 +253,7 @@ export default function Home() {
           <div className="text-center mb-20">
             <div className="inline-flex items-center gap-2 bg-gradient-to-r from-purple-500/10 to-cyan-500/10 border border-purple-500/20 rounded-full px-4 py-2 mb-6">
               <Zap className="w-4 h-4 text-yellow-400" />
-              <span className="text-sm text-gray-300">Características principales</span>
+              <span className="text-sm text-gray-100">Características principales</span>
             </div>
             <h2 className="text-4xl md:text-5xl font-bold mb-6">
               <span className="bg-gradient-to-r from-white to-gray-300 bg-clip-text text-transparent">
@@ -264,7 +264,7 @@ export default function Home() {
                 Gestiona en minutos
               </span>
             </h2>
-            <p className="text-xl text-gray-300 max-w-3xl mx-auto">
+            <p className="text-xl text-gray-100 max-w-3xl mx-auto">
               Un CRM rápido, visual y sin complejidad corporativa. Pensado para autónomos que necesitan orden sin perder tiempo.
             </p>
           </div>
@@ -288,7 +288,7 @@ export default function Home() {
                     </CardTitle>
                   </CardHeader>
                   <CardContent>
-                    <CardDescription className="text-gray-300 text-base leading-relaxed">
+                    <CardDescription className="text-gray-100 text-base leading-relaxed">
                       {feature.description}
                     </CardDescription>
                   </CardContent>
@@ -316,7 +316,7 @@ export default function Home() {
                 no para corporaciones
               </span>
             </h2>
-            <p className="text-xl text-gray-300 max-w-3xl mx-auto">
+            <p className="text-xl text-gray-100 max-w-3xl mx-auto">
               Mientras otros CRMs añaden complejidad y costos, nosotros simplificamos y optimizamos.
             </p>
           </div>
@@ -326,32 +326,32 @@ export default function Home() {
               {/* Herramientas Enterprise */}
               <Card className="bg-gradient-to-br from-gray-800/40 to-gray-900/40 border-gray-700/50">
                 <CardHeader>
-                  <CardTitle className="text-xl text-gray-300 flex items-center gap-2">
+                  <CardTitle className="text-xl text-gray-100 flex items-center gap-2">
                     🏢 Herramientas Enterprise
                   </CardTitle>
                 </CardHeader>
                 <CardContent className="space-y-4">
                   <div className="space-y-3">
                     <div className="flex justify-between items-center">
-                      <span className="text-gray-300">Configuración</span>
+                      <span className="text-gray-100">Configuración</span>
                       <span className="text-orange-400">Semanas</span>
                     </div>
                     <div className="flex justify-between items-center">
-                      <span className="text-gray-300">Funciones necesarias</span>
+                      <span className="text-gray-100">Funciones necesarias</span>
                       <span className="text-orange-400">20% del total</span>
                     </div>
                     <div className="flex justify-between items-center">
-                      <span className="text-gray-300">Orientado a</span>
+                      <span className="text-gray-100">Orientado a</span>
                       <span className="text-orange-400">Equipos grandes</span>
                     </div>
                     <div className="flex justify-between items-center">
-                      <span className="text-gray-300">Inversión mensual</span>
+                      <span className="text-gray-100">Inversión mensual</span>
                       <span className="text-orange-400">€25-150</span>
                     </div>
                   </div>
                   <div className="border-t border-gray-700/50 pt-4">
                     <div className="text-center">
-                      <p className="text-gray-400 text-sm">
+                      <p className="text-gray-200 text-sm">
                         Potente pero excesivo para freelancers
                       </p>
                     </div>
@@ -374,19 +374,19 @@ export default function Home() {
                 <CardContent className="space-y-4">
                   <div className="space-y-3">
                     <div className="flex justify-between items-center">
-                      <span className="text-gray-300">Configuración</span>
+                      <span className="text-gray-100">Configuración</span>
                       <span className="text-blue-400">2 minutos</span>
                     </div>
                     <div className="flex justify-between items-center">
-                      <span className="text-gray-300">IA integrada</span>
+                      <span className="text-gray-100">IA integrada</span>
                       <span className="text-blue-400">✨ Incluida</span>
                     </div>
                     <div className="flex justify-between items-center">
-                      <span className="text-gray-300">Orientado a</span>
+                      <span className="text-gray-100">Orientado a</span>
                       <span className="text-blue-400">Freelancers</span>
                     </div>
                     <div className="flex justify-between items-center">
-                      <span className="text-gray-300">Inversión mensual</span>
+                      <span className="text-gray-100">Inversión mensual</span>
                       <span className="text-blue-400">€10</span>
                     </div>
                   </div>
@@ -409,9 +409,9 @@ export default function Home() {
                 </h3>
                 <div className="grid md:grid-cols-2 gap-6">
                   <div className="text-center">
-                    <p className="text-sm text-gray-400 mb-2">Herramientas enterprise</p>
-                    <p className="text-2xl font-bold text-gray-400">€300-1800</p>
-                    <p className="text-xs text-gray-500 mt-1">por año</p>
+                    <p className="text-sm text-gray-200 mb-2">Herramientas enterprise</p>
+                    <p className="text-2xl font-bold text-gray-200">€300-1800</p>
+                    <p className="text-xs text-gray-300 mt-1">por año</p>
                   </div>
                   <div className="text-center">
                     <p className="text-sm text-blue-400 mb-2">Con Taskelio</p>
@@ -419,7 +419,7 @@ export default function Home() {
                     <p className="text-xs text-blue-400 mt-1">por año</p>
                   </div>
                 </div>
-                <p className="text-sm text-gray-400 mt-6">
+                <p className="text-sm text-gray-200 mt-6">
                   Invierte la diferencia en hacer crecer tu negocio
                 </p>
               </div>
@@ -434,7 +434,7 @@ export default function Home() {
           <div className="text-center mb-20">
             <div className="inline-flex items-center gap-2 bg-gradient-to-r from-yellow-500/10 to-orange-500/10 border border-yellow-500/20 rounded-full px-4 py-2 mb-6">
               <Star className="w-4 h-4 text-yellow-400 fill-yellow-400" />
-              <span className="text-sm text-gray-300">Lo que dicen nuestros usuarios</span>
+              <span className="text-sm text-gray-100">Lo que dicen nuestros usuarios</span>
             </div>
             <h2 className="text-4xl md:text-5xl font-bold mb-6">
               <span className="bg-gradient-to-r from-white to-gray-300 bg-clip-text text-transparent">
@@ -445,7 +445,7 @@ export default function Home() {
                 freelancers como tú
               </span>
             </h2>
-            <p className="text-xl text-gray-300 max-w-3xl mx-auto">
+            <p className="text-xl text-gray-100 max-w-3xl mx-auto">
               Freelancers creativos, consultores independientes, diseñadores, desarrolladores y coaches que transformaron su forma de trabajar.
             </p>
           </div>
@@ -459,7 +459,7 @@ export default function Home() {
                       <Star key={i} className="h-4 w-4 fill-yellow-400 text-yellow-400" />
                     ))}
                   </div>
-                  <CardDescription className="text-gray-300 text-base italic leading-relaxed">
+                  <CardDescription className="text-gray-100 text-base italic leading-relaxed">
                     "{testimonial.content}"
                   </CardDescription>
                 </CardHeader>
@@ -468,7 +468,7 @@ export default function Home() {
                     <div>
                       <p className="font-semibold text-white">{testimonial.name}</p>
                       <p className="text-sm text-purple-300">{testimonial.role}</p>
-                      <p className="text-xs text-gray-400">{testimonial.company}</p>
+                      <p className="text-xs text-gray-200">{testimonial.company}</p>
                     </div>
                     <div className="text-right">
                       <div className="bg-gradient-to-r from-green-400/20 to-emerald-400/20 border border-green-400/30 rounded-full px-3 py-1">
@@ -504,7 +504,7 @@ export default function Home() {
                 simplificar?
               </span>
             </h2>
-            <p className="text-2xl text-gray-300 mb-12 leading-relaxed">
+            <p className="text-2xl text-gray-100 mb-12 leading-relaxed">
               Únete a <span className="text-blue-400 font-bold">miles de freelancers</span> que ya optimizaron su gestión sin complicaciones.
             </p>
 
@@ -518,7 +518,7 @@ export default function Home() {
               </Link>
             </div>
 
-            <div className="flex items-center justify-center gap-8 text-sm text-gray-400">
+            <div className="flex items-center justify-center gap-8 text-sm text-gray-200">
               <div className="flex items-center gap-2">
                 <CheckCircle className="w-4 h-4 text-blue-400" />
                 <span>14 días gratis</span>
@@ -535,15 +535,15 @@ export default function Home() {
 
             {/* Subtle value reminder */}
             <div className="mt-12 bg-gradient-to-r from-gray-800/50 to-gray-900/50 border border-gray-700/50 rounded-2xl p-6 max-w-2xl mx-auto">
-              <p className="text-gray-300 text-sm mb-2">
+              <p className="text-gray-100 text-sm mb-2">
                 Tu inversión inteligente:
               </p>
               <div className="flex items-center justify-center gap-4">
                 <div className="text-center">
-                  <p className="text-gray-500 text-lg">€300-1800/año</p>
-                  <p className="text-xs text-gray-500">Herramientas enterprise</p>
+                  <p className="text-gray-200 text-lg">€300-1800/año</p>
+                  <p className="text-xs text-gray-300">Herramientas enterprise</p>
                 </div>
-                <span className="text-gray-600">vs</span>
+                <span className="text-white">vs</span>
                 <div className="text-center">
                   <p className="text-blue-400 font-semibold text-xl">€120/año</p>
                   <p className="text-xs text-blue-400">Taskelio completo</p>
@@ -568,7 +568,7 @@ export default function Home() {
                 </span>
               </h2>
             </div>
-            <p className="text-gray-400 text-center">
+            <p className="text-gray-200 text-center">
               &copy; 2025 Taskelio. CRM ligero para freelancers que valoran su tiempo.
             </p>
           </div>
