@@ -1,14 +1,23 @@
 import { createRouteHandlerClient } from '@supabase/auth-helpers-nextjs';
 import { cookies } from 'next/headers';
-import { NextResponse } from 'next/server';
+import { NextResponse, NextRequest } from 'next/server';
 import PDFDocument from 'pdfkit';
 import { Buffer } from 'buffer';
 import { authMiddleware } from '../../../auth/middleware';
 
-export async function GET(
-    request: Request,
-    { params }: { params: { id: string } }
-) {
+export async function GET(request: NextRequest) {
+    // Extraer el id de la URL
+    const url = new URL(request.url);
+    const pathSegments = url.pathname.split('/').filter(Boolean);
+    const id = pathSegments[pathSegments.length - 2]; // El id está antes de 'pdf' en la ruta
+    
+    if (!id) {
+        return new NextResponse('ID de presupuesto no encontrado', {
+            status: 400,
+            headers: { 'Content-Type': 'text/plain' }
+        });
+    }
+    
     try {
         const cookieStore = cookies();
         const supabase = createRouteHandlerClient({ 
@@ -82,7 +91,7 @@ export async function GET(
                     tax_id
                 )
             `)
-            .eq('id', params.id)
+            .eq('id', id)
             .eq('user_id', session.user.id)
             .single();
 
@@ -133,8 +142,8 @@ export async function GET(
             .moveDown();
 
         // Encabezados de la tabla
-        let startX = 50;
-        let startY = doc.y;
+        const startX = 50;
+        const startY = doc.y;
         const columnWidth = 100;
 
         doc.fontSize(10)
@@ -198,7 +207,7 @@ export async function GET(
         if (budget.notes) {
             doc.moveDown()
                 .fontSize(14)
-                .text('NOTAS', { underline: true })
+                .text('NOTAS ADICIONALES', { underline: true })
                 .fontSize(10)
                 .text(budget.notes)
                 .moveDown();
@@ -221,7 +230,7 @@ export async function GET(
                 const buffer = Buffer.concat(chunks);
                 const headers = new Headers();
                 headers.append('Content-Type', 'application/pdf');
-                headers.append('Content-Disposition', `attachment; filename="presupuesto-${params.id}.pdf"`);
+                headers.append('Content-Disposition', `attachment; filename="presupuesto-${id}.pdf"`);
 
                 resolve(new NextResponse(buffer, {
                     status: 200,
