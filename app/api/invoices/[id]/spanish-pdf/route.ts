@@ -112,7 +112,8 @@ export async function GET(
         await browser.close();
 
         // Retornar PDF
-        return new NextResponse(pdfBuffer, {
+    const arrayBuffer = pdfBuffer.buffer instanceof ArrayBuffer ? pdfBuffer.buffer : Uint8Array.from(pdfBuffer).buffer;
+    return new NextResponse(new Blob([arrayBuffer], { type: 'application/pdf' }), {
             headers: {
                 'Content-Type': 'application/pdf',
                 'Content-Disposition': `attachment; filename="Factura_${invoice.invoice_number?.replace('/', '_') || invoice.id}.pdf"`

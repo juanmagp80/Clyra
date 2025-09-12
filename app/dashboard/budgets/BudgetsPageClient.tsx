@@ -518,27 +518,44 @@ export function BudgetsPageClient({ userEmail }: BudgetsPageClientProps) {
             
             const supabase = createSupabaseClient();
             
-            // Usar el nuevo hook para manejar la operación de Supabase
-            const { data: budget, success } = await handleSupabaseOperation(
-                () => supabase
-                    .from('budgets')
-                    .select(`
-                        *,
-                        budget_items(*),
-                        clients(
-                            name,
-                            email,
-                            phone,
-                            company
-                        )
-                    `)
-                    .eq('id', budgetId)
-                    .single(),
-                'obtener presupuesto para PDF'
-            );
+            // Obtener el presupuesto con sus items y datos del cliente
+            const { data: budgetData, error: budgetError } = await supabase
+                .from('budgets')
+                .select(`
+                    *,
+                    budget_items(*),
+                    clients(
+                        name,
+                        email,
+                        phone,
+                        company
+                    )
+                `)
+                .eq('id', budgetId)
+                .single();
 
-            if (!success || !budget) {
-                // El error ya fue mostrado por el hook
+            if (budgetError || !budgetData) {
+                console.error('Error fetching budget:', budgetError);
+                showToast.error('Error al obtener los datos del presupuesto');
+                return;
+            }
+
+            // Tipar el budget correctamente
+            const budget = budgetData as Budget & {
+                budget_items: any[];
+                clients: {
+                    name: string;
+                    email: string;
+                    phone?: string;
+                    company?: string;
+                };
+                tax_rate?: number;
+                notes?: string;
+                terms_conditions?: string;
+            };
+
+            if (!budget) {
+                showToast.error('Error al obtener los datos del presupuesto');
                 return;
             }
 
@@ -705,8 +722,8 @@ export function BudgetsPageClient({ userEmail }: BudgetsPageClientProps) {
                 clientY += 12;
             }
 
-            if (budget.clients.address) {
-                doc.text(`Dirección: ${budget.clients.address}`, clientX, clientY, { width: (contentWidth / 2) - 30 });
+            if (budget.clients.company) {
+                doc.text(`Empresa: ${budget.clients.company}`, clientX, clientY, { width: (contentWidth / 2) - 30 });
             }
 
             // === ESPACIADO Y LÍNEA SEPARADORA ===
