@@ -17,7 +17,7 @@ const supabase = createClient(supabaseUrl, supabaseKey);
 
 async function debugAuthIssues() {
     console.log('🔍 Diagnosticando problemas de autenticación...\n');
-    
+
     try {
         // 1. Verificar configuración básica
         console.log('📊 Configuración actual:');
@@ -28,7 +28,7 @@ async function debugAuthIssues() {
         // 2. Listar usuarios existentes
         console.log('👥 Usuarios registrados:');
         const { data: users, error: usersError } = await supabase.auth.admin.listUsers();
-        
+
         if (usersError) {
             console.error('❌ Error listando usuarios:', usersError.message);
             if (usersError.message.includes('JWT')) {
@@ -36,18 +36,18 @@ async function debugAuthIssues() {
             }
         } else {
             console.log(`📊 Total usuarios: ${users.users.length}`);
-            
+
             // Verificar emails duplicados
             const emails = users.users.map(u => u.email);
             const duplicateEmails = emails.filter((email, index) => emails.indexOf(email) !== index);
-            
+
             if (duplicateEmails.length > 0) {
                 console.log('⚠️  EMAILS DUPLICADOS ENCONTRADOS:');
                 duplicateEmails.forEach(email => console.log(`   - ${email}`));
             } else {
                 console.log('✅ No hay emails duplicados');
             }
-            
+
             console.log('\n📋 Lista de usuarios:');
             users.users.forEach((user, index) => {
                 console.log(`${index + 1}. Email: ${user.email}`);
@@ -75,12 +75,12 @@ async function debugAuthIssues() {
         if (users && users.users.length > 0) {
             const existingEmail = users.users[0].email;
             console.log(`Intentando registrar: ${existingEmail}`);
-            
+
             const { data: signUpData, error: signUpError } = await supabase.auth.signUp({
                 email: existingEmail,
                 password: 'test123456'
             });
-            
+
             if (signUpError) {
                 if (signUpError.message.includes('already registered') || signUpError.message.includes('already exists')) {
                     console.log('✅ Correcto: Supabase rechaza emails duplicados');
@@ -100,26 +100,26 @@ async function debugAuthIssues() {
 
 async function suggestSolutions() {
     console.log('\n💡 SOLUCIONES RECOMENDADAS:\n');
-    
+
     console.log('1. PARA EMAILS DUPLICADOS:');
     console.log('   - Ve a Supabase Dashboard > Authentication > Users');
     console.log('   - Elimina manualmente los usuarios duplicados');
     console.log('   - Verifica que la tabla auth.users tenga constraint UNIQUE en email');
     console.log('');
-    
+
     console.log('2. PARA EMAILS DE CONFIRMACIÓN:');
     console.log('   - Ve a Authentication > Settings');
     console.log('   - Habilita "Enable email confirmations"');
     console.log('   - Configura "Confirm email" en la URL de tu app');
     console.log('   - Revisa la configuración SMTP si usas custom');
     console.log('');
-    
+
     console.log('3. CONFIGURACIÓN SMTP (si no llegan emails):');
     console.log('   - Ve a Authentication > Settings > SMTP Settings');
     console.log('   - Configura tu proveedor de email (Gmail, SendGrid, etc.)');
     console.log('   - O usa el SMTP por defecto de Supabase (limitado)');
     console.log('');
-    
+
     console.log('4. VERIFICAR SPAM:');
     console.log('   - Los emails de confirmación pueden ir a spam');
     console.log('   - Revisa carpetas de correo no deseado');

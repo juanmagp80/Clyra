@@ -1,5 +1,6 @@
 'use client'
 import { getBaseUrl } from '@/lib/url';
+import ReCaptchaComponent, { ReCaptchaRef } from '@/src/components/ReCaptcha';
 import { createSupabaseClient } from '@/src/lib/supabase-client';
 import {
     AlertCircle,
@@ -15,8 +16,7 @@ import {
     X
 } from 'lucide-react';
 import { useRouter } from 'next/navigation';
-import { useCallback, useState, useRef } from 'react';
-import ReCaptchaComponent, { ReCaptchaRef } from '@/src/components/ReCaptcha';
+import { useCallback, useRef, useState } from 'react';
 
 interface PopupState {
     show: boolean;

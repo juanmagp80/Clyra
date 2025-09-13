@@ -42,10 +42,10 @@ export async function POST(request: NextRequest) {
         } else {
             console.error('❌ Error verificando reCAPTCHA:', verifyData['error-codes']);
             return NextResponse.json(
-                { 
-                    success: false, 
+                {
+                    success: false,
                     message: 'reCAPTCHA inválido',
-                    errors: verifyData['error-codes'] 
+                    errors: verifyData['error-codes']
                 },
                 { status: 400 }
             );
