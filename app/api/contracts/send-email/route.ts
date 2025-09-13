@@ -60,20 +60,53 @@ export async function POST(request: NextRequest) {
         console.log('🔑 RESEND_API_KEY presente:', !!process.env.RESEND_API_KEY);
         console.log('🔑 FROM_EMAIL:', process.env.FROM_EMAIL || 'noreply@taskelio.app');
 
-        // Obtener datos del contrato con joins
+        // Obtener contrato
         const { data: contract, error: contractError } = await supabase
             .from('contracts')
-            .select(`
-                *,
-                clients (
-                    name,
-                    email,
-                    company,
-                    phone
-                )
-            `)
+            .select('*')
             .eq('id', contractId)
             .single();
+
+        if (contractError || !contract) {
+            console.error('❌ Error obteniendo contrato:', contractError);
+            return NextResponse.json(
+                { error: 'Contrato no encontrado' },
+                { status: 404 }
+            );
+        }
+
+        // Obtener cliente por separado para datos frescos
+        const { data: clientData, error: clientError } = await supabase
+            .from('clients')
+            .select('id, name, address, email, company, phone, nif')
+            .eq('id', contract.client_id)
+            .single();
+
+        if (clientError || !clientData) {
+            console.error('❌ Error obteniendo cliente:', clientError);
+            return NextResponse.json(
+                { error: 'Cliente no encontrado' },
+                { status: 404 }
+            );
+        }
+
+        // Combinar datos
+        contract.clients = clientData;
+
+        // Obtener datos de la empresa del usuario usando user_id
+        let companyData = null;
+        const { data: company, error: companyError } = await supabase
+            .from('companies')
+            .select('name, email, phone, address, tax_id')
+            .eq('user_id', user.id)
+            .single();
+
+        if (!companyError && company) {
+            companyData = company;
+            console.log('🏢 Datos de empresa obtenidos:', company);
+        } else {
+            console.log('⚠️ No se encontró empresa para user_id:', user.id, 'Error:', companyError);
+        }
 
         if (contractError) {
             console.error('❌ Error obteniendo contrato:', contractError);
@@ -95,15 +128,15 @@ export async function POST(request: NextRequest) {
 
         try {
             console.log('📄 Generando PDF del contrato...');
-            const pdfBuffer = await generateContractPDF(contract, profile);
+            const pdfBuffer = await generateContractPDF(contract, profile, companyData);
             console.log('✅ PDF generado correctamente, tamaño:', pdfBuffer.length, 'bytes');
 
             // Generar HTML del email
-            const emailHtml = generateEmailHtml(contract, profile, user);
+            const emailHtml = generateEmailHtml(contract, profile, user, companyData);
 
             // Configurar el email con el PDF adjunto usando dominio verificado
-            const freelancerName = profile?.full_name || user.email?.split('@')[0] || 'Freelancer';
-            const fromEmail = `${freelancerName} <noreply@taskelio.app>`;
+            const senderName = companyData?.name || profile?.full_name || user.email?.split('@')[0] || 'Freelancer';
+            const fromEmail = `${senderName} <noreply@taskelio.app>`;
 
             const emailData = {
                 from: fromEmail,
@@ -168,16 +201,24 @@ export async function POST(request: NextRequest) {
 }
 
 // Función para generar HTML del email
-function generateEmailHtml(contract: any, profile: any, user: any): string {
+function generateEmailHtml(contract: any, profile: any, user: any, companyData: any = null): string {
     // Usar nombre de empresa, nombre completo, o extraer nombre del email
     const extractNameFromEmail = (email: string) => {
         return email.split('@')[0].replace(/[._]/g, ' ').replace(/\b\w/g, l => l.toUpperCase());
     };
 
-    const companyName = profile?.company_name || profile?.full_name ||
+    // Priorizar nombre de empresa de la tabla companies, luego profile, luego extraer del email
+    const companyName = companyData?.name || profile?.company_name || profile?.full_name ||
         (user?.email ? extractNameFromEmail(user.email) : 'Freelancer');
     const userName = profile?.full_name ||
         (user?.email ? extractNameFromEmail(user.email) : 'Freelancer');
+    
+    console.log('📝 Datos para el email:');
+    console.log('   - companyData:', companyData);
+    console.log('   - profile.company_name:', profile?.company_name);
+    console.log('   - profile.full_name:', profile?.full_name);
+    console.log('   - user.email:', user?.email);
+    console.log('   - companyName final:', companyName);
 
     return `
     <!DOCTYPE html>
@@ -322,7 +363,6 @@ function generateEmailHtml(contract: any, profile: any, user: any): string {
 
             <div class="company-info">
                 <h2>${companyName}</h2>
-                ${companyName ? `<div style="font-size: 16px; color: #4a5568; margin-bottom: 8px;">${companyName}</div>` : ''}
                 <p>Propuesta contractual profesional</p>
             </div>
 
@@ -364,7 +404,7 @@ function generateEmailHtml(contract: any, profile: any, user: any): string {
 
                 <div class="cta-section">
                     <h3>Próximos Pasos</h3>
-                    <p style="margin: 0; color: #01579b; font-weight: 600;">
+                    <p style="margin: 0; color: #4aacf7ff; font-weight: 600;">
                         Por favor, revise el contrato adjunto y no dude en contactarnos si tiene alguna pregunta o comentario.
                     </p>
                 </div>
@@ -385,8 +425,8 @@ function generateEmailHtml(contract: any, profile: any, user: any): string {
     `;
 }
 
-// Función para generar PDF del contrato usando jsPDF
-async function generateContractPDF(contract: any, profile: any): Promise<Buffer> {
+// Función para generar PDF del contrato usando jsPDF (formato unificado igual al de la web)
+async function generateContractPDF(contract: any, profile: any, companyData: any = null): Promise<Buffer> {
     const { jsPDF } = await import('jspdf');
 
     try {
@@ -398,88 +438,175 @@ async function generateContractPDF(contract: any, profile: any): Promise<Buffer>
         });
 
         // Configuración
-        const marginLeft = 20;
+        const marginLeft = 15;
         const marginTop = 20;
         const pageWidth = 210; // A4 width in mm
         const contentWidth = pageWidth - (marginLeft * 2);
 
-        // Función para limpiar texto
+        // Función para limpiar texto para jsPDF
         const cleanText = (text: string) => {
+            if (!text) return '';
+            // Para jsPDF, necesitamos caracteres simples sin acentos
             return text
-                .replace(/[^\x00-\x7F]/g, "") // Remover caracteres no ASCII
                 .replace(/"/g, "'") // Reemplazar comillas dobles
                 .replace(/[{}]/g, "") // Remover llaves
+                // Reemplazar caracteres con acentos por equivalentes sin acentos
+                .replace(/[áàäâ]/g, 'a').replace(/[ÁÀÄÂ]/g, 'A')
+                .replace(/[éèëê]/g, 'e').replace(/[ÉÈËÊ]/g, 'E')
+                .replace(/[íìïî]/g, 'i').replace(/[ÍÌÏÎ]/g, 'I')
+                .replace(/[óòöô]/g, 'o').replace(/[ÓÒÖÔ]/g, 'O')
+                .replace(/[úùüû]/g, 'u').replace(/[ÚÙÜÛ]/g, 'U')
+                .replace(/ñ/g, 'n').replace(/Ñ/g, 'N')
+                .replace(/ç/g, 'c').replace(/Ç/g, 'C')
                 .trim();
         };
 
         let currentY = marginTop;
 
-        // Header
-        doc.setFillColor(37, 99, 235); // Color azul
-        doc.rect(marginLeft, currentY, contentWidth, 3, 'F');
-        currentY += 10;
-
-        // Título principal
-        doc.setFontSize(24);
+        // Header principal
+        doc.setFontSize(20);
         doc.setTextColor(37, 99, 235);
-        const title = 'CONTRATO DE SERVICIOS';
+        const title = 'CONTRATO DE SERVICIOS PROFESIONALES';
         const titleWidth = doc.getTextWidth(title);
         const titleX = (pageWidth - titleWidth) / 2;
         doc.text(title, titleX, currentY);
-        currentY += 15;
-
-        // Título del contrato
-        doc.setFontSize(16);
-        doc.setTextColor(0, 0, 0);
-        const contractTitle = cleanText(contract.title);
-        const contractTitleWidth = doc.getTextWidth(contractTitle);
-        const contractTitleX = (pageWidth - contractTitleWidth) / 2;
-        doc.text(contractTitle, contractTitleX, currentY);
-        currentY += 20;
-
-        // Información del cliente
-        doc.setFontSize(14);
-        doc.setTextColor(0, 0, 0);
-        doc.text('INFORMACION DEL CLIENTE', marginLeft, currentY);
         currentY += 8;
 
-        doc.setFontSize(11);
+        doc.setFontSize(14);
+        doc.setTextColor(100, 100, 100);
+        const subtitle = 'DOCUMENTO OFICIAL';
+        const subtitleWidth = doc.getTextWidth(subtitle);
+        const subtitleX = (pageWidth - subtitleWidth) / 2;
+        doc.text(subtitle, subtitleX, currentY);
+        currentY += 6;
+
+        // Número de contrato
+        doc.setFontSize(12);
+        const contractNumber = `Numero de Contrato: CONT-2025-${contract.id?.substring(0, 4) || '0000'}`;
+        const contractNumberWidth = doc.getTextWidth(contractNumber);
+        const contractNumberX = (pageWidth - contractNumberWidth) / 2;
+        doc.text(contractNumber, contractNumberX, currentY);
+        currentY += 15;
+
+        // Línea separadora
+        doc.setDrawColor(37, 99, 235);
+        doc.setLineWidth(0.5);
+        doc.line(marginLeft, currentY, pageWidth - marginLeft, currentY);
+        currentY += 10;
+
+        // Lugar y fecha
+        doc.setFontSize(12);
+        doc.setTextColor(0, 0, 0);
+        const place = `LUGAR Y FECHA: Madrid, ${new Date().toLocaleDateString('es-ES')}`;
+        doc.text(place, marginLeft, currentY);
+        currentY += 15;
+
+        // Partes contratantes
+        doc.setFontSize(14);
+        doc.setTextColor(37, 99, 235);
+        doc.text('PARTES CONTRATANTES', marginLeft, currentY);
+        currentY += 10;
+
+        // Prestador de servicios (Freelancer)
+        doc.setFontSize(12);
+        doc.setTextColor(0, 0, 0);
+        doc.text('EL CONSULTOR/PRESTADOR DE SERVICIOS:', marginLeft, currentY);
+        currentY += 6;
+
+        doc.setFontSize(10);
+        doc.setTextColor(100, 100, 100);
+        // Usar datos de la empresa si están disponibles
+        const freelancerName = companyData?.name || profile?.full_name || 'Freelancer';
+        doc.text(`Nombre: ${cleanText(freelancerName)}`, marginLeft + 5, currentY);
+        currentY += 5;
+        
+        if (companyData?.tax_id || profile?.document_number) {
+            doc.text(`DNI/NIF: ${companyData?.tax_id || profile?.document_number}`, marginLeft + 5, currentY);
+            currentY += 5;
+        }
+        
+        if (companyData?.address || profile?.address) {
+            doc.text(`Direccion: ${cleanText(companyData?.address || profile?.address)}`, marginLeft + 5, currentY);
+            currentY += 5;
+        }
+        
+        if (companyData?.email || profile?.email) {
+            doc.text(`Email: ${companyData?.email || profile?.email}`, marginLeft + 5, currentY);
+            currentY += 5;
+        }
+        currentY += 8;
+
+        // Cliente
+        doc.setFontSize(12);
+        doc.setTextColor(0, 0, 0);
+        doc.text('EL CLIENTE/CONTRATANTE:', marginLeft, currentY);
+        currentY += 6;
+
+        doc.setFontSize(10);
         doc.setTextColor(100, 100, 100);
         if (contract.clients?.name) {
-            doc.text(`Cliente: ${cleanText(contract.clients.name)}`, marginLeft + 5, currentY);
-            currentY += 6;
+            doc.text(`Nombre/Razon Social: ${cleanText(contract.clients.name)}`, marginLeft + 5, currentY);
+            currentY += 5;
         }
         if (contract.clients?.company) {
             doc.text(`Empresa: ${cleanText(contract.clients.company)}`, marginLeft + 5, currentY);
-            currentY += 6;
+            currentY += 5;
+        }
+        if (contract.clients?.address) {
+            doc.text(`Direccion: ${cleanText(contract.clients.address)}`, marginLeft + 5, currentY);
+            currentY += 5;
         }
         if (contract.clients?.email) {
             doc.text(`Email: ${contract.clients.email}`, marginLeft + 5, currentY);
-            currentY += 6;
+            currentY += 5;
         }
-        currentY += 10;
-
-        // Detalles del servicio
-        doc.setFontSize(14);
-        doc.setTextColor(0, 0, 0);
-        doc.text('DETALLES DEL SERVICIO', marginLeft, currentY);
-        currentY += 8;
-
-        doc.setFontSize(11);
-        doc.setTextColor(100, 100, 100);
-        doc.text(`Tipo de Servicio: ${contract.service_type || 'General'}`, marginLeft + 5, currentY);
-        currentY += 6;
-        doc.text(`Fecha de Creacion: ${new Date(contract.created_at).toLocaleDateString('es-ES')}`, marginLeft + 5, currentY);
+        if (contract.clients?.phone) {
+            doc.text(`Telefono: ${contract.clients.phone}`, marginLeft + 5, currentY);
+            currentY += 5;
+        }
         currentY += 15;
 
-        // Contenido del contrato según el tipo de servicio
+        // Detalles del contrato
         doc.setFontSize(14);
+        doc.setTextColor(37, 99, 235);
+        doc.text('DETALLES DEL CONTRATO', marginLeft, currentY);
+        currentY += 10;
+
+        doc.setFontSize(11);
         doc.setTextColor(0, 0, 0);
-        doc.text('TERMINOS Y CONDICIONES', marginLeft, currentY);
+        doc.text(`TITULO DEL PROYECTO: ${cleanText(contract.title)}`, marginLeft, currentY);
+        currentY += 6;
+
+        if (contract.contract_value) {
+            doc.text(`VALOR DEL CONTRATO: ${contract.contract_value} ${contract.currency || 'EUR'}`, marginLeft, currentY);
+            currentY += 6;
+        }
+
+        doc.text('PERIODO DE VIGENCIA:', marginLeft, currentY);
+        currentY += 5;
+        if (contract.start_date) {
+            doc.text(`• Fecha de Inicio: ${new Date(contract.start_date).toLocaleDateString('es-ES')}`, marginLeft + 5, currentY);
+            currentY += 5;
+        }
+        if (contract.end_date) {
+            doc.text(`• Fecha de Finalizacion: ${new Date(contract.end_date).toLocaleDateString('es-ES')}`, marginLeft + 5, currentY);
+            currentY += 5;
+        }
+
+        if (contract.payment_terms) {
+            currentY += 2;
+            doc.text(`CONDICIONES DE PAGO: ${cleanText(contract.payment_terms)}`, marginLeft, currentY);
+            currentY += 10;
+        }
+
+        // Contenido del contrato (versión simplificada para PDF del email)
+        doc.setFontSize(14);
+        doc.setTextColor(37, 99, 235);
+        doc.text('CONTENIDO DEL CONTRATO', marginLeft, currentY);
         currentY += 8;
 
         // Generar contenido según el tipo de servicio
-        const contractContent = generateContractContent(contract.service_type || 'general', contract, profile);
+        const contractContent = generateContractContent(contract.service_type || 'general', contract, profile, companyData);
 
         doc.setFontSize(10);
         doc.setTextColor(0, 0, 0);
@@ -517,7 +644,7 @@ async function generateContractPDF(contract: any, profile: any): Promise<Buffer>
         doc.text('_________________________', marginLeft + 90, currentY);
         currentY += 8;
 
-        const providerName = profile?.full_name || 'Prestador del Servicio';
+        const providerName = companyData?.name || profile?.full_name || 'Prestador del Servicio';
         doc.text(cleanText(providerName), marginLeft, currentY);
         doc.text(cleanText(contract.clients?.name || 'Cliente'), marginLeft + 90, currentY);
 
@@ -531,37 +658,242 @@ async function generateContractPDF(contract: any, profile: any): Promise<Buffer>
     }
 }
 
-// Función para generar contenido del contrato según el tipo
-function generateContractContent(serviceType: string, contract: any, profile: any): string {
-    const companyName = profile?.company_name || 'La Empresa';
-    const providerName = profile?.full_name || 'El Prestador';
+// Función para generar contenido del contrato según el tipo - VERSION UNIFICADA
+function generateContractContent(serviceType: string, contract: any, profile: any, companyData: any = null): string {
+    const companyName = companyData?.name || profile?.full_name || 'La Empresa';
     const clientName = contract.clients?.name || 'El Cliente';
+    const dniProvider = companyData?.tax_id || '[DNI/NIF de la Empresa]';
+    const addressProvider = companyData?.address || '[Dirección de la Empresa]';
+    const addressClient = contract.clients?.address || '[Dirección del Cliente]';
+    const dniClient = contract.clients?.nif || '[DNI/NIF del Cliente]';
+    
+    console.log('🔍 Debug datos de empresa en email:');
+    console.log('- companyData:', companyData);
+    console.log('- dniProvider:', dniProvider);
+    console.log('- dniClient:', dniClient);
+    
+    // Detectar el tipo de servicio del contrato
+    const detectedServiceType = serviceType?.toLowerCase() || detectServiceTypeForEmail(contract.title, contract.description || '');
+    
+    console.log('🔍 Email - Tipo de servicio:', detectedServiceType, 'para contrato:', contract.title);
 
-    const baseContent = `
-OBJETO DEL CONTRATO:
-${companyName} se compromete a prestar servicios profesionales de ${serviceType} segun las especificaciones acordadas.
+    const templates = {
+        desarrollo: generateDesarrolloContentEmail(contract, companyName, clientName, addressProvider, addressClient, dniProvider, dniClient),
+        consultoria: generateConsultoriaContentEmail(contract, companyName, clientName, addressProvider, addressClient, dniProvider, dniClient),
+        marketing: generateMarketingContentEmail(contract, companyName, clientName, addressProvider, addressClient, dniProvider, dniClient),
+        diseno: generateDisenoContentEmail(contract, companyName, clientName, addressProvider, addressClient, dniProvider, dniClient),
+        contenido: generateContenidoContentEmail(contract, companyName, clientName, addressProvider, addressClient, dniProvider, dniClient),
+        general: generateGeneralContentEmail(contract, companyName, clientName, addressProvider, addressClient, dniProvider, dniClient)
+    };
 
-OBLIGACIONES DEL PRESTADOR:
-- Ejecutar los servicios con la maxima calidad y profesionalismo
-- Cumplir con los plazos establecidos
-- Mantener confidencialidad sobre la informacion del cliente
-- Proporcionar soporte y asesoria durante la ejecucion
+    return templates[detectedServiceType as keyof typeof templates] || templates.general;
+}
 
-OBLIGACIONES DEL CLIENTE:
-- Proporcionar toda la informacion necesaria para la ejecucion
-- Realizar los pagos en las fechas acordadas
-- Colaborar activamente en el desarrollo del proyecto
-- Revisar y aprobar entregables en tiempo oportuno
+// Función para detectar tipo de servicio (duplicada para el email)
+function detectServiceTypeForEmail(title: string, description: string): string {
+    const text = (title + ' ' + description).toLowerCase();
 
-CONDICIONES GENERALES:
-- Este contrato se rige por la legislacion vigente
-- Cualquier modificacion debe ser acordada por escrito
-- Los derechos de propiedad intelectual se establecen segun lo acordado
-- La resolucion de conflictos se hara mediante arbitraje
+    if (text.includes('desarrollo') || text.includes('programacion') || text.includes('software') || text.includes('web') || text.includes('app')) {
+        return 'desarrollo';
+    }
+    if (text.includes('consultoria') || text.includes('asesoria') || text.includes('consultor') || text.includes('estrategia')) {
+        return 'consultoria';
+    }
+    if (text.includes('marketing') || text.includes('publicidad') || text.includes('seo') || text.includes('social') || text.includes('campana')) {
+        return 'marketing';
+    }
+    if (text.includes('diseno') || text.includes('diseño') || text.includes('grafico') || text.includes('logo') || text.includes('branding')) {
+        return 'diseno';
+    }
+    if (text.includes('contenido') || text.includes('redaccion') || text.includes('copywriting') || text.includes('blog') || text.includes('articulo')) {
+        return 'contenido';
+    }
+    return 'general';
+}
 
-VIGENCIA:
-Este contrato entra en vigencia desde su firma y permanece activo hasta la completion satisfactoria de los servicios acordados.
+// Templates para email (versiones simplificadas sin acentos para PDF)
+function generateDesarrolloContentEmail(contract: any, companyName: string, clientName: string, addressProvider: string, addressClient: string, dniProvider: string, dniClient: string): string {
+    return `
+CONTRATO DE PRESTACION DE SERVICIOS DE DESARROLLO WEB
+
+Entre ${companyName}, con DNI ${dniProvider}, domiciliado en ${addressProvider} (en adelante, "EL PRESTADOR"), y ${clientName}, con DNI ${dniClient}, domiciliado en ${addressClient} (en adelante, "EL CLIENTE"), se acuerda:
+
+PRIMERA.- OBJETO DEL CONTRATO
+EL PRESTADOR se compromete a desarrollar y entregar al CLIENTE el siguiente proyecto:
+- Nombre del proyecto: ${contract.title}
+- Descripcion: ${contract.description || 'Desarrollo de software personalizado'}
+- Tecnologias a utilizar: ${contract.technologies || 'Tecnologias modernas'}
+- Funcionalidades principales: ${contract.features || 'Segun especificaciones'}
+
+SEGUNDA.- PLAZO DE EJECUCION
+El proyecto se ejecutara desde ${contract.start_date ? new Date(contract.start_date).toLocaleDateString('es-ES') : '[Fecha inicio]'} hasta ${contract.end_date ? new Date(contract.end_date).toLocaleDateString('es-ES') : '[Fecha fin]'}.
+
+TERCERA.- PRECIO Y FORMA DE PAGO
+El precio total del proyecto es de ${contract.contract_value || '0'} ${contract.currency || 'EUR'}.
+Forma de pago: ${contract.payment_terms || 'Segun acuerdo'}
+
+CUARTA.- ENTREGABLES
+- Codigo fuente completo y documentado
+- Documentacion tecnica
+- Manual de usuario
+- ${contract.deliverables || 'Entregables adicionales segun especificaciones'}
+
+En Madrid, a ${new Date().toLocaleDateString('es-ES')}
+
+EL CONSULTOR:                     EL CLIENTE:
+_____________________________     _____________________________
+${companyName}                    ${clientName}
+DNI: ${dniProvider}               DNI/CIF: ${dniClient}
     `;
+}
 
-    return baseContent;
+function generateConsultoriaContentEmail(contract: any, companyName: string, clientName: string, addressProvider: string, addressClient: string, dniProvider: string, dniClient: string): string {
+    return `
+CONTRATO DE PRESTACION DE SERVICIOS DE CONSULTORIA
+
+Entre ${companyName}, con DNI ${dniProvider}, domiciliado en ${addressProvider} (en adelante, "EL CONSULTOR"), y ${clientName}, con DNI ${dniClient}, domiciliado en ${addressClient} (en adelante, "EL CLIENTE"), se acuerda:
+
+PRIMERA.- OBJETO DEL CONTRATO
+EL CONSULTOR se compromete a proporcionar servicios de consultoria profesional:
+- Area de consultoria: ${contract.title}
+- Descripcion de servicios: ${contract.description || 'Servicios de consultoria especializada'}
+- Metodologia: ${contract.methodology || 'Metodologia profesional adaptada'}
+- Alcance: ${contract.scope || 'Segun especificaciones acordadas'}
+
+SEGUNDA.- PLAZO DE EJECUCION
+Los servicios se prestaran desde ${contract.start_date ? new Date(contract.start_date).toLocaleDateString('es-ES') : '[Fecha inicio]'} hasta ${contract.end_date ? new Date(contract.end_date).toLocaleDateString('es-ES') : '[Fecha fin]'}.
+
+TERCERA.- PRECIO Y FORMA DE PAGO
+El precio total de los servicios es de ${contract.contract_value || '0'} ${contract.currency || 'EUR'}.
+Forma de pago: ${contract.payment_terms || 'Segun acuerdo'}
+
+CUARTA.- ENTREGABLES
+- Analisis y diagnostico de la situacion actual
+- Recomendaciones estrategicas documentadas
+- Plan de implementacion detallado
+- ${contract.deliverables || 'Informes y documentacion segun alcance'}
+
+En Madrid, a ${new Date().toLocaleDateString('es-ES')}
+
+EL CONSULTOR:                     EL CLIENTE:
+_____________________________     _____________________________
+${companyName}                    ${clientName}
+DNI: ${dniProvider}               DNI/CIF: ${dniClient}
+    `;
+}
+
+function generateMarketingContentEmail(contract: any, companyName: string, clientName: string, addressProvider: string, addressClient: string, dniProvider: string, dniClient: string): string {
+    return `
+CONTRATO DE PRESTACION DE SERVICIOS DE MARKETING DIGITAL
+
+Entre ${companyName}, con DNI ${dniProvider}, domiciliado en ${addressProvider} (en adelante, "EL PRESTADOR"), y ${clientName}, con DNI ${dniClient}, domiciliado en ${addressClient} (en adelante, "EL CLIENTE"), se acuerda:
+
+PRIMERA.- OBJETO DEL CONTRATO
+EL PRESTADOR se compromete a ejecutar servicios de marketing digital:
+- Servicio principal: ${contract.title}
+- Descripcion: ${contract.description || 'Servicios de marketing digital integral'}
+- Canales: ${contract.channels || 'Plataformas digitales relevantes'}
+- Objetivos: ${contract.objectives || 'Segun KPIs acordados'}
+
+SEGUNDA.- PLAZO DE EJECUCION
+Los servicios se ejecutaran desde ${contract.start_date ? new Date(contract.start_date).toLocaleDateString('es-ES') : '[Fecha inicio]'} hasta ${contract.end_date ? new Date(contract.end_date).toLocaleDateString('es-ES') : '[Fecha fin]'}.
+
+TERCERA.- PRECIO Y FORMA DE PAGO
+El precio total de los servicios es de ${contract.contract_value || '0'} ${contract.currency || 'EUR'}.
+Forma de pago: ${contract.payment_terms || 'Segun acuerdo'}
+
+En Madrid, a ${new Date().toLocaleDateString('es-ES')}
+
+EL CONSULTOR:                     EL CLIENTE:
+_____________________________     _____________________________
+${companyName}                    ${clientName}
+DNI: ${dniProvider}               DNI/CIF: ${dniClient}
+    `;
+}
+
+function generateDisenoContentEmail(contract: any, companyName: string, clientName: string, addressProvider: string, addressClient: string, dniProvider: string, dniClient: string): string {
+    return `
+CONTRATO DE PRESTACION DE SERVICIOS DE DISEÑO
+
+Entre ${companyName}, con DNI ${dniProvider}, domiciliado en ${addressProvider} (en adelante, "EL DISEÑADOR"), y ${clientName}, con DNI ${dniClient}, domiciliado en ${addressClient} (en adelante, "EL CLIENTE"), se acuerda:
+
+PRIMERA.- OBJETO DEL CONTRATO
+EL DISEÑADOR se compromete a crear y entregar servicios de diseño:
+- Proyecto de diseño: ${contract.title}
+- Descripcion: ${contract.description || 'Servicios de diseño grafico profesional'}
+- Estilo: ${contract.style || 'Segun brief del cliente'}
+- Formatos de entrega: ${contract.formats || 'Formatos digitales estandar'}
+
+SEGUNDA.- PLAZO DE EJECUCION
+El diseño se desarrollara desde ${contract.start_date ? new Date(contract.start_date).toLocaleDateString('es-ES') : '[Fecha inicio]'} hasta ${contract.end_date ? new Date(contract.end_date).toLocaleDateString('es-ES') : '[Fecha fin]'}.
+
+TERCERA.- PRECIO Y FORMA DE PAGO
+El precio total del diseño es de ${contract.contract_value || '0'} ${contract.currency || 'EUR'}.
+Forma de pago: ${contract.payment_terms || 'Segun acuerdo'}
+
+En Madrid, a ${new Date().toLocaleDateString('es-ES')}
+
+EL CONSULTOR:                     EL CLIENTE:
+_____________________________     _____________________________
+${companyName}                    ${clientName}
+DNI: ${dniProvider}               DNI/CIF: ${dniClient}
+    `;
+}
+
+function generateContenidoContentEmail(contract: any, companyName: string, clientName: string, addressProvider: string, addressClient: string, dniProvider: string, dniClient: string): string {
+    return `
+CONTRATO DE PRESTACION DE SERVICIOS DE CREACION DE CONTENIDO
+
+Entre ${companyName}, con DNI ${dniProvider}, domiciliado en ${addressProvider} (en adelante, "EL CREADOR"), y ${clientName}, con DNI ${dniClient}, domiciliado en ${addressClient} (en adelante, "EL CLIENTE"), se acuerda:
+
+PRIMERA.- OBJETO DEL CONTRATO
+EL CREADOR se compromete a producir contenido profesional:
+- Tipo de contenido: ${contract.title}
+- Descripcion: ${contract.description || 'Creacion de contenido original'}
+- Formato: ${contract.format || 'Segun especificaciones'}
+- Volumen: ${contract.volume || 'Segun alcance acordado'}
+
+SEGUNDA.- PLAZO DE EJECUCION
+El contenido se creara desde ${contract.start_date ? new Date(contract.start_date).toLocaleDateString('es-ES') : '[Fecha inicio]'} hasta ${contract.end_date ? new Date(contract.end_date).toLocaleDateString('es-ES') : '[Fecha fin]'}.
+
+TERCERA.- PRECIO Y FORMA DE PAGO
+El precio total por el contenido es de ${contract.contract_value || '0'} ${contract.currency || 'EUR'}.
+Forma de pago: ${contract.payment_terms || 'Segun acuerdo'}
+
+En Madrid, a ${new Date().toLocaleDateString('es-ES')}
+
+EL CONSULTOR:                     EL CLIENTE:
+_____________________________     _____________________________
+${companyName}                    ${clientName}
+DNI: ${dniProvider}               DNI/CIF: ${dniClient}
+    `;
+}
+
+function generateGeneralContentEmail(contract: any, companyName: string, clientName: string, addressProvider: string, addressClient: string, dniProvider: string, dniClient: string): string {
+    return `
+CONTRATO DE PRESTACION DE SERVICIOS PROFESIONALES
+
+Entre ${companyName}, con DNI ${dniProvider}, domiciliado en ${addressProvider} (en adelante, "EL PRESTADOR"), y ${clientName}, con DNI ${dniClient}, domiciliado en ${addressClient} (en adelante, "EL CLIENTE"), se acuerda:
+
+PRIMERA.- OBJETO DEL CONTRATO
+EL PRESTADOR se compromete a proporcionar servicios profesionales:
+- Servicio: ${contract.title}
+- Descripcion: ${contract.description || 'Servicios profesionales especializados'}
+- Alcance: ${contract.scope || 'Segun especificaciones acordadas'}
+- Metodologia: ${contract.methodology || 'Metodologia profesional'}
+
+SEGUNDA.- PLAZO DE EJECUCION
+Los servicios se prestaran desde ${contract.start_date ? new Date(contract.start_date).toLocaleDateString('es-ES') : '[Fecha inicio]'} hasta ${contract.end_date ? new Date(contract.end_date).toLocaleDateString('es-ES') : '[Fecha fin]'}.
+
+TERCERA.- PRECIO Y FORMA DE PAGO
+El precio total de los servicios es de ${contract.contract_value || '0'} ${contract.currency || 'EUR'}.
+Forma de pago: ${contract.payment_terms || 'Segun acuerdo'}
+
+En Madrid, a ${new Date().toLocaleDateString('es-ES')}
+
+EL CONSULTOR:                     EL CLIENTE:
+_____________________________     _____________________________
+${companyName}                    ${clientName}
+DNI: ${dniProvider}               DNI/CIF: ${dniClient}
+    `;
 }
