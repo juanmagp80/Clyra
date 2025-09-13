@@ -446,7 +446,7 @@ async function generateContractPDF(contract: any, profile: any, companyData: any
         // Función para limpiar texto para jsPDF - Versión mejorada
         const cleanText = (text: string) => {
             if (!text) return '';
-            
+
             return text
                 // Reemplazos específicos de caracteres acentuados problemáticos
                 .replace(/[áàäâāăą]/g, 'a').replace(/[ÁÀÄÂĀĂĄ]/g, 'A')
@@ -456,10 +456,10 @@ async function generateContractPDF(contract: any, profile: any, companyData: any
                 .replace(/[úùüûūų]/g, 'u').replace(/[ÚÙÜÛŪŲ]/g, 'U')
                 .replace(/[çć]/g, 'c').replace(/[ÇĆ]/g, 'C')
                 .replace(/ß/g, 'ss')
-                
+
                 // Mantener ñ y caracteres básicos españoles + ASCII + saltos de línea
                 .replace(/[^\x20-\x7EñÑ\n\r]/g, '') // ASCII + ñ + saltos de línea
-                
+
                 // Limpiar caracteres especiales restantes
                 .replace(/"/g, "'")
                 .replace(/[{}]/g, "")

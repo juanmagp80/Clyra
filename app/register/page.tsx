@@ -15,7 +15,8 @@ import {
     X
 } from 'lucide-react';
 import { useRouter } from 'next/navigation';
-import { useCallback, useState } from 'react';
+import { useCallback, useState, useRef } from 'react';
+import ReCaptchaComponent, { ReCaptchaRef } from '@/src/components/ReCaptcha';
 
 interface PopupState {
     show: boolean;
@@ -42,6 +43,7 @@ export default function RegisterPage() {
     const [loading, setLoading] = useState(false);
     const router = useRouter();
     const [captchaToken, setCaptchaToken] = useState('');
+    const recaptchaRef = useRef<ReCaptchaRef>(null);
 
     // Estado para popup unificado
     const [popup, setPopup] = useState<PopupState>({
@@ -61,6 +63,30 @@ export default function RegisterPage() {
     // Función para cerrar popup
     const closePopup = useCallback(() => {
         setPopup(prev => ({ ...prev, show: false }));
+    }, []);
+
+    // Función para manejar reCAPTCHA
+    const handleRecaptchaChange = useCallback((token: string | null) => {
+        setCaptchaToken(token || '');
+    }, []);
+
+    // Función para verificar reCAPTCHA
+    const verifyRecaptcha = useCallback(async (token: string) => {
+        try {
+            const response = await fetch('/api/verify-recaptcha', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({ token }),
+            });
+
+            const data = await response.json();
+            return data.success;
+        } catch (error) {
+            console.error('Error verificando reCAPTCHA:', error);
+            return false;
+        }
     }, []);
 
     // Validaciones mejoradas
@@ -111,13 +137,25 @@ export default function RegisterPage() {
             return;
         }
 
-        if (process.env.NODE_ENV === 'production' && !captchaToken) {
+        if (!captchaToken) {
             showPopup('error', 'Por favor completa el captcha');
             return;
         }
 
         if (!validateForm()) {
             return;
+        }
+
+        // Verificar reCAPTCHA
+        if (captchaToken) {
+            const isRecaptchaValid = await verifyRecaptcha(captchaToken);
+            if (!isRecaptchaValid) {
+                showPopup('error', 'Error verificando reCAPTCHA. Por favor intenta de nuevo.');
+                recaptchaRef.current?.reset();
+                setCaptchaToken('');
+                setLoading(false);
+                return;
+            }
         }
 
         setLastAttempt(now);
@@ -496,6 +534,22 @@ export default function RegisterPage() {
                                         </div>
                                     </div>
                                 </div>
+
+                                {/* reCAPTCHA - Habilitado para pruebas */}
+                                {(
+                                    <div className="pt-6">
+                                        <div className="bg-white/10 backdrop-blur-sm border border-white/20 rounded-2xl p-6">
+                                            <h3 className="text-white font-semibold mb-4 text-center">
+                                                Verificación de Seguridad
+                                            </h3>
+                                            <ReCaptchaComponent
+                                                ref={recaptchaRef}
+                                                onVerify={handleRecaptchaChange}
+                                                theme="dark"
+                                            />
+                                        </div>
+                                    </div>
+                                )}
 
                                 {/* Botón de registro espectacular */}
                                 <div className="pt-8">
