@@ -138,16 +138,16 @@ export default function ContractDetailClient({ contractId, userEmail }: Contract
             // Crear elemento para descargar
             const a = document.createElement('a');
             const url = window.URL.createObjectURL(blob);
-            
+
             a.href = url;
             a.download = `contrato-${cleanTitle}-${contract.id.substring(0, 8)}.pdf`;
             document.body.appendChild(a);
             a.click();
-            
+
             // Limpiar
             window.URL.revokeObjectURL(url);
             document.body.removeChild(a);
-            
+
             showToast.success('PDF generado correctamente');
 
         } catch (error) {

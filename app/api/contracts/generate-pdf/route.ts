@@ -1,6 +1,6 @@
-import { NextRequest, NextResponse } from 'next/server';
 import { createSupabaseServerClient } from '@/src/lib/supabase-server';
 import { jsPDF } from 'jspdf';
+import { NextRequest, NextResponse } from 'next/server';
 
 export async function POST(request: NextRequest) {
     try {
@@ -130,23 +130,28 @@ async function generateContractPDF(contract: any, profile: any, companyData: any
         const pageWidth = 210; // A4 width in mm
         const contentWidth = pageWidth - (marginLeft * 2);
 
-        // Función para limpiar texto para jsPDF
+        // Función para limpiar texto - Solo ASCII básico
         const cleanText = (text: string) => {
             if (!text) return '';
-            // Para jsPDF, necesitamos caracteres simples sin acentos
+            
             return text
-                .replace(/"/g, "'") // Reemplazar comillas dobles
-                .replace(/[{}]/g, "") // Remover llaves
-                // Reemplazar caracteres con acentos por equivalentes sin acentos
-                .replace(/[áàäâ]/g, 'a').replace(/[ÁÀÄÂ]/g, 'A')
-                .replace(/[éèëê]/g, 'e').replace(/[ÉÈËÊ]/g, 'E')
-                .replace(/[íìïî]/g, 'i').replace(/[ÍÌÏÎ]/g, 'I')
-                .replace(/[óòöô]/g, 'o').replace(/[ÓÒÖÔ]/g, 'O')
-                .replace(/[úùüû]/g, 'u').replace(/[ÚÙÜÛ]/g, 'U')
-                .replace(/ñ/g, 'n').replace(/Ñ/g, 'N')
-                .replace(/ç/g, 'c').replace(/Ç/g, 'C')
+                // Reemplazos específicos de caracteres acentuados problemáticos
+                .replace(/[áàäâāăą]/g, 'a').replace(/[ÁÀÄÂĀĂĄ]/g, 'A')
+                .replace(/[éèëêēėę]/g, 'e').replace(/[ÉÈËÊĒĖĘ]/g, 'E')
+                .replace(/[íìïîīį]/g, 'i').replace(/[ÍÌÏÎĪĮ]/g, 'I')
+                .replace(/[óòöôōőø]/g, 'o').replace(/[ÓÒÖÔŌŐØ]/g, 'O')
+                .replace(/[úùüûūų]/g, 'u').replace(/[ÚÙÜÛŪŲ]/g, 'U')
+                .replace(/[çć]/g, 'c').replace(/[ÇĆ]/g, 'C')
+                .replace(/ß/g, 'ss')
+                
+                // Mantener ñ y caracteres básicos españoles + ASCII + saltos de línea
+                .replace(/[^\x20-\x7EñÑ\n\r]/g, '') // ASCII + ñ + saltos de línea
+                
+                // Limpiar caracteres especiales restantes
+                .replace(/"/g, "'")
+                .replace(/[{}]/g, "")
                 .trim();
-        };        let currentY = marginTop;
+        }; let currentY = marginTop;
 
         // Header principal con líneas decorativas
         doc.setFillColor(37, 99, 235);
@@ -217,29 +222,29 @@ async function generateContractPDF(contract: any, profile: any, companyData: any
         // Prestador de servicios (datos de la empresa)
         doc.setFontSize(11);
         doc.setTextColor(0, 0, 0);
-        doc.text('🔹 EL CONSULTOR/PRESTADOR DE SERVICIOS:', marginLeft, currentY);
+        doc.text(cleanText('EL CONSULTOR/PRESTADOR DE SERVICIOS:'), marginLeft, currentY);
         currentY += 6;
 
         doc.setFontSize(10);
         doc.setTextColor(60, 60, 60);
-        
+
         // Usar datos de la empresa si están disponibles
         const freelancerName = companyData?.name || profile?.full_name || 'Prestador del Servicio';
         doc.text(`Nombre: ${cleanText(freelancerName)}`, marginLeft, currentY);
         currentY += 5;
-        
+
         if (companyData?.tax_id || profile?.document_number) {
             doc.text(`DNI/NIF: ${companyData?.tax_id || profile?.document_number}`, marginLeft, currentY);
             currentY += 5;
         }
-        
+
         if (companyData?.address || profile?.address) {
-            doc.text(`Dirección: ${cleanText(companyData?.address || profile?.address)}`, marginLeft, currentY);
+            doc.text(cleanText(`Direccion: ${companyData?.address || profile?.address}`), marginLeft, currentY);
             currentY += 5;
         }
-        
+
         if (companyData?.email || profile?.email) {
-            doc.text(`Email: ${companyData?.email || profile?.email}`, marginLeft, currentY);
+            doc.text(`Email: ${cleanText(companyData?.email || profile?.email || '')}`, marginLeft, currentY);
             currentY += 5;
         }
         currentY += 8;
@@ -247,13 +252,13 @@ async function generateContractPDF(contract: any, profile: any, companyData: any
         // Cliente
         doc.setFontSize(11);
         doc.setTextColor(0, 0, 0);
-        doc.text('🔹 EL CLIENTE/CONTRATANTE:', marginLeft, currentY);
+        doc.text(cleanText('EL CLIENTE/CONTRATANTE:'), marginLeft, currentY);
         currentY += 6;
 
         doc.setFontSize(10);
         doc.setTextColor(60, 60, 60);
         if (contract.clients?.name) {
-            doc.text(`Nombre/Razón Social: ${cleanText(contract.clients.name)}`, marginLeft, currentY);
+            doc.text(cleanText(`Nombre/Razon Social: ${contract.clients.name}`), marginLeft, currentY);
             currentY += 5;
         }
         if (contract.clients?.company) {
@@ -261,7 +266,7 @@ async function generateContractPDF(contract: any, profile: any, companyData: any
             currentY += 5;
         }
         if (contract.clients?.address) {
-            doc.text(`Dirección: ${cleanText(contract.clients.address || 'No especificada')}`, marginLeft, currentY);
+            doc.text(cleanText(`Direccion: ${contract.clients.address || 'No especificada'}`), marginLeft, currentY);
             currentY += 5;
         }
         if (contract.clients?.email) {
@@ -269,7 +274,7 @@ async function generateContractPDF(contract: any, profile: any, companyData: any
             currentY += 5;
         }
         if (contract.clients?.phone) {
-            doc.text(`Teléfono: ${contract.clients.phone}`, marginLeft, currentY);
+            doc.text(cleanText(`Telefono: ${contract.clients.phone}`), marginLeft, currentY);
             currentY += 5;
         }
         currentY += 15;
@@ -302,29 +307,28 @@ async function generateContractPDF(contract: any, profile: any, companyData: any
         // Detalles del contrato
         doc.setFontSize(11);
         doc.setTextColor(0, 0, 0);
-        doc.text(`📋 TÍTULO DEL PROYECTO: ${cleanText(contract.title)}`, marginLeft, currentY);
+        doc.text(cleanText(`TITULO DEL PROYECTO: ${contract.title}`), marginLeft, currentY);
         currentY += 8;
 
         if (contract.contract_value) {
-            doc.text(`💰 VALOR DEL CONTRATO: ${contract.contract_value} ${contract.currency || 'EUR'}`, marginLeft, currentY);
+            doc.text(cleanText(`VALOR DEL CONTRATO: ${contract.contract_value} ${contract.currency || 'EUR'}`), marginLeft, currentY);
             currentY += 8;
         }
 
-        doc.text('📅 PERÍODO DE VIGENCIA:', marginLeft, currentY);
+        doc.text(cleanText('PERIODO DE VIGENCIA:'), marginLeft, currentY);
         currentY += 5;
         if (contract.start_date) {
-            doc.text(`• Fecha de Inicio: ${new Date(contract.start_date).toLocaleDateString('es-ES')}`, marginLeft + 5, currentY);
+            doc.text(cleanText(`* Fecha de Inicio: ${new Date(contract.start_date).toLocaleDateString('es-ES')}`), marginLeft + 5, currentY);
             currentY += 5;
         }
         if (contract.end_date) {
-            doc.text(`• Fecha de Finalización: ${new Date(contract.end_date).toLocaleDateString('es-ES')}`, marginLeft + 5, currentY);
+            doc.text(cleanText(`* Fecha de Finalizacion: ${new Date(contract.end_date).toLocaleDateString('es-ES')}`), marginLeft + 5, currentY);
             currentY += 5;
         }
 
         if (contract.payment_terms) {
-            currentY += 3;
-            doc.text(`💳 CONDICIONES DE PAGO: ${cleanText(contract.payment_terms)}`, marginLeft, currentY);
-            currentY += 10;
+            doc.text(cleanText(`CONDICIONES DE PAGO: ${contract.payment_terms}`), marginLeft, currentY);
+            currentY += 8;
         }
 
         // Línea separadora doble
@@ -358,8 +362,9 @@ async function generateContractPDF(contract: any, profile: any, companyData: any
         doc.setFontSize(9);
         doc.setTextColor(0, 0, 0);
 
-        // Dividir contenido en líneas
-        const lines = doc.splitTextToSize(contractContent, contentWidth);
+        // Limpiar el contenido completo y dividir en líneas
+        const cleanedContent = cleanText(contractContent);
+        const lines = doc.splitTextToSize(cleanedContent, contentWidth);
 
         for (const line of lines) {
             if (currentY > 260) { // Nueva página si es necesario
@@ -428,7 +433,7 @@ async function generateContractPDF(contract: any, profile: any, companyData: any
         // Información adicional final
         doc.setFontSize(8);
         doc.setTextColor(100, 100, 100);
-        
+
         // Línea separadora final
         for (let i = 0; i < 2; i++) {
             doc.setDrawColor(200, 200, 200);
@@ -443,13 +448,13 @@ async function generateContractPDF(contract: any, profile: any, companyData: any
         doc.text(infoTitle, infoTitleX, currentY);
         currentY += 8;
 
-        doc.text(`📌 Este contrato ha sido generado mediante el sistema Taskelio`, marginLeft, currentY);
+        doc.text(cleanText(`Este contrato ha sido generado mediante el sistema Taskelio`), marginLeft, currentY);
         currentY += 4;
-        doc.text(`📌 Número de referencia: CONT-2025-${contract.id?.substring(0, 4)}`, marginLeft, currentY);
+        doc.text(cleanText(`Numero de referencia: CONT-2025-${contract.id?.substring(0, 4)}`), marginLeft, currentY);
         currentY += 4;
-        doc.text(`📌 Fecha de generación: ${new Date().toLocaleDateString('es-ES')}`, marginLeft, currentY);
+        doc.text(cleanText(`Fecha de generacion: ${new Date().toLocaleDateString('es-ES')}`), marginLeft, currentY);
         currentY += 4;
-        doc.text(`📌 Jurisdicción aplicable: Madrid, España`, marginLeft, currentY);
+        doc.text(cleanText(`Jurisdiccion aplicable: Madrid, Espana`), marginLeft, currentY);
         currentY += 8;
 
         // Línea separadora final
@@ -458,7 +463,7 @@ async function generateContractPDF(contract: any, profile: any, companyData: any
         doc.line(marginLeft, currentY, pageWidth - marginLeft, currentY);
         currentY += 5;
 
-        doc.text(`© 2025 - Documento Oficial Taskelio`, marginLeft, currentY);
+        doc.text(cleanText(`(c) 2025 - Documento Oficial Taskelio`), marginLeft, currentY);
         doc.text(`Todos los derechos reservados`, pageWidth - marginLeft - 50, currentY);
 
         // Convertir a buffer
@@ -479,16 +484,16 @@ function generateDetailedContractContent(contract: any, companyData: any, profil
     const addressProvider = companyData?.address || '[Dirección de la Empresa]';
     const addressClient = contract.clients?.address || '[Dirección del Cliente]';
     const dniClient = contract.clients?.nif || '[DNI/NIF del Cliente]';
-    
+
     // Debug: mostrar solo si el NIF está faltante
     if (!contract.clients?.nif) {
         console.log('⚠️  NIF del cliente está faltante:', contract.clients?.name);
         console.log('📋 Cliente completo:', JSON.stringify(contract.clients, null, 2));
     }
-    
+
     // Detectar el tipo de servicio del contrato
     const serviceType = contract.service_type?.toLowerCase() || detectServiceType(contract.title, contract.description || '');
-    
+
     console.log('🔍 Tipo de servicio detectado:', serviceType, 'para contrato:', contract.title);
 
     const templates = {

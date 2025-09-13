@@ -18,10 +18,10 @@ const USER_ID = 'e7ed7c8d-229a-42d1-8a44-37bcc64c440c';
 async function updateUserDNIData() {
     try {
         console.log('🎯 Actualizando datos DNI específicos para el usuario:', USER_EMAIL);
-        
+
         // 1. Actualizar la empresa "Mi Empresa"
         console.log('\n🏢 1. Actualizando empresa "Mi Empresa"...');
-        
+
         const { data: company, error: companyError } = await supabase
             .from('companies')
             .update({
@@ -32,28 +32,28 @@ async function updateUserDNIData() {
             .eq('user_id', USER_ID)
             .select()
             .single();
-            
+
         if (companyError) {
             console.error('❌ Error actualizando empresa:', companyError);
         } else {
             console.log('✅ Empresa actualizada:', company);
         }
-        
+
         // 2. Actualizar clientes del usuario con DNI
         console.log('\n👥 2. Actualizando clientes del usuario...');
-        
+
         const { data: clients, error: clientsError } = await supabase
             .from('clients')
             .select('*')
             .eq('user_id', USER_ID);
-            
+
         if (clientsError) {
             console.error('❌ Error obteniendo clientes:', clientsError);
             return;
         }
-        
+
         console.log(`👤 Encontrados ${clients?.length || 0} clientes`);
-        
+
         // Datos de ejemplo para actualizar clientes
         const clientUpdates = [
             {
@@ -75,12 +75,12 @@ async function updateUserDNIData() {
                 province: 'Valencia'
             }
         ];
-        
+
         if (clients && clients.length > 0) {
             for (let i = 0; i < clients.length && i < clientUpdates.length; i++) {
                 const client = clients[i];
                 const updateData = clientUpdates[i];
-                
+
                 const { error: updateError } = await supabase
                     .from('clients')
                     .update({
@@ -88,7 +88,7 @@ async function updateUserDNIData() {
                         phone: client.phone || '+34 600 000 ' + (100 + i).toString().padStart(3, '0')
                     })
                     .eq('id', client.id);
-                    
+
                 if (updateError) {
                     console.error(`❌ Error actualizando cliente ${client.name}:`, updateError);
                 } else {
@@ -99,14 +99,14 @@ async function updateUserDNIData() {
                 }
             }
         }
-        
+
         console.log('\n🎉 ¡Actualización completada!');
         console.log('\n🔄 Ahora intenta generar un PDF y deberías ver:');
         console.log('✅ DNI Empresa: B12345678');
         console.log('✅ DNI Cliente: 12345678A (u otros)');
         console.log('✅ Direcciones completas');
         console.log('✅ Sin caracteres raros (á→a, ñ→n)');
-        
+
     } catch (error) {
         console.error('❌ Error ejecutando script:', error);
     }

@@ -34,36 +34,36 @@ function generateFakeNIF() {
 async function addTestDNIData() {
     try {
         console.log('🚀 Iniciando script para agregar datos DNI/NIF de prueba...');
-        
+
         // 1. Actualizar datos de la empresa
         console.log('\n📊 1. Actualizando datos de empresa...');
-        
+
         // Buscar la empresa del usuario
         const { data: companies, error: companiesError } = await supabase
             .from('companies')
             .select('*')
             .limit(5);
-            
+
         if (companiesError) {
             console.error('❌ Error obteniendo empresas:', companiesError);
             return;
         }
-        
+
         console.log(`📋 Encontradas ${companies?.length || 0} empresas`);
-        
+
         if (companies && companies.length > 0) {
             for (const company of companies) {
                 const fakeTaxId = generateFakeNIF();
                 const fakeAddress = `Calle ${Math.floor(Math.random() * 100) + 1}, ${Math.floor(Math.random() * 5) + 1}º, 28001 Madrid`;
-                
+
                 const { error: updateError } = await supabase
                     .from('companies')
-                    .update({ 
+                    .update({
                         tax_id: fakeTaxId,
                         address: company.address || fakeAddress
                     })
                     .eq('id', company.id);
-                    
+
                 if (updateError) {
                     console.error(`❌ Error actualizando empresa ${company.name}:`, updateError);
                 } else {
@@ -75,41 +75,41 @@ async function addTestDNIData() {
         } else {
             console.log('⚠️  No se encontraron empresas para actualizar');
         }
-        
+
         // 2. Actualizar datos de clientes
         console.log('\n👥 2. Actualizando datos de clientes...');
-        
+
         const { data: clients, error: clientsError } = await supabase
             .from('clients')
             .select('*')
             .limit(10);
-            
+
         if (clientsError) {
             console.error('❌ Error obteniendo clientes:', clientsError);
             return;
         }
-        
+
         console.log(`👤 Encontrados ${clients?.length || 0} clientes`);
-        
+
         if (clients && clients.length > 0) {
             for (const client of clients) {
                 const fakeDNI = generateFakeDNI();
                 const fakeAddress = `Avenida ${Math.floor(Math.random() * 200) + 1}, ${Math.floor(Math.random() * 10) + 1}º, ${['Madrid', 'Barcelona', 'Valencia', 'Sevilla', 'Bilbao'][Math.floor(Math.random() * 5)]}`;
                 const cities = ['Madrid', 'Barcelona', 'Valencia', 'Sevilla', 'Bilbao', 'Málaga', 'Zaragoza'];
                 const provinces = ['Madrid', 'Barcelona', 'Valencia', 'Andalucía', 'País Vasco', 'Andalucía', 'Aragón'];
-                
+
                 const randomIndex = Math.floor(Math.random() * cities.length);
-                
+
                 const { error: updateError } = await supabase
                     .from('clients')
-                    .update({ 
+                    .update({
                         nif: fakeDNI,
                         address: client.address || fakeAddress,
                         city: client.city || cities[randomIndex],
                         province: client.province || provinces[randomIndex]
                     })
                     .eq('id', client.id);
-                    
+
                 if (updateError) {
                     console.error(`❌ Error actualizando cliente ${client.name}:`, updateError);
                 } else {
@@ -122,13 +122,13 @@ async function addTestDNIData() {
         } else {
             console.log('⚠️  No se encontraron clientes para actualizar');
         }
-        
+
         console.log('\n🎉 ¡Script completado exitosamente!');
         console.log('\n📋 Resumen:');
         console.log(`✅ Empresas actualizadas: ${companies?.length || 0}`);
         console.log(`✅ Clientes actualizados: ${clients?.length || 0}`);
         console.log('\n🔄 Ahora puedes probar generar PDFs y deberías ver los DNI/NIF correctamente.');
-        
+
     } catch (error) {
         console.error('❌ Error ejecutando script:', error);
     }

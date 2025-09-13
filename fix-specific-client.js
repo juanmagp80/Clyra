@@ -14,7 +14,7 @@ async function updateSpecificClient() {
     try {
         console.log('🎯 Actualizando cliente específico del contrato...');
         console.log('📋 Cliente ID:', CLIENT_ID);
-        
+
         // Actualizar este cliente específico
         const { data: updatedClient, error } = await supabase
             .from('clients')
@@ -25,7 +25,7 @@ async function updateSpecificClient() {
             .eq('id', CLIENT_ID)
             .select()
             .single();
-            
+
         if (error) {
             console.error('❌ Error actualizando cliente:', error.message);
         } else {
@@ -35,11 +35,11 @@ async function updateSpecificClient() {
             console.log('- Email:', updatedClient.email);
             console.log('- Dirección:', updatedClient.address);
         }
-        
+
         console.log('\n🎉 ¡Listo! Ahora genera el PDF y deberías ver:');
         console.log('✅ DNI Empresa: B12345678');
         console.log('✅ DNI Cliente: 12345678Z');
-        
+
     } catch (error) {
         console.error('❌ Error general:', error.message);
     }
