@@ -3,7 +3,7 @@
 import { createSupabaseClient } from '@/src/lib/supabase-client';
 import { AlertCircle, Clock, Home, LogOut, Mail, RefreshCw } from 'lucide-react';
 import { useRouter, useSearchParams } from 'next/navigation';
-import { useEffect, useState, Suspense } from 'react';
+import { Suspense, useEffect, useState } from 'react';
 
 function EmailPendingContent() {
     const router = useRouter();

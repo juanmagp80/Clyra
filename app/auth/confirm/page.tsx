@@ -2,7 +2,7 @@
 
 import { AlertCircle, CheckCircle, Clock, Home, LogIn, Mail, XCircle } from 'lucide-react';
 import { useRouter, useSearchParams } from 'next/navigation';
-import { useEffect, useState, Suspense } from 'react';
+import { Suspense, useEffect, useState } from 'react';
 
 interface ConfirmationResult {
     success: boolean;
