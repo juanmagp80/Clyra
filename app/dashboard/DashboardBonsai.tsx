@@ -192,15 +192,11 @@ export default function DashboardBonsai({
             const [
                 { data: clients },
                 { data: allProjects },
-                { data: invoices },
-                { data: weeklyTimeData },
-                { data: monthlyTimeData }
+                { data: invoices }
             ] = await Promise.all([
                 supabase.from('clients').select('*').eq('user_id', user.id),
                 supabase.from('projects').select('*').eq('user_id', user.id),
-                supabase.from('invoices').select('amount, created_at, issue_date, paid_date').eq('status', 'paid').eq('user_id', user.id),
-                supabase.from('time_entries').select('duration_seconds').eq('user_id', user.id),
-                supabase.from('time_entries').select('duration_seconds').eq('user_id', user.id)
+                supabase.from('invoices').select('amount, created_at, issue_date, paid_date').eq('status', 'paid').eq('user_id', user.id)
             ]);
 
             const activeProjects = allProjects?.filter((p: any) =>
@@ -211,9 +207,38 @@ export default function DashboardBonsai({
                 p.status === 'completed'
             ) || [];
 
-            const totalMinutesThisWeek = weeklyTimeData?.reduce((sum: number, entry: any) => sum + (entry.duration_seconds / 60), 0) || 0;
-            const billableMinutesThisWeek = weeklyTimeData?.reduce((sum: number, entry: any) =>
-                sum + (entry.duration_seconds ? entry.duration_seconds / 60 : 0), 0) || 0;
+            // Calcular fechas de inicio y fin de la semana actual
+            const now = new Date();
+            const startOfWeek = new Date(now);
+            startOfWeek.setDate(now.getDate() - now.getDay()); // Domingo
+            startOfWeek.setHours(0, 0, 0, 0);
+            const endOfWeek = new Date(startOfWeek);
+            endOfWeek.setDate(startOfWeek.getDate() + 6);
+            endOfWeek.setHours(23, 59, 59, 999);
+
+            // Calcular fechas de inicio y fin del mes actual
+            const startOfMonth = new Date(now.getFullYear(), now.getMonth(), 1);
+            const endOfMonth = new Date(now.getFullYear(), now.getMonth() + 1, 0);
+            endOfMonth.setHours(23, 59, 59, 999);
+
+            // Consultar time_entries de la semana actual
+            const { data: weeklyTimeData } = await supabase
+                .from('time_entries')
+                .select('duration_seconds, start_time')
+                .eq('user_id', user.id)
+                .gte('start_time', startOfWeek.toISOString())
+                .lte('start_time', endOfWeek.toISOString());
+
+            // Consultar time_entries del mes actual
+            const { data: monthlyTimeData } = await supabase
+                .from('time_entries')
+                .select('duration_seconds, start_time')
+                .eq('user_id', user.id)
+                .gte('start_time', startOfMonth.toISOString())
+                .lte('start_time', endOfMonth.toISOString());
+
+            const totalMinutesThisWeek = (weeklyTimeData || []).reduce((sum: number, entry: any) => sum + (entry.duration_seconds / 60), 0) || 0;
+            const billableMinutesThisWeek = (weeklyTimeData || []).reduce((sum: number, entry: any) => sum + (entry.duration_seconds ? entry.duration_seconds / 60 : 0), 0) || 0;
 
             const totalRevenue = invoices?.reduce((sum: number, invoice: any) => {
                 return sum + (invoice.amount || 0);
@@ -270,7 +295,7 @@ export default function DashboardBonsai({
 
             setMonthlyChartData(monthlyData);
 
-            const totalMinutesThisMonth = monthlyTimeData?.reduce((sum: number, entry: any) => sum + (entry.duration_seconds / 60), 0) || 0;
+            const totalMinutesThisMonth = (monthlyTimeData || []).reduce((sum: number, entry: any) => sum + (entry.duration_seconds / 60), 0) || 0;
 
             setMetrics({
                 totalClients: clients?.length || 0,

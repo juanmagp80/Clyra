@@ -423,6 +423,9 @@ function LoginPageContent() {
     );
 }
 
+// Forzar renderización dinámica para evitar errores de build
+export const dynamic = 'force-dynamic';
+
 // Componente principal con Suspense
 export default function LoginPage() {
     return (

@@ -59,29 +59,87 @@ export default function ReportsPageClient({ userEmail }: ReportsPageClientProps)
     const loadReportsData = async () => {
         setLoading(true);
         try {
-            // Mock data para demo
-            const mockMetrics: ReportMetrics = {
-                totalRevenue: 15420,
-                totalHours: 148,
-                avgHourlyRate: 65,
-                totalProjects: 12,
-                completedProjects: 8,
-                activeClients: 6,
-                billableHours: 132,
-                nonBillableHours: 16,
-                previousMetrics: {
-                    totalRevenue: 12850,
-                    totalHours: 135,
-                    avgHourlyRate: 60,
-                    completedProjects: 6,
-                    activeClients: 5,
-                    billableHours: 120,
-                    nonBillableHours: 15
+            const supabase = createSupabaseClient();
+            const user = (await supabase.auth.getUser()).data.user;
+            if (!user) {
+                setMetrics({
+                    totalRevenue: 0,
+                    totalHours: 0,
+                    avgHourlyRate: 0,
+                    totalProjects: 0,
+                    completedProjects: 0,
+                    activeClients: 0,
+                    billableHours: 0,
+                    nonBillableHours: 0,
+                });
+                return;
+            }
+
+            // Consultar ingresos totales
+            const { data: revenueData } = await supabase
+                .from('invoices')
+                .select('amount')
+                .eq('user_id', user.id);
+            const totalRevenue = (revenueData || []).reduce((sum: number, r: { amount?: number }) => sum + (r.amount || 0), 0);
+
+            // Consultar horas totales
+            const { data: timeData } = await supabase
+                .from('time_entries')
+                .select('duration_minutes, is_billable, hourly_rate')
+                .eq('user_id', user.id);
+            const totalMinutes = (timeData || []).reduce((sum: number, t: { duration_minutes?: number }) => sum + (t.duration_minutes || 0), 0);
+            const totalHours = totalMinutes / 60;
+            const billableMinutes = (timeData || []).filter((t: { is_billable?: boolean }) => t.is_billable).reduce((sum: number, t: { duration_minutes?: number }) => sum + (t.duration_minutes || 0), 0);
+            const nonBillableMinutes = (timeData || []).filter((t: { is_billable?: boolean }) => !t.is_billable).reduce((sum: number, t: { duration_minutes?: number }) => sum + (t.duration_minutes || 0), 0);
+            const billableHours = billableMinutes / 60;
+            const nonBillableHours = nonBillableMinutes / 60;
+
+            // Consultar proyectos
+            const { data: projectsData } = await supabase
+                .from('projects')
+                .select('id, status')
+                .eq('user_id', user.id);
+            const totalProjects = (projectsData || []).length;
+            const completedProjects = (projectsData || []).filter((p: { status?: string }) => p.status === 'completed').length;
+
+            // Consultar clientes activos
+            const { data: clientsData } = await supabase
+                .from('clients')
+                .select('id, status')
+                .eq('user_id', user.id);
+            const activeClients = (clientsData || []).filter((c: { status?: string }) => c.status === 'active').length;
+
+            // Calcular tarifa promedio
+            let avgHourlyRate = 0;
+            if (timeData && timeData.length > 0) {
+                const rates = (timeData as { hourly_rate?: number }[]).map((t) => t.hourly_rate).filter((rate): rate is number => Boolean(rate));
+                if (rates.length > 0) {
+                    avgHourlyRate = rates.reduce((sum: number, r: number) => sum + r, 0) / rates.length;
                 }
-            };
-            setMetrics(mockMetrics);
+            }
+
+            setMetrics({
+                totalRevenue,
+                totalHours,
+                avgHourlyRate,
+                totalProjects,
+                completedProjects,
+                activeClients,
+                billableHours,
+                nonBillableHours,
+            });
         } catch (error) {
             console.error('Error loading reports data:', error);
+            setMetrics({
+                totalRevenue: 0,
+                totalHours: 0,
+                avgHourlyRate: 0,
+                totalProjects: 0,
+                completedProjects: 0,
+                activeClients: 0,
+                billableHours: 0,
+                nonBillableHours: 0,
+            });
         } finally {
             setLoading(false);
         }
