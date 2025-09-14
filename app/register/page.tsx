@@ -41,6 +41,7 @@ export default function RegisterPage() {
     const [companyAddress, setCompanyAddress] = useState('');
 
     const [loading, setLoading] = useState(false);
+    const [sendingConfirmation, setSendingConfirmation] = useState(false);
     const router = useRouter();
     const [captchaToken, setCaptchaToken] = useState('');
     const recaptchaRef = useRef<ReCaptchaRef>(null);
@@ -162,11 +163,12 @@ export default function RegisterPage() {
         setLoading(true);
 
         try {
+            // Paso 1: Registrar usuario en Supabase (sin confirmación automática)
             const { data: authData, error: authError } = await supabase.auth.signUp({
                 email: email.trim(),
                 password,
                 options: {
-                    emailRedirectTo: `${getBaseUrl()}/auth/callback`,
+                    // No incluimos emailRedirectTo para evitar emails automáticos
                     data: {
                         company_name: companyName.trim(),
                         company_email: companyEmail.trim() || email.trim(),
@@ -190,13 +192,46 @@ export default function RegisterPage() {
                 return;
             }
 
-            showPopup('success', '¡Cuenta creada exitosamente! 🎉\n\nRevisa tu email para confirmar tu cuenta. Los datos de tu empresa se configurarán automáticamente.');
+            // Paso 2: Enviar email de confirmación personalizado
+            if (authData.user) {
+                setSendingConfirmation(true);
+                try {
+                    const confirmationResponse = await fetch('/api/auth/send-confirmation', {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json',
+                        },
+                        body: JSON.stringify({
+                            userId: authData.user.id,
+                            email: email.trim()
+                        })
+                    });
 
-            // Redireccionar después de mostrar el mensaje
-            setTimeout(() => {
-                closePopup();
-                router.push('/login');
-            }, 4000);
+                    const confirmationData = await confirmationResponse.json();
+
+                    if (!confirmationData.success) {
+                        console.error('Error sending confirmation email:', confirmationData.error);
+                        showPopup('error', `Cuenta creada pero error enviando email de confirmación: ${confirmationData.error}`);
+                        return;
+                    }
+
+                    showPopup('success', '¡Cuenta creada exitosamente! 🎉\n\nTe hemos enviado un email de confirmación a tu bandeja de entrada. Haz clic en el enlace para activar tu cuenta.\n\nLos datos de tu empresa se configurarán automáticamente.');
+
+                    // Redireccionar después de mostrar el mensaje
+                    setTimeout(() => {
+                        closePopup();
+                        router.push('/login');
+                    }, 5000);
+
+                } catch (confirmationError) {
+                    console.error('Error sending confirmation email:', confirmationError);
+                    showPopup('error', 'Cuenta creada pero no se pudo enviar el email de confirmación. Contacta con soporte.');
+                } finally {
+                    setSendingConfirmation(false);
+                }
+            } else {
+                showPopup('error', 'Error inesperado durante el registro. Por favor intenta de nuevo.');
+            }
 
         } catch (err: unknown) {
             console.error('Registration error:', err);
@@ -555,7 +590,7 @@ export default function RegisterPage() {
                                 <div className="pt-8">
                                     <button
                                         type="submit"
-                                        disabled={loading}
+                                        disabled={loading || sendingConfirmation}
                                         className="w-full relative overflow-hidden group bg-gradient-to-r from-purple-600 via-pink-600 to-purple-700 
                                                  text-white font-bold py-6 px-8 rounded-2xl shadow-2xl transition-all duration-300
                                                  hover:from-purple-700 hover:via-pink-700 hover:to-purple-800 
@@ -568,7 +603,7 @@ export default function RegisterPage() {
                                             {loading ? (
                                                 <>
                                                     <div className="w-6 h-6 border-2 border-white/30 border-t-white rounded-full animate-spin mr-3"></div>
-                                                    Creando tu cuenta...
+                                                    {sendingConfirmation ? 'Enviando confirmación...' : 'Creando tu cuenta...'}
                                                 </>
                                             ) : (
                                                 <>

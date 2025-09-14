@@ -52,6 +52,55 @@ export async function middleware(req: NextRequest) {
     }
   }
 
+  // Verificar confirmación de email para usuarios logueados
+  if (session?.user) {
+    const pathname = req.nextUrl.pathname;
+    
+    // Rutas que no requieren verificación de email
+    const publicRoutes = [
+      '/login',
+      '/register',
+      '/auth/confirm',
+      '/auth/callback',
+      '/api',
+      '/_next',
+      '/favicon.ico',
+      '/email-pending'
+    ];
+
+    // Verificar si la ruta actual es pública
+    const isPublicRoute = publicRoutes.some(route => pathname.startsWith(route));
+    
+    if (!isPublicRoute) {
+      try {
+        // Verificar si el usuario ha confirmado su email
+        const { data: profile, error: profileError } = await supabase
+          .from('profiles')
+          .select('email_confirmed_at')
+          .eq('id', session.user.id)
+          .single();
+
+        console.log('📧 Email confirmation check:', {
+          userId: session.user.id,
+          emailConfirmed: !!profile?.email_confirmed_at,
+          error: profileError?.message
+        });
+
+        // Si no hay confirmación de email, redirigir a página de confirmación pendiente
+        if (!profile?.email_confirmed_at && !profileError) {
+          console.log('⚠️ Email not confirmed, redirecting to pending page');
+          const url = req.nextUrl.clone();
+          url.pathname = '/email-pending';
+          url.searchParams.set('redirect', pathname);
+          return NextResponse.redirect(url);
+        }
+      } catch (emailCheckError) {
+        console.error('❌ Error checking email confirmation:', emailCheckError);
+        // En caso de error, permitir el acceso pero registrar el error
+      }
+    }
+  }
+
   return res;
 }
 

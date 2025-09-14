@@ -14,28 +14,28 @@ function checkEmailConfiguration() {
     console.log('\n2. 📧 Diagnóstico del problema:');
     console.log('   Error: "Error sending confirmation email"');
     console.log('   Ubicación: app/register/page.tsx línea 165');
-    
+
     console.log('\n3. 🔧 POSIBLES CAUSAS Y SOLUCIONES:');
-    
+
     console.log('\n   A) ❌ SMTP no configurado correctamente en Supabase:');
     console.log('      - Ve a: https://supabase.com/dashboard/project/joyhaxtpmrmndmifsihn/settings/auth');
     console.log('      - Busca "SMTP Settings"');
     console.log('      - Verifica que "Enable custom SMTP" esté activado');
     console.log('      - Comprueba los datos SMTP de Resend');
-    
+
     console.log('\n   B) ❌ Confirmación de email deshabilitada:');
     console.log('      - En Supabase Dashboard > Authentication > Settings');
     console.log('      - Verifica que "Enable email confirmations" esté activado');
-    
+
     console.log('\n   C) ❌ URL de redirección incorrecta:');
     console.log('      - En Supabase Dashboard > Authentication > URL Configuration');
     console.log('      - Agrega: http://localhost:3000/auth/callback');
     console.log('      - Agrega: https://tu-dominio.com/auth/callback (producción)');
-    
+
     console.log('\n   D) ❌ Dominio no verificado en Resend:');
     console.log('      - Ve a: https://resend.com/domains');
     console.log('      - Verifica que taskelio.app esté verificado');
-    
+
     console.log('\n   E) ❌ Límites de rate en Supabase:');
     console.log('      - Espera unos minutos entre intentos');
     console.log('      - Revisa los logs en Supabase Dashboard');
