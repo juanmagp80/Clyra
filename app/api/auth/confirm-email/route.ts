@@ -29,7 +29,7 @@ export async function POST(request: NextRequest) {
         if (findError || !confirmation) {
             console.error('❌ Token no encontrado:', findError);
             return NextResponse.json(
-                { 
+                {
                     error: 'Token de confirmación inválido o expirado',
                     code: 'INVALID_TOKEN'
                 },
@@ -43,7 +43,7 @@ export async function POST(request: NextRequest) {
         if (confirmation.confirmed_at) {
             console.log('⚠️ Token ya fue usado anteriormente');
             return NextResponse.json(
-                { 
+                {
                     error: 'Este enlace de confirmación ya fue utilizado',
                     code: 'TOKEN_ALREADY_USED'
                 },
@@ -54,10 +54,10 @@ export async function POST(request: NextRequest) {
         // Verificar si el token ha expirado
         const now = new Date();
         const expiresAt = new Date(confirmation.expires_at);
-        
+
         if (now > expiresAt) {
             console.log('⏰ Token expirado');
-            
+
             // Eliminar token expirado
             await supabase
                 .from('email_confirmations')
@@ -65,7 +65,7 @@ export async function POST(request: NextRequest) {
                 .eq('token', token);
 
             return NextResponse.json(
-                { 
+                {
                     error: 'El enlace de confirmación ha expirado. Por favor, registrate nuevamente.',
                     code: 'TOKEN_EXPIRED'
                 },
@@ -78,7 +78,7 @@ export async function POST(request: NextRequest) {
         // Marcar el token como confirmado
         const { error: updateTokenError } = await supabase
             .from('email_confirmations')
-            .update({ 
+            .update({
                 confirmed_at: new Date().toISOString(),
                 updated_at: new Date().toISOString()
             })
@@ -96,11 +96,11 @@ export async function POST(request: NextRequest) {
 
         // Actualizar el usuario en auth.users para marcarlo como confirmado
         // Nota: En Supabase, necesitamos usar la tabla auth.users pero puede requerir permisos especiales
-        
+
         // Alternativa: Actualizar una columna personalizada en profiles
         const { error: profileError } = await supabase
             .from('profiles')
-            .update({ 
+            .update({
                 email_confirmed_at: new Date().toISOString(),
                 updated_at: new Date().toISOString()
             })

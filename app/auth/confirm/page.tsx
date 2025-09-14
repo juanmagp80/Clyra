@@ -1,8 +1,8 @@
 'use client'
 
-import { CheckCircle, XCircle, Clock, Mail, Home, LogIn, AlertCircle } from 'lucide-react';
+import { AlertCircle, CheckCircle, Clock, Home, LogIn, Mail, XCircle } from 'lucide-react';
 import { useRouter, useSearchParams } from 'next/navigation';
-import { useEffect, useState } from 'react';
+import { useEffect, useState, Suspense } from 'react';
 
 interface ConfirmationResult {
     success: boolean;
@@ -11,7 +11,7 @@ interface ConfirmationResult {
     code?: string;
 }
 
-export default function ConfirmEmailPage() {
+function ConfirmEmailContent() {
     const router = useRouter();
     const searchParams = useSearchParams();
     const [result, setResult] = useState<ConfirmationResult | null>(null);
@@ -80,7 +80,7 @@ export default function ConfirmEmailPage() {
         };
 
         const errorInfo = errorMessages[errorCode as keyof typeof errorMessages] || errorMessages.unknown_error;
-        
+
         setResult({
             success: false,
             message: errorInfo.message,
@@ -166,7 +166,7 @@ export default function ConfirmEmailPage() {
                                 </h3>
                             </div>
                             <p className="text-green-700 text-sm">
-                                Ya puedes acceder a todas las funcionalidades de Taskelio. 
+                                Ya puedes acceder a todas las funcionalidades de Taskelio.
                                 ¡Comienza a gestionar tus proyectos y contratos!
                             </p>
                         </div>
@@ -179,7 +179,7 @@ export default function ConfirmEmailPage() {
                                 <LogIn className="h-5 w-5 mr-2" />
                                 Iniciar Sesión
                             </button>
-                            
+
                             <button
                                 onClick={() => router.push('/')}
                                 className="w-full bg-gray-100 hover:bg-gray-200 text-gray-700 font-semibold py-3 px-6 rounded-xl transition duration-200 flex items-center justify-center"
@@ -200,7 +200,7 @@ export default function ConfirmEmailPage() {
                             ) : (
                                 <XCircle className="h-20 w-20 text-red-500 mx-auto mb-4" />
                             )}
-                            
+
                             <h1 className="text-3xl font-bold text-gray-900 mb-2">
                                 {result?.message || 'Error de Confirmación'}
                             </h1>
@@ -249,7 +249,7 @@ export default function ConfirmEmailPage() {
                                     </button>
                                 </>
                             )}
-                            
+
                             <button
                                 onClick={() => router.push('/')}
                                 className="w-full bg-gray-100 hover:bg-gray-200 text-gray-700 font-semibold py-3 px-6 rounded-xl transition duration-200 flex items-center justify-center"
@@ -269,5 +269,28 @@ export default function ConfirmEmailPage() {
                 </div>
             </div>
         </div>
+    );
+}
+
+// Forzar renderización dinámica para evitar errores de build
+export const dynamic = 'force-dynamic';
+
+export default function ConfirmEmailPage() {
+    return (
+        <Suspense fallback={
+            <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100 flex items-center justify-center px-4">
+                <div className="max-w-md w-full bg-white rounded-2xl shadow-xl p-8 text-center">
+                    <div className="animate-spin rounded-full h-16 w-16 border-b-2 border-blue-600 mx-auto mb-6"></div>
+                    <h2 className="text-2xl font-bold text-gray-900 mb-2">
+                        Cargando...
+                    </h2>
+                    <p className="text-gray-600">
+                        Preparando la confirmación de email
+                    </p>
+                </div>
+            </div>
+        }>
+            <ConfirmEmailContent />
+        </Suspense>
     );
 }

@@ -1,6 +1,6 @@
 import { createServerClient } from '@supabase/ssr';
-import { NextResponse } from 'next/server';
 import type { NextRequest } from 'next/server';
+import { NextResponse } from 'next/server';
 
 export async function middleware(req: NextRequest) {
   let res = NextResponse.next({
@@ -55,7 +55,7 @@ export async function middleware(req: NextRequest) {
   // Verificar confirmación de email para usuarios logueados
   if (session?.user) {
     const pathname = req.nextUrl.pathname;
-    
+
     // Rutas que no requieren verificación de email
     const publicRoutes = [
       '/login',
@@ -70,7 +70,7 @@ export async function middleware(req: NextRequest) {
 
     // Verificar si la ruta actual es pública
     const isPublicRoute = publicRoutes.some(route => pathname.startsWith(route));
-    
+
     if (!isPublicRoute) {
       try {
         // Verificar si el usuario ha confirmado su email

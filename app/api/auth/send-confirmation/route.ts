@@ -1,7 +1,7 @@
 import { createSupabaseServerClient } from '@/src/lib/supabase-server';
+import crypto from 'crypto';
 import { NextRequest, NextResponse } from 'next/server';
 import { Resend } from 'resend';
-import crypto from 'crypto';
 
 const resend = new Resend(process.env.RESEND_API_KEY);
 
@@ -43,9 +43,9 @@ export async function POST(request: NextRequest) {
             // Si la tabla no existe, la creamos automáticamente
             if (tokenError.message.includes('relation "email_confirmations" does not exist')) {
                 console.log('📋 Creando tabla email_confirmations...');
-                
+
                 const { error: createTableError } = await supabase.rpc('create_email_confirmations_table');
-                
+
                 if (createTableError) {
                     console.error('❌ Error creando tabla:', createTableError);
                     return NextResponse.json(
@@ -82,10 +82,10 @@ export async function POST(request: NextRequest) {
 
         // Generar URL de confirmación (producción vs desarrollo)
         const isDevelopment = process.env.NODE_ENV === 'development';
-        const baseUrl = isDevelopment 
-            ? 'http://localhost:3000' 
+        const baseUrl = isDevelopment
+            ? 'http://localhost:3000'
             : (process.env.NEXT_PUBLIC_SITE_URL || 'https://taskelio.app');
-        
+
         const confirmationUrl = `${baseUrl}/auth/confirm?token=${confirmationToken}`;
 
         console.log('🔗 URL de confirmación generada:', confirmationUrl);

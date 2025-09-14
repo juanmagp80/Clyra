@@ -24,7 +24,7 @@ async function diagnosticarSupabase() {
 
         // Intentar registro SIN confirmación de email primero
         console.log('\n3. 🧪 Probando registro básico...');
-        
+
         const { data, error } = await supabase.auth.signUp({
             email: testEmail,
             password: testPassword
@@ -34,26 +34,26 @@ async function diagnosticarSupabase() {
             console.error('❌ Error en registro básico:', error);
             console.error('   Código:', error.status);
             console.error('   Mensaje:', error.message);
-            
+
             // Analizar tipos de error
             if (error.message.includes('Email not confirmed')) {
                 console.log('\n💡 CONFIRMACIÓN DE EMAIL REQUERIDA');
                 console.log('   - La confirmación de email está activada en Supabase');
                 console.log('   - El problema es con el envío del email de confirmación');
             }
-            
+
             if (error.message.includes('SMTP') || error.message.includes('email')) {
                 console.log('\n💡 PROBLEMA DE SMTP DETECTADO');
                 console.log('   - Verificar configuración SMTP en Supabase Dashboard');
                 console.log('   - URL: https://supabase.com/dashboard/project/joyhaxtpmrmndmifsihn/settings/auth');
             }
-            
+
             if (error.message.includes('rate') || error.message.includes('429')) {
                 console.log('\n💡 LÍMITE DE RATE ALCANZADO');
                 console.log('   - Esperar unos minutos entre intentos');
                 console.log('   - Revisar logs en Supabase Dashboard');
             }
-            
+
         } else {
             console.log('✅ Registro exitoso');
             console.log('   Usuario ID:', data.user?.id);
@@ -65,7 +65,7 @@ async function diagnosticarSupabase() {
         console.log('\n4. 🔧 Información de configuración:');
         console.log('   RESEND_API_KEY:', process.env.RESEND_API_KEY ? '✅ Presente' : '❌ Faltante');
         console.log('   SITE_URL:', process.env.NEXT_PUBLIC_SITE_URL || 'No configurado');
-        
+
         console.log('\n5. 📋 PASOS SIGUIENTES:');
         console.log('   1. Revisar configuración SMTP en Supabase Dashboard');
         console.log('   2. Verificar que "Enable email confirmations" esté activado');

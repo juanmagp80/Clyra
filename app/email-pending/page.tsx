@@ -1,11 +1,11 @@
 'use client'
 
-import { Mail, RefreshCw, Home, LogOut, Clock, AlertCircle } from 'lucide-react';
-import { useRouter, useSearchParams } from 'next/navigation';
-import { useEffect, useState } from 'react';
 import { createSupabaseClient } from '@/src/lib/supabase-client';
+import { AlertCircle, Clock, Home, LogOut, Mail, RefreshCw } from 'lucide-react';
+import { useRouter, useSearchParams } from 'next/navigation';
+import { useEffect, useState, Suspense } from 'react';
 
-export default function EmailPendingPage() {
+function EmailPendingContent() {
     const router = useRouter();
     const searchParams = useSearchParams();
     const [loading, setLoading] = useState(false);
@@ -18,7 +18,7 @@ export default function EmailPendingPage() {
         // Obtener información del usuario actual
         const getUser = async () => {
             if (!supabase) return;
-            
+
             const { data: { session } } = await supabase.auth.getSession();
             if (session?.user) {
                 setUser(session.user);
@@ -95,7 +95,7 @@ export default function EmailPendingPage() {
 
     const handleLogout = async () => {
         if (!supabase) return;
-        
+
         await supabase.auth.signOut();
         router.push('/login');
     };
@@ -238,11 +238,34 @@ export default function EmailPendingPage() {
                 {/* Footer */}
                 <div className="mt-8 pt-6 border-t border-gray-200">
                     <p className="text-xs text-gray-500">
-                        El enlace de confirmación expira en 24 horas. 
+                        El enlace de confirmación expira en 24 horas.
                         Si no recibes el email, revisa tu carpeta de spam.
                     </p>
                 </div>
             </div>
         </div>
+    );
+}
+
+// Forzar renderización dinámica para evitar errores de build
+export const dynamic = 'force-dynamic';
+
+export default function EmailPendingPage() {
+    return (
+        <Suspense fallback={
+            <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100 flex items-center justify-center px-4">
+                <div className="max-w-lg w-full bg-white rounded-2xl shadow-xl p-8 text-center">
+                    <div className="animate-spin rounded-full h-16 w-16 border-b-2 border-orange-600 mx-auto mb-6"></div>
+                    <h2 className="text-2xl font-bold text-gray-900 mb-2">
+                        Cargando...
+                    </h2>
+                    <p className="text-gray-600">
+                        Verificando estado de confirmación
+                    </p>
+                </div>
+            </div>
+        }>
+            <EmailPendingContent />
+        </Suspense>
     );
 }
