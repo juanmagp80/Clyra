@@ -233,7 +233,7 @@ export default function DashboardBonsai({
                 supabase.from('clients').select('*').eq('user_id', user.id),
                 supabase.from('projects').select('*').eq('user_id', user.id),
                 supabase.from('tasks').select('total_time_seconds').eq('user_id', user.id).not('total_time_seconds', 'is', null),
-                supabase.from('invoices').select('amount, status').eq('user_id', user.id),
+                supabase.from('invoices').select('amount, status, client_id, project_id').eq('user_id', user.id),
                 supabase.from('time_entries')
                     .select('duration_seconds, created_at')
                     .eq('user_id', user.id)
@@ -355,7 +355,7 @@ export default function DashboardBonsai({
 
             setRealProjects(allProjects?.slice(0, 5) || []);
             setAllProjectsState(allProjects || []);
-            setRealClients(clients?.slice(0, 5) || []);
+            setRealClients(clients || []); // Cargar todos los clientes
             setInvoicesState(invoices || []);
             // Ahora realProjects contendrá TODOS los proyectos para Top Clientes por Ingresos
             // (no solo los primeros 5)
