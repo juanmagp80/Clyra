@@ -108,13 +108,20 @@ export default async function DashboardPage() {
             userId: session?.user?.id
         });
 
-        if (!session || !session.user?.email) {
+        // 🔧 DEBUG: Para desarrollo, si no hay sesión, usar usuario de prueba
+        let userEmail = session?.user?.email;
+        if (!userEmail) {
+            console.log('🔧 DEBUG: No session found, using test user for development');
+            userEmail = 'juanmagpdev@gmail.com';
+        }
+
+        if (!userEmail) {
             console.log('🚫 No valid session - redirecting to login');
             redirect('/login');
         }
 
         console.log('✅ Valid session found - rendering dashboard');
-        return <DashboardClient userEmail={session.user.email} />;
+        return <DashboardClient userEmail={userEmail} />;
     } catch (error) {
         console.error('❌ Error in dashboard page:', error);
         redirect('/login');

@@ -1,16 +1,15 @@
 'use client';
 
-import { useState, useEffect, useRef } from 'react';
-import { useRouter } from 'next/navigation';
 import Sidebar from '@/components/Sidebar';
 import { Button } from '@/components/ui/Button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/Card';
-import { Input } from '@/components/ui/Input';
 import { SimpleBarChart } from '@/components/ui/Chart';
 import { createSupabaseClient } from '@/src/lib/supabase-client';
+import { showToast } from '@/utils/toast';
+import { useRouter } from 'next/navigation';
+import { useEffect, useRef, useState } from 'react';
 import TrialBanner from '../../../components/TrialBanner';
 import { useTrialStatus } from '../../../src/lib/useTrialStatus';
-import { showToast } from '@/utils/toast';
 
 interface ReportsPageClientProps {
     userEmail: string;
@@ -39,10 +38,10 @@ interface ReportMetrics {
 export default function ReportsPageClient({ userEmail }: ReportsPageClientProps) {
     const router = useRouter();
     const reportRef = useRef<HTMLDivElement>(null);
-    
+
     // Hook de trial status
     const { trialInfo, loading: trialLoading, hasReachedLimit, canUseFeatures } = useTrialStatus(userEmail);
-    
+
     const [loading, setLoading] = useState(true);
     const [metrics, setMetrics] = useState<ReportMetrics | null>(null);
     const [exportLoading, setExportLoading] = useState(false);
@@ -150,13 +149,13 @@ export default function ReportsPageClient({ userEmail }: ReportsPageClientProps)
         try {
             // Simulación de exportación
             await new Promise(resolve => setTimeout(resolve, 2000));
-            
+
             const today = new Date();
             const dateStr = `${today.getFullYear()}-${String(today.getMonth() + 1).padStart(2, '0')}-${String(today.getDate()).padStart(2, '0')}`;
             const fileName = `Reporte_Taskelio_${dateStr}.${format === 'pdf' ? 'pdf' : 'csv'}`;
-            
+
             showToast.error(`✅ Reporte exportado: ${fileName}`);
-            
+
         } catch (error) {
             console.error('Error exporting report:', error);
             showToast.error('❌ Error al exportar el reporte.');
@@ -183,20 +182,20 @@ export default function ReportsPageClient({ userEmail }: ReportsPageClientProps)
 
     const getChangeIndicator = (current: number, previous: number) => {
         if (previous === 0) return { value: '0%', color: 'text-gray-600' };
-        
+
         const change = ((current - previous) / previous) * 100;
         if (change > 0) {
-            return { 
+            return {
                 value: `+${change.toFixed(1)}%`,
                 color: 'text-emerald-600'
             };
         } else if (change < 0) {
-            return { 
+            return {
                 value: `${change.toFixed(1)}%`,
                 color: 'text-red-600'
             };
         } else {
-            return { 
+            return {
                 value: '0%',
                 color: 'text-slate-600'
             };
@@ -236,7 +235,7 @@ export default function ReportsPageClient({ userEmail }: ReportsPageClientProps)
         <div className="min-h-screen bg-gradient-to-br from-slate-50 via-gray-50 to-zinc-100 text-slate-900 relative overflow-hidden">
             <div className="relative z-10 flex">
                 <Sidebar userEmail={userEmail} onLogout={handleLogout} />
-                
+
                 <main className="flex-1 ml-56 overflow-auto">
                     <div className="p-6" ref={reportRef}>
                         {/* Trial Banner */}
@@ -256,7 +255,7 @@ export default function ReportsPageClient({ userEmail }: ReportsPageClientProps)
                                             Análisis completo de tu productividad y resultados
                                         </p>
                                     </div>
-                                    
+
                                     <div className="flex gap-3">
                                         <Button
                                             onClick={() => exportReport('pdf')}
@@ -371,8 +370,8 @@ export default function ReportsPageClient({ userEmail }: ReportsPageClientProps)
                                     </CardDescription>
                                 </CardHeader>
                                 <CardContent>
-                                    <SimpleBarChart 
-                                        data={[8500, 12200, 9800, 15400, 11600, 14200]} 
+                                    <SimpleBarChart
+                                        data={[8500, 12200, 9800, 15400, 11600, 14200]}
                                         className="h-64"
                                     />
                                 </CardContent>
@@ -393,8 +392,8 @@ export default function ReportsPageClient({ userEmail }: ReportsPageClientProps)
                                                 <span className="text-sm text-slate-600">{metrics?.billableHours || 0}h</span>
                                             </div>
                                             <div className="w-full bg-slate-200 rounded-full h-2">
-                                                <div 
-                                                    className="bg-blue-600 h-2 rounded-full" 
+                                                <div
+                                                    className="bg-blue-600 h-2 rounded-full"
                                                     style={{ width: `${((metrics?.billableHours || 0) / (metrics?.totalHours || 1)) * 100}%` }}
                                                 ></div>
                                             </div>
@@ -405,8 +404,8 @@ export default function ReportsPageClient({ userEmail }: ReportsPageClientProps)
                                                 <span className="text-sm text-slate-600">{metrics?.nonBillableHours || 0}h</span>
                                             </div>
                                             <div className="w-full bg-slate-200 rounded-full h-2">
-                                                <div 
-                                                    className="bg-gray-400 h-2 rounded-full" 
+                                                <div
+                                                    className="bg-gray-400 h-2 rounded-full"
                                                     style={{ width: `${((metrics?.nonBillableHours || 0) / (metrics?.totalHours || 1)) * 100}%` }}
                                                 ></div>
                                             </div>

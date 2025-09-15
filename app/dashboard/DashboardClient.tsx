@@ -29,54 +29,57 @@ export default function DashboardBonsai({
     isDemo?: boolean;
     totalTaskTime?: number;
 }) {
+    const [realClients, setRealClients] = useState<any[]>([]);
+    // Nuevo estado global para facturas
+    const [invoicesState, setInvoicesState] = useState<any[]>([]);
     const supabase = createSupabaseClient();
     const router = useRouter();
-
     // Hook de trial status
     const { trialInfo, loading: trialLoading, hasReachedLimit, canUseFeatures } = useTrialStatus(userEmail);
 
-    // Estados para las métricas
-    const [metrics, setMetrics] = useState({
-        totalClients: 0,
-        activeProjects: 0,
-        completedProjects: 0,
-        monthlyRevenue: 0,
-        paidInvoices: 0,
-        hoursThisWeek: 0,
-        hoursThisMonth: 0,
-        billableHoursThisWeek: 0
-    });
+        // Estados para las métricas
+        const [metrics, setMetrics] = useState({
+            totalClients: 0,
+            activeProjects: 0,
+            completedProjects: 0,
+            monthlyRevenue: 0,
+            paidInvoices: 0,
+            hoursThisWeek: 0,
+            hoursThisMonth: 0,
+            billableHoursThisWeek: 0
+        });
 
-    // Estado para el tiempo total acumulado
-    const [totalAccumulatedTime, setTotalAccumulatedTime] = useState(0);
+        // Estado para el tiempo total acumulado
+        const [totalAccumulatedTime, setTotalAccumulatedTime] = useState(0);
 
-    // Estado para las categorías reales
-    const [categoryData, setCategoryData] = useState<Array<{
-        category: string;
-        hours: number;
-        percentage: number;
-        color: string;
-        displayName: string;
-    }>>([]);
+        // Estado para las categorías reales
+        const [categoryData, setCategoryData] = useState<Array<{
+            category: string;
+            hours: number;
+            percentage: number;
+            color: string;
+            displayName: string;
+        }>>([]);
 
-    // Estados para datos dinámicos
-    const [realProjects, setRealProjects] = useState<any[]>([]);
-    const [realClients, setRealClients] = useState<any[]>([]);
-    const [monthlyRevenueData, setMonthlyRevenueData] = useState<any[]>([]);
-    const [weeklyProductivity, setWeeklyProductivity] = useState<Array<{
-        day: string;
-        hours: number;
-        percentage: number;
-    }>>([]);
-    const [loading, setLoading] = useState(true);
-    const [recentActivity, setRecentActivity] = useState<Array<{
-        id: string;
-        type: string;
-        title: string;
-        subtitle: string;
-        date: string;
-        icon: string;
-    }>>([]);
+        // Estados para datos dinámicos
+        const [realProjects, setRealProjects] = useState<any[]>([]);
+        // Nuevo estado global para todos los proyectos
+        const [allProjectsState, setAllProjectsState] = useState<any[]>([]);
+        const [monthlyRevenueData, setMonthlyRevenueData] = useState<any[]>([]);
+        const [weeklyProductivity, setWeeklyProductivity] = useState<Array<{
+            day: string;
+            hours: number;
+            percentage: number;
+        }>>([]);
+        const [loading, setLoading] = useState(true);
+        const [recentActivity, setRecentActivity] = useState<Array<{
+            id: string;
+            type: string;
+            title: string;
+            subtitle: string;
+            date: string;
+            icon: string;
+        }>>([]);
 
     const handleLogout = async () => {
         try {
@@ -198,7 +201,7 @@ export default function DashboardBonsai({
             console.log('🔐 Getting user...');
             // Obtener usuario actual
             const { data: { user }, error: userError } = await supabase.auth.getUser();
-            
+
             console.log('👤 User data:', {
                 hasUser: !!user,
                 userId: user?.id,
@@ -270,11 +273,11 @@ export default function DashboardBonsai({
                     .from('time_entries')
                     .select('duration_seconds')
                     .eq('user_id', user.id);
-                
+
                 totalTimeEntriesTime = allTimeEntries?.reduce((sum: number, entry: any) => {
                     return sum + (entry.duration_seconds || 0);
                 }, 0) || 0;
-                
+
                 console.log('📊 Tiempo total de tasks:', Math.round(totalTaskTime / 3600 * 10) / 10, 'horas');
                 console.log('📊 Tiempo total de time_entries:', Math.round(totalTimeEntriesTime / 3600 * 10) / 10, 'horas');
             } catch (error) {
@@ -351,7 +354,13 @@ export default function DashboardBonsai({
             });
 
             setRealProjects(allProjects?.slice(0, 5) || []);
+            setAllProjectsState(allProjects || []);
             setRealClients(clients?.slice(0, 5) || []);
+            setInvoicesState(invoices || []);
+            // Ahora realProjects contendrá TODOS los proyectos para Top Clientes por Ingresos
+            // (no solo los primeros 5)
+            // Esto no afecta la UI de "Proyectos recientes", solo la lógica de ingresos por cliente
+            // Por compatibilidad, mantenemos realProjects para otras secciones, pero para Top Clientes usamos allProjects
 
         } catch (error) {
             console.error('Error loading dashboard data:', error);
@@ -555,13 +564,13 @@ export default function DashboardBonsai({
             // Agrupar por mes
             const monthlyData: { [key: string]: number } = {};
             const monthNames = ['Ene', 'Feb', 'Mar', 'Abr', 'May', 'Jun', 'Jul', 'Ago', 'Sep', 'Oct', 'Nov', 'Dic'];
-            
+
             invoices?.forEach((invoice: any) => {
                 if (invoice.status === 'paid') {
                     const date = new Date(invoice.created_at);
                     const monthKey = `${monthNames[date.getMonth()]}-${date.getFullYear()}`;
                     const shortMonth = monthNames[date.getMonth()];
-                    
+
                     monthlyData[shortMonth] = (monthlyData[shortMonth] || 0) + (parseFloat(invoice.amount) || 0);
                 }
             });
@@ -569,13 +578,13 @@ export default function DashboardBonsai({
             // Crear array para los últimos 6 meses
             const revenueData = [];
             const maxAmount = Math.max(...Object.values(monthlyData), 1);
-            
+
             for (let i = 5; i >= 0; i--) {
                 const date = new Date();
                 date.setMonth(date.getMonth() - i);
                 const monthName = monthNames[date.getMonth()];
                 const amount = monthlyData[monthName] || 0;
-                
+
                 revenueData.push({
                     month: monthName,
                     value: Math.round((amount / maxAmount) * 100),
@@ -594,7 +603,7 @@ export default function DashboardBonsai({
     // Función para cargar productividad semanal real
     const loadWeeklyProductivity = async () => {
         console.log('📊 Loading weekly productivity...', { isDemo });
-        
+
         if (isDemo) {
             console.log('🎭 Using demo data for weekly productivity');
             // Datos demo
@@ -673,76 +682,60 @@ export default function DashboardBonsai({
                     const dayIndex = date.getDay();
                     const hours = (entry.duration_seconds || 0) / 3600;
                     dailyHours[dayIndex] = (dailyHours[dayIndex] || 0) + hours;
-                    
+
                     console.log(`📝 Entry: ${dayNames[dayIndex]} +${hours.toFixed(2)}h (total: ${(dailyHours[dayIndex] || 0).toFixed(2)}h)`);
                 });
             } else if (tasksData && tasksData.length > 0) {
                 // Procesar tasks como fallback
                 console.log('📊 Procesando tasks como fallback...');
-                
+
                 // Obtener el día actual para no asignar horas a días futuros
                 const today = new Date();
                 const currentDayOfWeek = today.getDay(); // 0=Dom, 1=Lun, 2=Mar...
-                
-                console.log(`📅 Hoy es ${dayNames[currentDayOfWeek]} (día ${currentDayOfWeek})`);
-                
-                // Crear distribución realista de las horas solo en días pasados + hoy
-                tasksData.forEach((task: any, index: number) => {
-                    // Determinar en qué día poner esta tarea
-                    // Solo usar días desde lunes hasta hoy
-                    const availableDays = [];
-                    
-                    // Si es domingo (0), considerar toda la semana pasada
-                    if (currentDayOfWeek === 0) {
-                        availableDays.push(1, 2, 3, 4, 5, 6); // Lun-Sáb de la semana pasada
-                    } else {
-                        // Días desde lunes hasta hoy
-                        for (let day = 1; day <= currentDayOfWeek; day++) {
-                            availableDays.push(day);
-                        }
-                    }
-                    
-                    // Distribuir tarea en uno de los días disponibles
-                    const selectedDayIndex = availableDays[index % availableDays.length];
-                    
+
+                // Procesar tasks como fallback
+                console.log('📊 Procesando tasks como fallback...');
+                // Asignar cada tarea al día de la semana según updated_at (si está en la semana actual)
+                const now = new Date();
+                const dayOfWeek = now.getDay();
+                const monday = new Date(now);
+                monday.setDate(now.getDate() - (dayOfWeek === 0 ? 6 : dayOfWeek - 1));
+                monday.setHours(0, 0, 0, 0);
+                tasksData.forEach((task: any) => {
+                    if (!task.updated_at) return;
+                    const updatedDate = new Date(task.updated_at);
+                    if (updatedDate < monday) return;
+                    const dayIndex = updatedDate.getDay(); // 0=Dom, 1=Lun, ...
                     const hours = (task.total_time_seconds || 0) / 3600;
-                    
-                    // Aplicar límite máximo realista de 8h por día por tarea
-                    const limitedHours = Math.min(hours, 8);
-                    
-                    dailyHours[selectedDayIndex] = (dailyHours[selectedDayIndex] || 0) + limitedHours;
-                    
-                    console.log(`📋 Task "${task.title}": ${dayNames[selectedDayIndex]} +${limitedHours.toFixed(2)}h (total: ${(dailyHours[selectedDayIndex] || 0).toFixed(2)}h)`);
+                    dailyHours[dayIndex] = (dailyHours[dayIndex] || 0) + hours;
+                    console.log(`📋 Task \"${task.title}\": ${dayNames[dayIndex]} +${hours.toFixed(2)}h (total: ${(dailyHours[dayIndex] || 0).toFixed(2)}h)`);
                 });
             }
 
             // Crear array para la semana (Lun-Dom)
             const weeklyData: Array<{ day: string; hours: number; percentage: number }> = [];
-            
+
             // Aplicar límite máximo realista de 12h por día
-            Object.keys(dailyHours).forEach(dayIndex => {
-                const day = parseInt(dayIndex);
-                dailyHours[day] = Math.min(dailyHours[day], 12); // Máximo 12h por día
-            });
-            
+            // Mostrar el total real de horas por día, sin límite artificial
+
             const maxHours = Math.max(...Object.values(dailyHours), 8); // Mínimo 8h para el 100%
-            
+
             console.log('📈 Daily hours data (limited):', dailyHours);
             console.log('📊 Max hours for percentage calc:', maxHours);
-            
+
             // Si no hay datos, mostrar mensaje de debug
             const totalHours = Object.values(dailyHours).reduce((sum, hours) => sum + hours, 0);
             if (totalHours === 0) {
                 console.warn('⚠️ No se encontraron horas registradas esta semana');
                 console.log('🔍 Verificando datos disponibles...');
-                
+
                 // Verificar si hay datos en general (sin filtro de fecha)
                 const { data: allTimeEntries } = await supabase
                     .from('time_entries')
                     .select('duration_seconds, created_at')
                     .eq('user_id', user.id)
                     .limit(5);
-                    
+
                 const { data: allTasks } = await supabase
                     .from('tasks')
                     .select('total_time_seconds, updated_at, title')
@@ -750,13 +743,13 @@ export default function DashboardBonsai({
                     .not('total_time_seconds', 'is', null)
                     .gt('total_time_seconds', 0)
                     .limit(5);
-                
+
                 console.log('📊 Total time_entries en BD:', allTimeEntries?.length || 0);
                 console.log('📊 Total tasks con tiempo en BD:', allTasks?.length || 0);
                 console.log('🔍 Sample time_entries:', allTimeEntries);
                 console.log('🔍 Sample tasks:', allTasks);
             }
-            
+
             // Reordenar para empezar en lunes
             const orderedDays = [1, 2, 3, 4, 5, 6, 0]; // Lun, Mar, Mié, Jue, Vie, Sáb, Dom
             const orderedNames = ['Lun', 'Mar', 'Mié', 'Jue', 'Vie', 'Sáb', 'Dom'];
@@ -764,13 +757,13 @@ export default function DashboardBonsai({
             orderedDays.forEach((dayIndex, i) => {
                 const hours = dailyHours[dayIndex] || 0;
                 const percentage = Math.min(Math.round((hours / maxHours) * 100), 100);
-                
+
                 const dayData = {
                     day: orderedNames[i],
                     hours: Math.round(hours * 10) / 10, // Redondear a 1 decimal
                     percentage: Math.max(percentage, hours > 0 ? 5 : 0) // Mínimo 5% si hay tiempo
                 };
-                
+
                 console.log(`� ${dayData.day}: ${dayData.hours}h (${dayData.percentage}%)`);
                 weeklyData.push(dayData);
             });
@@ -779,16 +772,28 @@ export default function DashboardBonsai({
 
             // Si no hay datos reales, usar datos demo para mostrar la funcionalidad
             if (weeklyData.every(day => day.hours === 0)) {
-                console.log('🎭 No hay datos reales, usando datos demo...');
-                setWeeklyProductivity([
-                    { day: 'Lun', hours: 6.5, percentage: 65 },
-                    { day: 'Mar', hours: 7.2, percentage: 72 },
-                    { day: 'Mié', hours: 5.8, percentage: 58 },
-                    { day: 'Jue', hours: 8.1, percentage: 81 },
-                    { day: 'Vie', hours: 4.5, percentage: 45 },
-                    { day: 'Sáb', hours: 2.0, percentage: 20 },
-                    { day: 'Dom', hours: 0, percentage: 0 }
-                ]);
+                if (isDemo) {
+                    console.log('🎭 No hay datos reales, usando datos demo...');
+                    setWeeklyProductivity([
+                        { day: 'Lun', hours: 6.5, percentage: 65 },
+                        { day: 'Mar', hours: 7.2, percentage: 72 },
+                        { day: 'Mié', hours: 5.8, percentage: 58 },
+                        { day: 'Jue', hours: 8.1, percentage: 81 },
+                        { day: 'Vie', hours: 4.5, percentage: 45 },
+                        { day: 'Sáb', hours: 2.0, percentage: 20 },
+                        { day: 'Dom', hours: 0, percentage: 0 }
+                    ]);
+                } else {
+                    setWeeklyProductivity([
+                        { day: 'Lun', hours: 0, percentage: 0 },
+                        { day: 'Mar', hours: 0, percentage: 0 },
+                        { day: 'Mié', hours: 0, percentage: 0 },
+                        { day: 'Jue', hours: 0, percentage: 0 },
+                        { day: 'Vie', hours: 0, percentage: 0 },
+                        { day: 'Sáb', hours: 0, percentage: 0 },
+                        { day: 'Dom', hours: 0, percentage: 0 }
+                    ]);
+                }
             } else {
                 setWeeklyProductivity(weeklyData);
             }
@@ -811,20 +816,20 @@ export default function DashboardBonsai({
     // Función para crear datos de prueba
     const createTestTimeData = async () => {
         if (!supabase) return;
-        
+
         try {
             const { data: { user } } = await supabase.auth.getUser();
             if (!user) return;
-            
+
             console.log('🕒 Creating test time data...');
-            
+
             // Obtener o crear tareas
             let { data: tasks } = await supabase
                 .from('tasks')
                 .select('*')
                 .eq('user_id', user.id)
                 .limit(5);
-                
+
             if (!tasks || tasks.length === 0) {
                 // Crear una tarea de prueba
                 const { data: newTask } = await supabase
@@ -839,10 +844,10 @@ export default function DashboardBonsai({
                     }])
                     .select()
                     .single();
-                    
+
                 if (newTask) tasks = [newTask];
             }
-            
+
             // Crear datos de tiempo para los últimos 7 días
             const now = new Date();
             const timeData = [
@@ -854,16 +859,16 @@ export default function DashboardBonsai({
                 { day: 5, hours: 7.0 },  // Viernes
                 { day: 6, hours: 3.0 }   // Sábado
             ];
-            
+
             for (let i = 0; i < timeData.length && tasks && tasks.length > 0; i++) {
                 const dayData = timeData[i];
                 const task = tasks[i % tasks.length];
-                
+
                 // Calcular fecha para este día
                 const targetDate = new Date(now);
                 const daysDiff = dayData.day - now.getDay();
                 targetDate.setDate(now.getDate() + daysDiff);
-                
+
                 // Actualizar tarea con tiempo
                 await supabase
                     .from('tasks')
@@ -873,11 +878,11 @@ export default function DashboardBonsai({
                     })
                     .eq('id', task.id);
             }
-            
+
             console.log('✅ Test data created!');
             // Recargar datos
             loadWeeklyProductivity();
-            
+
         } catch (error) {
             console.error('❌ Error creating test data:', error);
         }
@@ -886,13 +891,13 @@ export default function DashboardBonsai({
     // Función para limpiar datos de prueba
     const cleanTestTimeData = async () => {
         if (!supabase) return;
-        
+
         try {
             const { data: { user } } = await supabase.auth.getUser();
             if (!user) return;
-            
+
             console.log('🧹 Cleaning test time data...');
-            
+
             // Limpiar tiempo de las tareas
             await supabase
                 .from('tasks')
@@ -901,15 +906,16 @@ export default function DashboardBonsai({
                     updated_at: new Date().toISOString()
                 })
                 .eq('user_id', user.id);
-                
+
             console.log('✅ Test data cleaned!');
             // Recargar datos
             loadWeeklyProductivity();
-            
+
         } catch (error) {
             console.error('❌ Error cleaning test data:', error);
         }
     };
+
 
     useEffect(() => {
         loadDashboardData();
@@ -1026,7 +1032,7 @@ export default function DashboardBonsai({
                                 </div>
 
                                 {/* Paid Invoices */}
-                                <div 
+                                <div
                                     onClick={() => router.push('/dashboard/invoices')}
                                     className="bg-white rounded-lg shadow-sm border border-gray-200 p-3 lg:p-4 xl:p-6 hover:shadow-md transition-shadow cursor-pointer min-h-[90px] lg:min-h-[100px]"
                                 >
@@ -1249,16 +1255,16 @@ export default function DashboardBonsai({
                                     <div>
                                         <h3 className="text-lg font-semibold text-gray-900">Productividad Semanal</h3>
                                         <p className="text-sm text-gray-600">
-                                            {isDemo ? 'Horas por día (demo)' : 
-                                             weeklyProductivity.length > 0 && weeklyProductivity.some(d => d.hours > 0) 
-                                                ? 'Horas registradas esta semana' 
-                                                : 'Sin tiempo registrado esta semana'}
+                                            {isDemo ? 'Horas por día (demo)' :
+                                                weeklyProductivity.length > 0 && weeklyProductivity.some(d => d.hours > 0)
+                                                    ? 'Horas registradas esta semana'
+                                                    : 'Sin tiempo registrado esta semana'}
                                         </p>
                                     </div>
                                 </div>
 
                                 <div className="flex items-end justify-between h-40 gap-3">
-                                    {(weeklyProductivity.length > 0 ? weeklyProductivity : 
+                                    {(weeklyProductivity.length > 0 ? weeklyProductivity :
                                         // Fallback inicial mientras carga
                                         [
                                             { day: 'Lun', hours: 0, percentage: 0 },
@@ -1426,40 +1432,119 @@ export default function DashboardBonsai({
                                         </div>
                                     </div>
                                     <div className="p-6">
-                                        <div className="space-y-4">
-                                            {[
-                                                { name: 'TechCorp Solutions', revenue: Math.round(metrics.monthlyRevenue * 0.35) || 5250, percentage: 100 },
-                                                { name: 'Digital Innovations', revenue: Math.round(metrics.monthlyRevenue * 0.25) || 3750, percentage: 75 },
-                                                { name: 'StartupHub', revenue: Math.round(metrics.monthlyRevenue * 0.20) || 3000, percentage: 60 },
-                                                { name: 'Creative Agency', revenue: Math.round(metrics.monthlyRevenue * 0.15) || 2250, percentage: 45 },
-                                                { name: 'Local Business', revenue: Math.round(metrics.monthlyRevenue * 0.05) || 750, percentage: 20 }
-                                            ].map((client, index) => (
-                                                <div key={client.name} className="group hover:bg-gray-50 rounded-lg p-3 transition-all duration-200">
-                                                    <div className="flex items-center justify-between mb-2">
-                                                        <div className="flex items-center gap-3">
-                                                            <div className="w-8 h-8 bg-blue-600 rounded-lg flex items-center justify-center text-white font-bold text-sm">
-                                                                {index + 1}
+                                        {(() => {
+                                            // Si está en modo demo, mostrar datos demo
+                                            if (isDemo) {
+                                                const demoClients = [
+                                                    { name: 'TechCorp Solutions', revenue: Math.round(metrics.monthlyRevenue * 0.35) || 5250, percentage: 100 },
+                                                    { name: 'Digital Innovations', revenue: Math.round(metrics.monthlyRevenue * 0.25) || 3750, percentage: 75 },
+                                                    { name: 'StartupHub', revenue: Math.round(metrics.monthlyRevenue * 0.20) || 3000, percentage: 60 },
+                                                    { name: 'Creative Agency', revenue: Math.round(metrics.monthlyRevenue * 0.15) || 2250, percentage: 45 },
+                                                    { name: 'Local Business', revenue: Math.round(metrics.monthlyRevenue * 0.05) || 750, percentage: 20 }
+                                                ];
+                                                return (
+                                                    <div className="space-y-4">
+                                                        {demoClients.map((client, index) => (
+                                                            <div key={client.name} className="group hover:bg-gray-50 rounded-lg p-3 transition-all duration-200">
+                                                                <div className="flex items-center justify-between mb-2">
+                                                                    <div className="flex items-center gap-3">
+                                                                        <div className="w-8 h-8 bg-blue-600 rounded-lg flex items-center justify-center text-white font-bold text-sm">
+                                                                            {index + 1}
+                                                                        </div>
+                                                                        <span className="text-sm font-medium text-gray-700 group-hover:text-blue-700 transition-colors">
+                                                                            {client.name}
+                                                                        </span>
+                                                                    </div>
+                                                                    <span className="text-sm font-bold text-gray-900">
+                                                                        €{client.revenue.toLocaleString()}
+                                                                    </span>
+                                                                </div>
+                                                                <div className="w-full bg-gray-100 rounded-full h-2 overflow-hidden">
+                                                                    <div
+                                                                        className="h-full bg-blue-600 transition-all duration-1000 rounded-full"
+                                                                        style={{
+                                                                            width: `${client.percentage}%`,
+                                                                            animationDelay: `${index * 200}ms`
+                                                                        }}
+                                                                    ></div>
+                                                                </div>
                                                             </div>
-                                                            <span className="text-sm font-medium text-gray-700 group-hover:text-blue-700 transition-colors">
-                                                                {client.name}
-                                                            </span>
+                                                        ))}
+                                                    </div>
+                                                );
+                                            }
+
+                                            // Calcular ingresos reales por cliente
+                                            // Agrupar ingresos de facturas pagadas por client_id
+                                            type ClientRevenue = { name: string; revenue: number; clientId: string };
+                                            const clientRevenueMap: Record<string, ClientRevenue> = {};
+                                            (invoicesState || []).forEach((inv: any) => {
+                                                if (inv.status === 'paid' && inv.client_id) {
+                                                    const clientId = inv.client_id;
+                                                    const amount = parseFloat(inv.amount) || 0;
+                                                    // Buscar nombre del cliente en realClients
+                                                    const clientObj = (realClients || []).find((c: any) => c.id === clientId);
+                                                    const clientName = clientObj?.name || clientId;
+                                                    if (clientRevenueMap[clientId]) {
+                                                        clientRevenueMap[clientId].revenue += amount;
+                                                    } else {
+                                                        clientRevenueMap[clientId] = { name: clientName, revenue: amount, clientId };
+                                                    }
+                                                }
+                                            });
+                                            // ...el resto del renderizado de la sección Top Clientes por Ingresos...
+                                            const clientsArray: ClientRevenue[] = Object.values(clientRevenueMap)
+                                            .sort((a, b) => b.revenue - a.revenue)
+                                            .slice(0, 5);
+                                            if (clientsArray.length === 0) {
+                                                return (
+                                                    <div className="text-center py-6">
+                                                        <Users className="h-12 w-12 text-gray-300 mx-auto mb-4" />
+                                                        <h4 className="text-sm font-medium text-gray-900 mb-2">No hay clientes con ingresos</h4>
+                                                        <p className="text-sm text-gray-600 mb-4">
+                                                            Agrega proyectos con presupuestos para ver los top clientes
+                                                        </p>
+                                                        <button
+                                                            onClick={() => router.push('/dashboard/projects')}
+                                                            className="text-sm text-blue-600 hover:text-blue-700 font-medium"
+                                                        >
+                                                            Agregar proyecto
+                                                        </button>
+                                                    </div>
+                                                );
+                                            }
+                                            const maxRevenue = clientsArray[0]?.revenue ?? 0;
+                                            return (
+                                                <div className="space-y-4">
+                                                    {clientsArray.map((client: ClientRevenue, index: number) => (
+                                                        <div key={client.name} className="group hover:bg-gray-50 rounded-lg p-3 transition-all duration-200">
+                                                            <div className="flex items-center justify-between mb-2">
+                                                                <div className="flex items-center gap-3">
+                                                                    <div className="w-8 h-8 bg-blue-600 rounded-lg flex items-center justify-center text-white font-bold text-sm">
+                                                                        {index + 1}
+                                                                    </div>
+                                                                    <span className="text-sm font-medium text-gray-700 group-hover:text-blue-700 transition-colors">
+                                                                        {client.name}
+                                                                    </span>
+                                                                </div>
+                                                                <span className="text-sm font-bold text-gray-900">
+                                                                    €{Math.round(client.revenue).toLocaleString()}
+                                                                </span>
+                                                            </div>
+                                                            <div className="w-full bg-gray-100 rounded-full h-2 overflow-hidden">
+                                                                <div
+                                                                    className="h-full bg-blue-600 transition-all duration-1000 rounded-full"
+                                                                    style={{
+                                                                        width: `${maxRevenue > 0 ? Math.round((client.revenue / maxRevenue) * 100) : 0}%`,
+                                                                        animationDelay: `${index * 200}ms`
+                                                                    }}
+                                                                ></div>
+                                                            </div>
                                                         </div>
-                                                        <span className="text-sm font-bold text-gray-900">
-                                                            €{client.revenue.toLocaleString()}
-                                                        </span>
-                                                    </div>
-                                                    <div className="w-full bg-gray-100 rounded-full h-2 overflow-hidden">
-                                                        <div
-                                                            className="h-full bg-blue-600 transition-all duration-1000 rounded-full"
-                                                            style={{
-                                                                width: `${client.percentage}%`,
-                                                                animationDelay: `${index * 200}ms`
-                                                            }}
-                                                        ></div>
-                                                    </div>
+                                                    ))}
                                                 </div>
-                                            ))}
-                                        </div>
+                                            );
+                                        })()}
                                     </div>
                                 </div>
                             </div>

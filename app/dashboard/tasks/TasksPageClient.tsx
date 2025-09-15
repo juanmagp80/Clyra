@@ -459,6 +459,12 @@ export default function TasksPageClient({ userEmail }: TasksPageClientProps) {
     const updateTaskStatus = async (taskId: string, newStatus: TaskStatus) => {
         if (!supabase) return;
         try {
+            // Si la tarea está corriendo y se va a completar, primero pausar y guardar tiempo real
+            const task = tasks.find(t => t.id === taskId);
+            if (newStatus === 'completed' && task?.is_running) {
+                await pauseTimer();
+            }
+
             const { error } = await supabase
                 .from('tasks')
                 .update({
