@@ -37,49 +37,49 @@ export default function DashboardBonsai({
     // Hook de trial status
     const { trialInfo, loading: trialLoading, hasReachedLimit, canUseFeatures } = useTrialStatus(userEmail);
 
-        // Estados para las métricas
-        const [metrics, setMetrics] = useState({
-            totalClients: 0,
-            activeProjects: 0,
-            completedProjects: 0,
-            monthlyRevenue: 0,
-            paidInvoices: 0,
-            hoursThisWeek: 0,
-            hoursThisMonth: 0,
-            billableHoursThisWeek: 0
-        });
+    // Estados para las métricas
+    const [metrics, setMetrics] = useState({
+        totalClients: 0,
+        activeProjects: 0,
+        completedProjects: 0,
+        monthlyRevenue: 0,
+        paidInvoices: 0,
+        hoursThisWeek: 0,
+        hoursThisMonth: 0,
+        billableHoursThisWeek: 0
+    });
 
-        // Estado para el tiempo total acumulado
-        const [totalAccumulatedTime, setTotalAccumulatedTime] = useState(0);
+    // Estado para el tiempo total acumulado
+    const [totalAccumulatedTime, setTotalAccumulatedTime] = useState(0);
 
-        // Estado para las categorías reales
-        const [categoryData, setCategoryData] = useState<Array<{
-            category: string;
-            hours: number;
-            percentage: number;
-            color: string;
-            displayName: string;
-        }>>([]);
+    // Estado para las categorías reales
+    const [categoryData, setCategoryData] = useState<Array<{
+        category: string;
+        hours: number;
+        percentage: number;
+        color: string;
+        displayName: string;
+    }>>([]);
 
-        // Estados para datos dinámicos
-        const [realProjects, setRealProjects] = useState<any[]>([]);
-        // Nuevo estado global para todos los proyectos
-        const [allProjectsState, setAllProjectsState] = useState<any[]>([]);
-        const [monthlyRevenueData, setMonthlyRevenueData] = useState<any[]>([]);
-        const [weeklyProductivity, setWeeklyProductivity] = useState<Array<{
-            day: string;
-            hours: number;
-            percentage: number;
-        }>>([]);
-        const [loading, setLoading] = useState(true);
-        const [recentActivity, setRecentActivity] = useState<Array<{
-            id: string;
-            type: string;
-            title: string;
-            subtitle: string;
-            date: string;
-            icon: string;
-        }>>([]);
+    // Estados para datos dinámicos
+    const [realProjects, setRealProjects] = useState<any[]>([]);
+    // Nuevo estado global para todos los proyectos
+    const [allProjectsState, setAllProjectsState] = useState<any[]>([]);
+    const [monthlyRevenueData, setMonthlyRevenueData] = useState<any[]>([]);
+    const [weeklyProductivity, setWeeklyProductivity] = useState<Array<{
+        day: string;
+        hours: number;
+        percentage: number;
+    }>>([]);
+    const [loading, setLoading] = useState(true);
+    const [recentActivity, setRecentActivity] = useState<Array<{
+        id: string;
+        type: string;
+        title: string;
+        subtitle: string;
+        date: string;
+        icon: string;
+    }>>([]);
 
     const handleLogout = async () => {
         try {
@@ -1494,8 +1494,8 @@ export default function DashboardBonsai({
                                             });
                                             // ...el resto del renderizado de la sección Top Clientes por Ingresos...
                                             const clientsArray: ClientRevenue[] = Object.values(clientRevenueMap)
-                                            .sort((a, b) => b.revenue - a.revenue)
-                                            .slice(0, 5);
+                                                .sort((a, b) => b.revenue - a.revenue)
+                                                .slice(0, 5);
                                             if (clientsArray.length === 0) {
                                                 return (
                                                     <div className="text-center py-6">

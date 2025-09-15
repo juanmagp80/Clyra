@@ -4,6 +4,7 @@ import Sidebar from '@/components/Sidebar';
 import { Button } from "@/components/ui/Button";
 import CustomDatePicker from '@/components/ui/DatePicker';
 import { createSupabaseClient } from '@/src/lib/supabase-client';
+import { showToast } from '@/utils/toast';
 import {
     Archive,
     Calendar,
@@ -24,7 +25,6 @@ import {
 import { useRouter } from 'next/navigation';
 import { useEffect, useState } from 'react';
 import ReactDOM from 'react-dom';
-import { showToast } from '@/utils/toast';
 
 // Tipos básicos
 type TaskStatus = 'pending' | 'in_progress' | 'paused' | 'completed' | 'archived';
@@ -134,19 +134,19 @@ export default function TasksPageClient({ userEmail }: TasksPageClientProps) {
     // Función para obtener el email del usuario
     const getCurrentUserEmail = async () => {
         if (currentUserEmail) return currentUserEmail; // Ya lo tenemos
-        
+
         try {
             const { data: { user }, error } = await supabase.auth.getUser();
             if (error) {
                 console.error('Error getting user:', error);
                 return '';
             }
-            
+
             if (user?.email) {
                 setCurrentUserEmail(user.email);
                 return user.email;
             }
-            
+
             return '';
         } catch (error) {
             console.error('Error in getCurrentUserEmail:', error);
@@ -410,7 +410,7 @@ export default function TasksPageClient({ userEmail }: TasksPageClientProps) {
                     .eq('user_id', uid)
                     .eq('name', 'General')
                     .single();
-                    
+
                 if (defaultError || !defaultProject) {
                     showToast.warning('⚠️ No se encontró un proyecto por defecto. Por favor, selecciona un proyecto.');
                     return;
@@ -1146,9 +1146,9 @@ export default function TasksPageClient({ userEmail }: TasksPageClientProps) {
                                 <label className="block text-sm font-medium text-slate-700 mb-1">Fecha límite</label>
                                 <CustomDatePicker
                                     selected={newTask.due_date ? new Date(newTask.due_date) : null}
-                                    onChange={(date) => setNewTask({ 
-                                        ...newTask, 
-                                        due_date: date ? date.toISOString().split('T')[0] : '' 
+                                    onChange={(date) => setNewTask({
+                                        ...newTask,
+                                        due_date: date ? date.toISOString().split('T')[0] : ''
                                     })}
                                     placeholderText="Seleccionar fecha límite"
                                 />
@@ -1310,9 +1310,9 @@ export default function TasksPageClient({ userEmail }: TasksPageClientProps) {
                                 <label className="block text-sm font-medium text-slate-700 mb-1">Fecha límite</label>
                                 <CustomDatePicker
                                     selected={editingTask.due_date ? new Date(editingTask.due_date) : null}
-                                    onChange={(date) => setEditingTask({ 
-                                        ...editingTask, 
-                                        due_date: date ? date.toISOString().split('T')[0] : '' 
+                                    onChange={(date) => setEditingTask({
+                                        ...editingTask,
+                                        due_date: date ? date.toISOString().split('T')[0] : ''
                                     })}
                                     placeholderText="Seleccionar fecha límite"
                                 />

@@ -1,5 +1,4 @@
 import { NextRequest, NextResponse } from 'next/server';
-import DashboardClient from '@/app/dashboard/DashboardClient';
 
 export async function GET(request: NextRequest) {
     // Solo para desarrollo - usuario de prueba
